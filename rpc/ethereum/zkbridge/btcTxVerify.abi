@@ -1,0 +1,1299 @@
+[
+    {
+      "inputs": [
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "_depositVerifier",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "_redeemVerifier",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_genesisBlockHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_checkpointBlockHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "_checkpointTimestamp",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AccessControlBadConfirmation",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "neededRole",
+          "type": "bytes32"
+        }
+      ],
+      "name": "AccessControlUnauthorizedAccount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "signed",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "switchState",
+          "type": "bool"
+        }
+      ],
+      "name": "UnsignedProtectionStateError",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "oldCp",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "newCp",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CheckPointRotated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "old",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "now",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "reservedHours",
+          "type": "uint32"
+        }
+      ],
+      "name": "DepositVerifierUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "old",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "now",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "reservedHours",
+          "type": "uint32"
+        }
+      ],
+      "name": "RedeemVerifierUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "previousAdminRole",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "newAdminRole",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RoleAdminChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleGranted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleRevoked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "now",
+          "type": "bool"
+        }
+      ],
+      "name": "UnsignedProtectionChanged",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "ADD_CP_DEPTH_THRESHOLDS",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "AVERTING_THRESHOLD",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BRIDGE_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "DEFAULT_ADMIN_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_CP_ADD_INTERVAL",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_CP_DEPTH",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_CP_MATURITY",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ROTATION_THRESHOLD",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct BtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        }
+      ],
+      "name": "addNewCP",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct BtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint32",
+          "name": "allowance",
+          "type": "uint32"
+        }
+      ],
+      "name": "checkCpDepth",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "cpCandidates",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "cpLatestAddedTime",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "rawBtcTx",
+          "type": "bytes"
+        }
+      ],
+      "name": "decodeTx",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "receiveAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txID",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "toScript",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "depositCompatibleDeadline",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "depositVerifier",
+      "outputs": [
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "enableUnsignedProtection",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "genesisBlockHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct BtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getDepositPublicWitness",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bool",
+          "name": "raiseIf",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "blockSigned",
+          "type": "bool"
+        }
+      ],
+      "name": "getDepthByAmount",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct BtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "minerReward",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRedeemPublicWitness",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleAdmin",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRoleMember",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMemberCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMembers",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "userAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "changeAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes",
+          "name": "receiveLockScript",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "changeLockScript",
+          "type": "bytes"
+        }
+      ],
+      "name": "getTxOuts",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint64",
+              "name": "value",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes",
+              "name": "pkScript",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct BtcTxLib.TxOut[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "grantRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "juniorCP",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "previousDepositVerifier",
+      "outputs": [
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "previousRedeemVerifier",
+      "outputs": [
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "redeemCompatibleDeadline",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "redeemVerifier",
+      "outputs": [
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "callerConfirmation",
+          "type": "address"
+        }
+      ],
+      "name": "renounceRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "revokeRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "seniorCP",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "suggestedCP",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "interfaceId",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "tryRotateCP",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "addr",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "reserveHours",
+          "type": "uint32"
+        }
+      ],
+      "name": "updateDepositVerifier",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IBtcZkpVerifier",
+          "name": "addr",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "reserveHours",
+          "type": "uint32"
+        }
+      ],
+      "name": "updateRedeemVerifier",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "flag",
+          "type": "bool"
+        }
+      ],
+      "name": "updateUnsignedProtection",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct BtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bool",
+          "name": "raiseIf",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "verifyDepositTx",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct BtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "changeAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint256",
+          "name": "minerReward",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bool",
+          "name": "raiseIf",
+          "type": "bool"
+        }
+      ],
+      "name": "verifyRedeemTx",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]

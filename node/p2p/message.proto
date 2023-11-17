@@ -1,0 +1,23 @@
+syntax = "proto2";
+option go_package = "node/p2p";
+
+message Msg {
+  enum Type {
+    Hello = 0;
+    Miner = 1;
+  }
+
+  required Type type = 1;
+  optional Hello hello = 2;
+  optional Miner miner = 3;
+  required int64 timestamp = 4;
+}
+
+message Hello {
+  required string address = 1;
+}
+
+message Miner {
+  required string minerAddr = 2;
+  required int64 power = 1;
+}

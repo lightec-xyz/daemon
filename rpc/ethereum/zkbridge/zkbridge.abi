@@ -1,0 +1,897 @@
+[
+    {
+      "inputs": [
+        {
+          "internalType": "contract IFeePool",
+          "name": "_feeAccount",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_changeLockScript",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_multiSigScript",
+          "type": "bytes"
+        },
+        {
+          "internalType": "contract UTXOManagerInterface",
+          "name": "_utxoAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IBtcTxVerifier",
+          "name": "_txVerifier",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AccessControlBadConfirmation",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "neededRole",
+          "type": "bytes32"
+        }
+      ],
+      "name": "AccessControlUnauthorizedAccount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "depositAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "minDepositAmount",
+          "type": "uint64"
+        }
+      ],
+      "name": "InvalidDepositAmount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "lockScriptLength",
+          "type": "uint256"
+        }
+      ],
+      "name": "InvalidLockScriptLength",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        }
+      ],
+      "name": "InvalidRedeemOrProof",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "lockScript",
+          "type": "bytes"
+        }
+      ],
+      "name": "LockScriptIsChange",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes",
+          "name": "sourceLockingScript",
+          "type": "bytes"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes",
+          "name": "destinationLockingScript",
+          "type": "bytes"
+        }
+      ],
+      "name": "BeginMigration",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "minerReward",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32[]",
+          "name": "sigHashs",
+          "type": "bytes32[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "rawTx",
+          "type": "bytes"
+        }
+      ],
+      "name": "CreateRedeemUnsignedTx",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "old",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "now",
+          "type": "uint64"
+        }
+      ],
+      "name": "DustThresholdsUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "previousAdminRole",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "newAdminRole",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RoleAdminChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleGranted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleRevoked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "old",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "now",
+          "type": "address"
+        }
+      ],
+      "name": "TxVerifierAddressChanged",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "DEFAULT_ADMIN_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_DEPOSIT_AMOUNT",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes",
+              "name": "changeLockScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "multiSigScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "contract UTXOManagerInterface",
+              "name": "utxoManager",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct zkBTCBridge.Operator",
+          "name": "destinationOperator",
+          "type": "tuple"
+        }
+      ],
+      "name": "beginMigration",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "rawBtcTx",
+          "type": "bytes"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct IBtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        }
+      ],
+      "name": "deposit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "dustThresholds",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "feeAccount",
+      "outputs": [
+        {
+          "internalType": "contract IFeePool",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLatestOperator",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes",
+              "name": "changeLockScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "multiSigScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "contract UTXOManagerInterface",
+              "name": "utxoManager",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct zkBTCBridge.Operator",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "script",
+          "type": "bytes"
+        }
+      ],
+      "name": "getOperator",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes",
+              "name": "changeLockScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "multiSigScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "contract UTXOManagerInterface",
+              "name": "utxoManager",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct zkBTCBridge.Operator",
+          "name": "op",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txBlockHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRaiseIf",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleAdmin",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRoleMember",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMemberCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMembers",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "grantRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "redeemAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "btcMinerFee",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes",
+          "name": "sourceScript",
+          "type": "bytes"
+        }
+      ],
+      "name": "migrate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "migrationList",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "changeLockScript",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "multiSigScript",
+          "type": "bytes"
+        },
+        {
+          "internalType": "contract UTXOManagerInterface",
+          "name": "utxoManager",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "redeemAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "btcMinerFee",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes",
+          "name": "recipientLockScript",
+          "type": "bytes"
+        }
+      ],
+      "name": "redeem",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "callerConfirmation",
+          "type": "address"
+        }
+      ],
+      "name": "renounceRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "revokeRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "suggestPrice",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "interfaceId",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "txCounts",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "txVerifier",
+      "outputs": [
+        {
+          "internalType": "contract IBtcTxVerifier",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "newThresholds",
+          "type": "uint64"
+        }
+      ],
+      "name": "updateDustThresholds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "checkpoint",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "cpDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txDepth",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "txBlockHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "txTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "address",
+              "name": "zkpMiner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "flag",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "smoothedTimestamp",
+              "type": "uint32"
+            }
+          ],
+          "internalType": "struct IBtcTxVerifier.PublicWitnessParams",
+          "name": "params",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "minerReward",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        }
+      ],
+      "name": "updateRedeem",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IBtcTxVerifier",
+          "name": "_newVerifier",
+          "type": "address"
+        }
+      ],
+      "name": "updateTxVerifier",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ]

@@ -1,0 +1,12 @@
+WORKDIR /app
+COPY . .
+WORKDIR /app/daemon/cmd/generator
+RUN go mod tidy && go build -o generator
+FROM ubuntu:latest
+RUN apt-get update -y && apt install -y ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/daemon/cmd/generator/generator /usr/local/bin/
+COPY --from=builder /app/daemon/cmd/generator/testnet.json .
+ENV ZkParameterDir /opt/ZkParameterDir
+RUN chmod +x /usr/local/bin/generator
+CMD ["generator", "run","--config", "./testnet.json"]

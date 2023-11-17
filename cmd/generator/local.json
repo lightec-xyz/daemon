@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:9977",
+  "maxNums": 1,
+  "network": "testnet",
+  "cacheCap": 1,
+  "datadir": "/Users/red/lworkspace/lightec/daemon/proof/test",
+  "ethSetupDir": "",
+  "btcSetupDir": "",
+  "discordHookUrl": "",
+  "mode": "client"
+}

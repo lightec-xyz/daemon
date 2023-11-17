@@ -1,0 +1,20 @@
+{
+  "discordUrl": "",
+  "ethUrls": [
+    {
+      "url": "http://127.0.0.1:9899"
+    }
+  ],
+  "btcUrls": [
+    {
+      "url": "http://127.0.0.1:9935",
+      "user": "lightec",
+      "pwd": ""
+    }
+  ],
+  "beaconUrls": [
+    {
+      "url": "http://127.0.0.1:8365"
+    }
+  ]
+}
