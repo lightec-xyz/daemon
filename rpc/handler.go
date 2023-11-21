@@ -7,7 +7,7 @@ import (
 type Handler struct {
 }
 
-func (h *Handler) HelloWorld(name string) (string, error) {
-	fmt.Printf("req: %v", name)
-	return fmt.Sprintf("%v resp,age: %v", name, "dd"), nil
+func (h *Handler) HelloWorld(name *string, age *int) (string, error) {
+	fmt.Printf("req: %v %v", name, age)
+	return fmt.Sprintf(" name %v age %v", *name, *age), nil
 }

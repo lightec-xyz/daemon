@@ -13,7 +13,9 @@ func init() {
 }
 func TestClient_HelloWorld(t *testing.T) {
 	var result string
-	err := client.Call(&result, "zkbtc_helloWorld", "rao")
+	name := "red"
+	age := 100
+	err := client.Call(&result, "zkbtc_helloWorld", &name, &age)
 	if err != nil {
 		t.Fatal(err)
 	}
