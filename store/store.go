@@ -16,6 +16,7 @@ func NewStore(file string, cache int, handles int, namespace string, readonly bo
 		logger.Error(err.Error())
 		return nil, err
 	}
+
 	return &Store{
 		levelDb: levelDb,
 	}, nil
@@ -37,17 +38,29 @@ func (s *Store) Delete(key []byte) error {
 	return s.levelDb.Delete(key)
 }
 
+func (s *Store) BatchPut(key []byte, value []byte) error {
+	return s.levelDb.batch.Put(key, value)
+}
+
+func (s *Store) BatchDelete(key []byte) error {
+	return s.levelDb.batch.Delete(key)
+}
+
+func (s *Store) BatchWrite() error {
+	return s.levelDb.batch.Write()
+}
+
 func (s *Store) HasObj(key interface{}) (bool, error) {
-	bytesKey, err := KeyParse(key)
+	bytesKey, err := keyParse(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return false, err
 	}
-	return s.Has(bytesKey), nil
+	return s.Has(bytesKey)
 }
 
 func (s *Store) GetObj(key interface{}, value interface{}) error {
-	bytesKey, err := KeyParse(key)
+	bytesKey, err := keyParse(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -61,7 +74,7 @@ func (s *Store) GetObj(key interface{}, value interface{}) error {
 }
 
 func (s *Store) DeleteObj(key interface{}) error {
-	bytesKey, err := KeyParse(key)
+	bytesKey, err := keyParse(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -74,7 +87,7 @@ func (s *Store) PutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	bytesKey, err := KeyParse(key)
+	bytesKey, err := keyParse(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -82,7 +95,30 @@ func (s *Store) PutObj(key interface{}, value interface{}) error {
 	return s.Put(bytesKey, bytes)
 }
 
-func KeyParse(key interface{}) ([]byte, error) {
+func (s *Store) BatchPutObj(key interface{}, value interface{}) error {
+	bytes, err := codec.Marshal(value)
+	if err != nil {
+		logger.Error("value can't Marshal error:%v", err)
+		return err
+	}
+	bytesKey, err := keyParse(key)
+	if err != nil {
+		logger.Error("key parse bytes error:%v", err)
+		return err
+	}
+	return s.BatchPut(bytesKey, bytes)
+}
+
+func (s *Store) BatchDeleteObj(key interface{}) error {
+	bytesKey, err := keyParse(key)
+	if err != nil {
+		logger.Error("key parse bytes error:%v", err)
+		return err
+	}
+	return s.BatchDelete(bytesKey)
+}
+
+func keyParse(key interface{}) ([]byte, error) {
 	//todo
 	switch key.(type) {
 	case string:

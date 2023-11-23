@@ -2,6 +2,7 @@ package node
 
 import (
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/store"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,12 +19,26 @@ type Daemon struct {
 	agents []IAgent
 }
 
-func NewDaemon(config Config) *Daemon {
-	btcAgent := NewBitcoinAgent()
-	ethAgent := NewEthereumAgent()
+func NewDaemon(cfg Config) (*Daemon, error) {
+	//todo
+	storeDb, err := store.NewStore(cfg.DbConfig.Path, 0, 0, "default", true)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	btcAgent, err := NewBitcoinAgent(cfg.Bitcoin, storeDb)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	ethAgent, err := NewEthereumAgent(cfg.Ethereum, storeDb)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
 	return &Daemon{
 		agents: []IAgent{btcAgent, ethAgent},
-	}
+	}, nil
 }
 
 func (d *Daemon) Init() error {
@@ -73,7 +88,7 @@ func (d *Daemon) Run() error {
 		case syscall.SIGQUIT:
 			fallthrough
 		case syscall.SIGTERM:
-			logger.Info("get shutdown sigterm, please wait ...")
+			logger.Info("get shutdown sigterm...")
 			err := d.Close()
 			if err != nil {
 				logger.Error(err.Error())

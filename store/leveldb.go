@@ -1,12 +1,14 @@
 package store
 
 import (
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/lightec-xyz/daemon/logger"
 )
 
 type LevelDb struct {
 	*leveldb.Database
+	batch ethdb.Batch
 }
 
 func NewLevelDb(file string, cache int, handles int, namespace string, readonly bool) (*LevelDb, error) {
@@ -15,5 +17,6 @@ func NewLevelDb(file string, cache int, handles int, namespace string, readonly 
 		logger.Error("new leveldb error:%v", err)
 		return nil, err
 	}
-	return &LevelDb{db}, nil
+	batch := db.NewBatch()
+	return &LevelDb{Database: db, batch: batch}, nil
 }

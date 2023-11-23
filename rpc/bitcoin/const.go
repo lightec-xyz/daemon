@@ -6,6 +6,7 @@ const (
 	GETBLOCKHASH   = "getblockhash"
 	GETBLOCKCOUNT  = "getblockcount"
 	SCANTXOUTSET   = "scantxoutset"
+	GETBLOCK       = "getblock"
 
 	// utils
 	CREATEMULTISIG = "createmultisig"

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/ybbus/jsonrpc"
 	"net/http"
@@ -41,6 +42,16 @@ func (client *Client) GetBlockCount() (int64, error) {
 		return 0, err
 	}
 	return count, err
+}
+
+func (client *Client) GetBlockWithTx(hash string) (*types.BlockWithTx, error) {
+	res := &types.BlockWithTx{}
+	err := client.Call(GETBLOCK, res, &hash, 3)
+	if err != nil {
+		logger.Error("getblock error:%s", err.Error())
+	}
+
+	return res, err
 }
 
 func basicAuth(username, password string) string {

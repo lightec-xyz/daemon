@@ -22,8 +22,13 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("run called")
-		stringMap := viper.GetStringMap("bitcoin")
+		stringMap := viper.GetStringMap("daemon")
 		fmt.Println(stringMap)
+		//daemon := node.NewDaemon()
+		//err := daemon.Run()
+		//if err != nil {
+		//	fmt.Printf("daemon run error:%v", err)
+		//}
 	},
 }
 
