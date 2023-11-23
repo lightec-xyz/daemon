@@ -1,4 +1,4 @@
-package rpc
+package ethereum
 
 import "testing"
 
@@ -11,13 +11,22 @@ func init() {
 		panic(err)
 	}
 }
+
 func TestClient_HelloWorld(t *testing.T) {
 	var result string
 	name := "red"
 	age := 100
-	err := client.Call(&result, "zkbtc_helloWorld", &name, &age)
+	err := client.Client.Call(&result, "zkbtc_helloWorld", &name, &age)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(result)
+}
+
+func TestClient_TestEth(t *testing.T) {
+	number, err := client.EthRPC.EthGetBlockByNumber(0, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(number)
 }
