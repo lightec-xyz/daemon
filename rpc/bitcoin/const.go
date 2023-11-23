@@ -1,4 +1,4 @@
-package bitcoinClient
+package bitcoin
 
 const (
 	// blockchain

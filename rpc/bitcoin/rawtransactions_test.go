@@ -1,8 +1,8 @@
-package bitcoinClient
+package bitcoin
 
 import (
-	"bitcoinClient/types"
 	"fmt"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"testing"
 )
 

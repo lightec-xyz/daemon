@@ -1,20 +1,43 @@
 package node
 
-type EthereumNode struct {
+import (
+	"github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/store"
+	"time"
+)
+
+type EthereumAgent struct {
+	client     *ethereum.Client
+	store      *store.Store
+	name       string
+	exitSignal chan struct{}
+	blockTime  time.Duration
 }
 
-func NewEthereumNode() *EthereumNode {
-	return &EthereumNode{}
+func NewEthereumAgent() *EthereumAgent {
+	return &EthereumAgent{}
 }
 
-func (e *EthereumNode) Init() error {
-
+func (e *EthereumAgent) Init() error {
+	return nil
 }
 
-func (e *EthereumNode) ScanBlock(height int64) (int64, error) {
-
+func (e *EthereumAgent) Run() error {
+	ticker := time.NewTicker(e.blockTime)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			// TODO
+		case <-e.exitSignal:
+			return nil
+		}
+	}
 }
 
-func (e *EthereumNode) Close() error {
-
+func (e *EthereumAgent) Close() error {
+	panic(e)
+}
+func (e *EthereumAgent) Name() string {
+	return e.name
 }

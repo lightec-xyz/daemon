@@ -1,11 +1,11 @@
-package bitcoinClient
+package bitcoin
 
 import (
-	"bitcoinClient/types"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/ybbus/jsonrpc"
 	"net/http"
 	"time"

@@ -1,7 +1,7 @@
-package bitcoinClient
+package bitcoin
 
 import (
-	"bitcoinClient/types"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 )
 
 func (client *Client) Createrawtransaction(inputs []types.TxIn, outputs []types.TxOut) (string, error) {

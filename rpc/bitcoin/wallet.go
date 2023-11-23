@@ -1,6 +1,6 @@
-package bitcoinClient
+package bitcoin
 
-import "bitcoinClient/types"
+import "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 
 func (client *Client) Getaddressinfo(address string) (types.AddressInfo, error) {
 	var result types.AddressInfo

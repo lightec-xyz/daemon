@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"encoding/json"
 	"github.com/fxamacker/cbor/v2"
 	"testing"
 )
@@ -23,5 +24,32 @@ func TestCbor(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(animal)
+}
+
+func TestCbor_Demo(t *testing.T) {
+	data := "woheni"
+	t.Log([]byte(data))
+	bytes, err := cbor.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result string
+	err = cbor.Unmarshal(bytes, &result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(result)
+	t.Log(bytes)
+	marshal, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(marshal)
+	var tmp string
+	err = json.Unmarshal(marshal, &tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(tmp)
 
 }
