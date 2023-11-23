@@ -7,14 +7,15 @@ import (
 )
 
 type EthereumAgent struct {
-	client     *ethereum.Client
-	store      *store.Store
-	name       string
-	exitSignal chan struct{}
-	blockTime  time.Duration
+	client      *ethereum.Client
+	store       *store.Store
+	name        string
+	memoryStore *store.MemoryStore
+	exitSignal  chan struct{}
+	blockTime   time.Duration
 }
 
-func NewEthereumAgent(cfg EthConfig, store *store.Store) (IAgent, error) {
+func NewEthereumAgent(cfg EthConfig, store *store.Store, memoryStore *store.MemoryStore) (IAgent, error) {
 	return &EthereumAgent{}, nil
 }
 

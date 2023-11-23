@@ -26,12 +26,13 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	btcAgent, err := NewBitcoinAgent(cfg.Bitcoin, storeDb)
+	memoryStore := store.NewMemoryStore()
+	btcAgent, err := NewBitcoinAgent(cfg.Bitcoin, storeDb, memoryStore)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg.Ethereum, storeDb)
+	ethAgent, err := NewEthereumAgent(cfg.Ethereum, storeDb, memoryStore)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

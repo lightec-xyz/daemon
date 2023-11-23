@@ -12,12 +12,13 @@ import (
 type BitcoinAgent struct {
 	client      *bitcoin.Client
 	store       *store.Store
+	memoryStore *store.MemoryStore
 	blockTime   time.Duration
 	exitSignal  chan struct{}
 	operateAddr string
 }
 
-func NewBitcoinAgent(cfg BtcConfig, store *store.Store) (IAgent, error) {
+func NewBitcoinAgent(cfg BtcConfig, store *store.Store, memoryStore *store.MemoryStore) (IAgent, error) {
 	btcClient, err := bitcoin.NewClient(cfg.Url, cfg.User, cfg.Pwd, cfg.Network)
 	if err != nil {
 		logger.Error(err.Error())
@@ -26,6 +27,7 @@ func NewBitcoinAgent(cfg BtcConfig, store *store.Store) (IAgent, error) {
 	return &BitcoinAgent{
 		client:      btcClient,
 		store:       store,
+		memoryStore: memoryStore,
 		blockTime:   time.Duration(cfg.BlockTime) * time.Second,
 		exitSignal:  make(chan struct{}, 1),
 		operateAddr: cfg.OperatorAddr,
