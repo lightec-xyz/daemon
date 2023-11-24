@@ -5,38 +5,36 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
+	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	"strings"
 	"time"
 )
 
 type BitcoinAgent struct {
-	client      *bitcoin.Client
+	btcClient   *bitcoin.Client
+	ethClient   *ethereum.Client
 	store       *store.Store
 	memoryStore *store.MemoryStore
 	blockTime   time.Duration
-	exitSignal  chan struct{}
 	operateAddr string
 }
 
-func NewBitcoinAgent(cfg BtcConfig, store *store.Store, memoryStore *store.MemoryStore) (IAgent, error) {
-	btcClient, err := bitcoin.NewClient(cfg.Url, cfg.User, cfg.Pwd, cfg.Network)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
+func NewBitcoinAgent(cfg NodeConfig, btcClient *bitcoin.Client, ethClient *ethereum.Client,
+	store *store.Store, memoryStore *store.MemoryStore) (IAgent, error) {
 	return &BitcoinAgent{
-		client:      btcClient,
+		btcClient:   btcClient,
+		ethClient:   ethClient,
 		store:       store,
 		memoryStore: memoryStore,
-		blockTime:   time.Duration(cfg.BlockTime) * time.Second,
-		exitSignal:  make(chan struct{}, 1),
-		operateAddr: cfg.OperatorAddr,
+		blockTime:   time.Duration(cfg.BTcBtcBlockTime) * time.Second,
+		operateAddr: cfg.BtcOperatorAddr,
 	}, nil
 }
 
 func (b *BitcoinAgent) Init() error {
-	height, err := b.getBtcCurHeight()
+	//todo
+	height, err := b.getCurrentHeight()
 	if err != nil && strings.Contains(err.Error(), "not found") {
 		err = b.store.PutObj(BtcCurHeight, InitBitcoinHeight)
 		if err != nil {
@@ -44,43 +42,40 @@ func (b *BitcoinAgent) Init() error {
 			return err
 		}
 	}
+	_, err = b.btcClient.GetBlockCount()
+	if err != nil {
+		logger.Error("bitcoin rpc error:%v", err)
+		return err
+	}
 	logger.Debug("bitcoin node init ok,latest height:%d", height)
 	return nil
 }
 
-func (b *BitcoinAgent) Run() error {
-	ticker := time.NewTicker(b.blockTime)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			err := b.ScanBlock()
-			if err != nil {
-				logger.Error(err.Error())
-			}
-		case <-b.exitSignal:
-			logger.Info("%v node exit now", b.Name())
-			return nil
-		}
+func (b *BitcoinAgent) getCurrentHeight() (int64, error) {
+	var height int64
+	err := b.store.GetObj(BtcCurHeight, &height)
+	if err != nil {
+		logger.Error(err.Error())
+		return 0, err
 	}
+	return height, nil
 
 }
 
-func (b *BitcoinAgent) ScanBlock() error {
-	var curHeight int64
-	err := getCurrentHeight(b.store, BtcCurHeight, &curHeight)
+func (b *BitcoinAgent) Run() error {
+	curHeight, err := b.getCurrentHeight()
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
 		return err
 	}
-	blockCount, err := b.client.GetBlockCount()
+	blockCount, err := b.btcClient.GetBlockCount()
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("get block count error:%v", err)
 		return err
 	}
 	//todo
 	if curHeight >= blockCount-6 {
-		logger.Info("current height:%d,block count:%d", curHeight, blockCount)
+		logger.Info("current height:%d,node block count:%d", curHeight, blockCount)
 		return nil
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
@@ -90,18 +85,19 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error(err.Error())
 			return err
 		}
-		err = b.SaveTxData(index, depositTxList)
+		err = b.persistData(index, depositTxList)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
 		}
+		//todo gen proof
 
 	}
 	return nil
 
 }
 
-func (b *BitcoinAgent) SaveTxData(height int64, depositTxList []DepositTx) error {
+func (b *BitcoinAgent) persistData(height int64, depositTxList []DepositTx) error {
 	//todo
 	var txIdList []string
 	for _, depositTx := range depositTxList {
@@ -138,29 +134,38 @@ func (b *BitcoinAgent) SaveTxData(height int64, depositTxList []DepositTx) error
 	return nil
 }
 
+//todo
+
+func (b *BitcoinAgent) SendTxToEth(txList []DepositTx) error {
+	for _, tx := range txList {
+		logger.Info("send tx to eth: %v", tx)
+		//todo
+	}
+	return nil
+}
+
 func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, error) {
-	blockHash, err := b.client.GetBlockHash(height)
+	blockHash, err := b.btcClient.GetBlockHash(height)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	blockWithTx, err := b.client.GetBlockWithTx(blockHash)
+	blockWithTx, err := b.btcClient.GetBlockWithTx(blockHash)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 	var depositTxList []DepositTx
 	for _, tx := range blockWithTx.Tx {
-		depositTx, check, err := b.CheckDeposit(tx.Vout)
+		depositTx, check, err := b.parseTx(tx.Vout)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, err
 		}
-		if !check {
-			logger.Warn("invalid tx: %v", tx.Hash)
-			continue
+		if check {
+			logger.Info("found deposit tx: %v", depositTx)
+			depositTxList = append(depositTxList, depositTx)
 		}
-		depositTxList = append(depositTxList, depositTx)
 	}
 
 	return depositTxList, nil
@@ -168,7 +173,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, error) {
 
 // todo  check rule
 
-func (b *BitcoinAgent) CheckDeposit(outList []types.TxOut) (DepositTx, bool, error) {
+func (b *BitcoinAgent) parseTx(outList []types.TxOut) (DepositTx, bool, error) {
 	if len(outList) < 2 {
 		return DepositTx{}, false, nil
 	}
@@ -176,20 +181,14 @@ func (b *BitcoinAgent) CheckDeposit(outList []types.TxOut) (DepositTx, bool, err
 	return DepositTx{}, true, nil
 }
 
-func (b *BitcoinAgent) getBtcCurHeight() (int64, error) {
-	var curHeight int64
-	err := getCurrentHeight(b.store, BtcCurHeight, &curHeight)
-	if err != nil {
-		logger.Error("get btc current height error:%v", err)
-		return 0, err
-	}
-	return curHeight, nil
-}
-
 func (b *BitcoinAgent) Close() error {
-	b.exitSignal <- struct{}{}
+
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
 	return b.Name()
+}
+
+func (b *BitcoinAgent) BlockTime() time.Duration {
+	return b.blockTime
 }

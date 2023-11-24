@@ -7,11 +7,15 @@ import (
 
 type Handler struct {
 	//todo
-	store *store.Store
+	store    *store.Store
+	memoryDb *store.MemoryStore
 }
 
-func NewHandler(store *store.Store) *Handler {
-	return &Handler{store: store}
+func NewHandler(store *store.Store, memoryDb *store.MemoryStore) *Handler {
+	return &Handler{
+		store:    store,
+		memoryDb: memoryDb,
+	}
 }
 
 func (h *Handler) HelloWorld(name *string, age *int) (string, error) {

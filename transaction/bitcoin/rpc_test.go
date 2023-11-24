@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// Bitcoin: https://blockstream.info/api/
+// NodeConfig: https://blockstream.info/api/
 const url = "https://blockstream.info/testnet/api"
 
 func GetLastestBlockHeight(url string) int64 {

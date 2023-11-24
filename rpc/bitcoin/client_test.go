@@ -16,8 +16,8 @@ var err error
 
 func init() {
 	url := "http://localhost:8332"
-	user := "ascendex"
-	pwd := "Abcd1234"
+	user := "lightec"
+	pwd := "abcd1234"
 	network := "regtest"
 	client, err = NewClient(url, user, pwd, network)
 	if err != nil {

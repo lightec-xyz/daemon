@@ -6,7 +6,7 @@ import (
 )
 
 func TestDaemon(t *testing.T) {
-	config := devDaemonConfig()
+	config := localDevDaemonConfig()
 	daemon, err := NewDaemon(config)
 	if err != nil {
 		t.Error(err)

@@ -1,8 +1,7 @@
 package node
 
 type Config struct {
-	Bitcoin     BtcConfig    `yaml:"bitcoin"`
-	Ethereum    EthConfig    `yaml:"ethereum"`
+	NodeConfig  NodeConfig   `yaml:"bitcoin"`
 	DFinity     DFinity      `yaml:"dfinity"`
 	DbConfig    DbConfig     `json:"db_config"`
 	SeverConfig ServerConfig `json:"sever_config"`
@@ -19,13 +18,17 @@ type DbConfig struct {
 	Handler int
 }
 
-type BtcConfig struct {
-	Url          string `json:"url"`
-	User         string `json:"user"`
-	Pwd          string `json:"pwd"`
-	Network      string `json:"network"`
-	BlockTime    int64  `json:"block_time"`
-	OperatorAddr string `json:"operator_addr"`
+type NodeConfig struct {
+	//b
+	BtcUrl          string `json:"btcUrl"`
+	BtcUser         string `json:"btcUser"`
+	BtcPwd          string `json:"btcPwd"`
+	BtcNetwork      string `json:"btcNetwork"`
+	BTcBtcBlockTime int64  `json:"btcBlockTime"`
+	BtcOperatorAddr string `json:"btcOperatorAddr"`
+	//eth
+	EthUrl       string `json:"ethUrl"`
+	EthBlockTime int64  `json:"ethBlockTime"`
 }
 
 type EthConfig struct {
@@ -42,20 +45,18 @@ type DFinity struct {
 type Secret struct {
 }
 
-func devDaemonConfig() Config {
+func localDevDaemonConfig() Config {
 	return Config{
-		Bitcoin: BtcConfig{
-			Url:          "https://bitcoin-mainnet-archive.allthatnode.com",
-			User:         "user",
-			Pwd:          "pwd",
-			Network:      "regtest",
-			BlockTime:    10,
-			OperatorAddr: "user",
-		},
-		Ethereum: EthConfig{
-			Url:       "http://127.0.0.1:8545",
-			BlockTime: 10,
-			Secret:    Secret{},
+		NodeConfig: NodeConfig{
+			BtcUrl:          "http://127.0.0.1:8332",
+			BtcUser:         "lightec",
+			BtcPwd:          "abcd1234",
+			BtcNetwork:      "regtest",
+			BTcBtcBlockTime: 15,
+			BtcOperatorAddr: "user",
+
+			EthUrl:       "",
+			EthBlockTime: 15,
 		},
 		DFinity: DFinity{
 			Url:    "http://127.0.0.1:8000",

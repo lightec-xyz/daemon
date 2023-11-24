@@ -8,7 +8,7 @@ const (
 )
 
 const (
-	InitBitcoinHeight  = 818174
+	InitBitcoinHeight  = 100
 	InitEthereumHeight = 10000
 )
 

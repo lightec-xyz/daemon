@@ -10,6 +10,7 @@ import (
 
 type Server struct {
 	server *http.Server
+	name   string
 }
 
 func NewServer(addr string, handler interface{}) (*Server, error) {
@@ -28,7 +29,7 @@ func NewServer(addr string, handler interface{}) (*Server, error) {
 	go func() {
 		err := http.ListenAndServe(addr, nil)
 		if err != nil {
-			panic(err)
+			//todo
 		}
 	}()
 	return &Server{server: server}, nil

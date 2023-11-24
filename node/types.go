@@ -9,6 +9,14 @@ type DepositTx struct {
 	Extra   string
 }
 
+type RedeemTx struct {
+	TxId    string
+	BtcAddr string
+	Height  string
+	Amount  string
+	Extra   string
+}
+
 type TxProof struct {
 	PTxId  string
 	Proof  string

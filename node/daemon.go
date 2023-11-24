@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 type IAgent interface {
@@ -15,46 +18,67 @@ type IAgent interface {
 	Init() error
 	Close() error
 	Name() string
+	BlockTime() time.Duration
 }
 
 type Daemon struct {
-	agents []IAgent
-	server *rpc.Server
+	agents     []IAgent
+	server     *rpc.Server
+	nodeConfig NodeConfig
+	exitSignal chan struct{}
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
-	//todo
 	err := logger.InitLogger()
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("init logger error:%v", err)
 		return nil, err
 	}
+	btcClient, err := bitcoin.NewClient(cfg.NodeConfig.BtcUrl, cfg.NodeConfig.BtcUser, cfg.NodeConfig.BtcPwd, cfg.NodeConfig.BtcNetwork)
+	if err != nil {
+		logger.Error("new btc btcClient error:%v", err)
+		return nil, err
+	}
+	ethClient, err := ethereum.NewClient(cfg.NodeConfig.EthUrl)
+	if err != nil {
+		logger.Error("new eth btcClient error:%v", err)
+		return nil, err
+	}
+
 	storeDb, err := store.NewStore(cfg.DbConfig.Path, cfg.DbConfig.Cache, cfg.DbConfig.Handler, "zkbtc", false)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	btcAgent, err := NewBitcoinAgent(cfg.Bitcoin, storeDb, memoryStore)
+	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, btcClient, ethClient, storeDb, memoryStore)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg.Ethereum, storeDb, memoryStore)
+	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, btcClient, ethClient, storeDb, memoryStore)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	rpcHandler := NewHandler(storeDb)
+	rpcHandler := NewHandler(storeDb, memoryStore)
 	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.SeverConfig.IP, cfg.SeverConfig.Port), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	return &Daemon{
-		agents: []IAgent{btcAgent, ethAgent},
-		server: server,
-	}, nil
+	daemon := &Daemon{
+		agents:     []IAgent{btcAgent, ethAgent},
+		server:     server,
+		nodeConfig: cfg.NodeConfig,
+		exitSignal: make(chan struct{}, 1),
+	}
+	err = daemon.Init()
+	if err != nil {
+		logger.Error("daemon init error:%v", err)
+		return nil, err
+	}
+	return daemon, nil
 }
 
 func (d *Daemon) Init() error {
@@ -67,34 +91,22 @@ func (d *Daemon) Init() error {
 	return nil
 }
 
-func (d *Daemon) Close() error {
-	for _, node := range d.agents {
-		if err := node.Close(); err != nil {
-			logger.Error("%v:close node error %v", node.Name(), err)
-			//need continue,close next node
-		}
-	}
-	err := d.server.Shutdown()
-	if err != nil {
-		logger.Error("server shutdown error:%v", err)
-	}
-	return nil
-}
-
 func (d *Daemon) Run() error {
-	err := d.Init()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
 	ch := make(chan os.Signal, 1)
-
 	for _, node := range d.agents {
-		go func(cNode IAgent) {
-			err := cNode.Run()
-			if err != nil {
-				logger.Error("%v run error %v", cNode.Name(), err)
-				ch <- syscall.SIGQUIT
+		go func(tNode IAgent) {
+			ticker := time.NewTicker(tNode.BlockTime())
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					err := tNode.Run()
+					if err != nil {
+						logger.Error("% run error %v", tNode.Name(), err)
+					}
+				case <-d.exitSignal:
+					return
+				}
 			}
 		}(node)
 	}
@@ -115,4 +127,19 @@ func (d *Daemon) Run() error {
 			}
 		}
 	}
+}
+
+func (d *Daemon) Close() error {
+	for _, node := range d.agents {
+		if err := node.Close(); err != nil {
+			logger.Error("%v:close node error %v", node.Name(), err)
+			//need continue,close next node
+		}
+	}
+	close(d.exitSignal)
+	err := d.server.Shutdown()
+	if err != nil {
+		logger.Error("server shutdown error:%v", err)
+	}
+	return nil
 }
