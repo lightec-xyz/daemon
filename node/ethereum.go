@@ -16,7 +16,9 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg EthConfig, store *store.Store, memoryStore *store.MemoryStore) (IAgent, error) {
-	return &EthereumAgent{}, nil
+	return &EthereumAgent{
+		blockTime: time.Duration(cfg.BlockTime) * time.Second,
+	}, nil
 }
 
 func (e *EthereumAgent) Init() error {

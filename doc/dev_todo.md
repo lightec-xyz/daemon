@@ -22,8 +22,14 @@
 * main struct 
 
 
-refer
-* db:https://www.cnblogs.com/orange-CC/p/13212042.html
-* jsonRpc2.0:https://github.com/sourcegraph/jsonrpc2
-* gin:https://gin-gonic.com/
-* cbor:https://github.com/fxamacker/cbor
+## Test
+* bitcoin
+  * mainnet:https://bitcoin-mainnet-archive.allthatnode.com
+  * testnet:https://bitcoin-testnet-archive.allthatnode.com
+
+      
+    curl https://bitcoin-mainnet-archive.allthatnode.com \
+    --request POST \
+    --header 'content-type: text/plain;' \
+    --data '{"jsonrpc": "1.0", "id": "curltest", "method": "getblockcount", "params": []}'
+    

@@ -1,7 +1,9 @@
 package node
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
 	"os/signal"
@@ -17,11 +19,17 @@ type IAgent interface {
 
 type Daemon struct {
 	agents []IAgent
+	server *rpc.Server
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
 	//todo
-	storeDb, err := store.NewStore(cfg.DbConfig.Path, 0, 0, "default", true)
+	err := logger.InitLogger()
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	storeDb, err := store.NewStore(cfg.DbConfig.Path, cfg.DbConfig.Cache, cfg.DbConfig.Handler, "zkbtc", false)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -37,8 +45,15 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	rpcHandler := NewHandler(storeDb)
+	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.SeverConfig.IP, cfg.SeverConfig.Port), rpcHandler)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
 	return &Daemon{
 		agents: []IAgent{btcAgent, ethAgent},
+		server: server,
 	}, nil
 }
 
@@ -58,6 +73,10 @@ func (d *Daemon) Close() error {
 			logger.Error("%v:close node error %v", node.Name(), err)
 			//need continue,close next node
 		}
+	}
+	err := d.server.Shutdown()
+	if err != nil {
+		logger.Error("server shutdown error:%v", err)
 	}
 	return nil
 }

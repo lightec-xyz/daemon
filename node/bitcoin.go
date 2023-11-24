@@ -6,6 +6,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/store"
+	"strings"
 	"time"
 )
 
@@ -35,6 +36,15 @@ func NewBitcoinAgent(cfg BtcConfig, store *store.Store, memoryStore *store.Memor
 }
 
 func (b *BitcoinAgent) Init() error {
+	height, err := b.getBtcCurHeight()
+	if err != nil && strings.Contains(err.Error(), "not found") {
+		err = b.store.PutObj(BtcCurHeight, InitBitcoinHeight)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+	}
+	logger.Debug("bitcoin node init ok,latest height:%d", height)
 	return nil
 }
 
@@ -60,7 +70,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 	var curHeight int64
 	err := getCurrentHeight(b.store, BtcCurHeight, &curHeight)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("get btc current height error:%v", err)
 		return err
 	}
 	blockCount, err := b.client.GetBlockCount()
@@ -70,6 +80,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 	}
 	//todo
 	if curHeight >= blockCount-6 {
+		logger.Info("current height:%d,block count:%d", curHeight, blockCount)
 		return nil
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
@@ -163,6 +174,16 @@ func (b *BitcoinAgent) CheckDeposit(outList []types.TxOut) (DepositTx, bool, err
 	}
 	//todo
 	return DepositTx{}, true, nil
+}
+
+func (b *BitcoinAgent) getBtcCurHeight() (int64, error) {
+	var curHeight int64
+	err := getCurrentHeight(b.store, BtcCurHeight, &curHeight)
+	if err != nil {
+		logger.Error("get btc current height error:%v", err)
+		return 0, err
+	}
+	return curHeight, nil
 }
 
 func (b *BitcoinAgent) Close() error {

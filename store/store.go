@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"github.com/lightec-xyz/daemon/codec"
 	"github.com/lightec-xyz/daemon/logger"
 )
@@ -120,9 +119,10 @@ func (s *Store) BatchDeleteObj(key interface{}) error {
 
 func keyParse(key interface{}) ([]byte, error) {
 	//todo
-	switch key.(type) {
-	case string:
-		return []byte(key.(string)), nil
+	keyBytes, err := codec.Marshal(key)
+	if err != nil {
+		logger.Error("key can't Marshal error:%v", err)
+		return nil, err
 	}
-	return nil, fmt.Errorf("unsupported key type:%v", key)
+	return keyBytes, nil
 }

@@ -2,16 +2,14 @@ package logger
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/log"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"os"
+	"time"
 )
 
-var logger log.Logger
+var logger *zap.Logger
 var err error
-
-func Trace(msg string, ctx ...interface{}) {
-	logger.Trace(fmt.Sprintf(msg, ctx...))
-}
 
 func Debug(msg string, ctx ...interface{}) {
 	logger.Debug(fmt.Sprintf(msg, ctx...))
@@ -28,6 +26,9 @@ func Warn(msg string, ctx ...interface{}) {
 func Error(msg string, ctx ...interface{}) {
 	logger.Error(fmt.Sprintf(msg, ctx...))
 }
+func Fatal(msg string, ctx ...interface{}) {
+	logger.Fatal(fmt.Sprintf(msg, ctx...))
+}
 
 func InitLogger() error {
 	logger, err = newLogger()
@@ -37,13 +38,30 @@ func InitLogger() error {
 	return err
 }
 
-func newLogger() (log.Logger, error) {
-	//todo
-	logger := log.New()
-	{
-		glog := log.NewGlogHandler(log.StreamHandler(os.Stdout, log.TerminalFormat(false)))
-		glog.Verbosity(log.LvlTrace)
-		logger.SetHandler(glog)
+func Close() error {
+	if logger != nil {
+		return logger.Sync()
 	}
+	return nil
+}
+
+func newLogger() (*zap.Logger, error) {
+	encoderConfig := zapcore.EncoderConfig{
+		MessageKey:   "message",
+		LevelKey:     "level",
+		TimeKey:      "time",
+		CallerKey:    "caller",
+		EncodeTime:   zapcore.TimeEncoderOfLayout(time.RFC3339),
+		EncodeLevel:  zapcore.LowercaseColorLevelEncoder,
+		EncodeCaller: zapcore.ShortCallerEncoder,
+	}
+
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encoderConfig),
+		zapcore.AddSync(os.Stdout),
+		zap.DebugLevel,
+	)
+
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	return logger, nil
 }

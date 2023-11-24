@@ -7,6 +7,11 @@ const (
 	EthCurHeight = "ethCurHeight"
 )
 
+const (
+	InitBitcoinHeight  = 818174
+	InitEthereumHeight = 10000
+)
+
 type ProofStatus int
 
 const (

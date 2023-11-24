@@ -53,3 +53,18 @@ func TestCbor_Demo(t *testing.T) {
 	t.Log(tmp)
 
 }
+
+func TestCodec_Demo(t *testing.T) {
+	value := 100
+	result, err := cbor.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(result)
+	var tmp int
+	err = cbor.Unmarshal(result, &tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(tmp)
+}

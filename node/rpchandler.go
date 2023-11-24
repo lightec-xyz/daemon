@@ -1,4 +1,4 @@
-package rpc
+package node
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 )
 
 type Handler struct {
+	//todo
 	store *store.Store
 }
 
