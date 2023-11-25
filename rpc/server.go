@@ -15,6 +15,7 @@ type Server struct {
 
 func NewServer(addr string, handler interface{}) (*Server, error) {
 	//todo
+
 	rpcServ := rpc.NewServer()
 	err := rpcServ.RegisterName("zkbtc", handler)
 	if err != nil {

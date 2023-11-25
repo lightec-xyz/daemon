@@ -44,8 +44,9 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
-
-	storeDb, err := store.NewStore(cfg.DbConfig.Path, cfg.DbConfig.Cache, cfg.DbConfig.Handler, "zkbtc", false)
+	//todo
+	dbPath := fmt.Sprintf("%s/%s", cfg.NodeConfig.DataDir, cfg.NodeConfig.Network)
+	storeDb, err := store.NewStore(dbPath, cfg.DbConfig.Cache, cfg.DbConfig.Handler, "zkbtc", false)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

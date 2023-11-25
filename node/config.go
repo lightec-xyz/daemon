@@ -1,9 +1,9 @@
 package node
 
 type Config struct {
-	NodeConfig  NodeConfig   `yaml:"bitcoin"`
-	DFinity     DFinity      `yaml:"dfinity"`
-	DbConfig    DbConfig     `json:"db_config"`
+	NodeConfig  NodeConfig   `json:"node"`
+	DFinity     DFinity      `json:"dfinity"`
+	DbConfig    DbConfig     `json:"db"`
 	SeverConfig ServerConfig `json:"sever_config"`
 }
 
@@ -19,16 +19,18 @@ type DbConfig struct {
 }
 
 type NodeConfig struct {
-	//b
+	DataDir         string `json:"datadir"`
+	Network         string `json:"network"`
+	Rpcbind         string `json:"rpcbind"`
+	RpcPort         string `json:"rpcport"`
 	BtcUrl          string `json:"btcUrl"`
 	BtcUser         string `json:"btcUser"`
 	BtcPwd          string `json:"btcPwd"`
 	BtcNetwork      string `json:"btcNetwork"`
 	BTcBtcBlockTime int64  `json:"btcBlockTime"`
 	BtcOperatorAddr string `json:"btcOperatorAddr"`
-	//eth
-	EthUrl       string `json:"ethUrl"`
-	EthBlockTime int64  `json:"ethBlockTime"`
+	EthUrl          string `json:"ethUrl"`
+	EthBlockTime    int64  `json:"ethBlockTime"`
 }
 
 type EthConfig struct {
@@ -53,7 +55,7 @@ func localDevDaemonConfig() Config {
 			BtcPwd:          "abcd1234",
 			BtcNetwork:      "regtest",
 			BTcBtcBlockTime: 15,
-			BtcOperatorAddr: "user",
+			BtcOperatorAddr: "testOperatorAddr",
 
 			EthUrl:       "",
 			EthBlockTime: 15,

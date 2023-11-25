@@ -1,0 +1,16 @@
+{
+  "node": {
+    "datadir": "/Users/red/.daemon",
+    "network": "testnet",
+    "rpcbind": "127.0.0.1",
+    "rpcport": "8899",
+    "btcUrl": "http://127.0.0.1:8332",
+    "btcUser": "lightec",
+    "btcPwd": "abcd1234",
+    "btcNetwork": "regtest",
+    "btcBlockTime": 15,
+    "btcOperatorAddr": "",
+    "ethUrl": "http://127.0.0.1:8332",
+    "ethBlockTime": 15
+  }
+}
