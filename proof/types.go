@@ -11,6 +11,15 @@ type BtcProofRequest struct {
 	TxId string
 }
 
+type BtcProofResponse struct {
+}
+
 type EthProofRequest struct {
 	TxId string
+}
+
+type EthProofResponse struct {
+}
+
+type ProofInfo struct {
 }
