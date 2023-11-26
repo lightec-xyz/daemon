@@ -3,11 +3,11 @@ package proof
 import "github.com/lightec-xyz/daemon/store"
 
 type Manager struct {
-	store       *store.Store
-	memoryStore *store.MemoryStore
+	store       store.IStore
+	memoryStore store.IStore
 }
 
-func NewManager(store *store.Store, memoryStore *store.MemoryStore) *Manager {
+func NewManager(store store.IStore, memoryStore store.IStore) *Manager {
 	return &Manager{
 		store:       store,
 		memoryStore: memoryStore,

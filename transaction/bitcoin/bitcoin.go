@@ -1,4 +1,11 @@
 package bitcoin
 
-type TransactionBuilder struct {
+func CreateSimpleTransaction() (string, error) {
+
+	return "", nil
+}
+
+func CreateMultiTransaction() (string, error) {
+
+	return "", nil
 }

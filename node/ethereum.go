@@ -14,13 +14,13 @@ import (
 type EthereumAgent struct {
 	btcClient   *bitcoin.Client
 	ethClient   *ethereum.Client
-	store       *store.Store
+	store       store.IStore
+	memoryStore store.IStore
 	name        string
-	memoryStore *store.MemoryStore
 	blockTime   time.Duration
 }
 
-func NewEthereumAgent(cfg NodeConfig, btcClient *bitcoin.Client, ethClient *ethereum.Client, store *store.Store, memoryStore *store.MemoryStore) (IAgent, error) {
+func NewEthereumAgent(cfg NodeConfig, btcClient *bitcoin.Client, ethClient *ethereum.Client, store store.IStore, memoryStore store.IStore) (IAgent, error) {
 	return &EthereumAgent{
 		btcClient:   btcClient,
 		ethClient:   ethClient,

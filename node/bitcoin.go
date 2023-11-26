@@ -14,14 +14,14 @@ import (
 type BitcoinAgent struct {
 	btcClient   *bitcoin.Client
 	ethClient   *ethereum.Client
-	store       *store.Store
-	memoryStore *store.MemoryStore
+	store       store.IStore
+	memoryStore store.IStore
 	blockTime   time.Duration
 	operateAddr string
 }
 
 func NewBitcoinAgent(cfg NodeConfig, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	store *store.Store, memoryStore *store.MemoryStore) (IAgent, error) {
+	store store.IStore, memoryStore store.IStore) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:   btcClient,
 		ethClient:   ethClient,

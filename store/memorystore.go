@@ -5,6 +5,8 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 )
 
+var _ IStore = (*MemoryStore)(nil)
+
 type MemoryStore struct {
 	memoryDb *MemoryDb
 }
@@ -108,4 +110,8 @@ func (m *MemoryStore) BatchDeleteObj(key interface{}) error {
 		return err
 	}
 	return m.BatchDelete(bytesKey)
+}
+
+func (m *MemoryStore) BatchWriteObj() error {
+	return m.BatchWrite()
 }

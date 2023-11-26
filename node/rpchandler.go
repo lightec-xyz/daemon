@@ -5,13 +5,15 @@ import (
 	"github.com/lightec-xyz/daemon/store"
 )
 
+var _ API = (*Handler)(nil)
+
 type Handler struct {
 	//todo
-	store    *store.Store
-	memoryDb *store.MemoryStore
+	store    store.IStore
+	memoryDb store.IStore
 }
 
-func NewHandler(store *store.Store, memoryDb *store.MemoryStore) *Handler {
+func NewHandler(store store.IStore, memoryDb store.IStore) *Handler {
 	return &Handler{
 		store:    store,
 		memoryDb: memoryDb,

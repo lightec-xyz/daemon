@@ -5,6 +5,8 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 )
 
+var var_ IStore = (*Store)(nil)
+
 type Store struct {
 	levelDb *LevelDb
 }
@@ -117,6 +119,9 @@ func (s *Store) BatchDeleteObj(key interface{}) error {
 	return s.BatchDelete(bytesKey)
 }
 
+func (s *Store) BatchWriteObj() error {
+	return s.BatchWrite()
+}
 func keyParse(key interface{}) ([]byte, error) {
 	//todo
 	keyBytes, err := codec.Marshal(key)

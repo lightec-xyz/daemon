@@ -23,3 +23,6 @@ type EthProofResponse struct {
 
 type ProofInfo struct {
 }
+
+type ProofStatus struct {
+}
