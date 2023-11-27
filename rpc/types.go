@@ -14,6 +14,8 @@ type Task struct {
 type ProofRequest struct {
 	TxId    string `json:"txId"`
 	EthAddr string `json:"ethAddr"`
+	Proof   string `json:"proof"`
+	Msg     string `json:"msg"`
 }
 
 type BtcProofResponse struct {
@@ -24,15 +26,24 @@ type BtcProofResponse struct {
 }
 
 type EthProofRequest struct {
-	TxId   string
-	Status int
+	TxId    string `json:"txId"`
+	EthAddr string `json:"ethAddr"`
+	Proof   string `json:"proof"`
+	Msg     string `json:"msg"`
 }
 
 type EthProofResponse struct {
+	TxId   string
+	Status int
+	Msg    string
+	Proof  string
 }
 
 type ProofInfo struct {
+	Version string
 }
 
 type ProofStatus struct {
+	State int    `json:"state"`
+	Msg   string `json:"msg"`
 }

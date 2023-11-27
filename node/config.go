@@ -31,6 +31,7 @@ type NodeConfig struct {
 	BtcOperatorAddr string `json:"btcOperatorAddr"`
 	EthUrl          string `json:"ethUrl"`
 	EthBlockTime    int64  `json:"ethBlockTime"`
+	ProofUrl        string `json:"proofUrl"`
 }
 
 type EthConfig struct {

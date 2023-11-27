@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
@@ -16,17 +17,19 @@ type BitcoinAgent struct {
 	ethClient   *ethereum.Client
 	store       store.IStore
 	memoryStore store.IStore
+	proofClient rpc.ProofAPI
 	blockTime   time.Duration
 	operateAddr string
 }
 
-func NewBitcoinAgent(cfg NodeConfig, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	store store.IStore, memoryStore store.IStore) (IAgent, error) {
+func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore,
+	btcClient *bitcoin.Client, ethClient *ethereum.Client, proofClient rpc.ProofAPI) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:   btcClient,
 		ethClient:   ethClient,
 		store:       store,
 		memoryStore: memoryStore,
+		proofClient: proofClient,
 		blockTime:   time.Duration(cfg.BTcBtcBlockTime) * time.Second,
 		operateAddr: cfg.BtcOperatorAddr,
 	}, nil

@@ -44,6 +44,11 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
+	proorClient, err := rpc.NewProofClient(cfg.NodeConfig.ProofUrl)
+	if err != nil {
+		logger.Error("new proofClient error:%v", err)
+		return nil, err
+	}
 	//todo
 	dbPath := fmt.Sprintf("%s/%s", cfg.NodeConfig.DataDir, cfg.NodeConfig.Network)
 	storeDb, err := store.NewStore(dbPath, cfg.DbConfig.Cache, cfg.DbConfig.Handler, "zkbtc", false)
@@ -52,17 +57,17 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, btcClient, ethClient, storeDb, memoryStore)
+	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, btcClient, ethClient, storeDb, memoryStore)
+	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	rpcHandler := NewHandler(storeDb, memoryStore)
+	rpcHandler := NewHandler(storeDb, memoryStore, proorClient)
 	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.SeverConfig.IP, cfg.SeverConfig.Port), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
@@ -96,6 +101,7 @@ func (d *Daemon) Run() error {
 	ch := make(chan os.Signal, 1)
 	for _, node := range d.agents {
 		go func(tNode IAgent) {
+			//todo
 			ticker := time.NewTicker(tNode.BlockTime())
 			defer ticker.Stop()
 			for {

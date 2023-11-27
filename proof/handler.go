@@ -20,7 +20,10 @@ func NewHandler(store store.IStore, memoryStore store.IStore) *Handler {
 }
 
 func (h *Handler) Info() (rpc.ProofInfo, error) {
-	panic("implement me")
+	info := rpc.ProofInfo{
+		Version: "1.2.3",
+	}
+	return info, nil
 }
 
 func (h *Handler) GenBtcProof(request rpc.ProofRequest) (rpc.BtcProofResponse, error) {
@@ -35,9 +38,21 @@ func (h *Handler) GenBtcProof(request rpc.ProofRequest) (rpc.BtcProofResponse, e
 }
 
 func (h *Handler) GenEthProof(request rpc.EthProofRequest) (rpc.EthProofResponse, error) {
-	panic("implement me")
+	//todo
+	response := rpc.EthProofResponse{
+		TxId:   request.TxId,
+		Status: 0,
+		Msg:    "ok",
+		Proof:  "test proof",
+	}
+	return response, nil
 }
 
 func (h *Handler) ProofStatus(proofId string) (rpc.ProofStatus, error) {
-	panic("implement me")
+	//todo
+	status := rpc.ProofStatus{
+		State: 0,
+		Msg:   "ok",
+	}
+	return status, nil
 }

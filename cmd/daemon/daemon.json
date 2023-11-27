@@ -11,6 +11,7 @@
     "btcBlockTime": 15,
     "btcOperatorAddr": "",
     "ethUrl": "http://127.0.0.1:8332",
-    "ethBlockTime": 15
+    "ethBlockTime": 15,
+    "proofUrl": "http://127.0.0.1:8485"
   }
 }

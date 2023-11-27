@@ -10,14 +10,16 @@ var _ rpc.NodeAPI = (*Handler)(nil)
 
 type Handler struct {
 	//todo
-	store    store.IStore
-	memoryDb store.IStore
+	store       store.IStore
+	memoryDb    store.IStore
+	proofClient rpc.ProofAPI
 }
 
-func NewHandler(store store.IStore, memoryDb store.IStore) *Handler {
+func NewHandler(store, memoryDb store.IStore, client rpc.ProofAPI) *Handler {
 	return &Handler{
-		store:    store,
-		memoryDb: memoryDb,
+		store:       store,
+		memoryDb:    memoryDb,
+		proofClient: client,
 	}
 }
 

@@ -40,7 +40,7 @@ func (p *ProofClient) GenBtcProof(request ProofRequest) (BtcProofResponse, error
 		Msg:    "ok",
 		Proof:  "test proof",
 	}
-	err := p.call(response, "zkbtc_genBtcProof", request)
+	err := p.call(&response, "zkbtc_genBtcProof", request)
 	if err != nil {
 		return response, err
 	}
