@@ -1,8 +1,11 @@
 package proof
 
-import "github.com/lightec-xyz/daemon/store"
+import (
+	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/store"
+)
 
-var _ API = (*Handler)(nil)
+var _ rpc.ProofAPI = (*Handler)(nil)
 
 type Handler struct {
 	store       store.IStore
@@ -16,18 +19,25 @@ func NewHandler(store store.IStore, memoryStore store.IStore) *Handler {
 	}
 }
 
-func (h *Handler) Info() (ProofInfo, error) {
+func (h *Handler) Info() (rpc.ProofInfo, error) {
 	panic("implement me")
 }
 
-func (h *Handler) GenBtcProof(request BtcProofRequest) (BtcProofResponse, error) {
+func (h *Handler) GenBtcProof(request rpc.ProofRequest) (rpc.BtcProofResponse, error) {
+	//todo
+	response := rpc.BtcProofResponse{
+		TxId:   request.TxId,
+		Status: 0,
+		Msg:    "ok",
+		Proof:  "test proof",
+	}
+	return response, nil
+}
+
+func (h *Handler) GenEthProof(request rpc.EthProofRequest) (rpc.EthProofResponse, error) {
 	panic("implement me")
 }
 
-func (h *Handler) GenEthProof(request EthProofRequest) (EthProofResponse, error) {
-	panic("implement me")
-}
-
-func (h *Handler) ProofStatus(proofId string) (ProofStatus, error) {
+func (h *Handler) ProofStatus(proofId string) (rpc.ProofStatus, error) {
 	panic("implement me")
 }

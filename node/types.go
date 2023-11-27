@@ -22,8 +22,3 @@ type TxProof struct {
 	Proof  string
 	Status int
 }
-
-type DaemonInfo struct {
-	Version string
-	Desc    string
-}

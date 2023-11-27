@@ -2,10 +2,11 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
 )
 
-var _ API = (*Handler)(nil)
+var _ rpc.NodeAPI = (*Handler)(nil)
 
 type Handler struct {
 	//todo
@@ -20,8 +21,8 @@ func NewHandler(store store.IStore, memoryDb store.IStore) *Handler {
 	}
 }
 
-func (h *Handler) Version() (DaemonInfo, error) {
-	return DaemonInfo{}, nil
+func (h *Handler) Version() (*rpc.DaemonInfo, error) {
+	return &rpc.DaemonInfo{}, nil
 }
 
 func (h *Handler) HelloWorld(name *string, age *int) (string, error) {

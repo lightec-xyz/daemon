@@ -37,6 +37,7 @@ func NewServer(addr string, handler interface{}) (*Server, error) {
 }
 
 func (s *Server) Shutdown() error {
+
 	if s.server != nil {
 		err := s.server.Shutdown(context.TODO())
 		if err != nil {

@@ -1,31 +1,45 @@
 package rpc
 
 import (
+	"context"
+	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/lightec-xyz/daemon/node"
+	"reflect"
+	"time"
 )
 
-var _ node.API = (*Client)(nil)
+var _ NodeAPI = (*NodeClient)(nil)
 
-type Client struct {
+type NodeClient struct {
 	*rpc.Client
 }
 
-func (c *Client) Version() (node.DaemonInfo, error) {
-	var info node.DaemonInfo
-	err := c.Client.Call(&info, "version")
+func (c *NodeClient) Version() (*DaemonInfo, error) {
+	info := DaemonInfo{}
+	err := c.call(info, "version")
 	if err != nil {
-		return info, err
+		return nil, err
 	}
-	return info, nil
+	return nil, err
+
 }
 
-func NewClient(url string) (*Client, error) {
+func NewClient(url string) (*NodeClient, error) {
 	client, err := rpc.DialHTTP(url)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{
+	return &NodeClient{
 		client,
 	}, nil
+}
+
+func (c *NodeClient) call(result interface{}, method string, args ...interface{}) error {
+	vi := reflect.ValueOf(result)
+	if vi.Kind() != reflect.Ptr {
+		return fmt.Errorf("result must be pointer")
+	}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelFunc()
+	return c.CallContext(ctx, result, method, args)
 }
