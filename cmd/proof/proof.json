@@ -4,6 +4,6 @@
     "network": "testnet",
     "rpcbind": "127.0.0.1",
     "rpcport": "88888",
-    "maxTaskNums": 10
+    "parallelNums": 3
   }
 }

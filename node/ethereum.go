@@ -63,7 +63,7 @@ func (e *EthereumAgent) getEthHeight() (int64, error) {
 	return curHeight, nil
 }
 
-func (e *EthereumAgent) Run() error {
+func (e *EthereumAgent) ScanBlock() error {
 	ethHeight, err := e.getEthHeight()
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
@@ -81,20 +81,50 @@ func (e *EthereumAgent) Run() error {
 	}
 	for index := ethHeight + 1; index <= int64(blockNumber); index++ {
 		logger.Info("decode block %d", index)
-		depositTxList, err := e.parseBlock(index)
+		redeemTxList, err := e.parseBlock(index)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
 		}
-		err = e.persistData(index, depositTxList)
+		err = e.persistData(index, redeemTxList)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
 		}
 		// todo proof
+		err = e.GenProof(redeemTxList)
+		if err != nil {
+			logger.Error("gen redeem proof error:%v", err)
+			return err
+		}
 
 	}
 	return nil
+}
+
+func (e *EthereumAgent) GenProof(redeemTxList []RedeemTx) error {
+	for _, tx := range redeemTxList {
+		//todo
+		response, err := e.proofClient.GenZkProof(rpc.ProofRequest{
+			TxId: tx.TxId,
+		})
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+		err = e.RedeemBtcTx(response)
+		if err != nil {
+			logger.Error("redeem btc tx error:%v", err)
+			return err
+		}
+	}
+	return nil
+
+}
+
+func (e *EthereumAgent) RedeemBtcTx(resp rpc.ProofResponse) error {
+	//todo
+	panic("implement me")
 }
 
 func (e *EthereumAgent) persistData(index int64, list []RedeemTx) error {
@@ -157,6 +187,11 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, error) {
 func (e *EthereumAgent) CheckRedeemTx(tx ethrpc.Transaction) (RedeemTx, bool, error) {
 	//todo
 	return RedeemTx{}, true, nil
+}
+
+func (e *EthereumAgent) CheckProof() error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (e *EthereumAgent) Close() error {

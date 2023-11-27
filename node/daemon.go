@@ -14,7 +14,9 @@ import (
 )
 
 type IAgent interface {
-	Run() error
+	ScanBlock() error
+	//todo
+	CheckProof() error
 	Init() error
 	Close() error
 	Name() string
@@ -51,7 +53,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	//todo
 	dbPath := fmt.Sprintf("%s/%s", cfg.NodeConfig.DataDir, cfg.NodeConfig.Network)
-	storeDb, err := store.NewStore(dbPath, cfg.DbConfig.Cache, cfg.DbConfig.Handler, "zkbtc", false)
+	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -107,7 +109,7 @@ func (d *Daemon) Run() error {
 			for {
 				select {
 				case <-ticker.C:
-					err := tNode.Run()
+					err := tNode.ScanBlock()
 					if err != nil {
 						logger.Error("% run error %v", tNode.Name(), err)
 					}

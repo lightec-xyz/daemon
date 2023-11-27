@@ -15,16 +15,17 @@ type Handler struct {
 	proofClient rpc.ProofAPI
 }
 
+func (h *Handler) Version() (rpc.NodeInfo, error) {
+	daemonInfo := rpc.NodeInfo{}
+	return daemonInfo, nil
+}
+
 func NewHandler(store, memoryDb store.IStore, client rpc.ProofAPI) *Handler {
 	return &Handler{
 		store:       store,
 		memoryDb:    memoryDb,
 		proofClient: client,
 	}
-}
-
-func (h *Handler) Version() (*rpc.DaemonInfo, error) {
-	return &rpc.DaemonInfo{}, nil
 }
 
 func (h *Handler) HelloWorld(name *string, age *int) (string, error) {

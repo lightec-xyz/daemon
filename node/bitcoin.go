@@ -19,6 +19,7 @@ type BitcoinAgent struct {
 	memoryStore store.IStore
 	proofClient rpc.ProofAPI
 	blockTime   time.Duration
+	schedule    *Schedule
 	operateAddr string
 }
 
@@ -65,7 +66,7 @@ func (b *BitcoinAgent) getCurrentHeight() (int64, error) {
 
 }
 
-func (b *BitcoinAgent) Run() error {
+func (b *BitcoinAgent) ScanBlock() error {
 	curHeight, err := b.getCurrentHeight()
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
@@ -94,10 +95,37 @@ func (b *BitcoinAgent) Run() error {
 			return err
 		}
 		//todo gen proof
-
+		err = b.genProof(depositTxList)
+		if err != nil {
+			logger.Error("gen proof error:%v", err)
+			return err
+		}
 	}
 	return nil
+}
 
+func (b *BitcoinAgent) genProof(depositTxList []DepositTx) error {
+	for _, tx := range depositTxList {
+		//todo
+		response, err := b.proofClient.GenZkProof(rpc.ProofRequest{
+			TxId: tx.TxId,
+		})
+		if err != nil {
+			logger.Error("rpc gen proof error:%v %v", err, tx.TxId)
+			return err
+		}
+		err = b.MintZKBtcTx(response)
+		if err != nil {
+			logger.Error("mint zkbtc tx error:%v", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *BitcoinAgent) MintZKBtcTx(resp rpc.ProofResponse) error {
+	//todo
+	panic("implement me")
 }
 
 func (b *BitcoinAgent) persistData(height int64, depositTxList []DepositTx) error {
@@ -182,6 +210,12 @@ func (b *BitcoinAgent) parseTx(outList []types.TxOut) (DepositTx, bool, error) {
 	}
 	//todo
 	return DepositTx{}, true, nil
+}
+
+// todo websocket push
+
+func (b *BitcoinAgent) CheckProof() error {
+	panic("implement me")
 }
 
 func (b *BitcoinAgent) Close() error {

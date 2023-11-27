@@ -1,6 +1,6 @@
 package rpc
 
-type DaemonInfo struct {
+type NodeInfo struct {
 	Version string
 	Desc    string
 }
@@ -18,7 +18,7 @@ type ProofRequest struct {
 	Msg     string `json:"msg"`
 }
 
-type BtcProofResponse struct {
+type ProofResponse struct {
 	TxId   string
 	Status int
 	Msg    string

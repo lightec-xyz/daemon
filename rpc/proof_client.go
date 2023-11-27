@@ -32,9 +32,9 @@ func (p *ProofClient) ProofStatus(proofId string) (ProofStatus, error) {
 	return status, nil
 }
 
-func (p *ProofClient) GenBtcProof(request ProofRequest) (BtcProofResponse, error) {
+func (p *ProofClient) GenZkProof(request ProofRequest) (ProofResponse, error) {
 	//todo
-	response := BtcProofResponse{
+	response := ProofResponse{
 		TxId:   request.TxId,
 		Status: 0,
 		Msg:    "ok",

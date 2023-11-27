@@ -1,12 +1,12 @@
 package rpc
 
 type NodeAPI interface {
-	Version() (*DaemonInfo, error)
+	Version() (NodeInfo, error)
 }
 
 type ProofAPI interface {
 	Info() (ProofInfo, error)
-	GenBtcProof(request ProofRequest) (BtcProofResponse, error)
+	GenZkProof(request ProofRequest) (ProofResponse, error)
 	GenEthProof(request EthProofRequest) (EthProofResponse, error)
 	ProofStatus(proofId string) (ProofStatus, error)
 }

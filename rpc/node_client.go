@@ -14,13 +14,13 @@ type NodeClient struct {
 	*rpc.Client
 }
 
-func (c *NodeClient) Version() (*DaemonInfo, error) {
-	info := DaemonInfo{}
-	err := c.call(info, "version")
+func (c *NodeClient) Version() (NodeInfo, error) {
+	info := NodeInfo{}
+	err := c.call(&info, "version")
 	if err != nil {
-		return nil, err
+		return info, err
 	}
-	return nil, err
+	return info, err
 
 }
 

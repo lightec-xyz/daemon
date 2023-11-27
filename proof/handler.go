@@ -26,9 +26,9 @@ func (h *Handler) Info() (rpc.ProofInfo, error) {
 	return info, nil
 }
 
-func (h *Handler) GenBtcProof(request rpc.ProofRequest) (rpc.BtcProofResponse, error) {
+func (h *Handler) GenZkProof(request rpc.ProofRequest) (rpc.ProofResponse, error) {
 	//todo
-	response := rpc.BtcProofResponse{
+	response := rpc.ProofResponse{
 		TxId:   request.TxId,
 		Status: 0,
 		Msg:    "ok",

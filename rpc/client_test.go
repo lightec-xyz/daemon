@@ -9,7 +9,7 @@ func TestProofClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	btcProofResponse, err := client.GenBtcProof(ProofRequest{
+	btcProofResponse, err := client.GenZkProof(ProofRequest{
 		TxId:    "test",
 		EthAddr: "test",
 	})
