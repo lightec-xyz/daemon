@@ -3,28 +3,25 @@ package node
 import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
-	"github.com/lightec-xyz/daemon/store"
 	"sort"
 )
 
 type Schedule struct {
-	Workers     []IWorker
-	store       store.IStore
-	memoryStore store.IStore
+	Workers []IWorker
 }
 
-func NewSchedule(store, memoryStore store.IStore, worker ...IWorker) *Schedule {
+func NewSchedule(workers ...IWorker) *Schedule {
 	return &Schedule{
-		store:       store,
-		memoryStore: memoryStore,
-		Workers:     worker,
+		Workers: workers,
 	}
 }
 
-func (m *Schedule) GenZKProof(worker IWorker, req rpc.ProofRequest) (rpc.ProofResponse, error) {
+func (m *Schedule) GenZKProof(worker IWorker, req ProofRequest) (rpc.ProofResponse, error) {
 	worker.Add()
 	defer worker.Del()
-	proofResponse, err := worker.GenProof(req)
+	proofResponse, err := worker.GenProof(rpc.ProofRequest{
+		TxId: req.TxId,
+	})
 	if err != nil {
 		logger.Error("gen zk proof error:%v", err)
 		return rpc.ProofResponse{}, err
@@ -34,7 +31,8 @@ func (m *Schedule) GenZKProof(worker IWorker, req rpc.ProofRequest) (rpc.ProofRe
 }
 
 func (m *Schedule) findBestWorker() (IWorker, bool, error) {
-	//todo
+	// todo
+
 	var tmpWorkers []IWorker
 	for _, worker := range m.Workers {
 		if worker.CurrentNums() < worker.ParallelNums() {

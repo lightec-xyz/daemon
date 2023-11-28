@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
@@ -17,21 +16,19 @@ type EthereumAgent struct {
 	ethClient     *ethereum.Client
 	store         store.IStore
 	memoryStore   store.IStore
-	proofClient   rpc.ProofAPI
 	name          string
 	blockTime     time.Duration
-	proofResponse chan []ProofResponse
+	proofResponse <-chan ProofResponse
 	proofRequest  chan []ProofRequest
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	proofClient rpc.ProofAPI, proofRequest chan []ProofRequest, proofResponse chan []ProofResponse) (IAgent, error) {
+	proofRequest chan []ProofRequest, proofResponse <-chan ProofResponse) (IAgent, error) {
 	return &EthereumAgent{
 		btcClient:     btcClient,
 		ethClient:     ethClient,
 		store:         store,
 		memoryStore:   memoryStore,
-		proofClient:   proofClient,
 		blockTime:     time.Duration(cfg.EthBlockTime) * time.Second,
 		proofRequest:  proofRequest,
 		proofResponse: proofResponse,
@@ -105,18 +102,16 @@ func (e *EthereumAgent) ScanBlock() error {
 func (e *EthereumAgent) Transfer() error {
 	for {
 		select {
-		case respList := <-e.proofResponse:
-			for _, resp := range respList {
-				err := e.RedeemBtcTx(resp)
-				if err != nil {
-					//todo
-					logger.Error("redeem btc tx error:%v", err)
-					return err
-				}
-				logger.Info("success redeem btc tx:%v", resp)
+		case response := <-e.proofResponse:
+			err := e.RedeemBtcTx(response)
+			if err != nil {
+				//todo
+				logger.Error("redeem btc tx error:%v", err)
+				return err
 			}
-
+			logger.Info("success redeem btc tx:%v", response)
 		}
+
 	}
 
 }

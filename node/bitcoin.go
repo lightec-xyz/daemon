@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
@@ -17,22 +16,20 @@ type BitcoinAgent struct {
 	ethClient     *ethereum.Client
 	store         store.IStore
 	memoryStore   store.IStore
-	proofClient   rpc.ProofAPI
 	blockTime     time.Duration
 	schedule      *Schedule
-	proofResponse chan []ProofResponse
+	proofResponse <-chan ProofResponse
 	ProofRequest  chan []ProofRequest
 	operateAddr   string
 }
 
 func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	proofClient rpc.ProofAPI, request chan []ProofRequest, response chan []ProofResponse) (IAgent, error) {
+	request chan []ProofRequest, response <-chan ProofResponse) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:     btcClient,
 		ethClient:     ethClient,
 		store:         store,
 		memoryStore:   memoryStore,
-		proofClient:   proofClient,
 		blockTime:     time.Duration(cfg.BTcBtcBlockTime) * time.Second,
 		operateAddr:   cfg.BtcOperatorAddr,
 		ProofRequest:  request,
@@ -192,17 +189,16 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 func (b *BitcoinAgent) Transfer() error {
 	for {
 		select {
-		case responseList := <-b.proofResponse:
-			for _, response := range responseList {
-				err := b.MintZKBtcTx(response)
-				if err != nil {
-					//todo
-					logger.Error("mint btc tx error:%v", err)
-					return err
-				}
-				logger.Info("success mint btc tx:%v", response)
+		case response := <-b.proofResponse:
+			err := b.MintZKBtcTx(response)
+			if err != nil {
+				//todo
+				logger.Error("mint btc tx error:%v", err)
+				return err
 			}
+			logger.Info("success mint btc tx:%v", response)
 		}
+
 	}
 }
 

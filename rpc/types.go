@@ -12,17 +12,20 @@ type Task struct {
 }
 
 type ProofRequest struct {
-	TxId    string `json:"txId"`
-	EthAddr string `json:"ethAddr"`
-	Proof   string `json:"proof"`
-	Msg     string `json:"msg"`
+	TxId   string `json:"txId"`
+	PType  string `json:"type"`
+	Proof  string `json:"proof"`
+	ToAddr string `json:"toAddr"`
+	Amount string `json:"amount"`
+	Msg    string `json:"msg"`
 }
 
 type ProofResponse struct {
-	TxId   string
-	Status int
-	Msg    string
-	Proof  string
+	TxId   string `json:"txId"`
+	Status int    `json:"status"`
+	Msg    string `json:"msg"`
+	PType  string `json:"type"`
+	Proof  string `json:"proof"`
 }
 
 type EthProofRequest struct {

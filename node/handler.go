@@ -9,10 +9,8 @@ import (
 var _ rpc.NodeAPI = (*Handler)(nil)
 
 type Handler struct {
-	//todo
-	store       store.IStore
-	memoryDb    store.IStore
-	proofClient rpc.ProofAPI
+	store    store.IStore
+	memoryDb store.IStore
 }
 
 func (h *Handler) Version() (rpc.NodeInfo, error) {
@@ -20,11 +18,10 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 	return daemonInfo, nil
 }
 
-func NewHandler(store, memoryDb store.IStore, client rpc.ProofAPI) *Handler {
+func NewHandler(store, memoryDb store.IStore) *Handler {
 	return &Handler{
-		store:       store,
-		memoryDb:    memoryDb,
-		proofClient: client,
+		store:    store,
+		memoryDb: memoryDb,
 	}
 }
 

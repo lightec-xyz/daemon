@@ -15,7 +15,6 @@ import (
 
 type IAgent interface {
 	ScanBlock() error
-	//todo
 	Transfer() error
 	Init() error
 	Close() error
@@ -28,6 +27,7 @@ type Daemon struct {
 	server     *rpc.Server
 	nodeConfig NodeConfig
 	exitSignal chan struct{}
+	manager    *Manager
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
@@ -46,12 +46,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
-	proorClient, err := rpc.NewProofClient(cfg.NodeConfig.ProofUrl)
-	if err != nil {
-		logger.Error("new proofClient error:%v", err)
-		return nil, err
-	}
-	//todo
 	dbPath := fmt.Sprintf("%s/%s", cfg.NodeConfig.DataDir, cfg.NodeConfig.Network)
 	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
@@ -59,20 +53,26 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	proofRequest := make(chan []ProofRequest, 10000)
-	proofResponse := make(chan []ProofResponse, 1000)
-
+	btcProofResp := make(chan ProofResponse, 1000)
+	ethProofResp := make(chan ProofResponse, 1000)
 	memoryStore := store.NewMemoryStore()
-	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient, proofRequest, proofResponse)
+	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient, proofRequest, proofResponse)
+	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proofRequest, ethProofResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	rpcHandler := NewHandler(storeDb, memoryStore, proorClient)
+	workers, err := NewWorkers(cfg.NodeConfig.Workers)
+	if err != nil {
+		logger.Error("new workers error:%v", err)
+		return nil, err
+	}
+	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, NewSchedule(workers...))
+	rpcHandler := NewHandler(storeDb, memoryStore)
 	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.SeverConfig.IP, cfg.SeverConfig.Port), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
@@ -83,6 +83,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		server:     server,
 		nodeConfig: cfg.NodeConfig,
 		exitSignal: make(chan struct{}, 1),
+		manager:    manager,
 	}
 	err = daemon.Init()
 	if err != nil {
@@ -154,4 +155,20 @@ func (d *Daemon) Close() error {
 		logger.Error("server shutdown error:%v", err)
 	}
 	return nil
+}
+
+//todo local worker ?
+
+func NewWorkers(workers []WorkerConfig) ([]IWorker, error) {
+	workersList := make([]IWorker, 0)
+	for _, cfg := range workers {
+		client, err := rpc.NewProofClient(cfg.ProofUrl)
+		if err != nil {
+			logger.Error("new worker error:%v", err)
+			return nil, err
+		}
+		worker := NewWorker(client, cfg.ParallelNums)
+		workersList = append(workersList, worker)
+	}
+	return workersList, nil
 }
