@@ -3,56 +3,63 @@ package node
 import (
 	"container/list"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
+	"sync"
 )
 
 type Manager struct {
-	proofQueue    *list.List
+	proofQueue    *SafeList
 	schedule      *Schedule
 	store         store.IStore
 	memory        store.IStore
-	proofRequest  chan rpc.ProofRequest
-	proofResponse chan rpc.ProofResponse
+	proofRequest  chan []ProofRequest
+	proofResponse chan []ProofResponse
 }
 
-func NewManager(store, memory store.IStore, schedule *Schedule) *Manager {
+func NewManager(proofRequest chan []ProofRequest, proofResponse chan []ProofResponse, store, memory store.IStore, schedule *Schedule) *Manager {
 	return &Manager{
-		proofQueue:    list.New(),
+		proofQueue:    NewSafeList(),
 		schedule:      schedule,
 		store:         store,
 		memory:        memory,
-		proofRequest:  make(chan rpc.ProofRequest, 1000),
-		proofResponse: make(chan rpc.ProofResponse, 100),
+		proofRequest:  proofRequest,
+		proofResponse: proofResponse,
 	}
 }
 
-func (m *Manager) Close() {
+func (m *Manager) Run() {
 	//todo
 	for {
 		select {
-		case request := <-m.proofRequest:
-			worker, find, err := m.schedule.findBestWorker()
-			if err != nil {
-				logger.Error("find best worker error:%v", err)
-				continue
+		case requestList := <-m.proofRequest:
+			for _, req := range requestList {
+				logger.Debug("manager receive proof request:%v", req)
+				m.proofQueue.PushBack(req)
 			}
-			if !find {
-				logger.Warn("no find best worker,wait now ")
-				continue
-			}
-			go func() {
-				proofResponse, err := m.schedule.GenZKProof(worker, request)
-				if err != nil {
-					// todo retry
-					
-					logger.Error("worker gen proof error:%v", err)
-					return
-				}
-				logger.Info("success gen zk proof:%v", proofResponse)
-				m.proofResponse <- proofResponse
-			}()
 		}
 	}
+}
 
+type SafeList struct {
+	list *list.List
+	mu   sync.Mutex
+}
+
+func NewSafeList() *SafeList {
+	return &SafeList{
+		list: list.New(),
+		mu:   sync.Mutex{},
+	}
+}
+
+func (sl *SafeList) PushBack(value interface{}) {
+	sl.mu.Lock()
+	defer sl.mu.Unlock()
+	sl.list.PushBack(value)
+}
+
+func (sl *SafeList) PushFront(value interface{}) {
+	sl.mu.Lock()
+	defer sl.mu.Unlock()
+	sl.list.PushFront(value)
 }

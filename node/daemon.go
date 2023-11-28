@@ -16,7 +16,7 @@ import (
 type IAgent interface {
 	ScanBlock() error
 	//todo
-	CheckProof() error
+	Transfer() error
 	Init() error
 	Close() error
 	Name() string
@@ -58,13 +58,16 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	proofRequest := make(chan []ProofRequest, 10000)
+	proofResponse := make(chan []ProofResponse, 1000)
+
 	memoryStore := store.NewMemoryStore()
-	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient)
+	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient, proofRequest, proofResponse)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient)
+	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proorClient, proofRequest, proofResponse)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -111,7 +114,7 @@ func (d *Daemon) Run() error {
 				case <-ticker.C:
 					err := tNode.ScanBlock()
 					if err != nil {
-						logger.Error("% run error %v", tNode.Name(), err)
+						logger.Error("%v run error %v", tNode.Name(), err)
 					}
 				case <-d.exitSignal:
 					return

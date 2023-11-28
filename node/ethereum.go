@@ -13,24 +13,28 @@ import (
 )
 
 type EthereumAgent struct {
-	btcClient   *bitcoin.Client
-	ethClient   *ethereum.Client
-	store       store.IStore
-	memoryStore store.IStore
-	proofClient rpc.ProofAPI
-	name        string
-	blockTime   time.Duration
+	btcClient     *bitcoin.Client
+	ethClient     *ethereum.Client
+	store         store.IStore
+	memoryStore   store.IStore
+	proofClient   rpc.ProofAPI
+	name          string
+	blockTime     time.Duration
+	proofResponse chan []ProofResponse
+	proofRequest  chan []ProofRequest
 }
 
-func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore,
-	btcClient *bitcoin.Client, ethClient *ethereum.Client, proofClient rpc.ProofAPI) (IAgent, error) {
+func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
+	proofClient rpc.ProofAPI, proofRequest chan []ProofRequest, proofResponse chan []ProofResponse) (IAgent, error) {
 	return &EthereumAgent{
-		btcClient:   btcClient,
-		ethClient:   ethClient,
-		store:       store,
-		memoryStore: memoryStore,
-		proofClient: proofClient,
-		blockTime:   time.Duration(cfg.EthBlockTime) * time.Second,
+		btcClient:     btcClient,
+		ethClient:     ethClient,
+		store:         store,
+		memoryStore:   memoryStore,
+		proofClient:   proofClient,
+		blockTime:     time.Duration(cfg.EthBlockTime) * time.Second,
+		proofRequest:  proofRequest,
+		proofResponse: proofResponse,
 	}, nil
 }
 
@@ -81,7 +85,7 @@ func (e *EthereumAgent) ScanBlock() error {
 	}
 	for index := ethHeight + 1; index <= int64(blockNumber); index++ {
 		logger.Info("decode block %d", index)
-		redeemTxList, err := e.parseBlock(index)
+		redeemTxList, proofRequestList, err := e.parseBlock(index)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
@@ -91,38 +95,33 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error(err.Error())
 			return err
 		}
-		// todo proof
-		err = e.GenProof(redeemTxList)
-		if err != nil {
-			logger.Error("gen redeem proof error:%v", err)
-			return err
-		}
+
+		e.proofRequest <- proofRequestList
 
 	}
 	return nil
 }
 
-func (e *EthereumAgent) GenProof(redeemTxList []RedeemTx) error {
-	for _, tx := range redeemTxList {
-		//todo
-		response, err := e.proofClient.GenZkProof(rpc.ProofRequest{
-			TxId: tx.TxId,
-		})
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-		err = e.RedeemBtcTx(response)
-		if err != nil {
-			logger.Error("redeem btc tx error:%v", err)
-			return err
+func (e *EthereumAgent) Transfer() error {
+	for {
+		select {
+		case respList := <-e.proofResponse:
+			for _, resp := range respList {
+				err := e.RedeemBtcTx(resp)
+				if err != nil {
+					//todo
+					logger.Error("redeem btc tx error:%v", err)
+					return err
+				}
+				logger.Info("success redeem btc tx:%v", resp)
+			}
+
 		}
 	}
-	return nil
 
 }
 
-func (e *EthereumAgent) RedeemBtcTx(resp rpc.ProofResponse) error {
+func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 	//todo
 	panic("implement me")
 }
@@ -163,35 +162,37 @@ func (e *EthereumAgent) persistData(index int64, list []RedeemTx) error {
 
 }
 
-func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, error) {
+func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, error) {
 	block, err := e.ethClient.EthGetBlockByNumber(int(height), true)
 	if err != nil {
 		logger.Error("ethereum rpc get block error:%v", err)
-		return nil, err
+		return nil, nil, err
 	}
 	var redeemTxList []RedeemTx
+	var proofRequestList []ProofRequest
 	for _, tx := range block.Transactions {
 		redeemTx, ok, err := e.CheckRedeemTx(tx)
 		if err != nil {
 			logger.Error("check redeem tx error:%v", err)
-			return nil, err
+			return nil, nil, err
 		}
 		if ok {
 			logger.Info("found redeem tx: %v", redeemTx)
 			redeemTxList = append(redeemTxList, redeemTx)
+			proofRequestList = append(proofRequestList, ProofRequest{
+				TxId:   redeemTx.TxId,
+				PType:  EthereumChain,
+				ToAddr: redeemTx.Addr,
+				Amount: redeemTx.Amount,
+			})
 		}
 	}
-	return redeemTxList, nil
+	return redeemTxList, proofRequestList, nil
 }
 
 func (e *EthereumAgent) CheckRedeemTx(tx ethrpc.Transaction) (RedeemTx, bool, error) {
 	//todo
 	return RedeemTx{}, true, nil
-}
-
-func (e *EthereumAgent) CheckProof() error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (e *EthereumAgent) Close() error {

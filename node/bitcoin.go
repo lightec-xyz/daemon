@@ -13,26 +13,30 @@ import (
 )
 
 type BitcoinAgent struct {
-	btcClient   *bitcoin.Client
-	ethClient   *ethereum.Client
-	store       store.IStore
-	memoryStore store.IStore
-	proofClient rpc.ProofAPI
-	blockTime   time.Duration
-	schedule    *Schedule
-	operateAddr string
+	btcClient     *bitcoin.Client
+	ethClient     *ethereum.Client
+	store         store.IStore
+	memoryStore   store.IStore
+	proofClient   rpc.ProofAPI
+	blockTime     time.Duration
+	schedule      *Schedule
+	proofResponse chan []ProofResponse
+	ProofRequest  chan []ProofRequest
+	operateAddr   string
 }
 
-func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore,
-	btcClient *bitcoin.Client, ethClient *ethereum.Client, proofClient rpc.ProofAPI) (IAgent, error) {
+func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
+	proofClient rpc.ProofAPI, request chan []ProofRequest, response chan []ProofResponse) (IAgent, error) {
 	return &BitcoinAgent{
-		btcClient:   btcClient,
-		ethClient:   ethClient,
-		store:       store,
-		memoryStore: memoryStore,
-		proofClient: proofClient,
-		blockTime:   time.Duration(cfg.BTcBtcBlockTime) * time.Second,
-		operateAddr: cfg.BtcOperatorAddr,
+		btcClient:     btcClient,
+		ethClient:     ethClient,
+		store:         store,
+		memoryStore:   memoryStore,
+		proofClient:   proofClient,
+		blockTime:     time.Duration(cfg.BTcBtcBlockTime) * time.Second,
+		operateAddr:   cfg.BtcOperatorAddr,
+		ProofRequest:  request,
+		proofResponse: response,
 	}, nil
 }
 
@@ -84,7 +88,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
 		logger.Info("decode block %d", index)
-		depositTxList, err := b.parseBlock(index)
+		depositTxList, proofRequestList, err := b.parseBlock(index)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
@@ -94,36 +98,12 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error(err.Error())
 			return err
 		}
-		//todo gen proof
-		err = b.genProof(depositTxList)
-		if err != nil {
-			logger.Error("gen proof error:%v", err)
-			return err
-		}
+		b.ProofRequest <- proofRequestList
 	}
 	return nil
 }
 
-func (b *BitcoinAgent) genProof(depositTxList []DepositTx) error {
-	for _, tx := range depositTxList {
-		//todo
-		response, err := b.proofClient.GenZkProof(rpc.ProofRequest{
-			TxId: tx.TxId,
-		})
-		if err != nil {
-			logger.Error("rpc gen proof error:%v %v", err, tx.TxId)
-			return err
-		}
-		err = b.MintZKBtcTx(response)
-		if err != nil {
-			logger.Error("mint zkbtc tx error:%v", err)
-			return err
-		}
-	}
-	return nil
-}
-
-func (b *BitcoinAgent) MintZKBtcTx(resp rpc.ProofResponse) error {
+func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 	//todo
 	panic("implement me")
 }
@@ -175,31 +155,55 @@ func (b *BitcoinAgent) SendTxToEth(txList []DepositTx) error {
 	return nil
 }
 
-func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, error) {
+func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, error) {
 	blockHash, err := b.btcClient.GetBlockHash(height)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
+		return nil, nil, err
 	}
 	blockWithTx, err := b.btcClient.GetBlockWithTx(blockHash)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
+		return nil, nil, err
 	}
+	var proofRequestList []ProofRequest
 	var depositTxList []DepositTx
 	for _, tx := range blockWithTx.Tx {
 		depositTx, check, err := b.parseTx(tx.Vout)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, err
+			return nil, nil, err
 		}
 		if check {
 			logger.Info("found deposit tx: %v", depositTx)
 			depositTxList = append(depositTxList, depositTx)
+			proofRequestList = append(proofRequestList, ProofRequest{
+				TxId:   depositTx.TxId,
+				PType:  BitcoinChain,
+				ToAddr: depositTx.Addr,
+				Amount: depositTx.Amount,
+			})
 		}
 	}
 
-	return depositTxList, nil
+	return depositTxList, proofRequestList, nil
+}
+
+func (b *BitcoinAgent) Transfer() error {
+	for {
+		select {
+		case responseList := <-b.proofResponse:
+			for _, response := range responseList {
+				err := b.MintZKBtcTx(response)
+				if err != nil {
+					//todo
+					logger.Error("mint btc tx error:%v", err)
+					return err
+				}
+				logger.Info("success mint btc tx:%v", response)
+			}
+		}
+	}
 }
 
 // todo  check rule
@@ -210,12 +214,6 @@ func (b *BitcoinAgent) parseTx(outList []types.TxOut) (DepositTx, bool, error) {
 	}
 	//todo
 	return DepositTx{}, true, nil
-}
-
-// todo websocket push
-
-func (b *BitcoinAgent) CheckProof() error {
-	panic("implement me")
 }
 
 func (b *BitcoinAgent) Close() error {

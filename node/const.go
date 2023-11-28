@@ -3,6 +3,11 @@ package node
 // todo
 
 const (
+	BitcoinChain  = "bitcoin"
+	EthereumChain = "ethereum"
+)
+
+const (
 	BtcCurHeight = "btcCurHeight"
 	EthCurHeight = "ethCurHeight"
 )
