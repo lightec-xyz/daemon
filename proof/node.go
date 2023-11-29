@@ -1,6 +1,7 @@
 package proof
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"os"
@@ -12,8 +13,17 @@ type Node struct {
 	server *rpc.Server
 }
 
-func NewNode() (*Node, error) {
-	return &Node{}, nil
+func NewNode(cfg Config) (*Node, error) {
+	host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
+	handler := NewHandler()
+	server, err := rpc.NewWsServer(host, handler)
+	if err != nil {
+		logger.Error("new server error:%v", err)
+		return nil, err
+	}
+	return &Node{
+		server: server,
+	}, nil
 }
 
 func (node *Node) Start() error {
@@ -23,7 +33,7 @@ func (node *Node) Start() error {
 		msg := <-ch
 		switch msg {
 		case syscall.SIGHUP:
-			logger.Info("daemon get SIGHUP")
+			logger.Info("node get SIGHUP")
 
 		case syscall.SIGQUIT:
 			fallthrough

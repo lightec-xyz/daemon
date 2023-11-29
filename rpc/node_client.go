@@ -41,5 +41,5 @@ func (c *NodeClient) call(result interface{}, method string, args ...interface{}
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancelFunc()
-	return c.CallContext(ctx, result, method, args)
+	return c.CallContext(ctx, result, method, args...)
 }

@@ -24,6 +24,7 @@ type NodeConfig struct {
 	BtcOperatorAddr string         `json:"btcOperatorAddr"`
 	EthUrl          string         `json:"ethUrl"`
 	EthBlockTime    int64          `json:"ethBlockTime"`
+	EthPrivateKey   string         `json:"ethPrivateKey"`
 	ProofUrl        string         `json:"proofUrl"`
 	Workers         []WorkerConfig `json:"workers"`
 }

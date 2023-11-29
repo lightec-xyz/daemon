@@ -7,7 +7,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	"github.com/onrik/ethrpc"
-	"strings"
 	"time"
 )
 
@@ -16,8 +15,8 @@ type EthereumAgent struct {
 	ethClient     *ethereum.Client
 	store         store.IStore
 	memoryStore   store.IStore
-	name          string
 	blockTime     time.Duration
+	whiteList     map[string]bool
 	proofResponse <-chan ProofResponse
 	proofRequest  chan []ProofRequest
 }
@@ -36,27 +35,26 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 }
 
 func (e *EthereumAgent) Init() error {
-	//todo
-	height, err := e.getEthHeight()
-	if err != nil && strings.Contains(err.Error(), "not found") {
-		err = e.store.PutObj(EthCurHeight, InitEthereumHeight)
+	has, err := e.store.Has(ethCurHeightKey)
+	if err != nil {
+		logger.Error("get eth current height error:%v", err)
+		return err
+	}
+	if !has {
+		err := e.store.PutObj(ethCurHeightKey, InitEthereumHeight)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("put init eth current height error:%v", err)
 			return err
 		}
 	}
-	_, err = e.ethClient.EthGetBlockByHash("", false)
-	if err != nil {
-		logger.Error("ethereum rpc error:%v", err)
-		return err
-	}
-	logger.Debug("bitcoin node init ok,latest height:%d", height)
+	//todo
+
 	return nil
 }
 
 func (e *EthereumAgent) getEthHeight() (int64, error) {
 	var curHeight int64
-	err := e.store.GetObj(EthCurHeight, &curHeight)
+	err := e.store.GetObj(ethCurHeightKey, &curHeight)
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
 		return 0, err
@@ -87,7 +85,7 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error(err.Error())
 			return err
 		}
-		err = e.persistData(index, redeemTxList)
+		err = e.saveDataToDb(index, redeemTxList)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
@@ -111,7 +109,6 @@ func (e *EthereumAgent) Transfer() error {
 			}
 			logger.Info("success redeem btc tx:%v", response)
 		}
-
 	}
 
 }
@@ -121,7 +118,7 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 	panic("implement me")
 }
 
-func (e *EthereumAgent) persistData(index int64, list []RedeemTx) error {
+func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {
 	var txIdList []string
 	for _, tx := range list {
 		err := e.store.BatchPutObj(tx.TxId, tx)
@@ -138,17 +135,17 @@ func (e *EthereumAgent) persistData(index int64, list []RedeemTx) error {
 			return err
 		}
 	}
-	err := e.store.BatchPutObj(index, txIdList)
+	err := e.store.BatchPutObj(height, txIdList)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	err = e.store.BatchPutObj(EthCurHeight, index)
+	err = e.store.BatchPutObj(ethCurHeightKey, height)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	err = e.store.BatchWrite()
+	err = e.store.BatchWriteObj()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -177,7 +174,7 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 			proofRequestList = append(proofRequestList, ProofRequest{
 				TxId:   redeemTx.TxId,
 				PType:  EthereumChain,
-				ToAddr: redeemTx.Addr,
+				ToAddr: redeemTx.BtcAddr,
 				Amount: redeemTx.Amount,
 			})
 		}
@@ -194,7 +191,7 @@ func (e *EthereumAgent) Close() error {
 	panic(e)
 }
 func (e *EthereumAgent) Name() string {
-	return e.name
+	return "Ethereum Agent"
 }
 func (e *EthereumAgent) BlockTime() time.Duration {
 	return e.blockTime

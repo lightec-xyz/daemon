@@ -8,15 +8,13 @@ import (
 var _ rpc.ProofAPI = (*Handler)(nil)
 
 type Handler struct {
-	store       store.IStore
-	memoryStore store.IStore
+	memoryStore     store.IStore
+	store           store.IStore
+	maxParallelNums int
 }
 
-func NewHandler(store store.IStore, memoryStore store.IStore) *Handler {
-	return &Handler{
-		store:       store,
-		memoryStore: memoryStore,
-	}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
 func (h *Handler) Info() (rpc.ProofInfo, error) {
@@ -29,17 +27,6 @@ func (h *Handler) Info() (rpc.ProofInfo, error) {
 func (h *Handler) GenZkProof(request rpc.ProofRequest) (rpc.ProofResponse, error) {
 	//todo
 	response := rpc.ProofResponse{
-		TxId:   request.TxId,
-		Status: 0,
-		Msg:    "ok",
-		Proof:  "test proof",
-	}
-	return response, nil
-}
-
-func (h *Handler) GenEthProof(request rpc.EthProofRequest) (rpc.EthProofResponse, error) {
-	//todo
-	response := rpc.EthProofResponse{
 		TxId:   request.TxId,
 		Status: 0,
 		Msg:    "ok",

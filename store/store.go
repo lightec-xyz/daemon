@@ -52,21 +52,21 @@ func (s *Store) BatchWrite() error {
 }
 
 func (s *Store) HasObj(key interface{}) (bool, error) {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return false, err
 	}
-	return s.Has(bytesKey)
+	return s.Has(keyBytes)
 }
 
 func (s *Store) GetObj(key interface{}, value interface{}) error {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	valueBytes, err := s.Get(bytesKey)
+	valueBytes, err := s.Get(keyBytes)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -75,12 +75,12 @@ func (s *Store) GetObj(key interface{}, value interface{}) error {
 }
 
 func (s *Store) DeleteObj(key interface{}) error {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return s.Delete(bytesKey)
+	return s.Delete(keyBytes)
 }
 func (s *Store) PutObj(key interface{}, value interface{}) error {
 	bytes, err := codec.Marshal(value)
@@ -88,12 +88,12 @@ func (s *Store) PutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return s.Put(bytesKey, bytes)
+	return s.Put(keyBytes, bytes)
 }
 
 func (s *Store) BatchPutObj(key interface{}, value interface{}) error {
@@ -102,32 +102,40 @@ func (s *Store) BatchPutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return s.BatchPut(bytesKey, bytes)
+	return s.BatchPut(keyBytes, bytes)
 }
 
 func (s *Store) BatchDeleteObj(key interface{}) error {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return s.BatchDelete(bytesKey)
+	return s.BatchDelete(keyBytes)
 }
 
 func (s *Store) BatchWriteObj() error {
 	return s.BatchWrite()
 }
-func keyParse(key interface{}) ([]byte, error) {
+func objKeyEncode(key interface{}) ([]byte, error) {
 	//todo
-	keyBytes, err := codec.Marshal(key)
-	if err != nil {
-		logger.Error("key can't Marshal error:%v", err)
-		return nil, err
+	switch key.(type) {
+	case []byte:
+		keyBytes := key.([]byte)
+		return keyBytes, nil
+	case string:
+		keyBytes := []byte(key.(string))
+		return keyBytes, nil
+	default:
+		keyBytes, err := codec.Marshal(key)
+		if err != nil {
+			return nil, err
+		}
+		return keyBytes, nil
 	}
-	return keyBytes, nil
 }

@@ -15,22 +15,44 @@ type Server struct {
 
 func NewServer(addr string, handler interface{}) (*Server, error) {
 	//todo
+	rpcServer := rpc.NewServer()
+	err := rpcServer.RegisterName("zkbtc", handler)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rpcServer.SetBatchLimits(100, 100)
+	server := &http.Server{
+		Addr:    addr,
+		Handler: rpcServer,
+	}
+	http.Handle("/", rpcServer)
+	go func() {
+		err := http.ListenAndServe(addr, nil)
+		if err != nil {
+			//todo
+		}
+	}()
+	return &Server{server: server}, nil
+}
 
+func NewWsServer(addr string, handler interface{}) (*Server, error) {
+	//todo
 	rpcServ := rpc.NewServer()
 	err := rpcServ.RegisterName("zkbtc", handler)
 	if err != nil {
 		log.Fatal(err)
 	}
+	rpcHandler := rpcServ.WebsocketHandler([]string{"*"})
 	rpcServ.SetBatchLimits(100, 100)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: rpcServ,
 	}
-	http.Handle("/", rpcServ)
+	http.Handle("/", rpcHandler)
 	go func() {
 		err := http.ListenAndServe(addr, nil)
 		if err != nil {
-			//todo
+			logger.Error("new ws server error:%v", err)
 		}
 	}()
 	return &Server{server: server}, nil

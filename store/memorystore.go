@@ -45,21 +45,21 @@ func (m *MemoryStore) BatchWrite() error {
 }
 
 func (m *MemoryStore) HasObj(key interface{}) (bool, error) {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return false, err
 	}
-	return m.Has(bytesKey)
+	return m.Has(keyBytes)
 }
 
 func (m *MemoryStore) GetObj(key interface{}, value interface{}) error {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	valueBytes, err := m.Get(bytesKey)
+	valueBytes, err := m.Get(keyBytes)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -68,12 +68,12 @@ func (m *MemoryStore) GetObj(key interface{}, value interface{}) error {
 }
 
 func (m *MemoryStore) DeleteObj(key interface{}) error {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return m.Delete(bytesKey)
+	return m.Delete(keyBytes)
 }
 func (m *MemoryStore) PutObj(key interface{}, value interface{}) error {
 	bytes, err := codec.Marshal(value)
@@ -81,12 +81,12 @@ func (m *MemoryStore) PutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return m.Put(bytesKey, bytes)
+	return m.Put(keyBytes, bytes)
 }
 
 func (m *MemoryStore) BatchPutObj(key interface{}, value interface{}) error {
@@ -95,21 +95,21 @@ func (m *MemoryStore) BatchPutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return m.BatchPut(bytesKey, bytes)
+	return m.BatchPut(keyBytes, bytes)
 }
 
 func (m *MemoryStore) BatchDeleteObj(key interface{}) error {
-	bytesKey, err := keyParse(key)
+	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
 	}
-	return m.BatchDelete(bytesKey)
+	return m.BatchDelete(keyBytes)
 }
 
 func (m *MemoryStore) BatchWriteObj() error {

@@ -8,22 +8,22 @@ const (
 )
 
 const (
-	BtcCurHeight = "btcCurHeight"
-	EthCurHeight = "ethCurHeight"
-)
-
-const (
 	InitBitcoinHeight  = 100
 	InitEthereumHeight = 10000
+)
+
+const ProofPrefix = "p"
+
+var (
+	btcCurHeightKey = []byte("btcCurHeight")
+	ethCurHeightKey = []byte("ethCurHeight")
 )
 
 type ProofStatus int
 
 const (
-	Default ProofStatus = iota
-	Pending
-	Completed
-	Failed
+	ProofDefault ProofStatus = iota
+	ProofPending
+	ProofSuccess
+	ProofFailed
 )
-
-const ProofPrefix = "p"

@@ -7,7 +7,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"strings"
 	"time"
 )
 
@@ -17,9 +16,9 @@ type BitcoinAgent struct {
 	store         store.IStore
 	memoryStore   store.IStore
 	blockTime     time.Duration
-	schedule      *Schedule
 	proofResponse <-chan ProofResponse
 	ProofRequest  chan []ProofRequest
+	whiteList     map[string]bool
 	operateAddr   string
 }
 
@@ -38,29 +37,27 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 }
 
 func (b *BitcoinAgent) Init() error {
-	//todo
-	height, err := b.getCurrentHeight()
-	if err != nil && strings.Contains(err.Error(), "not found") {
-		err = b.store.PutObj(BtcCurHeight, InitBitcoinHeight)
+	has, err := b.store.Has(btcCurHeightKey)
+	if err != nil {
+		logger.Error("get btc current height error:%v", err)
+		return err
+	}
+	if !has {
+		logger.Debug("init btc current height: %v", InitBitcoinHeight)
+		err := b.store.PutObj(btcCurHeightKey, InitBitcoinHeight)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("put init btc current height error:%v", err)
 			return err
 		}
 	}
-	_, err = b.btcClient.GetBlockCount()
-	if err != nil {
-		logger.Error("bitcoin rpc error:%v", err)
-		return err
-	}
-	logger.Debug("bitcoin node init ok,latest height:%d", height)
+	//todo
 	return nil
 }
 
 func (b *BitcoinAgent) getCurrentHeight() (int64, error) {
 	var height int64
-	err := b.store.GetObj(BtcCurHeight, &height)
+	err := b.store.GetObj(btcCurHeightKey, &height)
 	if err != nil {
-		logger.Error(err.Error())
 		return 0, err
 	}
 	return height, nil
@@ -90,7 +87,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error(err.Error())
 			return err
 		}
-		err = b.persistData(index, depositTxList)
+		err = b.saveDataToDb(index, depositTxList)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
@@ -100,12 +97,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 	return nil
 }
 
-func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
-	//todo
-	panic("implement me")
-}
-
-func (b *BitcoinAgent) persistData(height int64, depositTxList []DepositTx) error {
+func (b *BitcoinAgent) saveDataToDb(height int64, depositTxList []DepositTx) error {
 	//todo
 	var txIdList []string
 	for _, depositTx := range depositTxList {
@@ -117,7 +109,12 @@ func (b *BitcoinAgent) persistData(height int64, depositTxList []DepositTx) erro
 		}
 		pTxId := fmt.Sprintf("%s%s", ProofPrefix, depositTx.TxId)
 		err = b.store.BatchPutObj(pTxId, TxProof{
-			PTxId: pTxId,
+			PTxId:  pTxId,
+			TxId:   depositTx.TxId,
+			ToAddr: depositTx.Addr,
+			Amount: depositTx.Amount,
+			Msg:    depositTx.Extra,
+			Status: ProofDefault,
 		})
 		if err != nil {
 			logger.Error(err.Error())
@@ -129,25 +126,15 @@ func (b *BitcoinAgent) persistData(height int64, depositTxList []DepositTx) erro
 		logger.Error(err.Error())
 		return err
 	}
-	err = b.store.BatchPutObj(BtcCurHeight, height)
+	err = b.store.BatchPutObj(btcCurHeightKey, height)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	err = b.store.BatchWrite()
+	err = b.store.BatchWriteObj()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
-	}
-	return nil
-}
-
-//todo
-
-func (b *BitcoinAgent) SendTxToEth(txList []DepositTx) error {
-	for _, tx := range txList {
-		logger.Info("send tx to eth: %v", tx)
-		//todo
 	}
 	return nil
 }
@@ -202,6 +189,11 @@ func (b *BitcoinAgent) Transfer() error {
 	}
 }
 
+func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
+	//todo
+	panic("implement me")
+}
+
 // todo  check rule
 
 func (b *BitcoinAgent) parseTx(outList []types.TxOut) (DepositTx, bool, error) {
@@ -217,7 +209,7 @@ func (b *BitcoinAgent) Close() error {
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
-	return b.Name()
+	return "Bitcoin Agent"
 }
 
 func (b *BitcoinAgent) BlockTime() time.Duration {

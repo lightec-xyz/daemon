@@ -47,15 +47,17 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	dbPath := fmt.Sprintf("%s/%s", cfg.NodeConfig.DataDir, cfg.NodeConfig.Network)
+	//todo
 	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	memoryStore := store.NewMemoryStore()
+
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
 	ethProofResp := make(chan ProofResponse, 1000)
-	memoryStore := store.NewMemoryStore()
 	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
 	if err != nil {
 		logger.Error(err.Error())

@@ -94,7 +94,7 @@ func (m *Manager) GenProof() {
 						Proof: proofResponse.Proof,
 					}
 				case EthereumChain:
-					m.btcProofResp <- ProofResponse{
+					m.ethProofResp <- ProofResponse{
 						TxId:  proofResponse.TxId,
 						Msg:   proofResponse.Msg,
 						PType: proofResponse.PType,
@@ -106,6 +106,10 @@ func (m *Manager) GenProof() {
 			}()
 		}
 	}
+}
+
+func (m *Manager) Close() {
+
 }
 
 type SafeList struct {

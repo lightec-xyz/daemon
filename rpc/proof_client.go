@@ -23,6 +23,17 @@ func NewProofClient(url string) (*ProofClient, error) {
 		client,
 	}, nil
 }
+
+func NewWsProofClient(url string) (*ProofClient, error) {
+	client, err := rpc.DialWebsocket(context.Background(), url, "")
+	if err != nil {
+		return nil, err
+	}
+	return &ProofClient{
+		client,
+	}, nil
+}
+
 func (p *ProofClient) ProofStatus(proofId string) (ProofStatus, error) {
 	status := ProofStatus{}
 	err := p.call(&status, "proof_status", proofId)
@@ -41,16 +52,6 @@ func (p *ProofClient) GenZkProof(request ProofRequest) (ProofResponse, error) {
 		Proof:  "test proof",
 	}
 	err := p.call(&response, "zkbtc_genBtcProof", request)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
-}
-
-func (p *ProofClient) GenEthProof(request EthProofRequest) (EthProofResponse, error) {
-	//todo
-	response := EthProofResponse{}
-	err := p.call(&response, "proof_genEthProof", request)
 	if err != nil {
 		return response, err
 	}
