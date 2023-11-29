@@ -4,21 +4,77 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
-func TXPrevOutFetcher(tx *wire.MsgTx, prevPkScripts [][]byte,
+type TxIn struct {
+	Hash     string
+	VOut     uint32
+	PkScript string
+	Amount   int64
+}
+
+type TxOut struct {
+	Address string
+	Amount  int64
+}
+
+func CreateTransaction(secret []byte, inputs []TxIn, outputs []TxOut, network NetWork) ([]byte, error) {
+	networkParams, err := getNetworkParams(network)
+	if err != nil {
+		return nil, err
+	}
+	privKey, _ := btcec.PrivKeyFromBytes(secret)
+	var txInPkScripts [][]byte
+	var txInValues []btcutil.Amount
+	msgTx := wire.NewMsgTx(wire.TxVersion)
+	for _, input := range inputs {
+		hash, err := chainhash.NewHashFromStr(input.Hash)
+		if err != nil {
+			return nil, err
+		}
+		txIn := wire.NewTxIn(wire.NewOutPoint(hash, input.VOut), nil, nil)
+		msgTx.AddTxIn(txIn)
+		txInPkScripts = append(txInPkScripts, []byte(input.PkScript))
+		txInValues = append(txInValues, btcutil.Amount(input.Amount))
+	}
+	for _, output := range outputs {
+		address, err := btcutil.DecodeAddress(output.Address, networkParams)
+		if err != nil {
+			return nil, err
+		}
+		txOutScript, err := txscript.PayToAddrScript(address)
+		if err != nil {
+			return nil, err
+		}
+		txOut := wire.NewTxOut(output.Amount, txOutScript)
+		msgTx.AddTxOut(txOut)
+	}
+
+	err = CreateTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privKey}, networkParams)
+	if err != nil {
+		return nil, err
+	}
+	err = ValidateMsgTx(msgTx, txInPkScripts, txInValues)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = msgTx.Serialize(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func txPrevOutFetcher(tx *wire.MsgTx, prevPkScripts [][]byte,
 	inputValues []btcutil.Amount) (*txscript.MultiPrevOutFetcher, error) {
 
 	if len(tx.TxIn) != len(prevPkScripts) {
@@ -190,7 +246,7 @@ func spendTaprootKey(txIn *wire.TxIn, pkScript []byte,
 func ValidateMsgTx(tx *wire.MsgTx, prevScripts [][]byte,
 	inputValues []btcutil.Amount) error {
 
-	inputFetcher, err := TXPrevOutFetcher(
+	inputFetcher, err := txPrevOutFetcher(
 		tx, prevScripts, inputValues,
 	)
 	if err != nil {
@@ -217,7 +273,7 @@ func ValidateMsgTx(tx *wire.MsgTx, prevScripts [][]byte,
 func CreateTx(tx *wire.MsgTx, prevPkScripts [][]byte,
 	inputValues []btcutil.Amount, privKeys []*btcec.PrivateKey, chainParams *chaincfg.Params) error {
 
-	inputFetcher, err := TXPrevOutFetcher(tx, prevPkScripts, inputValues)
+	inputFetcher, err := txPrevOutFetcher(tx, prevPkScripts, inputValues)
 	if err != nil {
 		return err
 	}
@@ -602,7 +658,7 @@ func MergeMultiSignatures(required int, multiSigScript []byte, sigs [][]byte) (w
 func CalWitnessSigHash(tx *wire.MsgTx, txInLockingScripts [][]byte,
 	inputValues []btcutil.Amount, from btcutil.Address, chainParams *chaincfg.Params, txInOriginalScripts [][]byte) ([][]byte, error) {
 
-	inputFetcher, err := TXPrevOutFetcher(tx, txInLockingScripts, inputValues)
+	inputFetcher, err := txPrevOutFetcher(tx, txInLockingScripts, inputValues)
 	if err != nil {
 		return nil, err
 	}
@@ -670,272 +726,4 @@ func CalWitnessSigHash(tx *wire.MsgTx, txInLockingScripts [][]byte,
 		}
 	}
 	return hashes, nil
-}
-
-func TestCreateDepositTx_1(t *testing.T) {
-	secret, _ := hex.DecodeString("b29c3157e4a68b240ec821515fc77181c7a828259efbb3c1ab1df9b67d03c645")
-	privKey, pubKey := btcec.PrivKeyFromBytes(secret)
-	//fmt.Printf("priv: %v\n", privKey)
-	//fmt.Printf("pub: %v\n", hex.EncodeToString(pubKey.SerializeCompressed()))
-	from, _ := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(pubKey.SerializeCompressed()), &chaincfg.TestNet3Params)
-	fmt.Printf("from addr:%v, from sriptAddress:%v\n", from.EncodeAddress(), hex.EncodeToString(from.ScriptAddress()))
-
-	// Create the transaction to redeem the fake transaction.
-	to, _ := btcutil.DecodeAddress("tb1q7yc8ncrxy6wsdlhvhd6gglpfatg07835uses5mpsc2rfv7zulhcqy0m979", &chaincfg.TestNet3Params)
-	fmt.Printf("to address:%v, to sriptAddress:%v\n", to.String(), hex.EncodeToString(to.ScriptAddress()))
-
-	depositTx := wire.NewMsgTx(wire.TxVersion)
-
-	hash, err := chainhash.NewHashFromStr("6658fcd6da67b838a7405c1a6269423e3c0b09787ff96fabde57c2e84c8b5c48")
-	txIn := wire.NewTxIn(wire.NewOutPoint(hash, 0), nil, nil)
-	depositTx.AddTxIn(txIn)
-
-	//TxIn's pkScript and value
-	txInPkScript, err := hex.DecodeString("0014f97a2ead90717062357c8c1ee15d3ed0a5324efd")
-	txInValue := btcutil.Amount(10000)
-
-	//
-	txOutScript, err := txscript.PayToAddrScript(to)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	txOut := wire.NewTxOut(9000, txOutScript)
-	depositTx.AddTxOut(txOut)
-
-	var buf bytes.Buffer
-	depositTx.Serialize(&buf)
-	fmt.Printf("before sign deposit TxHash: %v\n", depositTx.TxHash())
-	fmt.Printf("before sign deposit WitnessHash: %v\n", depositTx.WitnessHash())
-	fmt.Printf("before sign deposit: %v\n", hex.EncodeToString(buf.Bytes()))
-
-	err = CreateTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, []*btcec.PrivateKey{privKey}, &chaincfg.TestNet3Params)
-	assert.NoError(t, err)
-
-	err = ValidateMsgTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
-	assert.NoError(t, err)
-
-	buf.Reset()
-	depositTx.Serialize(&buf)
-	fmt.Printf("after sign deposit TxHash: %v\n", depositTx.TxHash())
-	fmt.Printf("after sign deposit WitnessHash: %v\n", depositTx.WitnessHash())
-	fmt.Printf("after sign deposit: %v\n", hex.EncodeToString(buf.Bytes()))
-}
-
-func TestCreateDepositTx_2(t *testing.T) {
-	secret, _ := hex.DecodeString("b29c3157e4a68b240ec821515fc77181c7a828259efbb3c1ab1df9b67d03c645")
-	privKey, pubKey := btcec.PrivKeyFromBytes(secret)
-	from, _ := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(pubKey.SerializeCompressed()), &chaincfg.TestNet3Params)
-	fmt.Printf("from addr:%v, from sriptAddress:%v\n", from.EncodeAddress(), hex.EncodeToString(from.ScriptAddress()))
-
-	// Create the transaction to redeem the fake transaction.
-	to, _ := btcutil.DecodeAddress("tb1q7yc8ncrxy6wsdlhvhd6gglpfatg07835uses5mpsc2rfv7zulhcqy0m979", &chaincfg.TestNet3Params)
-	fmt.Printf("to address:%v, to sriptAddress:%v\n", to.String(), hex.EncodeToString(to.ScriptAddress()))
-
-	depositTx := wire.NewMsgTx(2)
-
-	hash, err := chainhash.NewHashFromStr("77014d81ac23bdb3f4646c29afe3e8803e291ea9f69e585aee331832c0a62581")
-	txIn := wire.NewTxIn(wire.NewOutPoint(hash, 0), nil, nil)
-	depositTx.AddTxIn(txIn)
-
-	//TxIn's pkScript and value
-	txInPkScript, err := hex.DecodeString("0014f97a2ead90717062357c8c1ee15d3ed0a5324efd")
-	txInValue := btcutil.Amount(7000)
-
-	//
-	txOutScript, err := txscript.PayToAddrScript(to)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	txOut := wire.NewTxOut(6500, txOutScript)
-	depositTx.AddTxOut(txOut)
-
-	err = CreateTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, []*btcec.PrivateKey{privKey}, &chaincfg.TestNet3Params)
-	assert.NoError(t, err)
-
-	err = ValidateMsgTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
-	assert.NoError(t, err)
-
-	var buf bytes.Buffer
-	depositTx.Serialize(&buf)
-	fmt.Printf("after sign deposit: %v\n", hex.EncodeToString(buf.Bytes()))
-}
-
-func TestCreateRedeemTx_1(t *testing.T) {
-	expectedHash, _ := hex.DecodeString("f889a5df00f886ba0c932ab668a28ab8b9f60ef8332a628065a61561de515585")
-	scretes := []string{
-		"23c9cdb2685d0905c0969dbbbfd27fdc1791e16e43b0352d9f11a89053d268ac",
-		"47b38c30407286330562e228a73bf84f0c6d5d9593bd16b2dfc66ca1654ab83d",
-		"968b40431da7f3aba9dfea20f0c9790ca38117d884ce47ef03d36829cfc48f49",
-	}
-
-	privKeys := []*btcec.PrivateKey{}
-	pubKeys := []*btcec.PublicKey{}
-	addrPubKeys := []*btcutil.AddressPubKey{}
-	for _, secret := range scretes {
-		s, _ := hex.DecodeString(secret)
-		privKey, pubKey := btcec.PrivKeyFromBytes(s)
-		privKeys = append(privKeys, privKey)
-		pubKeys = append(pubKeys, pubKey)
-		addrPubKey, _ := btcutil.NewAddressPubKey(pubKey.SerializeCompressed(), &chaincfg.TestNet3Params)
-		addrPubKeys = append(addrPubKeys, addrPubKey)
-	}
-
-	multiSigScript, _ := txscript.MultiSigScript(addrPubKeys, 2)
-
-	scriptHash := sha256.Sum256(multiSigScript)
-	from, _ := btcutil.NewAddressWitnessScriptHash(scriptHash[:], &chaincfg.RegressionNetParams)
-
-	to, _ := btcutil.DecodeAddress("tb1ql9azatvsw9cxydtu3s0wzhf76zjnynhasuy4zy", &chaincfg.TestNet3Params)
-
-	reedeemTx := wire.NewMsgTx(2)
-	hash, err := chainhash.NewHashFromStr("a403d4cdd7d1cbc5839fa7c3f842175013d47c295f50acb8a0d2319e30eb7002")
-	txIn := wire.NewTxIn(wire.NewOutPoint(hash, 0), nil, nil)
-	reedeemTx.AddTxIn(txIn)
-
-	//TxIn's pkScript and value
-	txInPkScript, err := hex.DecodeString("0020f13079e066269d06feecbb74847c29ead0ff1e34e4330a6c30c28696785cfdf0")
-	txInValue := btcutil.Amount(9000)
-
-	//TxOut
-	txOutScript, err := txscript.PayToAddrScript(to)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	txOut := wire.NewTxOut(8000, txOutScript)
-	reedeemTx.AddTxOut(txOut)
-
-	hashes, err := CalWitnessSigHash(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, from, &chaincfg.TestNet3Params, [][]byte{multiSigScript})
-	assert.NoError(t, err)
-	fmt.Printf("hash:%v\n", hex.EncodeToString(hashes[0]))
-	assert.Equal(t, expectedHash, hashes[0])
-
-	var sigs [][]byte
-	for _, priv := range privKeys {
-		sig := ecdsa.Sign(priv, hashes[0])
-
-		sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
-		sigs = append(sigs, sigWithType)
-	}
-
-	witnessScript, err := MergeMultiSignatures(2, multiSigScript, sigs)
-	assert.NoError(t, err)
-
-	reedeemTx.TxIn[0].Witness = witnessScript
-	var buf bytes.Buffer
-	err = reedeemTx.Serialize(&buf)
-	fmt.Printf("signed reedeem: %v\n", hex.EncodeToString(buf.Bytes()))
-	//correct: 020000000001010270eb309e31d2a0b8ac505f297cd413501742f8c3a79f83c5cbd1d7cdd403a40000000000ffffffff01401f000000000000160014f97a2ead90717062357c8c1ee15d3ed0a5324efd04004830450221009a2ccd91d89bf37c556863f13ed939aed04694e34dc97e0ea9f1c35018e46d23022055e657a3d93ceb693a4983773d6907ffdc8325798ce977546e1c87f43a67bf5b014730440220765f46fcb6bc52d24ee6fe593661d414c26242aac6ec8c17e7b61c9e1d8fbacc02202c0ddd31048508f2b9ed73d81540055c868b2e78df14f93c137c0bf2baaa39e001695221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae00000000
-	err = ValidateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
-	assert.NoError(t, err)
-}
-
-func TestCreateRedeemTx_2(t *testing.T) {
-	expectedHash, _ := hex.DecodeString("00a165032df678da63f0e024bff6f6593a3d3af2bb318a992fc5c88fb2bcf613")
-	scretes := []string{
-		"23c9cdb2685d0905c0969dbbbfd27fdc1791e16e43b0352d9f11a89053d268ac",
-		"47b38c30407286330562e228a73bf84f0c6d5d9593bd16b2dfc66ca1654ab83d",
-		"968b40431da7f3aba9dfea20f0c9790ca38117d884ce47ef03d36829cfc48f49",
-	}
-
-	privKeys := []*btcec.PrivateKey{}
-	pubKeys := []*btcec.PublicKey{}
-	addrPubKeys := []*btcutil.AddressPubKey{}
-	for _, secret := range scretes {
-		s, _ := hex.DecodeString(secret)
-		privKey, pubKey := btcec.PrivKeyFromBytes(s)
-		privKeys = append(privKeys, privKey)
-		pubKeys = append(pubKeys, pubKey)
-		addrPubKey, _ := btcutil.NewAddressPubKey(pubKey.SerializeCompressed(), &chaincfg.TestNet3Params)
-		addrPubKeys = append(addrPubKeys, addrPubKey)
-	}
-
-	multiSigScript, _ := txscript.MultiSigScript(addrPubKeys, 2)
-
-	scriptHash := sha256.Sum256(multiSigScript)
-	from, _ := btcutil.NewAddressWitnessScriptHash(scriptHash[:], &chaincfg.RegressionNetParams)
-
-	to, _ := btcutil.DecodeAddress("tb1ql9azatvsw9cxydtu3s0wzhf76zjnynhasuy4zy", &chaincfg.TestNet3Params)
-
-	reedeemTx := wire.NewMsgTx(2)
-	hash, err := chainhash.NewHashFromStr("a0b391b03d17c3a07a65652b5807931bcbb31d63894b8fd46538fc50602948c3")
-	txIn := wire.NewTxIn(wire.NewOutPoint(hash, 0), nil, nil)
-	reedeemTx.AddTxIn(txIn)
-
-	//TxIn's pkScript and value
-	txInPkScript, err := hex.DecodeString("0020f13079e066269d06feecbb74847c29ead0ff1e34e4330a6c30c28696785cfdf0")
-	txInValue := btcutil.Amount(6500)
-
-	//TxOut
-	txOutScript, err := txscript.PayToAddrScript(to)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	txOut := wire.NewTxOut(6000, txOutScript)
-	reedeemTx.AddTxOut(txOut)
-
-	hashes, err := CalWitnessSigHash(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, from, &chaincfg.TestNet3Params, [][]byte{multiSigScript})
-	assert.NoError(t, err)
-	fmt.Printf("hash:%v\n", hex.EncodeToString(hashes[0]))
-	assert.Equal(t, expectedHash, hashes[0])
-
-	var sigs [][]byte
-	for _, priv := range privKeys {
-		sig := ecdsa.Sign(priv, hashes[0])
-
-		sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
-		sigs = append(sigs, sigWithType)
-	}
-
-	witnessScript, err := MergeMultiSignatures(2, multiSigScript, sigs)
-	assert.NoError(t, err)
-
-	reedeemTx.TxIn[0].Witness = witnessScript
-	var buf bytes.Buffer
-	err = reedeemTx.Serialize(&buf)
-	//fmt.Printf("signed reedeem TxHash: %v\n", reedeemTx.TxHash())
-	//fmt.Printf("signed reedeem WitnessHash: %v\n", reedeemTx.WitnessHash())
-	fmt.Printf("signed reedeem: %v\n", hex.EncodeToString(buf.Bytes()))
-	//correct: 020000000001010270eb309e31d2a0b8ac505f297cd413501742f8c3a79f83c5cbd1d7cdd403a40000000000ffffffff01401f000000000000160014f97a2ead90717062357c8c1ee15d3ed0a5324efd04004830450221009a2ccd91d89bf37c556863f13ed939aed04694e34dc97e0ea9f1c35018e46d23022055e657a3d93ceb693a4983773d6907ffdc8325798ce977546e1c87f43a67bf5b014730440220765f46fcb6bc52d24ee6fe593661d414c26242aac6ec8c17e7b61c9e1d8fbacc02202c0ddd31048508f2b9ed73d81540055c868b2e78df14f93c137c0bf2baaa39e001695221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae00000000
-	err = ValidateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
-	assert.NoError(t, err)
-}
-
-func TestCalculateHash_1(t *testing.T) {
-	reedeemTx := wire.NewMsgTx(2)
-	expectedHash, _ := hex.DecodeString("f889a5df00f886ba0c932ab668a28ab8b9f60ef8332a628065a61561de515585")
-
-	from, _ := btcutil.DecodeAddress("tb1q7yc8ncrxy6wsdlhvhd6gglpfatg07835uses5mpsc2rfv7zulhcqy0m979", &chaincfg.TestNet3Params)
-	hash, err := chainhash.NewHashFromStr("a403d4cdd7d1cbc5839fa7c3f842175013d47c295f50acb8a0d2319e30eb7002")
-	assert.NoError(t, err)
-	txIn := wire.NewTxIn(wire.NewOutPoint(hash, 0), nil, nil)
-	reedeemTx.AddTxIn(txIn)
-
-	//TxIn's pkScript and value. get from
-	txInOriginalScript, err := hex.DecodeString("5221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae")
-	txInPkScript, err := hex.DecodeString("0020f13079e066269d06feecbb74847c29ead0ff1e34e4330a6c30c28696785cfdf0")
-	txInValue := btcutil.Amount(9000)
-
-	to, _ := btcutil.DecodeAddress("tb1ql9azatvsw9cxydtu3s0wzhf76zjnynhasuy4zy", &chaincfg.TestNet3Params)
-	txOutScript, err := txscript.PayToAddrScript(to)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	txOut := wire.NewTxOut(8000, txOutScript)
-	reedeemTx.AddTxOut(txOut)
-
-	hashes, err := CalWitnessSigHash(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, from, &chaincfg.TestNet3Params, [][]byte{txInOriginalScript})
-	assert.Equal(t, expectedHash, hashes[0])
-}
-
-func TestCalculateHash_2(t *testing.T) {
-	expectedHash, err := hex.DecodeString("f889a5df00f886ba0c932ab668a28ab8b9f60ef8332a628065a61561de515585")
-	assert.NoError(t, err)
-	raw, _ := hex.DecodeString("02000000081aba67bc0e257c733f0c00dab79853b37e19f617e9a63b271e9e617a16377a3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e706650440270eb309e31d2a0b8ac505f297cd413501742f8c3a79f83c5cbd1d7cdd403a400000000695221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae2823000000000000ffffffffedfe2b7591d80ff513a432a6fdb4ae8a410469dd3a700e3749bb05d25251207a0000000001000000")
-	hash := chainhash.DoubleHashB(raw)
-	assert.Equal(t, expectedHash, hash)
 }

@@ -12,14 +12,12 @@
   "ethUrl": "http://127.0.0.1:8332",
   "ethBlockTime": 15,
   "btcWhiteList": [
+    ""
   ],
   "ethWhiteList": [
+    ""
   ],
   "workers": [
-    {
-      "proofUrl": "http://127.0.0.1:8485",
-      "parallelNums": 3
-    },
     {
       "proofUrl": "http://127.0.0.1:8485",
       "parallelNums": 3

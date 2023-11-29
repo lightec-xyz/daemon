@@ -11,26 +11,28 @@ import (
 )
 
 type EthereumAgent struct {
-	btcClient     *bitcoin.Client
-	ethClient     *ethereum.Client
-	store         store.IStore
-	memoryStore   store.IStore
-	blockTime     time.Duration
-	whiteList     map[string]bool
-	proofResponse <-chan ProofResponse
-	proofRequest  chan []ProofRequest
+	btcClient            *bitcoin.Client
+	ethClient            *ethereum.Client
+	store                store.IStore
+	memoryStore          store.IStore
+	blockTime            time.Duration
+	whiteList            map[string]bool
+	checkProofHeightNums int64
+	proofResponse        <-chan ProofResponse
+	proofRequest         chan []ProofRequest
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	proofRequest chan []ProofRequest, proofResponse <-chan ProofResponse) (IAgent, error) {
 	return &EthereumAgent{
-		btcClient:     btcClient,
-		ethClient:     ethClient,
-		store:         store,
-		memoryStore:   memoryStore,
-		blockTime:     time.Duration(cfg.EthBlockTime) * time.Second,
-		proofRequest:  proofRequest,
-		proofResponse: proofResponse,
+		btcClient:            btcClient,
+		ethClient:            ethClient,
+		store:                store,
+		memoryStore:          memoryStore,
+		blockTime:            time.Duration(cfg.EthBlockTime) * time.Second,
+		proofRequest:         proofRequest,
+		proofResponse:        proofResponse,
+		checkProofHeightNums: 100,
 	}, nil
 }
 
@@ -40,7 +42,13 @@ func (e *EthereumAgent) Init() error {
 		logger.Error("get eth current height error:%v", err)
 		return err
 	}
-	if !has {
+	if has {
+		err := e.checkUnCompleteGenerateProofTx()
+		if err != nil {
+			logger.Error("check uncomplete generate proof tx error:%v", err)
+			return err
+		}
+	} else {
 		err := e.store.PutObj(ethCurHeightKey, InitEthereumHeight)
 		if err != nil {
 			logger.Error("put init eth current height error:%v", err)
@@ -48,7 +56,49 @@ func (e *EthereumAgent) Init() error {
 		}
 	}
 	//todo
+	return nil
+}
 
+func (e *EthereumAgent) checkUnCompleteGenerateProofTx() error {
+	currentHeight, err := e.getEthHeight()
+	if err != nil {
+		logger.Error("get btc current height error:%v", err)
+		return err
+	}
+	start := currentHeight - e.checkProofHeightNums
+	var proofList []ProofRequest
+	for index := start; index < currentHeight; index++ {
+		hasObj, err := e.store.HasObj(index)
+		if err != nil {
+			logger.Error("get txIdList error:%v", err)
+			return err
+		}
+		if !hasObj {
+			continue
+		}
+		var txIdList []string
+		err = e.store.GetObj(index, &txIdList)
+		if err != nil {
+			logger.Error("get txIdList error:%v", err)
+			return err
+		}
+		for _, txId := range txIdList {
+			var proof TxProof
+			err := e.store.GetObj(TxIdToProofId(txId), &proof)
+			if err != nil {
+				logger.Error("get proof error:%v", err)
+				return err
+			}
+			proofList = append(proofList, ProofRequest{
+				TxId:   proof.TxId,
+				PType:  EthereumChain,
+				ToAddr: proof.ToAddr,
+				Amount: proof.Amount,
+				Msg:    proof.Msg,
+			})
+		}
+	}
+	e.proofRequest <- proofList
 	return nil
 }
 
@@ -74,7 +124,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		return err
 	}
 	//todo
-	if ethHeight >= int64(blockNumber)-6 {
+	if ethHeight >= int64(blockNumber)-12 {
 		logger.Info("current height:%d,node block count:%d", ethHeight, blockNumber)
 		return nil
 	}
@@ -101,7 +151,12 @@ func (e *EthereumAgent) Transfer() error {
 	for {
 		select {
 		case response := <-e.proofResponse:
-			err := e.RedeemBtcTx(response)
+			err := e.updateProof(response)
+			if err != nil {
+				logger.Error("update proof error:%v", err)
+				continue
+			}
+			err = e.RedeemBtcTx(response)
 			if err != nil {
 				//todo
 				logger.Error("redeem btc tx error:%v", err)
@@ -111,11 +166,6 @@ func (e *EthereumAgent) Transfer() error {
 		}
 	}
 
-}
-
-func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
-	//todo
-	panic("implement me")
 }
 
 func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {
@@ -182,9 +232,27 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 	return redeemTxList, proofRequestList, nil
 }
 
+func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
+	//todo
+	panic("implement me")
+}
+
 func (e *EthereumAgent) CheckRedeemTx(tx ethrpc.Transaction) (RedeemTx, bool, error) {
 	//todo
 	return RedeemTx{}, true, nil
+}
+
+func (e *EthereumAgent) updateProof(resp ProofResponse) error {
+	pTxId := TxIdToProofId(resp.TxId)
+	err := e.store.PutObj(pTxId, TxProof{
+		PTxId:  pTxId,
+		TxId:   resp.TxId,
+		ToAddr: resp.ToAddr,
+		Amount: resp.Amount,
+		Msg:    resp.Msg,
+		Status: ProofSuccess,
+	})
+	return err
 }
 
 func (e *EthereumAgent) Close() error {

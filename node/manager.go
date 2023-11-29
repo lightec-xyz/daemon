@@ -31,7 +31,7 @@ func NewManager(proofRequest chan []ProofRequest, btcProofResp, ethProofResp cha
 	}
 }
 
-func (m *Manager) Run() {
+func (m *Manager) run() {
 	for {
 		select {
 		case requestList := <-m.proofRequest:
@@ -47,7 +47,7 @@ func (m *Manager) Run() {
 	}
 }
 
-func (m *Manager) GenProof() {
+func (m *Manager) genProof() {
 	//todo
 
 	for {
@@ -57,19 +57,19 @@ func (m *Manager) GenProof() {
 			return
 		default:
 			if m.proofQueue.Len() == 0 {
-				logger.Info("no proof need to do,wait now ....")
-				time.Sleep(2 * time.Second)
+				logger.Debug("no proof need to do,wait now ....")
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			worker, find, err := m.schedule.findBestWorker()
 			if err != nil {
 				logger.Error("find best worker error:%v", err)
-				time.Sleep(2 * time.Second)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			if !find {
 				logger.Warn("current no find worker to do proof")
-				time.Sleep(2 * time.Second)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			frontElement := m.proofQueue.Front()
@@ -82,6 +82,7 @@ func (m *Manager) GenProof() {
 			go func() {
 				proofResponse, err := m.schedule.GenZKProof(worker, proofRequest)
 				if err != nil {
+					//todo add queue again, retry ?
 					logger.Error("gen proof error:%v", err)
 					return
 				}
@@ -109,7 +110,7 @@ func (m *Manager) GenProof() {
 }
 
 func (m *Manager) Close() {
-
+	close(m.exit)
 }
 
 type SafeList struct {

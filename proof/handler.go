@@ -35,11 +35,13 @@ func (h *Handler) GenZkProof(request rpc.ProofRequest) (rpc.ProofResponse, error
 	return response, nil
 }
 
-func (h *Handler) ProofStatus(proofId string) (rpc.ProofStatus, error) {
+func (h *Handler) ProofInfo(proofId string) (rpc.ProofResponse, error) {
 	//todo
-	status := rpc.ProofStatus{
-		State: 0,
-		Msg:   "ok",
+	status := rpc.ProofResponse{
+		TxId:   proofId,
+		Status: 0,
+		Msg:    "ok",
+		Proof:  "test proof",
 	}
 	return status, nil
 }

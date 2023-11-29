@@ -12,6 +12,7 @@ var _ ProofAPI = (*ProofClient)(nil)
 
 type ProofClient struct {
 	*rpc.Client
+	timeout time.Duration
 }
 
 func NewProofClient(url string) (*ProofClient, error) {
@@ -20,7 +21,8 @@ func NewProofClient(url string) (*ProofClient, error) {
 		return nil, err
 	}
 	return &ProofClient{
-		client,
+		Client:  client,
+		timeout: 15 * time.Second,
 	}, nil
 }
 
@@ -30,12 +32,13 @@ func NewWsProofClient(url string) (*ProofClient, error) {
 		return nil, err
 	}
 	return &ProofClient{
-		client,
+		Client:  client,
+		timeout: 3 * time.Hour,
 	}, nil
 }
 
-func (p *ProofClient) ProofStatus(proofId string) (ProofStatus, error) {
-	status := ProofStatus{}
+func (p *ProofClient) ProofInfo(proofId string) (ProofResponse, error) {
+	status := ProofResponse{}
 	err := p.call(&status, "proof_status", proofId)
 	if err != nil {
 		return status, err
@@ -72,7 +75,7 @@ func (p *ProofClient) call(result interface{}, method string, args ...interface{
 	if vi.Kind() != reflect.Ptr {
 		return fmt.Errorf("result must be pointer")
 	}
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), p.timeout)
 	defer cancelFunc()
 	return p.CallContext(ctx, result, method, args...)
 }

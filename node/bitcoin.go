@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
@@ -11,28 +10,30 @@ import (
 )
 
 type BitcoinAgent struct {
-	btcClient     *bitcoin.Client
-	ethClient     *ethereum.Client
-	store         store.IStore
-	memoryStore   store.IStore
-	blockTime     time.Duration
-	proofResponse <-chan ProofResponse
-	ProofRequest  chan []ProofRequest
-	whiteList     map[string]bool
-	operateAddr   string
+	btcClient            *bitcoin.Client
+	ethClient            *ethereum.Client
+	store                store.IStore
+	memoryStore          store.IStore
+	blockTime            time.Duration
+	proofResponse        <-chan ProofResponse
+	proofRequest         chan []ProofRequest
+	checkProofHeightNums int64           // restart check proof height
+	whiteList            map[string]bool // gen tx proof whitelist
+	operateAddr          string
 }
 
 func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	request chan []ProofRequest, response <-chan ProofResponse) (IAgent, error) {
 	return &BitcoinAgent{
-		btcClient:     btcClient,
-		ethClient:     ethClient,
-		store:         store,
-		memoryStore:   memoryStore,
-		blockTime:     time.Duration(cfg.BTcBtcBlockTime) * time.Second,
-		operateAddr:   cfg.BtcOperatorAddr,
-		ProofRequest:  request,
-		proofResponse: response,
+		btcClient:            btcClient,
+		ethClient:            ethClient,
+		store:                store,
+		memoryStore:          memoryStore,
+		blockTime:            time.Duration(cfg.BTcBtcBlockTime) * time.Second,
+		operateAddr:          cfg.BtcOperatorAddr,
+		proofRequest:         request,
+		proofResponse:        response,
+		checkProofHeightNums: 100,
 	}, nil
 }
 
@@ -42,7 +43,13 @@ func (b *BitcoinAgent) Init() error {
 		logger.Error("get btc current height error:%v", err)
 		return err
 	}
-	if !has {
+	if has {
+		err := b.checkUnCompleteGenerateProofTx()
+		if err != nil {
+			logger.Error("check uncomplete generate proof tx error:%v", err)
+			return err
+		}
+	} else {
 		logger.Debug("init btc current height: %v", InitBitcoinHeight)
 		err := b.store.PutObj(btcCurHeightKey, InitBitcoinHeight)
 		if err != nil {
@@ -50,7 +57,52 @@ func (b *BitcoinAgent) Init() error {
 			return err
 		}
 	}
+
 	//todo
+	return nil
+}
+
+// checkUnCompleteGenerateProofTx check uncompleted generate proof tx,resend again
+func (b *BitcoinAgent) checkUnCompleteGenerateProofTx() error {
+	currentHeight, err := b.getCurrentHeight()
+	if err != nil {
+		logger.Error("get btc current height error:%v", err)
+		return err
+	}
+	start := currentHeight - b.checkProofHeightNums
+	var proofList []ProofRequest
+	for index := start; index < currentHeight; index++ {
+		var txIdList []string
+		hasObj, err := b.store.HasObj(index)
+		if err != nil {
+			logger.Error("get txIdList error:%v", err)
+			return err
+		}
+		if !hasObj {
+			continue
+		}
+		err = b.store.GetObj(index, &txIdList)
+		if err != nil {
+			logger.Error("get txIdList error:%v", err)
+			return err
+		}
+		for _, txId := range txIdList {
+			var proof TxProof
+			err := b.store.GetObj(TxIdToProofId(txId), &proof)
+			if err != nil {
+				logger.Error("get proof error:%v", err)
+				return err
+			}
+			proofList = append(proofList, ProofRequest{
+				TxId:   proof.TxId,
+				PType:  BitcoinChain,
+				ToAddr: proof.ToAddr,
+				Amount: proof.Amount,
+				Msg:    proof.Msg,
+			})
+		}
+	}
+	b.proofRequest <- proofList
 	return nil
 }
 
@@ -92,7 +144,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error(err.Error())
 			return err
 		}
-		b.ProofRequest <- proofRequestList
+		b.proofRequest <- proofRequestList
 	}
 	return nil
 }
@@ -107,7 +159,7 @@ func (b *BitcoinAgent) saveDataToDb(height int64, depositTxList []DepositTx) err
 			logger.Error(err.Error())
 			return err
 		}
-		pTxId := fmt.Sprintf("%s%s", ProofPrefix, depositTx.TxId)
+		pTxId := TxIdToProofId(depositTx.TxId)
 		err = b.store.BatchPutObj(pTxId, TxProof{
 			PTxId:  pTxId,
 			TxId:   depositTx.TxId,
@@ -174,10 +226,16 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 }
 
 func (b *BitcoinAgent) Transfer() error {
+	//todo whether need queue
 	for {
 		select {
 		case response := <-b.proofResponse:
-			err := b.MintZKBtcTx(response)
+			err := b.updateProof(response)
+			if err != nil {
+				logger.Error("update proof error:%v", err)
+				continue
+			}
+			err = b.MintZKBtcTx(response)
 			if err != nil {
 				//todo
 				logger.Error("mint btc tx error:%v", err)
@@ -202,6 +260,19 @@ func (b *BitcoinAgent) parseTx(outList []types.TxOut) (DepositTx, bool, error) {
 	}
 	//todo
 	return DepositTx{}, true, nil
+}
+
+func (b *BitcoinAgent) updateProof(resp ProofResponse) error {
+	pTxId := TxIdToProofId(resp.TxId)
+	err := b.store.PutObj(pTxId, TxProof{
+		PTxId:  pTxId,
+		TxId:   resp.TxId,
+		ToAddr: resp.ToAddr,
+		Amount: resp.Amount,
+		Msg:    resp.Msg,
+		Status: ProofSuccess,
+	})
+	return err
 }
 
 func (b *BitcoinAgent) Close() error {

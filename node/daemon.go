@@ -23,34 +23,33 @@ type IAgent interface {
 }
 
 type Daemon struct {
-	agents     []IAgent
-	server     *rpc.Server
-	nodeConfig NodeConfig
-	exitSignal chan struct{}
-	manager    *Manager
+	agents         []IAgent
+	server         *rpc.Server
+	nodeConfig     NodeConfig
+	exitScanSignal chan struct{}
+	manager        *Manager
 }
 
-func NewDaemon(cfg Config) (*Daemon, error) {
+func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	err := logger.InitLogger()
 	if err != nil {
 		logger.Error("init logger error:%v", err)
 		return nil, err
 	}
-	btcClient, err := bitcoin.NewClient(cfg.NodeConfig.BtcUrl, cfg.NodeConfig.BtcUser, cfg.NodeConfig.BtcPwd, cfg.NodeConfig.BtcNetwork)
+	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcNetwork)
 	if err != nil {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
 	}
-	ethClient, err := ethereum.NewClient(cfg.NodeConfig.EthUrl)
+	ethClient, err := ethereum.NewClient(cfg.EthUrl)
 	if err != nil {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
-	dbPath := fmt.Sprintf("%s/%s", cfg.NodeConfig.DataDir, cfg.NodeConfig.Network)
-	//todo
-	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
+	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
+	storeDb, err := store.NewStore(dbPath, 1000, 10000, "zkbtc", false)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("new store error:%v,dbPath:%s", err, dbPath)
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
@@ -58,34 +57,34 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
 	ethProofResp := make(chan ProofResponse, 1000)
-	btcAgent, err := NewBitcoinAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
+	btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg.NodeConfig, storeDb, memoryStore, btcClient, ethClient, proofRequest, ethProofResp)
+	ethAgent, err := NewEthereumAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, ethProofResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	workers, err := NewWorkers(cfg.NodeConfig.Workers)
+	workers, err := NewWorkers(cfg.Workers)
 	if err != nil {
 		logger.Error("new workers error:%v", err)
 		return nil, err
 	}
 	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, NewSchedule(workers...))
 	rpcHandler := NewHandler(storeDb, memoryStore)
-	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.SeverConfig.IP, cfg.SeverConfig.Port), rpcHandler)
+	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents:     []IAgent{btcAgent, ethAgent},
-		server:     server,
-		nodeConfig: cfg.NodeConfig,
-		exitSignal: make(chan struct{}, 1),
-		manager:    manager,
+		agents:         []IAgent{btcAgent, ethAgent},
+		server:         server,
+		nodeConfig:     cfg,
+		exitScanSignal: make(chan struct{}, 1),
+		manager:        manager,
 	}
 	err = daemon.Init()
 	if err != nil {
@@ -102,6 +101,8 @@ func (d *Daemon) Init() error {
 			return err
 		}
 	}
+	go d.manager.run()
+	go d.manager.genProof()
 	return nil
 }
 
@@ -119,7 +120,8 @@ func (d *Daemon) Run() error {
 					if err != nil {
 						logger.Error("%v run error %v", tNode.Name(), err)
 					}
-				case <-d.exitSignal:
+				case <-d.exitScanSignal:
+					logger.Info("exit scan block goroutine: %v", tNode.Name())
 					return
 				}
 			}
@@ -145,16 +147,17 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
+	close(d.exitScanSignal)
+	time.Sleep(2 * time.Second)
 	for _, node := range d.agents {
 		if err := node.Close(); err != nil {
 			logger.Error("%v:close node error %v", node.Name(), err)
-			//need continue,close next node
 		}
 	}
-	close(d.exitSignal)
+	d.manager.Close()
 	err := d.server.Shutdown()
 	if err != nil {
-		logger.Error("server shutdown error:%v", err)
+		logger.Error("rpc server shutdown error:%v", err)
 	}
 	return nil
 }

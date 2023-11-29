@@ -8,5 +8,5 @@ type NodeAPI interface {
 type ProofAPI interface {
 	Info() (ProofInfo, error)
 	GenZkProof(request ProofRequest) (ProofResponse, error)
-	ProofStatus(proofId string) (ProofStatus, error)
+	ProofInfo(proofId string) (ProofResponse, error)
 }
