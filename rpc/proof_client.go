@@ -15,7 +15,7 @@ type ProofClient struct {
 	timeout time.Duration
 }
 
-func NewProofClient(url string) (*ProofClient, error) {
+func NewProofClient(url string) (ProofAPI, error) {
 	client, err := rpc.DialHTTP(url)
 	if err != nil {
 		return nil, err
