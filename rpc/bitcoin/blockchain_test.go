@@ -7,7 +7,7 @@ import (
 
 func TestClient_scantxoutset(t *testing.T) {
 
-	result, err := client.Scantxoutset("bcrt1q823m29mq29lt7heewwdry34phtgu767lgv5mx6")
+	result, err := client.Scantxoutset("bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5")
 	if err != nil {
 		panic(err)
 	}

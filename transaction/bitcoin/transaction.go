@@ -33,16 +33,12 @@ type TxOut struct {
 
 //todo
 
-func CreateTransaction(secret string, inputs []TxIn, outputs []TxOut, network NetWork) ([]byte, error) {
+func CreateTransaction(secret []byte, inputs []TxIn, outputs []TxOut, network NetWork) ([]byte, error) {
 	networkParams, err := getNetworkParams(network)
 	if err != nil {
 		return nil, err
 	}
-	secretBytes, err := hex.DecodeString(secret)
-	if err != nil {
-		return nil, err
-	}
-	privKey, _ := btcec.PrivKeyFromBytes(secretBytes)
+	privateKey, _ := btcec.PrivKeyFromBytes(secret)
 	var txInPkScripts [][]byte
 	var txInValues []btcutil.Amount
 	msgTx := wire.NewMsgTx(wire.TxVersion)
@@ -53,7 +49,11 @@ func CreateTransaction(secret string, inputs []TxIn, outputs []TxOut, network Ne
 		}
 		txIn := wire.NewTxIn(wire.NewOutPoint(hash, input.VOut), nil, nil)
 		msgTx.AddTxIn(txIn)
-		txInPkScripts = append(txInPkScripts, []byte(input.PkScript))
+		pkScriptBytes, err := hex.DecodeString(input.PkScript)
+		if err != nil {
+			return nil, err
+		}
+		txInPkScripts = append(txInPkScripts, pkScriptBytes)
 		txInValues = append(txInValues, btcutil.Amount(input.Amount))
 	}
 	for _, output := range outputs {
@@ -69,7 +69,7 @@ func CreateTransaction(secret string, inputs []TxIn, outputs []TxOut, network Ne
 		msgTx.AddTxOut(txOut)
 	}
 
-	err = CreateTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privKey}, networkParams)
+	err = CreateTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privateKey}, networkParams)
 	if err != nil {
 		return nil, err
 	}
@@ -87,58 +87,110 @@ func CreateTransaction(secret string, inputs []TxIn, outputs []TxOut, network Ne
 
 //todo
 
-func CreateMultiSigTransaction(secrets []string, inputs []TxIn, outputs []TxOut, network NetWork) ([]byte, error) {
-	var privKeys []*btcec.PrivateKey
-	var pubKeys []*btcec.PublicKey
-	var addrPubKeys []*btcutil.AddressPubKey
-	netParams := &chaincfg.RegressionNetParams
-	for _, secret := range secrets {
-		s, err := hex.DecodeString(secret)
-		if err != nil {
-			return nil, err
-		}
-		privKey, pubKey := btcec.PrivKeyFromBytes(s)
-		privKeys = append(privKeys, privKey)
-		pubKeys = append(pubKeys, pubKey)
-		addrPubKey, _ := btcutil.NewAddressPubKey(pubKey.SerializeCompressed(), netParams)
-		addrPubKeys = append(addrPubKeys, addrPubKey)
+func CreateDepositTransaction(secret, ethAddr []byte, inputs []TxIn, outputs []TxOut, network NetWork) ([]byte, error) {
+	networkParams, err := getNetworkParams(network)
+	if err != nil {
+		return nil, err
 	}
-	multiSigScript, _ := txscript.MultiSigScript(addrPubKeys, 2)
-	scriptHash := sha256.Sum256(multiSigScript)
-	from, _ := btcutil.NewAddressWitnessScriptHash(scriptHash[:], netParams)
-
+	privateKey, _ := btcec.PrivKeyFromBytes(secret)
+	var txInPkScripts [][]byte
+	var txInValues []btcutil.Amount
 	msgTx := wire.NewMsgTx(wire.TxVersion)
-	var witnessScriptList []wire.TxWitness
-	for index, input := range inputs {
-		var txInPkScripts [][]byte
-		var txInValues []btcutil.Amount
+	for _, input := range inputs {
 		hash, err := chainhash.NewHashFromStr(input.Hash)
 		if err != nil {
 			return nil, err
 		}
 		txIn := wire.NewTxIn(wire.NewOutPoint(hash, input.VOut), nil, nil)
 		msgTx.AddTxIn(txIn)
-		txInPkScripts = append(txInPkScripts, []byte(input.PkScript))
+		pkScriptBytes, err := hex.DecodeString(input.PkScript)
+		if err != nil {
+			return nil, err
+		}
+		txInPkScripts = append(txInPkScripts, pkScriptBytes)
 		txInValues = append(txInValues, btcutil.Amount(input.Amount))
-		hashes, err := CalWitnessSigHash(msgTx, txInPkScripts, txInValues, from, netParams, [][]byte{multiSigScript})
+	}
+	opReturnScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData(ethAddr).Script()
+	if err != nil {
+		return nil, err
+	}
+	msgTx.AddTxOut(wire.NewTxOut(0, opReturnScript))
+	for _, output := range outputs {
+		address, err := btcutil.DecodeAddress(output.Address, networkParams)
 		if err != nil {
 			return nil, err
 		}
-		var sigs [][]byte
-		for _, priv := range privKeys {
-			sig := ecdsa.Sign(priv, hashes[0])
-
-			sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
-			sigs = append(sigs, sigWithType)
-		}
-
-		witnessScript, err := MergeMultiSignatures(2, multiSigScript, sigs)
+		txOutScript, err := txscript.PayToAddrScript(address)
 		if err != nil {
 			return nil, err
 		}
-		witnessScriptList = append(witnessScriptList, witnessScript)
-		msgTx.TxIn[index].Witness = witnessScript
+		txOut := wire.NewTxOut(output.Amount, txOutScript)
+		msgTx.AddTxOut(txOut)
+	}
 
+	err = CreateTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privateKey}, networkParams)
+	if err != nil {
+		return nil, err
+	}
+	err = ValidateMsgTx(msgTx, txInPkScripts, txInValues)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = msgTx.Serialize(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+//todo
+
+func CreateMultiSigTransaction(nRequired int, secrets [][]byte, inputs []TxIn, outputs []TxOut, network NetWork) ([]byte, error) {
+	var privateKeys []*btcec.PrivateKey
+	var pubKeys []*btcec.PublicKey
+	var addrPubKeys []*btcutil.AddressPubKey
+	netParams, err := getNetworkParams(network)
+	if err != nil {
+		return nil, err
+	}
+	for _, secret := range secrets {
+		privKey, pubKey := btcec.PrivKeyFromBytes(secret)
+		privateKeys = append(privateKeys, privKey)
+		pubKeys = append(pubKeys, pubKey)
+		addrPubKey, err := btcutil.NewAddressPubKey(pubKey.SerializeCompressed(), netParams)
+		if err != nil {
+			return nil, err
+		}
+		addrPubKeys = append(addrPubKeys, addrPubKey)
+	}
+	multiSigScript, err := txscript.MultiSigScript(addrPubKeys, nRequired)
+	if err != nil {
+		return nil, err
+	}
+	scriptHash := sha256.Sum256(multiSigScript)
+	from, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], netParams)
+	if err != nil {
+		return nil, err
+	}
+	var txInPkScripts [][]byte
+	var txInValues []btcutil.Amount
+	var multiScripts [][]byte
+	msgTx := wire.NewMsgTx(2)
+	for _, input := range inputs {
+		hash, err := chainhash.NewHashFromStr(input.Hash)
+		if err != nil {
+			return nil, err
+		}
+		txIn := wire.NewTxIn(wire.NewOutPoint(hash, input.VOut), nil, nil)
+		msgTx.AddTxIn(txIn)
+		pkScriptBytes, err := hex.DecodeString(input.PkScript)
+		if err != nil {
+			return nil, err
+		}
+		txInPkScripts = append(txInPkScripts, pkScriptBytes)
+		txInValues = append(txInValues, btcutil.Amount(input.Amount))
+		multiScripts = append(multiScripts, multiSigScript)
 	}
 	for _, output := range outputs {
 		address, err := btcutil.DecodeAddress(output.Address, netParams)
@@ -152,8 +204,29 @@ func CreateMultiSigTransaction(secrets []string, inputs []TxIn, outputs []TxOut,
 		txOut := wire.NewTxOut(output.Amount, txOutScript)
 		msgTx.AddTxOut(txOut)
 	}
+	hashes, err := CalWitnessSigHash(msgTx, txInPkScripts, txInValues, from, netParams, multiScripts)
+	if err != nil {
+		return nil, err
+	}
+	for index, hash := range hashes {
+		var sigs [][]byte
+		for _, priv := range privateKeys {
+			sig := ecdsa.Sign(priv, hash)
+			sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
+			sigs = append(sigs, sigWithType)
+		}
+		witnessScript, err := MergeMultiSignatures(nRequired, multiSigScript, sigs)
+		if err != nil {
+			return nil, err
+		}
+		msgTx.TxIn[index].Witness = witnessScript
+	}
+	err = ValidateMsgTx(msgTx, txInPkScripts, txInValues)
+	if err != nil {
+		return nil, err
+	}
 	var buf bytes.Buffer
-	err := msgTx.Serialize(&buf)
+	err = msgTx.Serialize(&buf)
 	if err != nil {
 		return nil, err
 	}
