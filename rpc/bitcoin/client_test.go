@@ -52,7 +52,7 @@ func TestClient_GetBlockTx(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	blockWithTx, err := client.GetBlockWithTx(hash)
+	blockWithTx, err := client.GetBlock(hash)
 	if err != nil {
 		panic(err)
 	}

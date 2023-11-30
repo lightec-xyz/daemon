@@ -12,5 +12,12 @@ func TestDemo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(data)
 	fmt.Printf("%v : %x\n", len(data[2:]), data[2:])
+
+	result, err := hex.DecodeString("cbee12cf5411935db7ba6311a16c2e5b1aa7ac7d7562593312707fb343551117")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(result)
 }

@@ -44,8 +44,8 @@ func (client *Client) GetBlockCount() (int64, error) {
 	return count, err
 }
 
-func (client *Client) GetBlockWithTx(hash string) (*types.BlockWithTx, error) {
-	res := &types.BlockWithTx{}
+func (client *Client) GetBlock(hash string) (*types.Block, error) {
+	res := &types.Block{}
 	err := client.Call(GETBLOCK, res, &hash, 3)
 	if err != nil {
 		logger.Error("getblock error:%s", err.Error())

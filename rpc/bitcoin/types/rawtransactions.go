@@ -26,13 +26,7 @@ type RawTransaction struct {
 	Vsize  int `json:"vsize"`
 	Weight int `json:"weight"`
 }
-type ScriptPubKey struct {
-	Address string `json:"address"`
-	Asm     string `json:"asm"`
-	Desc    string `json:"desc"`
-	Hex     string `json:"hex"`
-	Type    string `json:"type"`
-}
+
 type ScriptSig struct {
 	Asm string `json:"asm"`
 	Hex string `json:"hex"`

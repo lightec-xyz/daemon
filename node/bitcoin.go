@@ -1,11 +1,13 @@
 package node
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"strings"
 	"time"
 )
 
@@ -20,6 +22,7 @@ type BitcoinAgent struct {
 	checkProofHeightNums int64           // restart check proof height
 	whiteList            map[string]bool // gen tx proof whitelist
 	operateAddr          string
+	minDepositValue      float64
 }
 
 func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
@@ -34,6 +37,7 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 		proofRequest:         request,
 		proofResponse:        response,
 		checkProofHeightNums: 100,
+		minDepositValue:      0,
 	}, nil
 }
 
@@ -197,7 +201,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 		logger.Error(err.Error())
 		return nil, nil, err
 	}
-	blockWithTx, err := b.btcClient.GetBlockWithTx(blockHash)
+	blockWithTx, err := b.btcClient.GetBlock(blockHash)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil, err
@@ -205,7 +209,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 	var proofRequestList []ProofRequest
 	var depositTxList []DepositTx
 	for _, tx := range blockWithTx.Tx {
-		depositTx, check, err := b.parseTx(tx.Vout)
+		depositTx, check, err := b.checkTx(tx.Vout)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, nil, err
@@ -248,18 +252,33 @@ func (b *BitcoinAgent) Transfer() error {
 }
 
 func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
-	//todo
+	//b.ethClient.Deposit()
 	panic("implement me")
 }
 
-// todo  check rule
-
-func (b *BitcoinAgent) parseTx(txOuts []types.TxOut) (DepositTx, bool, error) {
-	//todo
-	if len(txOuts) == 2 && len(txOuts) == 3 {
-		return DepositTx{}, false, nil
+func (b *BitcoinAgent) checkTx(txOuts []types.TxVout) (DepositTx, bool, error) {
+	// todo   check rule
+	depositTx := DepositTx{}
+	if len(txOuts) >= 2 {
+		return depositTx, false, nil
 	}
-	return DepositTx{}, true, nil
+	if txOuts[1].ScriptPubKey.Address != b.operateAddr {
+		return depositTx, false, nil
+	}
+	if txOuts[1].Value <= b.minDepositValue {
+		return depositTx, false, nil
+	}
+	if !(txOuts[0].ScriptPubKey.Type == "nulldata" && strings.HasPrefix(txOuts[0].ScriptPubKey.Hex, "6a")) {
+		return depositTx, false, nil
+	}
+	ethAddr, err := getEthAddrFromScript(txOuts[0].ScriptPubKey.Hex)
+	if err != nil {
+		logger.Error("get eth addr from script error:%v", err)
+		return depositTx, false, err
+	}
+	depositTx.EthAddr = ethAddr
+	depositTx.Amount = fmt.Sprintf("%v", txOuts[1].Value) //todo
+	return depositTx, true, nil
 }
 
 func (b *BitcoinAgent) updateProof(resp ProofResponse) error {
