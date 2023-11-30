@@ -254,11 +254,11 @@ func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 
 // todo  check rule
 
-func (b *BitcoinAgent) parseTx(outList []types.TxOut) (DepositTx, bool, error) {
-	if len(outList) < 2 {
+func (b *BitcoinAgent) parseTx(txOuts []types.TxOut) (DepositTx, bool, error) {
+	//todo
+	if len(txOuts) == 2 && len(txOuts) == 3 {
 		return DepositTx{}, false, nil
 	}
-	//todo
 	return DepositTx{}, true, nil
 }
 

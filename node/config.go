@@ -32,7 +32,7 @@ func localDevDaemonConfig() NodeConfig {
 		Network:         "testnet",
 		Rpcbind:         "127.0.0.1",
 		RpcPort:         "8899",
-		BtcUrl:          "http://127.0.0.1:8332",
+		BtcUrl:          "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
 		BtcUser:         "lightec",
 		BtcPwd:          "abcd1234",
 		BtcNetwork:      "regtest",
@@ -41,7 +41,7 @@ func localDevDaemonConfig() NodeConfig {
 		BtcWhiteList: []string{
 			"",
 		},
-		EthUrl:        "http://127.0.0.1:8332",
+		EthUrl:        "https://endpoints.omniatech.io/v1/eth/goerli/public",
 		EthBlockTime:  15,
 		EthPrivateKey: "testprivateKey",
 		EthWhiteList: []string{

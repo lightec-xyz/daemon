@@ -248,6 +248,79 @@ func TestCreateRedeemTx_2(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCreateRedeemTx_3(t *testing.T) {
+	expectedHash, _ := hex.DecodeString("00a165032df678da63f0e024bff6f6593a3d3af2bb318a992fc5c88fb2bcf613")
+	scretes := []string{
+		"23c9cdb2685d0905c0969dbbbfd27fdc1791e16e43b0352d9f11a89053d268ac",
+		"47b38c30407286330562e228a73bf84f0c6d5d9593bd16b2dfc66ca1654ab83d",
+		"968b40431da7f3aba9dfea20f0c9790ca38117d884ce47ef03d36829cfc48f49",
+	}
+	privKeys := []*btcec.PrivateKey{}
+	pubKeys := []*btcec.PublicKey{}
+	addrPubKeys := []*btcutil.AddressPubKey{}
+	netParams := &chaincfg.RegressionNetParams
+	for _, secret := range scretes {
+		s, _ := hex.DecodeString(secret)
+		privKey, pubKey := btcec.PrivKeyFromBytes(s)
+		privKeys = append(privKeys, privKey)
+		pubKeys = append(pubKeys, pubKey)
+		addrPubKey, _ := btcutil.NewAddressPubKey(pubKey.SerializeCompressed(), netParams)
+		addrPubKeys = append(addrPubKeys, addrPubKey)
+	}
+
+	multiSigScript, _ := txscript.MultiSigScript(addrPubKeys, 2)
+
+	scriptHash := sha256.Sum256(multiSigScript)
+	from, _ := btcutil.NewAddressWitnessScriptHash(scriptHash[:], netParams)
+
+	to, _ := btcutil.DecodeAddress("tb1ql9azatvsw9cxydtu3s0wzhf76zjnynhasuy4zy", netParams)
+
+	reedeemTx := wire.NewMsgTx(2)
+	hash, err := chainhash.NewHashFromStr("a0b391b03d17c3a07a65652b5807931bcbb31d63894b8fd46538fc50602948c3")
+	txIn := wire.NewTxIn(wire.NewOutPoint(hash, 0), nil, nil)
+	reedeemTx.AddTxIn(txIn)
+
+	//TxIn's pkScript and value
+	txInPkScript, err := hex.DecodeString("0020f13079e066269d06feecbb74847c29ead0ff1e34e4330a6c30c28696785cfdf0")
+	txInValue := btcutil.Amount(6500)
+
+	//TxOut
+	txOutScript, err := txscript.PayToAddrScript(to)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	txOut := wire.NewTxOut(6000, txOutScript)
+	reedeemTx.AddTxOut(txOut)
+
+	hashes, err := CalWitnessSigHash(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, from, netParams, [][]byte{multiSigScript})
+	assert.NoError(t, err)
+	fmt.Printf("hash:%v\n", hex.EncodeToString(hashes[0]))
+	assert.Equal(t, expectedHash, hashes[0])
+
+	var sigs [][]byte
+	for _, priv := range privKeys {
+		sig := ecdsa.Sign(priv, hashes[0])
+
+		sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
+		sigs = append(sigs, sigWithType)
+	}
+
+	witnessScript, err := MergeMultiSignatures(2, multiSigScript, sigs)
+	assert.NoError(t, err)
+
+	reedeemTx.TxIn[0].Witness = witnessScript
+	var buf bytes.Buffer
+	err = reedeemTx.Serialize(&buf)
+	//fmt.Printf("signed reedeem TxHash: %v\n", reedeemTx.TxHash())
+	//fmt.Printf("signed reedeem WitnessHash: %v\n", reedeemTx.WitnessHash())
+	fmt.Printf("signed reedeem: %v\n", hex.EncodeToString(buf.Bytes()))
+	//correct: 020000000001010270eb309e31d2a0b8ac505f297cd413501742f8c3a79f83c5cbd1d7cdd403a40000000000ffffffff01401f000000000000160014f97a2ead90717062357c8c1ee15d3ed0a5324efd04004830450221009a2ccd91d89bf37c556863f13ed939aed04694e34dc97e0ea9f1c35018e46d23022055e657a3d93ceb693a4983773d6907ffdc8325798ce977546e1c87f43a67bf5b014730440220765f46fcb6bc52d24ee6fe593661d414c26242aac6ec8c17e7b61c9e1d8fbacc02202c0ddd31048508f2b9ed73d81540055c868b2e78df14f93c137c0bf2baaa39e001695221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae00000000
+	err = ValidateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
+	assert.NoError(t, err)
+
+}
+
 func TestCalculateHash_1(t *testing.T) {
 	reedeemTx := wire.NewMsgTx(2)
 	expectedHash, _ := hex.DecodeString("f889a5df00f886ba0c932ab668a28ab8b9f60ef8332a628065a61561de515585")

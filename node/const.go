@@ -8,8 +8,8 @@ const (
 )
 
 const (
-	InitBitcoinHeight  = 100
-	InitEthereumHeight = 10000
+	InitBitcoinHeight  = 2540942
+	InitEthereumHeight = 10127532
 )
 
 const ProofPrefix = "p"

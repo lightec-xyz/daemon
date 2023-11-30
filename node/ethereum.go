@@ -49,6 +49,7 @@ func (e *EthereumAgent) Init() error {
 			return err
 		}
 	} else {
+		logger.Debug("init eth current height: %v", InitEthereumHeight)
 		err := e.store.PutObj(ethCurHeightKey, InitEthereumHeight)
 		if err != nil {
 			logger.Error("put init eth current height error:%v", err)
