@@ -10,6 +10,7 @@ import (
 	"github.com/lightec-xyz/daemon/transaction/ethereum/zkbridge"
 	"github.com/onrik/ethrpc"
 	"math/big"
+	"time"
 )
 
 // todo
@@ -33,20 +34,10 @@ func NewClient(endpoint string, zkBridgeAddr string) (*Client, error) {
 	return &Client{Client: client, EthRPC: ethRPC, zkBridgeCall: zkBridgeCall}, nil
 }
 
-func (c *Client) Deposit(secret, txId, ethAddr string, index uint32, amount *big.Int, proof []byte) (string, error) {
-	ctx := context.Background()
-	chainID, err := c.ChainID(ctx)
-	if err != nil {
-		return "", err
-	}
-	nonce, err := c.NonceAt(ctx, common.HexToAddress(ethAddr), nil)
-	if err != nil {
-		return "", err
-	}
-	gasPrice, err := c.EthGasPrice()
-	if err != nil {
-		return "", err
-	}
+func (c *Client) Deposit(secret, txId, ethAddr string, index uint32,
+	gasLimit uint64, nonce, chainID, gasPrice, amount *big.Int, proof []byte) (string, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
 	if err != nil {
 		return "", err
@@ -55,9 +46,10 @@ func (c *Client) Deposit(secret, txId, ethAddr string, index uint32, amount *big
 	if err != nil {
 		return "", err
 	}
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasPrice = &gasPrice
-	auth.GasLimit = 500000
+	auth.Context = ctx
+	auth.Nonce = nonce
+	auth.GasPrice = gasPrice
+	auth.GasLimit = gasLimit
 	fixedTxId := [32]byte{}
 	copy(fixedTxId[:], common.FromHex(txId))
 	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, common.HexToAddress(ethAddr), proof)
@@ -68,20 +60,10 @@ func (c *Client) Deposit(secret, txId, ethAddr string, index uint32, amount *big
 
 }
 
-func (c *Client) Redeem(from, secret string, amount, btcMinerFee *big.Int, receiveLockScript []byte) (string, error) {
-	ctx := context.Background()
-	chainID, err := c.ChainID(ctx)
-	if err != nil {
-		return "", err
-	}
-	nonce, err := c.NonceAt(ctx, common.HexToAddress(from), nil)
-	if err != nil {
-		return "", err
-	}
-	gasPrice, err := c.EthGasPrice()
-	if err != nil {
-		return "", err
-	}
+func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice,
+	amount, btcMinerFee *big.Int, receiveLockScript []byte) (string, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
 	if err != nil {
 		return "", err
@@ -90,9 +72,10 @@ func (c *Client) Redeem(from, secret string, amount, btcMinerFee *big.Int, recei
 	if err != nil {
 		return "", err
 	}
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasPrice = &gasPrice
-	auth.GasLimit = 500000
+	auth.Context = ctx
+	auth.Nonce = nonce
+	auth.GasPrice = gasPrice
+	auth.GasLimit = gasLimit
 	transaction, err := c.zkBridgeCall.Redeem(auth, amount, btcMinerFee, receiveLockScript)
 	if err != nil {
 		return "", err

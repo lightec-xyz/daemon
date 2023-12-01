@@ -9,7 +9,8 @@
   "btcNetwork": "regtest",
   "btcBlockTime": 15,
   "btcOperatorAddr": "",
-  "ethUrl": "https://endpoints.omniatech.io/v1/eth/goerli/public",
+  "ethUrl": "https://rpc.notadegen.com/eth/sepolia",
+  "zkBridgeAddr": "0x8dda72ee36ab9c91e92298823d3c0d4d73894081",
   "ethBlockTime": 15,
   "btcWhiteList": [
     ""

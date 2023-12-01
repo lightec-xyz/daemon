@@ -14,6 +14,7 @@ type NodeConfig struct {
 	BtcWhiteList    []string `json:"btcWhiteList"`
 	EthWhiteList    []string `json:"ethWhiteList"`
 	EthUrl          string   `json:"ethUrl"`
+	ZkBridgeAddr    string   `json:"zkBridgeAddr"`
 	EthBlockTime    int64    `json:"ethBlockTime"`
 	EthPrivateKey   string   `json:"ethPrivateKey"`
 	ProofUrl        string   `json:"proofUrl"`
@@ -41,7 +42,8 @@ func localDevDaemonConfig() NodeConfig {
 		BtcWhiteList: []string{
 			"",
 		},
-		EthUrl:        "https://endpoints.omniatech.io/v1/eth/goerli/public",
+		EthUrl:        "https://rpc.notadegen.com/eth/sepolia",
+		ZkBridgeAddr:  "0x8dda72ee36ab9c91e92298823d3c0d4d73894081",
 		EthBlockTime:  15,
 		EthPrivateKey: "testprivateKey",
 		EthWhiteList: []string{

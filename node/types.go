@@ -44,6 +44,7 @@ type ProofRequest struct {
 
 type ProofResponse struct {
 	TxId   string `json:"txId"`
+	Index  uint32 `json:"index"`
 	PType  string `json:"type"`
 	Proof  string `json:"proof"`
 	ToAddr string `json:"toAddr"`

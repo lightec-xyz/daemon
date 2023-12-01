@@ -252,8 +252,15 @@ func (b *BitcoinAgent) Transfer() error {
 }
 
 func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
-	//b.ethClient.Deposit()
-	panic("implement me")
+	//todo
+	
+	txHash, err := b.ethClient.Deposit()
+	if err != nil {
+		logger.Error("mint btc tx error:%v", err)
+		return err
+	}
+	logger.Info("success send mint tx hash:%v", txHash)
+	return nil
 }
 
 func (b *BitcoinAgent) checkTx(txOuts []types.TxVout) (DepositTx, bool, error) {
