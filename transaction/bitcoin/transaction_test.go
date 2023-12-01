@@ -59,10 +59,10 @@ func TestCreateDepositTx_1(t *testing.T) {
 	fmt.Printf("before sign deposit WitnessHash: %v\n", depositTx.WitnessHash())
 	fmt.Printf("before sign deposit: %v\n", hex.EncodeToString(buf.Bytes()))
 
-	err = CreateTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, []*btcec.PrivateKey{privKey}, netParams)
+	err = createTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, []*btcec.PrivateKey{privKey}, netParams)
 	assert.NoError(t, err)
 
-	err = ValidateMsgTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
+	err = validateMsgTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
 	assert.NoError(t, err)
 
 	buf.Reset()
@@ -101,10 +101,10 @@ func TestCreateDepositTx_2(t *testing.T) {
 	txOut := wire.NewTxOut(6500, txOutScript)
 	depositTx.AddTxOut(txOut)
 
-	err = CreateTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, []*btcec.PrivateKey{privKey}, &chaincfg.TestNet3Params)
+	err = createTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue}, []*btcec.PrivateKey{privKey}, &chaincfg.TestNet3Params)
 	assert.NoError(t, err)
 
-	err = ValidateMsgTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
+	err = validateMsgTx(depositTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
 	assert.NoError(t, err)
 
 	var buf bytes.Buffer
@@ -188,7 +188,7 @@ func TestCreateRedeemTx_1(t *testing.T) {
 	err = reedeemTx.Serialize(&buf)
 	fmt.Printf("signed reedeem: %v\n", hex.EncodeToString(buf.Bytes()))
 	//correct: 020000000001010270eb309e31d2a0b8ac505f297cd413501742f8c3a79f83c5cbd1d7cdd403a40000000000ffffffff01401f000000000000160014f97a2ead90717062357c8c1ee15d3ed0a5324efd04004830450221009a2ccd91d89bf37c556863f13ed939aed04694e34dc97e0ea9f1c35018e46d23022055e657a3d93ceb693a4983773d6907ffdc8325798ce977546e1c87f43a67bf5b014730440220765f46fcb6bc52d24ee6fe593661d414c26242aac6ec8c17e7b61c9e1d8fbacc02202c0ddd31048508f2b9ed73d81540055c868b2e78df14f93c137c0bf2baaa39e001695221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae00000000
-	//err = ValidateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
+	//err = validateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
 	assert.NoError(t, err)
 }
 
@@ -260,7 +260,7 @@ func TestCreateRedeemTx_2(t *testing.T) {
 	//fmt.Printf("signed reedeem WitnessHash: %v\n", reedeemTx.WitnessHash())
 	fmt.Printf("signed reedeem: %v\n", hex.EncodeToString(buf.Bytes()))
 	//correct: 020000000001010270eb309e31d2a0b8ac505f297cd413501742f8c3a79f83c5cbd1d7cdd403a40000000000ffffffff01401f000000000000160014f97a2ead90717062357c8c1ee15d3ed0a5324efd04004830450221009a2ccd91d89bf37c556863f13ed939aed04694e34dc97e0ea9f1c35018e46d23022055e657a3d93ceb693a4983773d6907ffdc8325798ce977546e1c87f43a67bf5b014730440220765f46fcb6bc52d24ee6fe593661d414c26242aac6ec8c17e7b61c9e1d8fbacc02202c0ddd31048508f2b9ed73d81540055c868b2e78df14f93c137c0bf2baaa39e001695221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae00000000
-	err = ValidateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
+	err = validateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
 	assert.NoError(t, err)
 }
 
@@ -332,7 +332,7 @@ func TestCreateRedeemTx_3(t *testing.T) {
 	//fmt.Printf("signed reedeem WitnessHash: %v\n", reedeemTx.WitnessHash())
 	fmt.Printf("signed reedeem: %v\n", hex.EncodeToString(buf.Bytes()))
 	//correct: 020000000001010270eb309e31d2a0b8ac505f297cd413501742f8c3a79f83c5cbd1d7cdd403a40000000000ffffffff01401f000000000000160014f97a2ead90717062357c8c1ee15d3ed0a5324efd04004830450221009a2ccd91d89bf37c556863f13ed939aed04694e34dc97e0ea9f1c35018e46d23022055e657a3d93ceb693a4983773d6907ffdc8325798ce977546e1c87f43a67bf5b014730440220765f46fcb6bc52d24ee6fe593661d414c26242aac6ec8c17e7b61c9e1d8fbacc02202c0ddd31048508f2b9ed73d81540055c868b2e78df14f93c137c0bf2baaa39e001695221028fa190883221d93c3ecd3d9a7c7afa130393d56826acc811b3d27834b4986f3221033e8d41a47d121a6a4ac4e05db8967b47ff3036507e7d95a6b912483bea9ab7162103d78e3a9b9b1b966b930e13acf2eb90eb9b9c87c044e6f05a49b6bc0c3d5c5a2b53ae00000000
-	err = ValidateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
+	err = validateMsgTx(reedeemTx, [][]byte{txInPkScript}, []btcutil.Amount{txInValue})
 	assert.NoError(t, err)
 
 }

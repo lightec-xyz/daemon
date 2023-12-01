@@ -59,6 +59,67 @@ func TestClient_GetBlockTx(t *testing.T) {
 	fmt.Println(blockWithTx)
 }
 
+func TestMultiTransactionBuilder(t *testing.T) {
+	pub1, err := hex.DecodeString("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub2, err := hex.DecodeString("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub3, err := hex.DecodeString("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pubkeylist := [][]byte{pub1, pub2, pub3}
+	txInputs := []bitcoin.TxIn{
+		{
+			Hash:     "820556b04b6955cc0646bd424792c5940753a82d55140d9af3cc2f8060576f21",
+			VOut:     1,
+			PkScript: "0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71",
+			Amount:   1200000000,
+		},
+	}
+	txOutputs := []bitcoin.TxOut{
+		{
+			Address: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
+			Amount:  1199999800,
+		},
+	}
+
+	builder := bitcoin.NewMultiTransactionBuilder()
+	err = builder.NetParams(bitcoin.RegTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = builder.AddMultiPublicKey(pubkeylist, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = builder.AddTxIn(txInputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = builder.AddTxOut(txOutputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = builder.Sign(func(hash []byte) ([][]byte, error) {
+		//todo
+		return nil, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	txBytes, err := builder.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%x\n", txBytes)
+
+}
+
 func TestMockDemo(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		address, err := client.GetRawChangeAddress()

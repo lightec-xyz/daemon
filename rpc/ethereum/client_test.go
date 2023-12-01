@@ -16,7 +16,7 @@ var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
 var endpoint = "https://rpc.notadegen.com/eth/sepolia"
-var zkBridgeAddr = "0x8dda72ee36ab9c91e92298823d3c0d4d73894081"
+var zkBridgeAddr = "0xe9Bcf494514270C9886E87d9bFd4A5Bb258d25c6"
 
 func init() {
 	//https://sepolia.publicgoods.network
@@ -32,6 +32,14 @@ func TestClient_TestEth(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(result)
+}
+
+func TestClient_GetLogs(t *testing.T) {
+	logs, err := client.GetLogs("0x4c583295db47a2fc00aa3cf98f497c9a0604508dc6d6f8368021e6600b609071")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(logs)
 }
 
 func TestPrivateKey(t *testing.T) {
@@ -52,10 +60,9 @@ func TestPrivateKey(t *testing.T) {
 
 func TestRedeemTx(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	redeemAmount := big.NewInt(100)
-	minerFee := big.NewInt(100)
-	redeemLockScript := []byte{}
-
+	redeemAmount := big.NewInt(1)
+	minerFee := big.NewInt(1)
+	redeemLockScript := []byte("redeem lock script")
 	from := common.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -64,6 +71,7 @@ func TestRedeemTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	gasPrice = big.NewInt(0).Mul(big.NewInt(2), gasPrice)
 	chainID, err := client.ChainID(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -81,10 +89,10 @@ func TestRedeemTx(t *testing.T) {
 
 func TestTransaction(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	txId := "7d8f46b43caebfc8f5940b3bbab189aa96d6569580e7328f19d5542de2a51467"
+	txId := "4a362c018bdce0a86305987503fda301155fd8416d76c8b6498cca59aecd165e"
 	ethAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
 	index := uint32(1)
-	amount := big.NewInt(123565656566)
+	amount := big.NewInt(100)
 	proofBytes := []byte("test proof")
 	from := common.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -94,6 +102,7 @@ func TestTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	gasPrice = big.NewInt(0).Mul(big.NewInt(2), gasPrice)
 	chainID, err := client.ChainID(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -102,9 +111,8 @@ func TestTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	txHash, err := client.Deposit(privateKey, txId, ethAddr, index,
-		uint64(gasLimit), big.NewInt(int64(nonce)), chainID, gasPrice, amount, proofBytes)
+		nonce, uint64(gasLimit), chainID, gasPrice, amount, proofBytes)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -25,19 +25,6 @@ type PublicKey []byte
 type AddrType string
 type NetWork string
 
-const (
-	P2PKH  AddrType = "P2PKH"
-	P2PSH  AddrType = "P2PSH"
-	P2WPKH AddrType = "P2WPKH"
-	P2WPSH AddrType = "P2WSH"
-)
-
-const (
-	MainNet NetWork = "MainNet"
-	TestNet NetWork = "TestNet"
-	RegTest NetWork = "RegTest"
-)
-
 type KeyPair struct {
 	privateKey *btcec.PrivateKey
 	publicKey  *secp256k1.PublicKey

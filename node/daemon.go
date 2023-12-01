@@ -15,7 +15,7 @@ import (
 
 type IAgent interface {
 	ScanBlock() error
-	Transfer() error
+	Transfer()
 	Init() error
 	Close() error
 	Name() string
@@ -100,6 +100,7 @@ func (d *Daemon) Init() error {
 			logger.Error("%v:init node error %v", node.Name(), err)
 			return err
 		}
+		go node.Transfer()
 	}
 	go d.manager.run()
 	go d.manager.genProof()

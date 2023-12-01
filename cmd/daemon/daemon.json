@@ -10,7 +10,7 @@
   "btcBlockTime": 15,
   "btcOperatorAddr": "",
   "ethUrl": "https://rpc.notadegen.com/eth/sepolia",
-  "zkBridgeAddr": "0x8dda72ee36ab9c91e92298823d3c0d4d73894081",
+  "zkBridgeAddr": "0xe9Bcf494514270C9886E87d9bFd4A5Bb258d25c6",
   "ethBlockTime": 15,
   "btcWhiteList": [
     ""

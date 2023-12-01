@@ -1,12 +1,14 @@
 package node
 
 import (
+	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"github.com/onrik/ethrpc"
+	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"time"
 )
 
@@ -20,6 +22,9 @@ type EthereumAgent struct {
 	checkProofHeightNums int64
 	proofResponse        <-chan ProofResponse
 	proofRequest         chan []ProofRequest
+	exitSign             chan struct{}
+	multiAddressInfo     MultiAddressInfo
+	btcNetwork           btctx.NetWork
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
@@ -33,6 +38,10 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		proofRequest:         proofRequest,
 		proofResponse:        proofResponse,
 		checkProofHeightNums: 100,
+		exitSign:             make(chan struct{}, 1),
+		whiteList:            make(map[string]bool),
+		multiAddressInfo:     cfg.MultiAddressInfo,
+		btcNetwork:           btctx.NetWork(cfg.BtcNetwork),
 	}, nil
 }
 
@@ -148,9 +157,13 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *EthereumAgent) Transfer() error {
+func (e *EthereumAgent) Transfer() {
+	//todo
 	for {
 		select {
+		case <-e.exitSign:
+			logger.Info("exit ethereum transfer goroutine")
+			return
 		case response := <-e.proofResponse:
 			err := e.updateProof(response)
 			if err != nil {
@@ -161,7 +174,6 @@ func (e *EthereumAgent) Transfer() error {
 			if err != nil {
 				//todo
 				logger.Error("redeem btc tx error:%v", err)
-				return err
 			}
 			logger.Info("success redeem btc tx:%v", response)
 		}
@@ -206,14 +218,14 @@ func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {
 }
 
 func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, error) {
-	block, err := e.ethClient.EthGetBlockByNumber(int(height), true)
+	block, err := e.ethClient.GetBlock(height)
 	if err != nil {
 		logger.Error("ethereum rpc get block error:%v", err)
 		return nil, nil, err
 	}
 	var redeemTxList []RedeemTx
 	var proofRequestList []ProofRequest
-	for _, tx := range block.Transactions {
+	for _, tx := range block.Transactions() {
 		redeemTx, ok, err := e.CheckRedeemTx(tx)
 		if err != nil {
 			logger.Error("check redeem tx error:%v", err)
@@ -235,12 +247,52 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 
 func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 	//todo
-	panic("implement me")
+	builder := btctx.NewMultiTransactionBuilder()
+	err := builder.NetParams(e.btcNetwork)
+	if err != nil {
+		logger.Error("build btc tx error:%v", err)
+		return err
+	}
+	err = builder.AddMultiPublicKey(e.multiAddressInfo.PublicKeyList, e.multiAddressInfo.NRequired)
+	if err != nil {
+		logger.Error("build btc tx error:%v", err)
+		return err
+	}
+	err = builder.AddTxIn([]btctx.TxIn{})
+	if err != nil {
+		logger.Error("build btc tx error:%v", err)
+		return err
+	}
+	err = builder.AddTxOut([]btctx.TxOut{})
+	if err != nil {
+		logger.Error("build btc tx error:%v", err)
+		return err
+	}
+	err = builder.Sign(func(hash []byte) ([][]byte, error) {
+		//todo
+		panic("implement me")
+	})
+	if err != nil {
+		logger.Error("build btc tx error:%v", err)
+		return err
+	}
+	txBytes, err := builder.Build()
+	if err != nil {
+		logger.Error("build btc tx error:%v", err)
+		return err
+	}
+	txHash, err := e.btcClient.Sendrawtransaction(hex.EncodeToString(txBytes))
+	if err != nil {
+		logger.Error("send btc tx error:%v", err)
+		return err
+	}
+	logger.Info("send redeem btc tx: %v", txHash)
+	return nil
 }
 
-func (e *EthereumAgent) CheckRedeemTx(tx ethrpc.Transaction) (RedeemTx, bool, error) {
+func (e *EthereumAgent) CheckRedeemTx(tx *types.Transaction) (RedeemTx, bool, error) {
 	//todo
-	return RedeemTx{}, true, nil
+	return RedeemTx{}, false, nil
 }
 
 func (e *EthereumAgent) updateProof(resp ProofResponse) error {

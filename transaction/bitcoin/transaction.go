@@ -16,7 +16,135 @@ import (
 	"github.com/btcsuite/btcd/wire"
 )
 
-type MultiTransaction struct {
+const TxVersion = 2
+
+type MultiTransactionBuilder struct {
+	msgTx            *wire.MsgTx
+	txInPkScripts    [][]byte
+	txInValues       []btcutil.Amount
+	multiScriptsList [][]byte
+	multiSigScript   []byte
+	netParams        *chaincfg.Params
+	nRequired        int
+}
+
+func NewMultiTransactionBuilder() *MultiTransactionBuilder {
+	return &MultiTransactionBuilder{
+		msgTx:            wire.NewMsgTx(TxVersion),
+		txInPkScripts:    make([][]byte, 0),
+		txInValues:       make([]btcutil.Amount, 0),
+		multiScriptsList: make([][]byte, 0),
+		multiSigScript:   make([]byte, 0),
+		netParams:        &chaincfg.MainNetParams,
+	}
+}
+
+func (mb *MultiTransactionBuilder) NetParams(network NetWork) error {
+	params, err := getNetworkParams(network)
+	if err != nil {
+		return err
+	}
+	mb.netParams = params
+	return nil
+}
+
+func (mb *MultiTransactionBuilder) AddMultiPublicKey(publicList [][]byte, nRequired int) error {
+	var publicKeys []*btcutil.AddressPubKey
+	for _, pub := range publicList {
+		addrPubKey, err := btcutil.NewAddressPubKey(pub, mb.netParams)
+		if err != nil {
+			return err
+		}
+		publicKeys = append(publicKeys, addrPubKey)
+	}
+	multiSigScript, err := txscript.MultiSigScript(publicKeys, nRequired)
+	if err != nil {
+		return err
+	}
+	mb.nRequired = nRequired
+	mb.multiSigScript = multiSigScript
+	return nil
+}
+
+func (mb *MultiTransactionBuilder) AddTxIn(inputs []TxIn) error {
+	for _, input := range inputs {
+		hash, err := chainhash.NewHashFromStr(input.Hash)
+		if err != nil {
+			return err
+		}
+		txIn := wire.NewTxIn(wire.NewOutPoint(hash, input.VOut), nil, nil)
+		mb.msgTx.AddTxIn(txIn)
+		pkScriptBytes, err := hex.DecodeString(input.PkScript)
+		if err != nil {
+			return err
+		}
+		mb.txInPkScripts = append(mb.txInPkScripts, pkScriptBytes)
+		mb.txInValues = append(mb.txInValues, btcutil.Amount(input.Amount))
+		mb.multiScriptsList = append(mb.multiScriptsList, mb.multiSigScript)
+	}
+	return nil
+}
+
+func (mb *MultiTransactionBuilder) AddTxOut(outputs []TxOut) error {
+	for _, output := range outputs {
+		address, err := btcutil.DecodeAddress(output.Address, mb.netParams)
+		if err != nil {
+			return err
+		}
+		pkScript, err := txscript.PayToAddrScript(address)
+		if err != nil {
+			return err
+		}
+		txOut := wire.NewTxOut(output.Amount, pkScript)
+		mb.msgTx.AddTxOut(txOut)
+	}
+	return nil
+}
+
+func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, error)) error {
+	scriptHash := sha256.Sum256(mb.multiSigScript)
+	from, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], mb.netParams)
+	if err != nil {
+		return err
+	}
+	hashes, err := CalWitnessSigHash(mb.msgTx, mb.txInPkScripts, mb.txInValues, from, mb.netParams, mb.multiScriptsList)
+	if err != nil {
+		return err
+	}
+	for index, hash := range hashes {
+		//var sigs [][]byte
+		//for _, priv := range privateKeys {
+		//	sig := ecdsa.Sign(priv, hash)
+		//	sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
+		//	sigs = append(sigs, sigWithType)
+		//}
+		sigs, err := signFn(hash)
+		if err != nil {
+			return err
+		}
+		if len(sigs) != len(mb.txInPkScripts) {
+			return fmt.Errorf(" %v sig lenght != txInput lenght %v", len(sigs), len(mb.txInPkScripts))
+		}
+		witnessScript, err := MergeMultiSignatures(mb.nRequired, mb.multiSigScript, sigs)
+		if err != nil {
+			return err
+		}
+		mb.msgTx.TxIn[index].Witness = witnessScript
+	}
+	return nil
+}
+
+func (mb *MultiTransactionBuilder) Build() ([]byte, error) {
+	err := validateMsgTx(mb.msgTx, mb.txInPkScripts, mb.txInValues)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = mb.msgTx.Serialize(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 type TxIn struct {
@@ -69,11 +197,11 @@ func CreateTransaction(secret []byte, inputs []TxIn, outputs []TxOut, network Ne
 		msgTx.AddTxOut(txOut)
 	}
 
-	err = CreateTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privateKey}, networkParams)
+	err = createTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privateKey}, networkParams)
 	if err != nil {
 		return nil, err
 	}
-	err = ValidateMsgTx(msgTx, txInPkScripts, txInValues)
+	err = validateMsgTx(msgTx, txInPkScripts, txInValues)
 	if err != nil {
 		return nil, err
 	}
@@ -128,11 +256,11 @@ func CreateDepositTransaction(secret, ethAddr []byte, inputs []TxIn, outputs []T
 		msgTx.AddTxOut(txOut)
 	}
 
-	err = CreateTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privateKey}, networkParams)
+	err = createTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privateKey}, networkParams)
 	if err != nil {
 		return nil, err
 	}
-	err = ValidateMsgTx(msgTx, txInPkScripts, txInValues)
+	err = validateMsgTx(msgTx, txInPkScripts, txInValues)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +349,7 @@ func CreateMultiSigTransaction(nRequired int, secrets [][]byte, inputs []TxIn, o
 		}
 		msgTx.TxIn[index].Witness = witnessScript
 	}
-	err = ValidateMsgTx(msgTx, txInPkScripts, txInValues)
+	err = validateMsgTx(msgTx, txInPkScripts, txInValues)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +530,7 @@ func spendTaprootKey(txIn *wire.TxIn, pkScript []byte,
 	return nil
 }
 
-func ValidateMsgTx(tx *wire.MsgTx, prevScripts [][]byte,
+func validateMsgTx(tx *wire.MsgTx, prevScripts [][]byte,
 	inputValues []btcutil.Amount) error {
 
 	inputFetcher, err := txPrevOutFetcher(
@@ -429,7 +557,7 @@ func ValidateMsgTx(tx *wire.MsgTx, prevScripts [][]byte,
 	return nil
 }
 
-func CreateTx(tx *wire.MsgTx, prevPkScripts [][]byte,
+func createTx(tx *wire.MsgTx, prevPkScripts [][]byte,
 	inputValues []btcutil.Amount, privKeys []*btcec.PrivateKey, chainParams *chaincfg.Params) error {
 
 	inputFetcher, err := txPrevOutFetcher(tx, prevPkScripts, inputValues)
@@ -821,7 +949,6 @@ func CalWitnessSigHash(tx *wire.MsgTx, txInLockingScripts [][]byte,
 	if err != nil {
 		return nil, err
 	}
-
 	inputs := tx.TxIn
 	hashCache := txscript.NewTxSigHashes(tx, inputFetcher)
 

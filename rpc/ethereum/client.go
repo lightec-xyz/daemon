@@ -2,8 +2,10 @@ package ethereum
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -18,6 +20,7 @@ type Client struct {
 	*ethclient.Client
 	*ethrpc.EthRPC
 	zkBridgeCall *zkbridge.Zkbridge
+	timeout      time.Duration
 }
 
 func NewClient(endpoint string, zkBridgeAddr string) (*Client, error) {
@@ -31,12 +34,76 @@ func NewClient(endpoint string, zkBridgeAddr string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{Client: client, EthRPC: ethRPC, zkBridgeCall: zkBridgeCall}, nil
+	return &Client{Client: client, EthRPC: ethRPC, zkBridgeCall: zkBridgeCall, timeout: 15 * time.Second}, nil
+}
+
+func (c *Client) GetLogs(hash string) ([]types.Log, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	blockHash := common.HexToHash(hash)
+	filterQuery := ethereum.FilterQuery{
+		BlockHash: &blockHash,
+	}
+	logs, err := c.FilterLogs(ctx, filterQuery)
+	if err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
+func (c *Client) GetBlock(height int64) (*types.Block, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	block, err := c.BlockByNumber(ctx, big.NewInt(height))
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
+}
+
+func (c *Client) GetNonce(addr string) (uint64, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	nonce, err := c.NonceAt(ctx, common.HexToAddress(addr), nil)
+	if err != nil {
+		return 0, err
+	}
+	return nonce, nil
+}
+
+func (c *Client) GetGasPrice() (*big.Int, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	gasPrice, err := c.SuggestGasPrice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return gasPrice, nil
+}
+
+func (c *Client) GetChainId() (*big.Int, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	chainId, err := c.ChainID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return chainId, nil
+}
+
+func (c *Client) GetBalance(addr string) (*big.Int, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	balance, err := c.BalanceAt(ctx, common.HexToAddress(addr), nil)
+	if err != nil {
+		return nil, err
+	}
+	return balance, nil
 }
 
 func (c *Client) Deposit(secret, txId, ethAddr string, index uint32,
-	gasLimit uint64, nonce, chainID, gasPrice, amount *big.Int, proof []byte) (string, error) {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	nonce, gasLimit uint64, chainID, gasPrice, amount *big.Int, proof []byte) (string, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
 	if err != nil {
@@ -47,7 +114,7 @@ func (c *Client) Deposit(secret, txId, ethAddr string, index uint32,
 		return "", err
 	}
 	auth.Context = ctx
-	auth.Nonce = nonce
+	auth.Nonce = big.NewInt(int64(nonce))
 	auth.GasPrice = gasPrice
 	auth.GasLimit = gasLimit
 	fixedTxId := [32]byte{}
@@ -62,7 +129,7 @@ func (c *Client) Deposit(secret, txId, ethAddr string, index uint32,
 
 func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice,
 	amount, btcMinerFee *big.Int, receiveLockScript []byte) (string, error) {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
 	if err != nil {

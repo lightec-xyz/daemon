@@ -1,12 +1,14 @@
 package node
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"math/big"
 	"strings"
 	"time"
 )
@@ -22,11 +24,18 @@ type BitcoinAgent struct {
 	checkProofHeightNums int64           // restart check proof height
 	whiteList            map[string]bool // gen tx proof whitelist
 	operateAddr          string
+	submitTxEthAddr      string
+	ethPrivateKey        string // todo keyStore
 	minDepositValue      float64
+	exitSign             chan struct{}
 }
 
 func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	request chan []ProofRequest, response <-chan ProofResponse) (IAgent, error) {
+	submitTxEthAddr, err := privateKeyToEthAddr(cfg.EthPrivateKey)
+	if err != nil {
+		return nil, err
+	}
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
@@ -38,6 +47,8 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 		proofResponse:        response,
 		checkProofHeightNums: 100,
 		minDepositValue:      0,
+		submitTxEthAddr:      submitTxEthAddr,
+		exitSign:             make(chan struct{}, 1),
 	}, nil
 }
 
@@ -61,7 +72,6 @@ func (b *BitcoinAgent) Init() error {
 			return err
 		}
 	}
-
 	//todo
 	return nil
 }
@@ -225,14 +235,16 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 			})
 		}
 	}
-
 	return depositTxList, proofRequestList, nil
 }
 
-func (b *BitcoinAgent) Transfer() error {
-	//todo whether need queue
+func (b *BitcoinAgent) Transfer() {
+	//todo whether need queue ?
 	for {
 		select {
+		case <-b.exitSign:
+			logger.Info("exit bitcoin transfer goroutine")
+			return
 		case response := <-b.proofResponse:
 			err := b.updateProof(response)
 			if err != nil {
@@ -241,9 +253,9 @@ func (b *BitcoinAgent) Transfer() error {
 			}
 			err = b.MintZKBtcTx(response)
 			if err != nil {
-				//todo
+				//todo retry ?
 				logger.Error("mint btc tx error:%v", err)
-				return err
+				return
 			}
 			logger.Info("success mint btc tx:%v", response)
 		}
@@ -253,8 +265,33 @@ func (b *BitcoinAgent) Transfer() error {
 
 func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 	//todo
-	
-	txHash, err := b.ethClient.Deposit()
+	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
+	if err != nil {
+		logger.Error("get nonce error:%v", err)
+		return err
+	}
+	chainId, err := b.ethClient.GetChainId()
+	if err != nil {
+		logger.Error("get chain id error:%v", err)
+		return err
+	}
+	gasPrice, err := b.ethClient.GetGasPrice()
+	if err != nil {
+		logger.Error("get gas price error:%v", err)
+		return err
+	}
+	gasLimit := uint64(500000)
+	amountBig, ok := big.NewInt(0).SetString(resp.Amount, 10)
+	if !ok {
+		return fmt.Errorf("parse big error amount:%v", resp.Amount)
+	}
+	proofBytes, err := hex.DecodeString(resp.Proof)
+	if err != nil {
+		logger.Error("hex decode proof error:%v", err)
+		return err
+	}
+	txHash, err := b.ethClient.Deposit(b.ethPrivateKey, resp.TxId, resp.ToAddr, resp.Index,
+		nonce, gasLimit, chainId, gasPrice, amountBig, proofBytes)
 	if err != nil {
 		logger.Error("mint btc tx error:%v", err)
 		return err
