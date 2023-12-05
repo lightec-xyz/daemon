@@ -9,12 +9,16 @@ func TestDaemon(t *testing.T) {
 	config := localDevDaemonConfig()
 	daemon, err := NewDaemon(config)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer daemon.Close()
+	err = daemon.Init()
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = daemon.Run()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 }
 func TestDaemon_Demo(t *testing.T) {

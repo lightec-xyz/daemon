@@ -3,6 +3,8 @@ package ethereum
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"log"
@@ -15,8 +17,8 @@ var err error
 var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
-var endpoint = "https://rpc.notadegen.com/eth/sepolia"
-var zkBridgeAddr = "0xe9Bcf494514270C9886E87d9bFd4A5Bb258d25c6"
+var endpoint = "https://ethereum-holesky.publicnode.com"
+var zkBridgeAddr = "0x3651fDb6a46c47aba40821bD1C194258684cA373"
 
 func init() {
 	//https://sepolia.publicgoods.network
@@ -27,7 +29,7 @@ func init() {
 }
 
 func TestClient_TestEth(t *testing.T) {
-	result, err := client.EthGetBlockByNumber(4794370, true)
+	result, err := client.EthGetBlockByNumber(451228, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,11 +37,31 @@ func TestClient_TestEth(t *testing.T) {
 }
 
 func TestClient_GetLogs(t *testing.T) {
-	logs, err := client.GetLogs("0x4c583295db47a2fc00aa3cf98f497c9a0604508dc6d6f8368021e6600b609071")
+	block, err := client.GetBlock(452083)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(block)
+	logs, err := client.GetLogs(block.Hash().Hex(),
+		[]string{"0x3651fdb6a46c47aba40821bd1c194258684ca373"},
+		[]string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(logs)
+
+	for _, log := range logs {
+		//0000000000000000000000000000000000000000000000000000000000000020
+		//0000000000000000000000000000000000000000000000000000000000000071
+		//02000000011aae5c5a37f9003aaa12c63dcebdfcd0e5cb6d753c4265ec055d06
+		//97e5e0d6100100000000ffffffff026e86010000000000160014d7fae4fbdc8b
+		//f6c86a08c7177c5d06683754ea71ecdc7ee202000000160014fb5defb676e7f0
+		//a6711e3bc385849572a57fbe7e00000000000000000000000000000000000000
+		version := log.Data[0:32]
+		length := log.Data[32:64]
+		fmt.Printf("%x %x \n", version, length)
+		fmt.Printf("%x\n", log.Data)
+	}
 }
 
 func TestPrivateKey(t *testing.T) {
@@ -60,9 +82,12 @@ func TestPrivateKey(t *testing.T) {
 
 func TestRedeemTx(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	redeemAmount := big.NewInt(1)
-	minerFee := big.NewInt(1)
-	redeemLockScript := []byte("redeem lock script")
+	redeemAmount := big.NewInt(400000)
+	minerFee := big.NewInt(300)
+	redeemLockScript, err := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
+	if err != nil {
+		t.Fatal(err)
+	}
 	from := common.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -87,12 +112,12 @@ func TestRedeemTx(t *testing.T) {
 	t.Log(txhash)
 }
 
-func TestTransaction(t *testing.T) {
+func TestDepositeTransaction(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	txId := "4a362c018bdce0a86305987503fda301155fd8416d76c8b6498cca59aecd165e"
-	ethAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
+	txId := "1046e0e597065d05ec65423c756dcbe5d0fcbdce3dc612aa3a00f9375a5cae1a"
+	//ethAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
 	index := uint32(1)
-	amount := big.NewInt(100)
+	amount := big.NewInt(12390000000)
 	proofBytes := []byte("test proof")
 	from := common.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -111,7 +136,7 @@ func TestTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	txHash, err := client.Deposit(privateKey, txId, ethAddr, index,
+	txHash, err := client.Deposit(privateKey, txId, index,
 		nonce, uint64(gasLimit), chainID, gasPrice, amount, proofBytes)
 	if err != nil {
 		t.Fatal(err)

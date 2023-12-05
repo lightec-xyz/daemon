@@ -1,8 +1,10 @@
 package node
 
 import (
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"sync"
+	"time"
 )
 
 type IWorker interface {
@@ -19,7 +21,7 @@ type Worker struct {
 	client       rpc.ProofAPI
 	parallelNums int
 	currentNums  int
-	lock         sync.Locker
+	lock         sync.Mutex
 }
 
 func (w *Worker) ParallelNums() int {
@@ -59,30 +61,51 @@ var _ IWorker = (*LocalWorker)(nil)
 type LocalWorker struct {
 	parallelNums int
 	currentNums  int
-	lock         sync.Locker
+	lock         sync.Mutex
+}
+
+func NewLocalWorker(parallelNums int) IWorker {
+	return &LocalWorker{
+		parallelNums: parallelNums,
+		currentNums:  0,
+	}
 }
 
 func (l *LocalWorker) ParallelNums() int {
-	//TODO implement me
-	panic("implement me")
+	return l.parallelNums
 }
 
 func (l *LocalWorker) CurrentNums() int {
-	//TODO implement me
-	panic("implement me")
+	return l.currentNums
 }
 
 func (l *LocalWorker) GenProof(req rpc.ProofRequest) (rpc.ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	// todo
+	logger.Info("local worker gen proof now: %v %v", req.TxId, req.PType)
+	time.Sleep(3 * time.Second)
+	return rpc.ProofResponse{
+		Inputs:  req.Inputs,
+		Outputs: req.Outputs,
+
+		Amount:  req.Amount,
+		EthAddr: req.EthAddr,
+
+		TxId:   req.TxId,
+		PType:  req.PType,
+		Status: 2,
+		Msg:    "ok",
+		Proof:  "test proof",
+	}, nil
 }
 
 func (l *LocalWorker) Add() {
-	//TODO implement me
-	panic("implement me")
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	l.currentNums--
 }
 
 func (l *LocalWorker) Del() {
-	//TODO implement me
-	panic("implement me")
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	l.currentNums++
 }

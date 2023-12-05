@@ -1,5 +1,9 @@
 package node
 
+import (
+	"encoding/hex"
+)
+
 type NodeConfig struct {
 	DataDir          string           `json:"datadir"`
 	Network          string           `json:"network"`
@@ -11,6 +15,7 @@ type NodeConfig struct {
 	BtcNetwork       string           `json:"btcNetwork"`
 	BTcBtcBlockTime  int64            `json:"btcBlockTime"`
 	BtcOperatorAddr  string           `json:"btcOperatorAddr"`
+	BtcPrivateKeys   []string         `json:"btcPrivateKeys"`
 	BtcWhiteList     []string         `json:"btcWhiteList"`
 	MultiAddressInfo MultiAddressInfo `json:"multiAddressInfo"`
 	EthWhiteList     []string         `json:"ethWhiteList"`
@@ -18,7 +23,8 @@ type NodeConfig struct {
 	ZkBridgeAddr     string           `json:"zkBridgeAddr"`
 	EthBlockTime     int64            `json:"ethBlockTime"`
 	EthPrivateKey    string           `json:"ethPrivateKey"`
-	ProofUrl         string           `json:"proofUrl"`
+	LogAddr          []string         `json:"logAddr"`
+	LogTopic         []string         `json:"logTopic"`
 
 	Workers []WorkerConfig `json:"workers"`
 }
@@ -34,31 +40,43 @@ type WorkerConfig struct {
 }
 
 func localDevDaemonConfig() NodeConfig {
+	pub1, err := hex.DecodeString("03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050")
+	if err != nil {
+		panic(err)
+	}
+	pub2, err := hex.DecodeString("03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22")
+	if err != nil {
+		panic(err)
+	}
+	pub3, err := hex.DecodeString("03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0")
+	if err != nil {
+		panic(err)
+	}
 	return NodeConfig{
 		DataDir:         "/Users/red/.daemon",
 		Network:         "testnet",
 		Rpcbind:         "127.0.0.1",
 		RpcPort:         "8899",
-		BtcUrl:          "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
+		BtcUrl:          "http://127.0.0.1:8332",
 		BtcUser:         "lightec",
 		BtcPwd:          "abcd1234",
-		BtcNetwork:      "regtest",
-		BTcBtcBlockTime: 15,
-		BtcOperatorAddr: "testOperatorAddr",
-		BtcWhiteList: []string{
-			"",
+		BtcNetwork:      "RegTest",
+		BTcBtcBlockTime: 35,
+		BtcOperatorAddr: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
+		BtcPrivateKeys: []string{
+			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
+			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
+			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		EthUrl:        "https://rpc.notadegen.com/eth/sepolia",
-		ZkBridgeAddr:  "0x8dda72ee36ab9c91e92298823d3c0d4d73894081",
+		EthUrl:        "https://ethereum-holesky.publicnode.com",
+		ZkBridgeAddr:  "0x3651fDb6a46c47aba40821bD1C194258684cA373",
 		EthBlockTime:  15,
 		EthPrivateKey: "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		EthWhiteList: []string{
-			"",
-		},
+		LogAddr:       []string{"0x3651fdb6a46c47aba40821bd1c194258684ca373"},
+		LogTopic:      []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"},
 		MultiAddressInfo: MultiAddressInfo{
 			PublicKeyList: [][]byte{
-				{1, 2, 3, 4},
-				{1, 2, 3, 5},
+				pub1, pub2, pub3,
 			},
 			NRequired: 2,
 		},

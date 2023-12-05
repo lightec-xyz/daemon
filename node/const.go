@@ -3,8 +3,8 @@ package node
 // todo
 
 const (
-	BitcoinChain  = "bitcoin"
-	EthereumChain = "ethereum"
+	Deposit = "bitcoin"
+	Redeem  = "ethereum"
 )
 
 const (

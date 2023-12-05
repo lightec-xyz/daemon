@@ -61,15 +61,6 @@ func (p *ProofClient) GenZkProof(request ProofRequest) (ProofResponse, error) {
 	return response, nil
 }
 
-func (p *ProofClient) Info() (ProofInfo, error) {
-	info := ProofInfo{}
-	err := p.call(&info, "proof_info")
-	if err != nil {
-		return info, err
-	}
-	return info, nil
-}
-
 func (p *ProofClient) call(result interface{}, method string, args ...interface{}) error {
 	vi := reflect.ValueOf(result)
 	if vi.Kind() != reflect.Ptr {

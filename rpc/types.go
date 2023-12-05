@@ -4,46 +4,41 @@ type NodeInfo struct {
 	Version string
 	Desc    string
 }
-type Task struct {
-	PoofId uint64
-	PTxId  string
-	Status int
-	Proof  string
+type TxIn struct {
+	TxId  string
+	Index uint32
+}
+
+type TxOut struct {
+	Value    int64
+	PkScript []byte
 }
 
 type ProofRequest struct {
-	TxId   string `json:"txId"`
-	PType  string `json:"type"`
-	Proof  string `json:"proof"`
-	ToAddr string `json:"toAddr"`
-	Amount string `json:"amount"`
-	Msg    string `json:"msg"`
+	Inputs  []TxIn  `json:"inputs"`
+	Outputs []TxOut `json:"outputs"`
+
+	EthAddr string `json:"ethAddr"`
+	Amount  string `json:"amount"`
+
+	TxId  string `json:"txId"`
+	PType string `json:"type"`
+	Proof string `json:"proof"`
+	Msg   string `json:"msg"`
 }
 
 type ProofResponse struct {
+	Inputs  []TxIn  `json:"inputs"`
+	Outputs []TxOut `json:"outputs"`
+
+	EthAddr string `json:"ethAddr"`
+	Amount  string `json:"amount"`
+
 	TxId   string `json:"txId"`
-	Status int    `json:"status"`
-	Msg    string `json:"msg"`
 	PType  string `json:"type"`
 	Proof  string `json:"proof"`
-}
-
-type EthProofRequest struct {
-	TxId    string `json:"txId"`
-	EthAddr string `json:"ethAddr"`
-	Proof   string `json:"proof"`
-	Msg     string `json:"msg"`
-}
-
-type EthProofResponse struct {
-	TxId   string
-	Status int
-	Msg    string
-	Proof  string
-}
-
-type ProofInfo struct {
-	Version string
+	Status int    `json:"status"`
+	Msg    string `json:"msg"`
 }
 
 type ProofStatus struct {

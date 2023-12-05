@@ -6,7 +6,6 @@ type NodeAPI interface {
 
 // ProofAPI api between node and proof
 type ProofAPI interface {
-	Info() (ProofInfo, error)
 	GenZkProof(request ProofRequest) (ProofResponse, error)
 	ProofInfo(proofId string) (ProofResponse, error)
 }

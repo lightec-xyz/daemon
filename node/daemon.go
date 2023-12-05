@@ -57,21 +57,23 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
 	ethProofResp := make(chan ProofResponse, 1000)
-	btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
+	//btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
 	ethAgent, err := NewEthereumAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, ethProofResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	workers, err := NewWorkers(cfg.Workers)
-	if err != nil {
-		logger.Error("new workers error:%v", err)
-		return nil, err
-	}
+	//todo
+	//workers, err := NewWorkers(cfg.Workers)
+	//if err != nil {
+	//	logger.Error("new workers error:%v", err)
+	//	return nil, err
+	//}
+	workers := []IWorker{NewLocalWorker(1)}
 	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, NewSchedule(workers...))
 	rpcHandler := NewHandler(storeDb, memoryStore)
 	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
@@ -80,16 +82,11 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents:         []IAgent{btcAgent, ethAgent},
+		agents:         []IAgent{ethAgent},
 		server:         server,
 		nodeConfig:     cfg,
 		exitScanSignal: make(chan struct{}, 1),
 		manager:        manager,
-	}
-	err = daemon.Init()
-	if err != nil {
-		logger.Error("daemon init error:%v", err)
-		return nil, err
 	}
 	return daemon, nil
 }
@@ -148,7 +145,9 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
-	close(d.exitScanSignal)
+	if d.exitScanSignal != nil {
+		close(d.exitScanSignal)
+	}
 	time.Sleep(2 * time.Second)
 	for _, node := range d.agents {
 		if err := node.Close(); err != nil {

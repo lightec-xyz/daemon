@@ -85,6 +85,14 @@ func (mb *MultiTransactionBuilder) AddTxIn(inputs []TxIn) error {
 	return nil
 }
 
+func (mb *MultiTransactionBuilder) AddTxOutScript(outputs []TxOut) error {
+	for _, output := range outputs {
+		txOut := wire.NewTxOut(output.Amount, output.PayScript)
+		mb.msgTx.AddTxOut(txOut)
+	}
+	return nil
+}
+
 func (mb *MultiTransactionBuilder) AddTxOut(outputs []TxOut) error {
 	for _, output := range outputs {
 		address, err := btcutil.DecodeAddress(output.Address, mb.netParams)
@@ -122,9 +130,9 @@ func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, erro
 		if err != nil {
 			return err
 		}
-		if len(sigs) != len(mb.txInPkScripts) {
-			return fmt.Errorf(" %v sig lenght != txInput lenght %v", len(sigs), len(mb.txInPkScripts))
-		}
+		//if len(sigs) != len(mb.txInPkScripts) {
+		//	return fmt.Errorf(" %v sig lenght != txInput lenght %v", len(sigs), len(mb.txInPkScripts))
+		//}
 		witnessScript, err := MergeMultiSignatures(mb.nRequired, mb.multiSigScript, sigs)
 		if err != nil {
 			return err
@@ -155,8 +163,19 @@ type TxIn struct {
 }
 
 type TxOut struct {
-	Address string
-	Amount  int64
+	Address   string
+	PayScript []byte
+	Amount    int64
+}
+
+type Transaction struct {
+	*wire.MsgTx
+}
+
+func NewTransaction() *Transaction {
+	return &Transaction{
+		MsgTx: wire.NewMsgTx(2),
+	}
 }
 
 //todo

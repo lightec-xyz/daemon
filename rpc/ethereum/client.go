@@ -37,12 +37,25 @@ func NewClient(endpoint string, zkBridgeAddr string) (*Client, error) {
 	return &Client{Client: client, EthRPC: ethRPC, zkBridgeCall: zkBridgeCall, timeout: 15 * time.Second}, nil
 }
 
-func (c *Client) GetLogs(hash string) ([]types.Log, error) {
+func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]types.Log, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	blockHash := common.HexToHash(hash)
+	var addresses []common.Address
+	for _, addr := range addrList {
+		address := common.HexToAddress(addr)
+		addresses = append(addresses, address)
+	}
+	var topics [][]common.Hash
+	for _, topic := range topicList {
+		topicHash := common.HexToHash(topic)
+		topics = append(topics, []common.Hash{topicHash})
+	}
+
 	filterQuery := ethereum.FilterQuery{
 		BlockHash: &blockHash,
+		Addresses: addresses,
+		Topics:    topics,
 	}
 	logs, err := c.FilterLogs(ctx, filterQuery)
 	if err != nil {
@@ -101,7 +114,7 @@ func (c *Client) GetBalance(addr string) (*big.Int, error) {
 	return balance, nil
 }
 
-func (c *Client) Deposit(secret, txId, ethAddr string, index uint32,
+func (c *Client) Deposit(secret, txId string, index uint32,
 	nonce, gasLimit uint64, chainID, gasPrice, amount *big.Int, proof []byte) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
@@ -115,11 +128,12 @@ func (c *Client) Deposit(secret, txId, ethAddr string, index uint32,
 	}
 	auth.Context = ctx
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasPrice = gasPrice
+	//auth.GasPrice = gasPrice todo
+	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
 	fixedTxId := [32]byte{}
 	copy(fixedTxId[:], common.FromHex(txId))
-	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, common.HexToAddress(ethAddr), proof)
+	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, proof)
 	if err != nil {
 		return "", err
 	}
@@ -141,8 +155,9 @@ func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice
 	}
 	auth.Context = ctx
 	auth.Nonce = nonce
-	auth.GasPrice = gasPrice
+	//auth.GasPrice = gasPrice  todo
 	auth.GasLimit = gasLimit
+	auth.GasFeeCap = gasPrice
 	transaction, err := c.zkBridgeCall.Redeem(auth, amount, btcMinerFee, receiveLockScript)
 	if err != nil {
 		return "", err

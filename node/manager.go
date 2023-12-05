@@ -28,15 +28,17 @@ func NewManager(proofRequest chan []ProofRequest, btcProofResp, ethProofResp cha
 		proofRequest: proofRequest,
 		btcProofResp: btcProofResp,
 		ethProofResp: ethProofResp,
+		exit:         make(chan struct{}, 1),
 	}
 }
 
 func (m *Manager) run() {
+	logger.Info("run manager proof queue")
 	for {
 		select {
 		case requestList := <-m.proofRequest:
 			for _, req := range requestList {
-				logger.Debug("manager receive proof request:%v", req)
+				logger.Debug("success receive proof request:%v %v", req.PType, req.TxId)
 				m.proofQueue.PushBack(req)
 			}
 		case <-m.exit:
@@ -49,7 +51,7 @@ func (m *Manager) run() {
 
 func (m *Manager) genProof() {
 	//todo
-
+	logger.Info("start gen proof goroutine")
 	for {
 		select {
 		case <-m.exit:
@@ -57,19 +59,19 @@ func (m *Manager) genProof() {
 			return
 		default:
 			if m.proofQueue.Len() == 0 {
-				logger.Debug("no proof need to do,wait now ....")
-				time.Sleep(10 * time.Second)
+				//logger.Debug("no proof need to do,wait now ....")
+				time.Sleep(1 * time.Second)
 				continue
 			}
 			worker, find, err := m.schedule.findBestWorker()
 			if err != nil {
 				logger.Error("find best worker error:%v", err)
-				time.Sleep(10 * time.Second)
+				time.Sleep(1 * time.Second)
 				continue
 			}
 			if !find {
 				logger.Warn("current no find worker to do proof")
-				time.Sleep(10 * time.Second)
+				time.Sleep(1 * time.Second)
 				continue
 			}
 			frontElement := m.proofQueue.Front()
@@ -78,6 +80,7 @@ func (m *Manager) genProof() {
 				logger.Error("should never happen,parse proof request error")
 				continue
 			}
+			logger.Info("start get request to gen proof: %v", proofRequest)
 			m.proofQueue.Remove(frontElement)
 			go func() {
 				proofResponse, err := m.schedule.GenZKProof(worker, proofRequest)
@@ -86,21 +89,12 @@ func (m *Manager) genProof() {
 					logger.Error("gen proof error:%v", err)
 					return
 				}
+				logger.Info("proof response: %v", proofResponse)
 				switch proofResponse.PType {
-				case BitcoinChain:
-					m.btcProofResp <- ProofResponse{
-						TxId:  proofResponse.TxId,
-						Msg:   proofResponse.Msg,
-						PType: proofResponse.PType,
-						Proof: proofResponse.Proof,
-					}
-				case EthereumChain:
-					m.ethProofResp <- ProofResponse{
-						TxId:  proofResponse.TxId,
-						Msg:   proofResponse.Msg,
-						PType: proofResponse.PType,
-						Proof: proofResponse.Proof,
-					}
+				case Deposit:
+					m.btcProofResp <- proofResponse
+				case Redeem:
+					m.ethProofResp <- proofResponse
 				default:
 					logger.Error("never should happen proof type:%v", proofResponse.PType)
 				}

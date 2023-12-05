@@ -3,6 +3,8 @@ package bitcoin
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"testing"
@@ -24,7 +26,7 @@ func init() {
 }
 
 func TestClient_GetBlockHeader(t *testing.T) {
-	header, err := client.GetBlockHeader("")
+	header, err := client.GetBlockHeader("0ca10b19b94eedc77da894b15c6a62407e73a8eb312c8d9befd1769448f92ce7")
 	if err != nil {
 		panic(err)
 	}
@@ -60,31 +62,38 @@ func TestClient_GetBlockTx(t *testing.T) {
 }
 
 func TestMultiTransactionBuilder(t *testing.T) {
-	pub1, err := hex.DecodeString("")
-	if err != nil {
-		t.Fatal(err)
+	secrerts := []string{
+		"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
+		"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
+		"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 	}
-	pub2, err := hex.DecodeString("")
-	if err != nil {
-		t.Fatal(err)
+	var privateKeys []*btcec.PrivateKey
+	var pubkeylist [][]byte
+	for _, secret := range secrerts {
+		hexPriv, err := hex.DecodeString(secret)
+		if err != nil {
+			t.Fatal(err)
+		}
+		privateKey, publikey := btcec.PrivKeyFromBytes(hexPriv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		privateKeys = append(privateKeys, privateKey)
+		pubkeylist = append(pubkeylist, publikey.SerializeCompressed())
+
 	}
-	pub3, err := hex.DecodeString("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	pubkeylist := [][]byte{pub1, pub2, pub3}
 	txInputs := []bitcoin.TxIn{
 		{
-			Hash:     "820556b04b6955cc0646bd424792c5940753a82d55140d9af3cc2f8060576f21",
+			Hash:     "cbee12cf5411935db7ba6311a16c2e5b1aa7ac7d7562593312707fb343551117",
 			VOut:     1,
-			PkScript: "0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71",
-			Amount:   1200000000,
+			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
+			Amount:   1199999500,
 		},
 	}
 	txOutputs := []bitcoin.TxOut{
 		{
-			Address: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
-			Amount:  1199999800,
+			Address: "bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5",
+			Amount:  1199999300,
 		},
 	}
 
@@ -106,8 +115,12 @@ func TestMultiTransactionBuilder(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = builder.Sign(func(hash []byte) ([][]byte, error) {
-		//todo
-		return nil, nil
+		var sigs [][]byte
+		for _, privateKey := range privateKeys {
+			sig := ecdsa.Sign(privateKey, hash)
+			sigs = append(sigs, sig.Serialize())
+		}
+		return sigs, nil
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -116,7 +129,13 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%x\n", txBytes)
+	hexTxBytes := fmt.Sprintf("%x", txBytes)
+	fmt.Println(hexTxBytes)
+	txHash, err := client.Sendrawtransaction(hexTxBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(txHash)
 
 }
 
@@ -174,6 +193,7 @@ func TestSimpleTx(t *testing.T) {
 }
 
 func TestDepositTransaction(t *testing.T) {
+	//bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5
 	privateKey := "cPbyxXLqYqAjAHDtbvKq7ETd6BsQBbS643RLHH4u3k1YeVAXkAqR"
 	secret, _, err := base58.CheckDecode(privateKey)
 	if err != nil {
@@ -186,17 +206,17 @@ func TestDepositTransaction(t *testing.T) {
 	}
 	inputs := []bitcoin.TxIn{
 		{
-			Hash:     "7d8f46b43caebfc8f5940b3bbab189aa96d6569580e7328f19d5542de2a51467",
-			VOut:     0,
+			Hash:     "2889b8971ec3955aa13557b34736676cfdc0eeb388535105ec318ed085677102",
+			VOut:     1,
 			PkScript: "0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71",
-			Amount:   1200000000,
+			Amount:   123399983667,
 		},
 	}
 
 	outputs := []bitcoin.TxOut{
 		{
 			Address: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
-			Amount:  1199999500,
+			Amount:  123399983267,
 		},
 	}
 
@@ -229,6 +249,7 @@ func TestMultiTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Printf("%x\n%x\n%x\n", secret1, secret2, secret3)
 	//t.Logf("%x\n%x\n%x", secret1, secret2, secret3)
 	secrets := [][]byte{secret1, secret2, secret3}
 	inputs := []bitcoin.TxIn{

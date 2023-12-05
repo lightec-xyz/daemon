@@ -67,7 +67,7 @@ func NewClient(url, user, pwd, network string) (*Client, error) {
 	opts.CustomHeaders["Authorization"] = "Basic " + basicAuth(user, pwd)
 	opts.CustomHeaders["Connection"] = "close"
 	opts.HTTPClient.Timeout = 2 * time.Minute
-	return &Client{rpcClient: jsonrpc.NewClientWithOpts(url, opts), debug: true}, nil
+	return &Client{rpcClient: jsonrpc.NewClientWithOpts(url, opts), debug: false}, nil
 }
 
 func (client *Client) Call(method string, result interface{}, args ...interface{}) error {

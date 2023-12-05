@@ -55,7 +55,7 @@ func TestClient_SendRawTransaction(t *testing.T) {
 }
 
 func TestClient_Getrawtransaction(t *testing.T) {
-	tx, err := client.GetRawtransaction("cbee12cf5411935db7ba6311a16c2e5b1aa7ac7d7562593312707fb343551117")
+	tx, err := client.GetRawtransaction("538147ee8b1455af6965686f95e9e8eae87353959118eaaa96336da2a906103e")
 	if err != nil {
 		panic(err)
 	}

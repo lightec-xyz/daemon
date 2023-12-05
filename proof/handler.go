@@ -17,13 +17,6 @@ func NewHandler() *Handler {
 	return &Handler{}
 }
 
-func (h *Handler) Info() (rpc.ProofInfo, error) {
-	info := rpc.ProofInfo{
-		Version: "1.2.3",
-	}
-	return info, nil
-}
-
 func (h *Handler) GenZkProof(request rpc.ProofRequest) (rpc.ProofResponse, error) {
 	//todo
 	response := rpc.ProofResponse{

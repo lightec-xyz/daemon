@@ -1,14 +1,12 @@
 package node
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"math/big"
 	"strings"
 	"time"
 )
@@ -47,12 +45,14 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 		proofResponse:        response,
 		checkProofHeightNums: 100,
 		minDepositValue:      0,
+		ethPrivateKey:        cfg.EthPrivateKey,
 		submitTxEthAddr:      submitTxEthAddr,
 		exitSign:             make(chan struct{}, 1),
 	}, nil
 }
 
 func (b *BitcoinAgent) Init() error {
+
 	has, err := b.store.Has(btcCurHeightKey)
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
@@ -72,6 +72,13 @@ func (b *BitcoinAgent) Init() error {
 			return err
 		}
 	}
+	// test btc rpc
+	_, err = b.btcClient.GetBlockCount()
+	if err != nil {
+		logger.Error("get block count error:%v", err)
+		return err
+	}
+	logger.Info("init bitcoin agent complete")
 	//todo
 	return nil
 }
@@ -108,11 +115,9 @@ func (b *BitcoinAgent) checkUnCompleteGenerateProofTx() error {
 				return err
 			}
 			proofList = append(proofList, ProofRequest{
-				TxId:   proof.TxId,
-				PType:  BitcoinChain,
-				ToAddr: proof.ToAddr,
-				Amount: proof.Amount,
-				Msg:    proof.Msg,
+				TxId:  proof.TxId,
+				PType: Deposit,
+				Msg:   proof.Msg,
 			})
 		}
 	}
@@ -131,11 +136,13 @@ func (b *BitcoinAgent) getCurrentHeight() (int64, error) {
 }
 
 func (b *BitcoinAgent) ScanBlock() error {
+	logger.Info("start bitcoin scan block")
 	curHeight, err := b.getCurrentHeight()
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
 		return err
 	}
+	curHeight = 3821 - 1
 	blockCount, err := b.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error("get block count error:%v", err)
@@ -147,7 +154,6 @@ func (b *BitcoinAgent) ScanBlock() error {
 		return nil
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
-		logger.Info("decode block %d", index)
 		depositTxList, proofRequestList, err := b.parseBlock(index)
 		if err != nil {
 			logger.Error(err.Error())
@@ -177,9 +183,8 @@ func (b *BitcoinAgent) saveDataToDb(height int64, depositTxList []DepositTx) err
 		err = b.store.BatchPutObj(pTxId, TxProof{
 			PTxId:  pTxId,
 			TxId:   depositTx.TxId,
-			ToAddr: depositTx.Addr,
+			ToAddr: depositTx.EthAddr,
 			Amount: depositTx.Amount,
-			Msg:    depositTx.Extra,
 			Status: ProofDefault,
 		})
 		if err != nil {
@@ -218,20 +223,23 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 	}
 	var proofRequestList []ProofRequest
 	var depositTxList []DepositTx
-	for _, tx := range blockWithTx.Tx {
+	for txIndex, tx := range blockWithTx.Tx {
 		depositTx, check, err := b.checkTx(tx.Vout)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, nil, err
 		}
+		depositTx.TxId = tx.Hash
+		depositTx.TxIndex = txIndex
 		if check {
-			logger.Info("found deposit tx: %v", depositTx)
+			logger.Info("found zkbtc deposit tx: %v", depositTx)
 			depositTxList = append(depositTxList, depositTx)
 			proofRequestList = append(proofRequestList, ProofRequest{
-				TxId:   depositTx.TxId,
-				PType:  BitcoinChain,
-				ToAddr: depositTx.Addr,
-				Amount: depositTx.Amount,
+				TxId:    depositTx.TxId,
+				TxIndex: depositTx.TxIndex,
+				EthAddr: depositTx.EthAddr,
+				Amount:  depositTx.Amount,
+				PType:   Deposit,
 			})
 		}
 	}
@@ -240,12 +248,14 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 
 func (b *BitcoinAgent) Transfer() {
 	//todo whether need queue ?
+	logger.Debug("start bitcoin transfer goroutine")
 	for {
 		select {
 		case <-b.exitSign:
 			logger.Info("exit bitcoin transfer goroutine")
 			return
 		case response := <-b.proofResponse:
+			logger.Info("receive deposit proof response:%v %v", response.TxId, response)
 			err := b.updateProof(response)
 			if err != nil {
 				logger.Error("update proof error:%v", err)
@@ -281,17 +291,13 @@ func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 		return err
 	}
 	gasLimit := uint64(500000)
-	amountBig, ok := big.NewInt(0).SetString(resp.Amount, 10)
-	if !ok {
+	amountBig, err := Str2Big(resp.Amount, 8)
+	if err != nil {
 		return fmt.Errorf("parse big error amount:%v", resp.Amount)
 	}
-	proofBytes, err := hex.DecodeString(resp.Proof)
-	if err != nil {
-		logger.Error("hex decode proof error:%v", err)
-		return err
-	}
-	txHash, err := b.ethClient.Deposit(b.ethPrivateKey, resp.TxId, resp.ToAddr, resp.Index,
-		nonce, gasLimit, chainId, gasPrice, amountBig, proofBytes)
+	proofBytes := []byte(resp.Proof)
+	txHash, err := b.ethClient.Deposit(b.ethPrivateKey, resp.TxId, uint32(resp.TxIndex), nonce, gasLimit, chainId, gasPrice,
+		amountBig, proofBytes)
 	if err != nil {
 		logger.Error("mint btc tx error:%v", err)
 		return err
@@ -303,7 +309,7 @@ func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 func (b *BitcoinAgent) checkTx(txOuts []types.TxVout) (DepositTx, bool, error) {
 	// todo   check rule
 	depositTx := DepositTx{}
-	if len(txOuts) >= 2 {
+	if len(txOuts) < 2 {
 		return depositTx, false, nil
 	}
 	if txOuts[1].ScriptPubKey.Address != b.operateAddr {
@@ -330,8 +336,6 @@ func (b *BitcoinAgent) updateProof(resp ProofResponse) error {
 	err := b.store.PutObj(pTxId, TxProof{
 		PTxId:  pTxId,
 		TxId:   resp.TxId,
-		ToAddr: resp.ToAddr,
-		Amount: resp.Amount,
 		Msg:    resp.Msg,
 		Status: ProofSuccess,
 	})

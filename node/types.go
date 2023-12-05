@@ -2,20 +2,26 @@ package node
 
 type DepositTx struct {
 	TxId    string
-	Addr    string
+	TxIndex int
 	EthAddr string
-	Height  int64
 	Amount  string
-	Extra   string
 }
 
 type RedeemTx struct {
+	Inputs  []TxIn
+	Outputs []TxOut
+	TxIndex uint32
 	TxId    string
-	From    string
-	BtcAddr string
-	Height  string
-	Amount  string
-	Extra   string
+}
+
+type TxIn struct {
+	TxId  string
+	Index uint32
+}
+
+type TxOut struct {
+	Value    int64
+	PkScript []byte
 }
 
 type TxProof struct {
@@ -32,22 +38,34 @@ type TxProof struct {
 // todo
 
 type ProofRequest struct {
-	TxId   string `json:"txId"`
-	PType  string `json:"type"`
-	Proof  string `json:"proof"`
-	ToAddr string `json:"toAddr"`
-	Amount string `json:"amount"`
-	Msg    string `json:"msg"`
+	// redeem
+	Inputs  []TxIn  `json:"inputs"`
+	Outputs []TxOut `json:"outputs"`
+
+	// deposit
+	Amount  string `json:"value"`
+	EthAddr string `json:"ethAddr"`
+
+	TxId    string `json:"txId"`
+	TxIndex int    `json:"index"`
+	PType   string `json:"type"`
+	Proof   string `json:"proof"`
+	Msg     string `json:"msg"`
 }
 
-//todo
-
+// todo
 type ProofResponse struct {
-	TxId   string `json:"txId"`
-	Index  uint32 `json:"index"`
-	PType  string `json:"type"`
-	Proof  string `json:"proof"`
-	ToAddr string `json:"toAddr"`
-	Amount string `json:"amount"`
-	Msg    string `json:"msg"`
+	// redeem
+	Inputs  []TxIn  `json:"inputs"`
+	Outputs []TxOut `json:"outputs"`
+
+	// deposit
+	Amount  string `json:"value"`
+	EthAddr string `json:"ethAddr"`
+
+	TxId    string `json:"txId"`
+	TxIndex int    `json:"index"`
+	PType   string `json:"type"`
+	Proof   string `json:"proof"`
+	Msg     string `json:"msg"`
 }

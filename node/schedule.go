@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"sort"
@@ -16,17 +17,26 @@ func NewSchedule(workers ...IWorker) *Schedule {
 	}
 }
 
-func (m *Schedule) GenZKProof(worker IWorker, req ProofRequest) (rpc.ProofResponse, error) {
+func (m *Schedule) GenZKProof(worker IWorker, req ProofRequest) (ProofResponse, error) {
 	worker.Add()
 	defer worker.Del()
-	proofResponse, err := worker.GenProof(rpc.ProofRequest{
-		TxId: req.TxId,
-	})
+	//todo
+	proofResp := ProofResponse{}
+	rpcReq := rpc.ProofRequest{}
+	err := objParse(req, &rpcReq)
+	if err != nil {
+		return proofResp, err
+	}
+	proofResponse, err := worker.GenProof(rpcReq)
 	if err != nil {
 		logger.Error("gen zk proof error:%v", err)
-		return rpc.ProofResponse{}, err
+		return proofResp, err
 	}
-	return proofResponse, nil
+	err = objParse(proofResponse, &proofResp)
+	if err != nil {
+		return proofResp, nil
+	}
+	return proofResp, nil
 
 }
 
@@ -48,4 +58,16 @@ func (m *Schedule) findBestWorker() (IWorker, bool, error) {
 	bestWork := tmpWorkers[0]
 	return bestWork, true, nil
 
+}
+
+func objParse(src, dest interface{}) error {
+	marshal, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(marshal, dest)
+	if err != nil {
+		return err
+	}
+	return nil
 }
