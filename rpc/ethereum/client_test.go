@@ -18,7 +18,7 @@ var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
 var endpoint = "https://ethereum-holesky.publicnode.com"
-var zkBridgeAddr = "0x3651fDb6a46c47aba40821bD1C194258684cA373"
+var zkBridgeAddr = "0x6b8088ea28955740fcd702387f65526377735e92"
 
 func init() {
 	//https://sepolia.publicgoods.network
@@ -82,7 +82,7 @@ func TestPrivateKey(t *testing.T) {
 
 func TestRedeemTx(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	redeemAmount := big.NewInt(400000)
+	redeemAmount := big.NewInt(100000)
 	minerFee := big.NewInt(300)
 	redeemLockScript, err := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
 	if err != nil {

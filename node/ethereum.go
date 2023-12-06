@@ -13,6 +13,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
+	"math/big"
 	"strconv"
 	"time"
 )
@@ -33,6 +34,7 @@ type EthereumAgent struct {
 	logAddr              []string
 	logTopic             []string
 	privateKeys          []*btcec.PrivateKey
+	initStartHeight      int64
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
@@ -65,6 +67,7 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		logAddr:              cfg.LogAddr,
 		logTopic:             cfg.LogTopic,
 		privateKeys:          privateKeys,
+		initStartHeight:      465969,
 	}, nil
 }
 
@@ -101,6 +104,7 @@ func (e *EthereumAgent) Init() error {
 }
 
 func (e *EthereumAgent) checkUnCompleteGenerateProofTx() error {
+	return nil
 	currentHeight, err := e.getEthHeight()
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
@@ -152,14 +156,15 @@ func (e *EthereumAgent) getEthHeight() (int64, error) {
 }
 
 func (e *EthereumAgent) ScanBlock() error {
-	logger.Info("start ethereum scan block")
+	//logger.Info("start ethereum scan block")
 	ethHeight, err := e.getEthHeight()
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
 		return err
 	}
-
-	ethHeight = 456924 - 1
+	if ethHeight < e.initStartHeight {
+		ethHeight = e.initStartHeight
+	}
 	blockNumber, err := e.ethClient.EthBlockNumber()
 	if err != nil {
 		logger.Error("get eth block number error:%v", err)
@@ -196,7 +201,7 @@ func (e *EthereumAgent) Transfer() {
 			logger.Info("exit ethereum transfer goroutine")
 			return
 		case response := <-e.proofResponse:
-			logger.Info("receive redeem proof response:%v %v", response.TxId, response)
+			logger.Info("receive redeem proof response:%v %v", response.TxId, response.String())
 			err := e.updateProof(response)
 			if err != nil {
 				logger.Error("update proof error:%v", err)
@@ -270,13 +275,14 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 			return nil, nil, err
 		}
 		if ok {
-			logger.Info("found redeem tx: %v", redeemTx)
+
+			logger.Info("found redeem zkbtc txid: %v %v", redeemTx.TxId, redeemTx.String())
 			redeemTxList = append(redeemTxList, redeemTx)
 			proofRequestList = append(proofRequestList, ProofRequest{
 				Inputs:  redeemTx.Inputs,
 				Outputs: redeemTx.Outputs,
 				TxId:    redeemTx.TxId,
-				TxIndex: int(redeemTx.TxIndex),
+				Vout:    int(redeemTx.TxIndex),
 				PType:   Redeem,
 			})
 		}
@@ -284,41 +290,22 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 	return redeemTxList, proofRequestList, nil
 }
 
-func (e *EthereumAgent) getUtxoScriptInfo(txId string, Vout int) (string, int64, error) {
-	//todo
-	transaction, err := e.btcClient.GetRawtransaction(txId)
-	if err != nil {
-		logger.Error("get btc transaction error:%v", err)
-		return "", 0, err
-	}
-	for index, out := range transaction.Vout {
-		if index == Vout {
-			valueBig, err := Str2Big(fmt.Sprintf("%v", out.Value), 8)
-			if err != nil {
-				logger.Error("parse str to big error:%v", err)
-				return "", 0, err
-			}
-			return out.ScriptPubKey.Hex, valueBig.Int64(), nil
-		}
-	}
-	return "", 0, fmt.Errorf("nevel should happen: %v %v", txId, Vout)
-
-}
-
 func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 	//todo
 	txIns := []btctx.TxIn{}
 	for _, input := range resp.Inputs {
-		utxoScriptInfo, value, err := e.getUtxoScriptInfo(input.TxId, int(input.Index))
+		utxo, err := e.btcClient.GetUtxoByTxId(input.TxId, int(input.Index))
 		if err != nil {
-			logger.Error("get utxo script info error:%v", err)
+			logger.Error("get utxo error:%v", err)
 			return err
 		}
+		amount, _ := big.NewFloat(0).Mul(big.NewFloat(utxo.Amount), big.NewFloat(100000000)).Int64()
+		logger.Info("%v %v", utxo.ScriptPubKey, amount)
 		txIns = append(txIns, btctx.TxIn{
 			Hash:     input.TxId,
 			VOut:     input.Index,
-			PkScript: utxoScriptInfo,
-			Amount:   value,
+			PkScript: utxo.ScriptPubKey,
+			Amount:   amount,
 		})
 	}
 
@@ -352,7 +339,6 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 		return err
 	}
 	err = builder.Sign(func(hash []byte) ([][]byte, error) {
-		// todo
 		var sigs [][]byte
 		for _, privkey := range e.privateKeys {
 			sig := ecdsa.Sign(privkey, hash)
@@ -402,7 +388,7 @@ func (e *EthereumAgent) CheckRedeemTx(log types.Log) (RedeemTx, bool, error) {
 	for _, in := range transaction.TxIn {
 		inputs = append(inputs, TxIn{
 			TxId:  in.PreviousOutPoint.Hash.String(),
-			Index: in.PreviousOutPoint.Index,
+			Index: in.PreviousOutPoint.Index + 1, // todo check
 		})
 	}
 	var outputs []TxOut

@@ -112,6 +112,7 @@ func (mb *MultiTransactionBuilder) AddTxOut(outputs []TxOut) error {
 func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, error)) error {
 	scriptHash := sha256.Sum256(mb.multiSigScript)
 	from, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], mb.netParams)
+	fmt.Println(from)
 	if err != nil {
 		return err
 	}

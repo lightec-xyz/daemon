@@ -21,6 +21,7 @@ const (
 	SIGNRAWTRANSACTIONWITHKEY = "signrawtransactionwithkey"
 	SENDRAWTRANSACTION        = "sendrawtransaction"
 	GETRAWTRANSACTION         = "getrawtransaction"
+	GETTRANSACTION            = "gettransaction"
 )
 
 type AddrType string

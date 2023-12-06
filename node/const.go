@@ -3,8 +3,8 @@ package node
 // todo
 
 const (
-	Deposit = "bitcoin"
-	Redeem  = "ethereum"
+	Deposit = "deposit"
+	Redeem  = "redeem"
 )
 
 const (

@@ -57,16 +57,19 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
 	ethProofResp := make(chan ProofResponse, 1000)
-	//btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
-	//if err != nil {
-	//	logger.Error(err.Error())
-	//	return nil, err
-	//}
+	var agents []IAgent
+	btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	agents = append(agents, btcAgent)
 	ethAgent, err := NewEthereumAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, ethProofResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	agents = append(agents, ethAgent)
 	//todo
 	//workers, err := NewWorkers(cfg.Workers)
 	//if err != nil {
@@ -82,7 +85,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents:         []IAgent{ethAgent},
+		agents:         agents,
 		server:         server,
 		nodeConfig:     cfg,
 		exitScanSignal: make(chan struct{}, 1),

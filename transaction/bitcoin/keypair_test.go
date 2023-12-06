@@ -2,7 +2,9 @@ package bitcoin
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"testing"
 )
 
@@ -64,5 +66,36 @@ func TestMultiAddress01(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(address)
+}
+
+func TestGenerateKey(t *testing.T) {
+	//03d4c6fac559b9e8182288fde7d4e42d6050910c6b0fbcc6bf3ba261e4168ca2d1
+	//03d4c6fac559b9e8182288fde7d4e42d6050910c6b0fbcc6bf3ba261e4168ca2d1
+	result, _, err := base58.CheckDecode("cSwe7Np3o7eCec6hgKFrwqGs9bb6x2dubKBucLYqQ6mJu5JH1aCn")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("%x\n", result)
+	keyPair, err := NewKeyPairFromSecret(fmt.Sprintf("%x", result))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("%x\n", keyPair.PrivateKey())
+	fmt.Printf("%x\n", keyPair.PublicKey())
+}
+
+func TestNewKeyPairFromSecret(t *testing.T) {
+	keyPair, err := NewKeyPairFromSecret("3c5579d538347d56ed5ef6d56e7e36ae453dcbd6ff6586783f82c17c8190d716")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("%x\n", keyPair.PrivateKey())
+	fmt.Printf("%x\n", keyPair.PublicKey())
+	address, err := keyPair.Address(P2WPKH, RegTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5
+	fmt.Printf("%v\n", address)
 
 }

@@ -6,7 +6,9 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/lightec-xyz/daemon/transaction/bitcoin"
+	"math/big"
 	"testing"
 )
 
@@ -80,20 +82,27 @@ func TestMultiTransactionBuilder(t *testing.T) {
 		}
 		privateKeys = append(privateKeys, privateKey)
 		pubkeylist = append(pubkeylist, publikey.SerializeCompressed())
+		t.Log(fmt.Sprintf("%x", publikey.SerializeCompressed()))
 
 	}
 	txInputs := []bitcoin.TxIn{
 		{
-			Hash:     "cbee12cf5411935db7ba6311a16c2e5b1aa7ac7d7562593312707fb343551117",
+			Hash:     "e7f89d1eb155593661e399bb8553f03fbf6c26f437c06690d72b5cc847a6e4dc",
 			VOut:     1,
 			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   1199999500,
+			Amount:   1199999800,
 		},
 	}
+	pk1, _ := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
+	pk2, _ := hex.DecodeString("0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58")
 	txOutputs := []bitcoin.TxOut{
 		{
-			Address: "bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5",
-			Amount:  1199999300,
+			PayScript: pk1,
+			Amount:    99950,
+		},
+		{
+			PayScript: pk2,
+			Amount:    1199899500,
 		},
 	}
 
@@ -110,7 +119,7 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = builder.AddTxOut(txOutputs)
+	err = builder.AddTxOutScript(txOutputs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +127,8 @@ func TestMultiTransactionBuilder(t *testing.T) {
 		var sigs [][]byte
 		for _, privateKey := range privateKeys {
 			sig := ecdsa.Sign(privateKey, hash)
-			sigs = append(sigs, sig.Serialize())
+			sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
+			sigs = append(sigs, sigWithType)
 		}
 		return sigs, nil
 	})
@@ -193,31 +203,42 @@ func TestSimpleTx(t *testing.T) {
 }
 
 func TestDepositTransaction(t *testing.T) {
+
+	utxoSet, err := client.Scantxoutset("bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(utxoSet.Unspents) == 0 {
+		t.Fatal("no utxo found")
+	}
+	utxo := utxoSet.Unspents[0]
+	floatBig := big.NewFloat(0).Mul(big.NewFloat(utxo.Amount), big.NewFloat(100000000))
+	amount, _ := floatBig.Int64()
+	inputs := []bitcoin.TxIn{
+		{
+			Hash:     utxo.Txid,
+			VOut:     uint32(utxo.Vout),
+			PkScript: utxo.ScriptPubKey,
+			Amount:   amount,
+		},
+	}
+	outputs := []bitcoin.TxOut{
+		{
+			Address: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
+			Amount:  amount - 200,
+		},
+	}
+
 	//bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5
 	privateKey := "cPbyxXLqYqAjAHDtbvKq7ETd6BsQBbS643RLHH4u3k1YeVAXkAqR"
 	secret, _, err := base58.CheckDecode(privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ethAddr := "e8c84a631D71E1Bb7083D3a82a3a74870a286B97"
+	ethAddr := "771815eFD58e8D6e66773DB0bc002899c00d5b0c"
 	ethAddrBytes, err := hex.DecodeString(ethAddr)
 	if err != nil {
 		t.Fatal(err)
-	}
-	inputs := []bitcoin.TxIn{
-		{
-			Hash:     "2889b8971ec3955aa13557b34736676cfdc0eeb388535105ec318ed085677102",
-			VOut:     1,
-			PkScript: "0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71",
-			Amount:   123399983667,
-		},
-	}
-
-	outputs := []bitcoin.TxOut{
-		{
-			Address: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
-			Amount:  123399983267,
-		},
 	}
 
 	result, err := bitcoin.CreateDepositTransaction(secret, ethAddrBytes, inputs, outputs, bitcoin.RegTest)
@@ -254,29 +275,29 @@ func TestMultiTransaction(t *testing.T) {
 	secrets := [][]byte{secret1, secret2, secret3}
 	inputs := []bitcoin.TxIn{
 		{
-			Hash:     "99bc9c085120370e3f89aeeb2dcb11657f36d4411f832dd6d71cdaad65e2512b",
-			VOut:     0,
-			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   1200000000,
-		},
-		{
-			Hash:     "98ea87268149e34d7c818e2cb8fd0b68044beeb0527d0baac83e8619c93450ae",
-			VOut:     0,
-			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   12000000000,
-		},
-		{
-			Hash:     "ee3cd919cef42d0ca63f62410fccff3a6c1c8754b9ce564dd3c24f551a6911c4",
+			Hash:     "cbee12cf5411935db7ba6311a16c2e5b1aa7ac7d7562593312707fb343551117",
 			VOut:     1,
 			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   1200000000,
+			Amount:   1199999500,
 		},
+		//{
+		//	Hash:     "98ea87268149e34d7c818e2cb8fd0b68044beeb0527d0baac83e8619c93450ae",
+		//	VOut:     0,
+		//	PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
+		//	Amount:   12000000000,
+		//},
+		//{
+		//	Hash:     "ee3cd919cef42d0ca63f62410fccff3a6c1c8754b9ce564dd3c24f551a6911c4",
+		//	VOut:     1,
+		//	PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
+		//	Amount:   1200000000,
+		//},
 	}
 
 	outputs := []bitcoin.TxOut{
 		{
 			Address: "bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5",
-			Amount:  14399999600,
+			Amount:  1199999300,
 		},
 	}
 

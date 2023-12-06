@@ -54,8 +54,26 @@ func TestClient_SendRawTransaction(t *testing.T) {
 	t.Log(txHash)
 }
 
+func TestClient_GetUtxoByTxId(t *testing.T) {
+	utxo, err := client.GetUtxoByTxId("e7f89d1eb155593661e399bb8553f03fbf6c26f437c06690d72b5cc847a6e4dc", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(utxo)
+}
+
 func TestClient_Getrawtransaction(t *testing.T) {
-	tx, err := client.GetRawtransaction("538147ee8b1455af6965686f95e9e8eae87353959118eaaa96336da2a906103e")
+	//aabd19556b19981ae317a26d47bb6f69bb0daa230612dd9a857a11aae5c22cab
+	//09f15de0a93ead808978d31e43644ef2d38e7f6f9cdf70a195ae79f93046eaf3
+	tx, err := client.GetRawTransaction("cc24f79bed5d853f282b65e44fa643e5b395c61af1f3d663a3e87a83ff15543f")
+	if err != nil {
+		panic(err)
+	}
+	t.Log(tx)
+}
+
+func TestClient_GetTransaction(t *testing.T) {
+	tx, err := client.GetTransaction("155c5f7628a65de750c7eee46bcad0a135d6a34778a92e8e562dc487e0ccc1b9")
 	if err != nil {
 		panic(err)
 	}

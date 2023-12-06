@@ -61,7 +61,7 @@ func localDevDaemonConfig() NodeConfig {
 		BtcUser:         "lightec",
 		BtcPwd:          "abcd1234",
 		BtcNetwork:      "RegTest",
-		BTcBtcBlockTime: 35,
+		BTcBtcBlockTime: 15,
 		BtcOperatorAddr: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
 		BtcPrivateKeys: []string{
 			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
@@ -69,10 +69,10 @@ func localDevDaemonConfig() NodeConfig {
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
 		EthUrl:        "https://ethereum-holesky.publicnode.com",
-		ZkBridgeAddr:  "0x3651fDb6a46c47aba40821bD1C194258684cA373",
-		EthBlockTime:  15,
+		ZkBridgeAddr:  "0x6b8088ea28955740fcd702387f65526377735e92",
+		EthBlockTime:  10,
 		EthPrivateKey: "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		LogAddr:       []string{"0x3651fdb6a46c47aba40821bd1c194258684ca373"},
+		LogAddr:       []string{"0x6b8088ea28955740fcd702387f65526377735e92"},
 		LogTopic:      []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"},
 		MultiAddressInfo: MultiAddressInfo{
 			PublicKeyList: [][]byte{
