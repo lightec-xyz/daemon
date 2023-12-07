@@ -1,14 +1,18 @@
 package bitcoin
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"math/big"
+	"strconv"
 	"testing"
 )
 
@@ -82,15 +86,14 @@ func TestMultiTransactionBuilder(t *testing.T) {
 		}
 		privateKeys = append(privateKeys, privateKey)
 		pubkeylist = append(pubkeylist, publikey.SerializeCompressed())
-		t.Log(fmt.Sprintf("%x", publikey.SerializeCompressed()))
 
 	}
 	txInputs := []bitcoin.TxIn{
 		{
-			Hash:     "e7f89d1eb155593661e399bb8553f03fbf6c26f437c06690d72b5cc847a6e4dc",
+			Hash:     "1960288483d27a24c33b148a3e3d75a64ea99531f77406a1a719c0dad34670e9",
 			VOut:     1,
 			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   1199999800,
+			Amount:   9975,
 		},
 	}
 	pk1, _ := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
@@ -98,11 +101,11 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	txOutputs := []bitcoin.TxOut{
 		{
 			PayScript: pk1,
-			Amount:    99950,
+			Amount:    1199899300,
 		},
 		{
 			PayScript: pk2,
-			Amount:    1199899500,
+			Amount:    1199899300,
 		},
 	}
 
@@ -119,10 +122,12 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = builder.AddTxOutScript(txOutputs)
+	err = builder.AddTxOut(txOutputs)
 	if err != nil {
 		t.Fatal(err)
 	}
+	hash := builder.TxHash()
+	t.Logf("before: %v \n", hash)
 	err = builder.Sign(func(hash []byte) ([][]byte, error) {
 		var sigs [][]byte
 		for _, privateKey := range privateKeys {
@@ -139,13 +144,13 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("after: %v \n", hash)
 	hexTxBytes := fmt.Sprintf("%x", txBytes)
-	fmt.Println(hexTxBytes)
 	txHash, err := client.Sendrawtransaction(hexTxBytes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(txHash)
+	t.Logf("txHash: %v\n", txHash)
 
 }
 
@@ -275,10 +280,10 @@ func TestMultiTransaction(t *testing.T) {
 	secrets := [][]byte{secret1, secret2, secret3}
 	inputs := []bitcoin.TxIn{
 		{
-			Hash:     "cbee12cf5411935db7ba6311a16c2e5b1aa7ac7d7562593312707fb343551117",
+			Hash:     "d84498c08fadb2276b1010e8a572e351a4969b8bbb58ac9ff71d8fd3748e2faa",
 			VOut:     1,
 			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   1199999500,
+			Amount:   11999998,
 		},
 		//{
 		//	Hash:     "98ea87268149e34d7c818e2cb8fd0b68044beeb0527d0baac83e8619c93450ae",
@@ -314,6 +319,50 @@ func TestMultiTransaction(t *testing.T) {
 	t.Log(txHash)
 }
 
-func TestOpReturnTransaction(t *testing.T) {
+func TestTxHash(t *testing.T) {
+	msgTx := wire.NewMsgTx(2)
+
+	hash, _ := chainhash.NewHashFromStr("d84498c08fadb2276b1010e8a572e351a4969b8bbb58ac9ff71d8fd3748e2faa")
+	txIn := wire.NewTxIn(wire.NewOutPoint(hash, 1), nil, nil)
+	msgTx.AddTxIn(txIn)
+
+	pk1, _ := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
+	pk2, _ := hex.DecodeString("0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58")
+	out := &wire.TxOut{
+		Value:    99950,
+		PkScript: pk1,
+	}
+	msgTx.AddTxOut(out)
+	out1 := &wire.TxOut{
+		Value:    1199899500,
+		PkScript: pk2,
+	}
+	msgTx.AddTxOut(out1)
+	txId := msgTx.TxHash().String()
+	t.Log(txId)
+
+}
+
+func TestDeserializeTransaction(t *testing.T) {
+	data := "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007d0200000001aa2f8e74d38f1df79fac58bb8b9b96a451e372a5e810106b27b2ad8fc09844d80000000000ffffffff026e86010000000000160014d7fae4fbdc8bf6c86a08c7177c5d06683754ea716c03854700000000220020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb5800000000000000"
+	hexData, err := hex.DecodeString(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//version := hexData[0:32]
+	l := hexData[32:64]
+	length, err := strconv.ParseInt(fmt.Sprintf("%x", l), 16, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx := hexData[64 : 64+length]
+	t.Logf("%x\n", tx)
+	msgTx := wire.MsgTx{}
+	err = msgTx.Deserialize(bytes.NewReader(tx))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(msgTx.TxHash().String())
+	t.Log(msgTx)
 
 }

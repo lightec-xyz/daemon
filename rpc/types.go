@@ -15,11 +15,14 @@ type TxOut struct {
 }
 
 type ProofRequest struct {
+	// redeem
 	Inputs  []TxIn  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
 
-	EthAddr string `json:"ethAddr"`
+	// deposit
 	Amount  string `json:"amount"`
+	EthAddr string `json:"ethAddr"`
+	Vout    int    `json:"index"`
 
 	TxId  string `json:"txId"`
 	PType string `json:"type"`
@@ -27,18 +30,20 @@ type ProofRequest struct {
 	Msg   string `json:"msg"`
 }
 
-type ProofResponse struct {
+type ProofResponse struct { // redeem
+	// redeem
 	Inputs  []TxIn  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
 
-	EthAddr string `json:"ethAddr"`
+	// deposit
 	Amount  string `json:"amount"`
+	EthAddr string `json:"ethAddr"`
+	Vout    int    `json:"index"`
 
-	TxId   string `json:"txId"`
-	PType  string `json:"type"`
-	Proof  string `json:"proof"`
-	Status int    `json:"status"`
-	Msg    string `json:"msg"`
+	TxId  string `json:"txId"`
+	PType string `json:"type"`
+	Proof string `json:"proof"`
+	Msg   string `json:"msg"`
 }
 
 type ProofStatus struct {

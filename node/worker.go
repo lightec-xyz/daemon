@@ -83,19 +83,12 @@ func (l *LocalWorker) GenProof(req rpc.ProofRequest) (rpc.ProofResponse, error) 
 	// todo
 	logger.Info("local worker gen proof now: %v %v", req.TxId, req.PType)
 	time.Sleep(3 * time.Second)
-	return rpc.ProofResponse{
-		Inputs:  req.Inputs,
-		Outputs: req.Outputs,
-
-		Amount:  req.Amount,
-		EthAddr: req.EthAddr,
-
-		TxId:   req.TxId,
-		PType:  req.PType,
-		Status: 2,
-		Msg:    "ok",
-		Proof:  "test proof",
-	}, nil
+	response := rpc.ProofResponse{}
+	err := objParse(req, &response)
+	if err != nil {
+		return response, nil
+	}
+	return response, nil
 }
 
 func (l *LocalWorker) Add() {

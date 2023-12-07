@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"context"
+	"fmt"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -133,7 +134,34 @@ func (c *Client) Deposit(secret, txId string, index uint32,
 	auth.GasLimit = gasLimit
 	fixedTxId := [32]byte{}
 	copy(fixedTxId[:], common.FromHex(txId))
+	fmt.Println("txIndex:", index)
 	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, proof)
+	if err != nil {
+		return "", err
+	}
+	return transaction.Hash().Hex(), nil
+
+}
+
+func (c *Client) UpdateUtxoChange(secret, txId string, nonce, gasLimit uint64, chainID, gasPrice *big.Int, proof []byte) (string, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	privateKey, err := crypto.HexToECDSA(secret)
+	if err != nil {
+		return "", err
+	}
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
+	if err != nil {
+		return "", err
+	}
+	auth.Context = ctx
+	auth.Nonce = big.NewInt(int64(nonce))
+	//auth.GasPrice = gasPrice todo
+	auth.GasFeeCap = gasPrice
+	auth.GasLimit = gasLimit
+	fixedTxId := [32]byte{}
+	copy(fixedTxId[:], common.FromHex(txId))
+	transaction, err := c.zkBridgeCall.UpdateChange(auth, fixedTxId, proof)
 	if err != nil {
 		return "", err
 	}

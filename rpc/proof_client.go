@@ -49,10 +49,9 @@ func (p *ProofClient) ProofInfo(proofId string) (ProofResponse, error) {
 func (p *ProofClient) GenZkProof(request ProofRequest) (ProofResponse, error) {
 	//todo
 	response := ProofResponse{
-		TxId:   request.TxId,
-		Status: 0,
-		Msg:    "ok",
-		Proof:  "test proof",
+		TxId:  request.TxId,
+		Msg:   "ok",
+		Proof: "test proof",
 	}
 	err := p.call(&response, "zkbtc_genBtcProof", request)
 	if err != nil {

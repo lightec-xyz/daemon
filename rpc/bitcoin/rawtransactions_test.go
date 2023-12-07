@@ -55,7 +55,7 @@ func TestClient_SendRawTransaction(t *testing.T) {
 }
 
 func TestClient_GetUtxoByTxId(t *testing.T) {
-	utxo, err := client.GetUtxoByTxId("e7f89d1eb155593661e399bb8553f03fbf6c26f437c06690d72b5cc847a6e4dc", 0)
+	utxo, err := client.GetUtxoByTxId("1960288483d27a24c33b148a3e3d75a64ea99531f77406a1a719c0dad34670e9", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestClient_GetUtxoByTxId(t *testing.T) {
 func TestClient_Getrawtransaction(t *testing.T) {
 	//aabd19556b19981ae317a26d47bb6f69bb0daa230612dd9a857a11aae5c22cab
 	//09f15de0a93ead808978d31e43644ef2d38e7f6f9cdf70a195ae79f93046eaf3
-	tx, err := client.GetRawTransaction("cc24f79bed5d853f282b65e44fa643e5b395c61af1f3d663a3e87a83ff15543f")
+	tx, err := client.GetRawTransaction("d4308fe2751128b23ad596b3cf0f05ea6d8ef3629f4a5845c931b54169c4c24f")
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +73,7 @@ func TestClient_Getrawtransaction(t *testing.T) {
 }
 
 func TestClient_GetTransaction(t *testing.T) {
-	tx, err := client.GetTransaction("155c5f7628a65de750c7eee46bcad0a135d6a34778a92e8e562dc487e0ccc1b9")
+	tx, err := client.GetTransaction("d4308fe2751128b23ad596b3cf0f05ea6d8ef3629f4a5845c931b54169c4c24f")
 	if err != nil {
 		panic(err)
 	}

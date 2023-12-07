@@ -35,11 +35,17 @@ type EthereumAgent struct {
 	logTopic             []string
 	privateKeys          []*btcec.PrivateKey
 	initStartHeight      int64
+	ethPrivate           string
+	ethAddress           string
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	proofRequest chan []ProofRequest, proofResponse <-chan ProofResponse) (IAgent, error) {
 	//todo
+	submitTxEthAddr, err := privateKeyToEthAddr(cfg.EthPrivateKey)
+	if err != nil {
+		return nil, err
+	}
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -67,7 +73,9 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		logAddr:              cfg.LogAddr,
 		logTopic:             cfg.LogTopic,
 		privateKeys:          privateKeys,
-		initStartHeight:      465969,
+		initStartHeight:      472227,
+		ethAddress:           submitTxEthAddr,
+		ethPrivate:           cfg.EthPrivateKey,
 	}, nil
 }
 
@@ -201,22 +209,57 @@ func (e *EthereumAgent) Transfer() {
 			logger.Info("exit ethereum transfer goroutine")
 			return
 		case response := <-e.proofResponse:
-			logger.Info("receive redeem proof response:%v %v", response.TxId, response.String())
+			logger.Info("receive redeem proof response: %v", response.String())
 			err := e.updateProof(response)
 			if err != nil {
 				logger.Error("update proof error:%v", err)
 				continue
 			}
-			err = e.RedeemBtcTx(response)
+			txhash, err := e.RedeemBtcTx(response)
 			if err != nil {
 				//todo
 				logger.Error("redeem btc tx error:%v", err)
+				continue
+			}
+			err = e.UpdateUtxoChanage(txhash)
+			if err != nil {
+				//todo
+				logger.Error("update utxo change error:%v", err)
 				continue
 			}
 			logger.Info("success redeem btc tx:%v", response)
 		}
 	}
 
+}
+
+func (e *EthereumAgent) UpdateUtxoChanage(txid string) error {
+	nonce, err := e.ethClient.GetNonce(e.ethAddress)
+	if err != nil {
+		logger.Error("get nonce error:%v", err)
+		return err
+	}
+	chainId, err := e.ethClient.GetChainId()
+	if err != nil {
+		logger.Error("get chain id error:%v", err)
+		return err
+	}
+	gasPrice, err := e.ethClient.GetGasPrice()
+	if err != nil {
+		logger.Error("get gas price error:%v", err)
+		return err
+	}
+	gasLimit := uint64(500000)
+
+	proofBytes := []byte("test ok")
+	txHash, err := e.ethClient.UpdateUtxoChange(e.ethPrivate, txid, nonce, gasLimit, chainId, gasPrice,
+		proofBytes)
+	if err != nil {
+		logger.Error("update utxo change error:%v", err)
+		return err
+	}
+	logger.Info("success send update utxo change  hash:%v", txHash)
+	return nil
 }
 
 func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {
@@ -275,32 +318,29 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 			return nil, nil, err
 		}
 		if ok {
-
-			logger.Info("found redeem zkbtc txid: %v %v", redeemTx.TxId, redeemTx.String())
 			redeemTxList = append(redeemTxList, redeemTx)
 			proofRequestList = append(proofRequestList, ProofRequest{
 				Inputs:  redeemTx.Inputs,
 				Outputs: redeemTx.Outputs,
 				TxId:    redeemTx.TxId,
-				Vout:    int(redeemTx.TxIndex),
 				PType:   Redeem,
 			})
+			logger.Info("found redeem zkbtc tx: %v", redeemTx.String())
 		}
 	}
 	return redeemTxList, proofRequestList, nil
 }
 
-func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
+func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 	//todo
-	txIns := []btctx.TxIn{}
+	var txIns []btctx.TxIn
 	for _, input := range resp.Inputs {
 		utxo, err := e.btcClient.GetUtxoByTxId(input.TxId, int(input.Index))
 		if err != nil {
 			logger.Error("get utxo error:%v", err)
-			return err
+			return "", err
 		}
 		amount, _ := big.NewFloat(0).Mul(big.NewFloat(utxo.Amount), big.NewFloat(100000000)).Int64()
-		logger.Info("%v %v", utxo.ScriptPubKey, amount)
 		txIns = append(txIns, btctx.TxIn{
 			Hash:     input.TxId,
 			VOut:     input.Index,
@@ -313,18 +353,18 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 	err := builder.NetParams(e.btcNetwork)
 	if err != nil {
 		logger.Error("build btc tx error:%v", err)
-		return err
+		return "", err
 	}
 	err = builder.AddMultiPublicKey(e.multiAddressInfo.PublicKeyList, e.multiAddressInfo.NRequired)
 	if err != nil {
 		logger.Error("build btc tx error:%v", err)
-		return err
+		return "", err
 	}
 
 	err = builder.AddTxIn(txIns)
 	if err != nil {
 		logger.Error("build btc tx error:%v", err)
-		return err
+		return "", err
 	}
 	txOuts := []btctx.TxOut{}
 	for _, output := range resp.Outputs {
@@ -336,7 +376,7 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 	err = builder.AddTxOutScript(txOuts)
 	if err != nil {
 		logger.Error("build btc tx error:%v", err)
-		return err
+		return "", err
 	}
 	err = builder.Sign(func(hash []byte) ([][]byte, error) {
 		var sigs [][]byte
@@ -350,20 +390,21 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) error {
 	})
 	if err != nil {
 		logger.Error("build btc tx error:%v", err)
-		return err
+		return "", err
 	}
 	txBytes, err := builder.Build()
 	if err != nil {
 		logger.Error("build btc tx error:%v", err)
-		return err
+		return "", err
 	}
+	logger.Info("redeem btc tx hash: %v", builder.TxHash())
 	txHash, err := e.btcClient.Sendrawtransaction(hex.EncodeToString(txBytes))
 	if err != nil {
 		logger.Error("send btc tx error:%v", err)
-		return err
+		return "", err
 	}
 	logger.Info("send redeem btc tx: %v", txHash)
-	return nil
+	return txHash, nil
 }
 
 func (e *EthereumAgent) CheckRedeemTx(log types.Log) (RedeemTx, bool, error) {
@@ -372,23 +413,24 @@ func (e *EthereumAgent) CheckRedeemTx(log types.Log) (RedeemTx, bool, error) {
 	if len(log.Data) <= 64 {
 		return redeemTx, false, nil
 	}
-	//version := log.Data[0:32]
 	dataLength := log.Data[32:64]
 	l, err := strconv.ParseInt(fmt.Sprintf("%x", dataLength), 16, 32)
 	if err != nil {
+		logger.Error("parse data length error:%v", err)
 		return redeemTx, false, err
 	}
 	txData := log.Data[64 : 64+l]
 	transaction := btctx.NewTransaction()
 	err = transaction.Deserialize(bytes.NewReader(txData))
 	if err != nil {
+		logger.Error("deserialize btc tx error:%v", err)
 		return redeemTx, true, nil
 	}
 	var inputs []TxIn
 	for _, in := range transaction.TxIn {
 		inputs = append(inputs, TxIn{
 			TxId:  in.PreviousOutPoint.Hash.String(),
-			Index: in.PreviousOutPoint.Index + 1, // todo check
+			Index: in.PreviousOutPoint.Index, // todo check
 		})
 	}
 	var outputs []TxOut

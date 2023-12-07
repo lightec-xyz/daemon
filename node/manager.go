@@ -38,7 +38,7 @@ func (m *Manager) run() {
 		select {
 		case requestList := <-m.proofRequest:
 			for _, req := range requestList {
-				logger.Info("queue receive %v proof request txid:%v", req.PType, req.TxId)
+				logger.Info("queue receive gen proof request:%v", req.String())
 				m.proofQueue.PushBack(req)
 			}
 		case <-m.exit:
@@ -80,7 +80,7 @@ func (m *Manager) genProof() {
 				logger.Error("should never happen,parse proof request error")
 				continue
 			}
-			logger.Info("start gen %v proof:txid: %v", proofRequest.PType, proofRequest.TxId)
+			logger.Info("start gen proof:%v", proofRequest.String())
 			m.proofQueue.Remove(frontElement)
 			go func() {
 				proofResponse, err := m.schedule.GenZKProof(worker, proofRequest)
@@ -89,7 +89,7 @@ func (m *Manager) genProof() {
 					logger.Error("gen proof error:%v", err)
 					return
 				}
-				logger.Info("worker response %v proof: %v", proofResponse.PType, proofResponse.TxId)
+				logger.Info("worker response proof: %v", proofResponse.String())
 				switch proofResponse.PType {
 				case Deposit:
 					m.btcProofResp <- proofResponse

@@ -235,15 +235,16 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 		depositTx.TxId = tx.Txid
 		depositTx.TxIndex = txIndex
 		if check {
-			logger.Info("found zkbtc deposit txid: %v %v", tx.Txid, depositTx)
 			depositTxList = append(depositTxList, depositTx)
-			proofRequestList = append(proofRequestList, ProofRequest{
+			request := ProofRequest{
 				TxId:    depositTx.TxId,
 				Vout:    depositTx.TxIndex,
 				EthAddr: depositTx.EthAddr,
 				Amount:  depositTx.Amount,
 				PType:   Deposit,
-			})
+			}
+			proofRequestList = append(proofRequestList, request)
+			logger.Info("found zkbtc deposit tx: %v", request.String())
 		}
 	}
 	return depositTxList, proofRequestList, nil
@@ -258,7 +259,7 @@ func (b *BitcoinAgent) Transfer() {
 			logger.Info("exit bitcoin transfer goroutine")
 			return
 		case response := <-b.proofResponse:
-			logger.Info("bitcoinAgent receive deposit proof response, txid:%v %v", response.TxId, response)
+			logger.Info("bitcoinAgent receive deposit proof response: %v", response.String())
 			err := b.updateProof(response)
 			if err != nil {
 				logger.Error("update proof error:%v", err)

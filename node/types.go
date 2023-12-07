@@ -81,6 +81,15 @@ type ProofRequest struct {
 	Msg   string `json:"msg"`
 }
 
+func (req *ProofRequest) String() string {
+	if req.PType == Deposit {
+		return fmt.Sprintf("txType:%v, txId:%v,Vout:%v, amount:%v, ethAddr:%v", req.PType, req.TxId, req.Vout, req.Amount, req.EthAddr)
+	} else if req.PType == Redeem {
+		return fmt.Sprintf("txType:%v, txId:%v, %v", req.PType, req.TxId, formatUtxoInfo(req.Inputs, req.Outputs))
+	}
+	return ""
+}
+
 // todo
 type ProofResponse struct {
 	// redeem
@@ -99,9 +108,18 @@ type ProofResponse struct {
 }
 
 func (resp *ProofResponse) String() string {
+	if resp.PType == Deposit {
+		return fmt.Sprintf("txType:%v, txId:%v,Vout:%v, amount:%v, ethAddr:%v", resp.PType, resp.TxId, resp.Vout, resp.Amount, resp.EthAddr)
+	} else if resp.PType == Redeem {
+		return fmt.Sprintf("txType:%v, txId:%v, %v", resp.PType, resp.TxId, formatUtxoInfo(resp.Inputs, resp.Outputs))
+	}
+	return ""
+}
+
+func formatUtxoInfo(inputs []TxIn, outputs []TxOut) string {
 	var buf bytes.Buffer
 	buf.WriteString("inputs:[")
-	for _, vin := range resp.Inputs {
+	for _, vin := range inputs {
 		buf.WriteString(vin.TxId)
 		buf.WriteString(":")
 		buf.WriteString(strconv.Itoa(int(vin.Index)))
@@ -109,7 +127,7 @@ func (resp *ProofResponse) String() string {
 	}
 	buf.WriteString("]")
 	buf.WriteString("outputs:[")
-	for _, out := range resp.Outputs {
+	for _, out := range outputs {
 		buf.WriteString(fmt.Sprintf("%x", out.PkScript))
 		buf.WriteString(":")
 		buf.WriteString(fmt.Sprintf("%v", out.Value))
@@ -117,5 +135,4 @@ func (resp *ProofResponse) String() string {
 	}
 	buf.WriteString("]")
 	return buf.String()
-
 }

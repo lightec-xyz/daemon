@@ -109,10 +109,13 @@ func (mb *MultiTransactionBuilder) AddTxOut(outputs []TxOut) error {
 	return nil
 }
 
+func (mb *MultiTransactionBuilder) TxHash() string {
+	return mb.msgTx.TxHash().String()
+}
+
 func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, error)) error {
 	scriptHash := sha256.Sum256(mb.multiSigScript)
 	from, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], mb.netParams)
-	fmt.Println(from)
 	if err != nil {
 		return err
 	}
@@ -121,19 +124,10 @@ func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, erro
 		return err
 	}
 	for index, hash := range hashes {
-		//var sigs [][]byte
-		//for _, priv := range privateKeys {
-		//	sig := ecdsa.Sign(priv, hash)
-		//	sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
-		//	sigs = append(sigs, sigWithType)
-		//}
 		sigs, err := signFn(hash)
 		if err != nil {
 			return err
 		}
-		//if len(sigs) != len(mb.txInPkScripts) {
-		//	return fmt.Errorf(" %v sig lenght != txInput lenght %v", len(sigs), len(mb.txInPkScripts))
-		//}
 		witnessScript, err := MergeMultiSignatures(mb.nRequired, mb.multiSigScript, sigs)
 		if err != nil {
 			return err
