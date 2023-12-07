@@ -3,6 +3,7 @@ package bitcoin
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
+	"math/big"
 	"testing"
 )
 
@@ -55,7 +56,7 @@ func TestClient_SendRawTransaction(t *testing.T) {
 }
 
 func TestClient_GetUtxoByTxId(t *testing.T) {
-	utxo, err := client.GetUtxoByTxId("1960288483d27a24c33b148a3e3d75a64ea99531f77406a1a719c0dad34670e9", 1)
+	utxo, err := client.GetUtxoByTxId("95e474eaf1e92dec5e2785392a98e0e974885df9d044f456be5bd56d8e8f4fdb", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,4 +79,10 @@ func TestClient_GetTransaction(t *testing.T) {
 		panic(err)
 	}
 	t.Log(tx)
+}
+
+func TestDmeo(t *testing.T) {
+	amount, _ := big.NewFloat(0.0009975 * 100000000.0).Int64()
+	t.Log(amount)
+	fmt.Printf("%0.8f", 1.12313123123123)
 }

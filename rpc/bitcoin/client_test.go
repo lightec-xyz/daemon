@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"math/big"
 	"strconv"
@@ -90,22 +91,28 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	}
 	txInputs := []bitcoin.TxIn{
 		{
-			Hash:     "1960288483d27a24c33b148a3e3d75a64ea99531f77406a1a719c0dad34670e9",
+			Hash:     "9d433edd947173ddfab529ee405d9f06babf1c84fdedfa14d4fea35ba233340b",
 			VOut:     1,
 			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   9975,
+			Amount:   99750,
 		},
+		//{
+		//	Hash:     "1f65f8ad3004f73b4c1745328b29d8860ab61cac18506848924ed2a43f7b500d",
+		//	VOut:     1,
+		//	PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
+		//	Amount:   1199598600,
+		//},
 	}
 	pk1, _ := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
 	pk2, _ := hex.DecodeString("0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58")
 	txOutputs := []bitcoin.TxOut{
 		{
 			PayScript: pk1,
-			Amount:    1199899300,
+			Amount:    1000,
 		},
 		{
 			PayScript: pk2,
-			Amount:    1199899300,
+			Amount:    98450,
 		},
 	}
 
@@ -122,7 +129,7 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = builder.AddTxOut(txOutputs)
+	err = builder.AddTxOutScript(txOutputs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +223,16 @@ func TestDepositTransaction(t *testing.T) {
 	if len(utxoSet.Unspents) == 0 {
 		t.Fatal("no utxo found")
 	}
-	utxo := utxoSet.Unspents[0]
+	var utxo types.Unspents
+	for _, tUtxo := range utxoSet.Unspents {
+		if tUtxo.Amount > 0.0001 {
+			utxo = tUtxo
+			break
+		}
+	}
+	if utxo.Amount == 0 {
+		t.Fatal("no utxo found")
+	}
 	floatBig := big.NewFloat(0).Mul(big.NewFloat(utxo.Amount), big.NewFloat(100000000))
 	amount, _ := floatBig.Int64()
 	inputs := []bitcoin.TxIn{

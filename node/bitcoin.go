@@ -306,7 +306,7 @@ func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 		logger.Error("mint btc tx error:%v", err)
 		return err
 	}
-	logger.Info("success send mint zkbtctx hash:%v", txHash)
+	logger.Info("success send mint zkbtctx hash:%v, amount: %v", txHash, amountBig.String())
 	return nil
 }
 
@@ -332,7 +332,7 @@ func (b *BitcoinAgent) checkTx(txOuts []types.TxVout) (DepositTx, bool, error) {
 	}
 	depositTx.EthAddr = ethAddr
 	depositTx.TxIndex = 1
-	depositTx.Amount = fmt.Sprintf("%v", txOuts[1].Value) //todo
+	depositTx.Amount = fmt.Sprintf("%0.8f", txOuts[1].Value) //todo
 	return depositTx, true, nil
 }
 

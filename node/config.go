@@ -69,10 +69,10 @@ func localDevDaemonConfig() NodeConfig {
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
 		EthUrl:        "https://ethereum-holesky.publicnode.com",
-		ZkBridgeAddr:  "0xada86dce6d7e0d69ce4e25256b58ac1dcbbe2129",
+		ZkBridgeAddr:  "0x4dce25422700cbb26e252c36d13bae5bc3928f17",
 		EthBlockTime:  10,
 		EthPrivateKey: "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		LogAddr:       []string{"0xada86dce6d7e0d69ce4e25256b58ac1dcbbe2129"},
+		LogAddr:       []string{"0x4dce25422700cbb26e252c36d13bae5bc3928f17"},
 		LogTopic:      []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"},
 		MultiAddressInfo: MultiAddressInfo{
 			PublicKeyList: [][]byte{

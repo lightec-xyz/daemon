@@ -73,7 +73,7 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		logAddr:              cfg.LogAddr,
 		logTopic:             cfg.LogTopic,
 		privateKeys:          privateKeys,
-		initStartHeight:      472227,
+		initStartHeight:      472925,
 		ethAddress:           submitTxEthAddr,
 		ethPrivate:           cfg.EthPrivateKey,
 	}, nil
@@ -334,19 +334,28 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 	//todo
 	var txIns []btctx.TxIn
+	logger.Debug("************************************")
 	for _, input := range resp.Inputs {
 		utxo, err := e.btcClient.GetUtxoByTxId(input.TxId, int(input.Index))
 		if err != nil {
 			logger.Error("get utxo error:%v", err)
 			return "", err
 		}
-		amount, _ := big.NewFloat(0).Mul(big.NewFloat(utxo.Amount), big.NewFloat(100000000)).Int64()
-		txIns = append(txIns, btctx.TxIn{
+		//todo
+		logger.Debug(fmt.Sprintf("utxo:%v", utxo.Amount))
+		amount, accuracy := big.NewFloat(utxo.Amount * 100000000.0).Int64()
+		if accuracy != 0 {
+			logger.Error("bigFloat parse int64 error: %v", utxo.Amount)
+			return "", err
+		}
+		in := btctx.TxIn{
 			Hash:     input.TxId,
 			VOut:     input.Index,
 			PkScript: utxo.ScriptPubKey,
 			Amount:   amount,
-		})
+		}
+		txIns = append(txIns, in)
+		logger.Debug("txIn: txid:%v, index:%v, amount:%v ,scriptPubKey:%v", input.TxId, input.Index, amount, utxo.ScriptPubKey)
 	}
 
 	builder := btctx.NewMultiTransactionBuilder()
@@ -372,6 +381,7 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 			PayScript: output.PkScript,
 			Amount:    output.Value,
 		})
+		logger.Debug("txOut: pkScript:%x, amount:%v", output.PkScript, output.Value)
 	}
 	err = builder.AddTxOutScript(txOuts)
 	if err != nil {
@@ -388,6 +398,7 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 		return sigs, nil
 
 	})
+	logger.Debug("************************************")
 	if err != nil {
 		logger.Error("build btc tx error:%v", err)
 		return "", err

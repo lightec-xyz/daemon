@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,10 +20,11 @@ type Client struct {
 	*ethclient.Client
 	*ethrpc.EthRPC
 	zkBridgeCall *zkbridge.Zkbridge
+	zkBtcCall    *zkbridge.Zkbtc
 	timeout      time.Duration
 }
 
-func NewClient(endpoint string, zkBridgeAddr string) (*Client, error) {
+func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error) {
 	rpcDial, err := rpc.Dial(endpoint)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,17 @@ func NewClient(endpoint string, zkBridgeAddr string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{Client: client, EthRPC: ethRPC, zkBridgeCall: zkBridgeCall, timeout: 15 * time.Second}, nil
+	zkBtcCall, err := zkbridge.NewZkbtc(common.HexToAddress(zkBtcAddr), client)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{
+		Client:       client,
+		EthRPC:       ethRPC,
+		zkBridgeCall: zkBridgeCall,
+		timeout:      15 * time.Second,
+		zkBtcCall:    zkBtcCall,
+	}, nil
 }
 
 func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]types.Log, error) {
@@ -105,10 +115,8 @@ func (c *Client) GetChainId() (*big.Int, error) {
 	return chainId, nil
 }
 
-func (c *Client) GetBalance(addr string) (*big.Int, error) {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
-	defer cancelFunc()
-	balance, err := c.BalanceAt(ctx, common.HexToAddress(addr), nil)
+func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
+	balance, err := c.zkBtcCall.BalanceOf(nil, common.HexToAddress(addr))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +142,6 @@ func (c *Client) Deposit(secret, txId string, index uint32,
 	auth.GasLimit = gasLimit
 	fixedTxId := [32]byte{}
 	copy(fixedTxId[:], common.FromHex(txId))
-	fmt.Println("txIndex:", index)
 	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, proof)
 	if err != nil {
 		return "", err

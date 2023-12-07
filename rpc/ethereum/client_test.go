@@ -18,11 +18,12 @@ var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
 var endpoint = "https://ethereum-holesky.publicnode.com"
-var zkBridgeAddr = "0xada86dce6d7e0d69ce4e25256b58ac1dcbbe2129"
+var zkBridgeAddr = "0x4dce25422700cbb26e252c36d13bae5bc3928f17"
+var zkBtcAddr = "0xe5ef04a38b2211f9521f592cd8fb51301cf9dccc"
 
 func init() {
 	//https://sepolia.publicgoods.network
-	client, err = NewClient(endpoint, zkBridgeAddr)
+	client, err = NewClient(endpoint, zkBridgeAddr, zkBtcAddr)
 	if err != nil {
 		panic(err)
 	}
@@ -82,13 +83,23 @@ func TestPrivateKey(t *testing.T) {
 
 func TestRedeemTx(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	redeemAmount := big.NewInt(100000)
+	redeemAmount := big.NewInt(2199999800)
 	minerFee := big.NewInt(300)
+
+	fromAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
+	balance, err := client.GetZkBtcBalance(fromAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if balance.Cmp(big.NewInt(10000)) < 0 {
+		t.Fatal("not enough balance")
+	}
+
 	redeemLockScript, err := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
 	if err != nil {
 		t.Fatal(err)
 	}
-	from := common.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
+	from := common.HexToAddress(fromAddr)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	gasLimit := 500000
