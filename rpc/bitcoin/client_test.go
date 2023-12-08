@@ -215,7 +215,6 @@ func TestSimpleTx(t *testing.T) {
 }
 
 func TestDepositTransaction(t *testing.T) {
-
 	utxoSet, err := client.Scantxoutset("bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5")
 	if err != nil {
 		t.Fatal(err)

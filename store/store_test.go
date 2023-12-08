@@ -9,7 +9,7 @@ func init() {
 	logger.InitLogger()
 }
 func TestStore_Demo(t *testing.T) {
-	storeDb, err := NewStore("~/.daemon/testnet", 0, 0, "zkbtc", false)
+	storeDb, err := NewStore("/Users/red/.daemon/testnet", 0, 0, "zkbtc", false)
 	if err != nil {
 		t.Fatal(err)
 	}

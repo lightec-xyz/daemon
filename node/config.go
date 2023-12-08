@@ -2,6 +2,8 @@ package node
 
 import (
 	"encoding/hex"
+	"fmt"
+	"os/user"
 )
 
 type NodeConfig struct {
@@ -42,6 +44,10 @@ type WorkerConfig struct {
 }
 
 func LocalDevDaemonConfig() NodeConfig {
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
 	pub1, err := hex.DecodeString("03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050")
 	if err != nil {
 		panic(err)
@@ -55,7 +61,7 @@ func LocalDevDaemonConfig() NodeConfig {
 		panic(err)
 	}
 	return NodeConfig{
-		DataDir:         "~/.lightec",
+		DataDir:         fmt.Sprintf("%v/.daemon", user.HomeDir),
 		Network:         "devnet",
 		Rpcbind:         "127.0.0.1",
 		RpcPort:         "8899",
@@ -71,7 +77,7 @@ func LocalDevDaemonConfig() NodeConfig {
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
 		BtcInitHeight: 2542024,
-		EthInitHeight: 0,
+		EthInitHeight: 481270,
 		EthUrl:        "https://ethereum-holesky.publicnode.com",
 		ZkBridgeAddr:  "0xc5529b337c2ec0cb075299f68134d9e4d12227c6",
 		EthBlockTime:  10,
@@ -94,6 +100,10 @@ func LocalDevDaemonConfig() NodeConfig {
 }
 
 func TestnetDaemonConfig() NodeConfig {
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
 	pub1, err := hex.DecodeString("03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050")
 	if err != nil {
 		panic(err)
@@ -107,7 +117,7 @@ func TestnetDaemonConfig() NodeConfig {
 		panic(err)
 	}
 	return NodeConfig{
-		DataDir:         "/Users/red/.lightec",
+		DataDir:         fmt.Sprintf("%v/.daemon", user.HomeDir),
 		Network:         "testnet",
 		Rpcbind:         "127.0.0.1",
 		RpcPort:         "8899",
@@ -122,8 +132,8 @@ func TestnetDaemonConfig() NodeConfig {
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		BtcInitHeight: 2542024,
-		EthInitHeight: 479690,
+		BtcInitHeight: 2542051,
+		EthInitHeight: 481270,
 		EthUrl:        "https://ethereum-holesky.publicnode.com",
 		ZkBridgeAddr:  "0xc5529b337c2ec0cb075299f68134d9e4d12227c6",
 		EthBlockTime:  10,

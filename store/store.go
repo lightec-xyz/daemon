@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"github.com/lightec-xyz/daemon/codec"
 	"github.com/lightec-xyz/daemon/logger"
 )
@@ -65,7 +64,6 @@ func (s *Store) HasObj(key interface{}) (bool, error) {
 }
 
 func (s *Store) GetObj(key interface{}, value interface{}) error {
-	fmt.Println(s.levelDb.Path())
 	keyBytes, err := objKeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
