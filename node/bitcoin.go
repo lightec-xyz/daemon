@@ -61,7 +61,6 @@ func (b *BitcoinAgent) Init() error {
 		return err
 	}
 	if has {
-
 		err := b.checkUnCompleteGenerateProofTx()
 		if err != nil {
 			logger.Error("check uncomplete generate proof tx error:%v", err)

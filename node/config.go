@@ -55,7 +55,7 @@ func LocalDevDaemonConfig() NodeConfig {
 		panic(err)
 	}
 	return NodeConfig{
-		DataDir:         "~/.daemon",
+		DataDir:         "~/.lightec",
 		Network:         "devnet",
 		Rpcbind:         "127.0.0.1",
 		RpcPort:         "8899",
@@ -107,7 +107,7 @@ func TestnetDaemonConfig() NodeConfig {
 		panic(err)
 	}
 	return NodeConfig{
-		DataDir:         "~/.daemon",
+		DataDir:         "/Users/red/.lightec",
 		Network:         "testnet",
 		Rpcbind:         "127.0.0.1",
 		RpcPort:         "8899",

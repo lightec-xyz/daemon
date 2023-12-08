@@ -48,6 +48,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
+	logger.Info("dbPath:%s", dbPath)
 	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
 		logger.Error("new store error:%v,dbPath:%s", err, dbPath)

@@ -20,7 +20,7 @@ func TestLocalDevDaemon(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestNetDevDaemon(t *testing.T) {
+func TestTestnetDaemon(t *testing.T) {
 	config := TestnetDaemonConfig()
 	daemon, err := NewDaemon(config)
 	if err != nil {

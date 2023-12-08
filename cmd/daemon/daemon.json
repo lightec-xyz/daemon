@@ -1,5 +1,5 @@
 {
-  "datadir": "/Users/red/.daemon",
+  "datadir": "~/.daemon",
   "network": "testnet",
   "rpcbind": "127.0.0.1",
   "rpcport": "8899",

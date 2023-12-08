@@ -9,12 +9,17 @@ func init() {
 	logger.InitLogger()
 }
 func TestStore_Demo(t *testing.T) {
-	store, err := NewStore("~/.daemon/testnet", 0, 0, "zkbtc", false)
+	storeDb, err := NewStore("~/.daemon/testnet", 0, 0, "zkbtc", false)
 	if err != nil {
 		t.Fatal(err)
 	}
+	has, err := storeDb.Has([]byte("ethCurHeight"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(has)
 	var result interface{}
-	err = store.GetObj([]byte("ethCurHeight"), &result)
+	err = storeDb.GetObj([]byte("ethCurHeight"), &result)
 	if err != nil {
 		t.Fatal(err)
 	}
