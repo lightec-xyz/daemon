@@ -17,10 +17,13 @@ func NewStore(file string, cache int, handles int, namespace string, readonly bo
 		logger.Error(err.Error())
 		return nil, err
 	}
-
 	return &Store{
 		levelDb: levelDb,
 	}, nil
+}
+
+func (s *Store) Close() error {
+	return s.levelDb.Close()
 }
 
 func (s *Store) Has(key []byte) (bool, error) {
