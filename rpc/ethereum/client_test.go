@@ -18,8 +18,8 @@ var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
 var endpoint = "https://ethereum-holesky.publicnode.com"
-var zkBridgeAddr = "0x4dce25422700cbb26e252c36d13bae5bc3928f17"
-var zkBtcAddr = "0xe5ef04a38b2211f9521f592cd8fb51301cf9dccc"
+var zkBridgeAddr = "0xc5529b337c2ec0cb075299f68134d9e4d12227c6"
+var zkBtcAddr = "0xc8027d834954a369a2f6da79fa8c1c7d96dd2c9b"
 
 func init() {
 	//https://sepolia.publicgoods.network

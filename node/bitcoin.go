@@ -25,6 +25,7 @@ type BitcoinAgent struct {
 	submitTxEthAddr      string
 	ethPrivateKey        string // todo keyStore
 	minDepositValue      float64
+	initStartHeight      int64
 	exitSign             chan struct{}
 }
 
@@ -48,6 +49,7 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 		ethPrivateKey:        cfg.EthPrivateKey,
 		submitTxEthAddr:      submitTxEthAddr,
 		exitSign:             make(chan struct{}, 1),
+		initStartHeight:      cfg.BtcInitHeight,
 	}, nil
 }
 
@@ -66,8 +68,8 @@ func (b *BitcoinAgent) Init() error {
 			return err
 		}
 	} else {
-		logger.Debug("init btc current height: %v", InitBitcoinHeight)
-		err := b.store.PutObj(btcCurHeightKey, InitBitcoinHeight)
+		logger.Debug("init btc current height: %v", b.initStartHeight)
+		err := b.store.PutObj(btcCurHeightKey, b.initStartHeight)
 		if err != nil {
 			logger.Error("put init btc current height error:%v", err)
 			return err
@@ -145,7 +147,9 @@ func (b *BitcoinAgent) ScanBlock() error {
 		logger.Error("get btc current height error:%v", err)
 		return err
 	}
-	//curHeight = 3821 - 1
+	if curHeight < b.initStartHeight {
+		curHeight = b.initStartHeight
+	}
 	blockCount, err := b.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error("get block count error:%v", err)
@@ -153,10 +157,11 @@ func (b *BitcoinAgent) ScanBlock() error {
 	}
 	//todo
 	if curHeight >= blockCount {
-		logger.Info("current height:%d,node block count:%d", curHeight, blockCount)
+		logger.Debug("btc urrent height:%d,node block count:%d", curHeight, blockCount)
 		return nil
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
+		logger.Debug("bitcoin parse block height:%d", index)
 		depositTxList, proofRequestList, err := b.parseBlock(index)
 		if err != nil {
 			logger.Error(err.Error())

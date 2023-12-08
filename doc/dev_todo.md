@@ -28,7 +28,7 @@
   * testnet:https://bitcoin-testnet-archive.allthatnode.com
 
       
-    curl https://bitcoin-mainnet-archive.allthatnode.com \
+    curl https://bitcoin-testnet-archive.allthatnode.com \
     --request POST \
     --header 'content-type: text/plain;' \
     --data '{"jsonrpc": "1.0", "id": "curltest", "method": "getblockcount", "params": []}'

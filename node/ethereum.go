@@ -73,7 +73,7 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		logAddr:              cfg.LogAddr,
 		logTopic:             cfg.LogTopic,
 		privateKeys:          privateKeys,
-		initStartHeight:      472925,
+		initStartHeight:      cfg.EthInitHeight,
 		ethAddress:           submitTxEthAddr,
 		ethPrivate:           cfg.EthPrivateKey,
 	}, nil
@@ -93,8 +93,8 @@ func (e *EthereumAgent) Init() error {
 			return err
 		}
 	} else {
-		logger.Debug("init eth current height: %v", InitEthereumHeight)
-		err := e.store.PutObj(ethCurHeightKey, InitEthereumHeight)
+		logger.Debug("init eth current height: %v", e.initStartHeight)
+		err := e.store.PutObj(ethCurHeightKey, e.initStartHeight)
 		if err != nil {
 			logger.Error("put init eth current height error:%v", err)
 			return err
@@ -180,10 +180,11 @@ func (e *EthereumAgent) ScanBlock() error {
 	}
 	//todo
 	if ethHeight >= int64(blockNumber) {
-		logger.Info("current height:%d,node block count:%d", ethHeight, blockNumber)
+		logger.Debug("eth current height:%d,node block count:%d", ethHeight, blockNumber)
 		return nil
 	}
 	for index := ethHeight + 1; index <= int64(blockNumber); index++ {
+		logger.Debug("ethereum parse block:%d", index)
 		redeemTxList, proofRequestList, err := e.parseBlock(index)
 		if err != nil {
 			logger.Error(err.Error())
@@ -195,7 +196,6 @@ func (e *EthereumAgent) ScanBlock() error {
 			return err
 		}
 		e.proofRequest <- proofRequestList
-
 	}
 	return nil
 }

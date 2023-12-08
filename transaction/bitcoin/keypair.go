@@ -16,7 +16,7 @@ type IKeyPair interface {
 	Sign(msg []byte) []byte
 	PublicKey() PublicKey
 	PrivateKey() PrivateKey
-	Address(addrType AddrType, network NetWork) (string, error)
+	Address(addrType AddrType, network NetWork) (string, string, error)
 	Verify(message, signature []byte) (bool, error)
 }
 
@@ -38,29 +38,37 @@ func (k *KeyPair) PublicKey() PublicKey {
 	return k.publicKey.SerializeCompressed()
 }
 
-func (k *KeyPair) Address(addrType AddrType, network NetWork) (string, error) {
+func (k *KeyPair) Address(addrType AddrType, network NetWork) (string, string, error) {
 	pubKey := k.publicKey
 	netParams, err := getNetworkParams(network)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	switch addrType {
 	case P2PKH:
 		pkhAddr, err := btcutil.NewAddressPubKeyHash(btcutil.Hash160(pubKey.SerializeCompressed()), netParams)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
-		return pkhAddr.EncodeAddress(), nil
+		lockingScript, err := txscript.PayToAddrScript(pkhAddr)
+		if err != nil {
+			return "", "", err
+		}
+		return pkhAddr.EncodeAddress(), fmt.Sprintf("%x", lockingScript), nil
 
 	case P2WPKH:
 		wpkhAddr, err := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(pubKey.SerializeCompressed()), netParams)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
-		return wpkhAddr.EncodeAddress(), nil
+		lockingScript, err := txscript.PayToAddrScript(wpkhAddr)
+		if err != nil {
+			return "", "", err
+		}
+		return wpkhAddr.EncodeAddress(), fmt.Sprintf("%x", lockingScript), nil
 
 	default:
-		return "", fmt.Errorf("unSupport addrType:%v", addrType)
+		return "", "", fmt.Errorf("unSupport addrType:%v", addrType)
 	}
 
 }

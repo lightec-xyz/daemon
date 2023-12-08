@@ -84,7 +84,7 @@ func TestTxDemo(t *testing.T) {
 func TestLockScript(t *testing.T) {
 	//address := "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze"
 	address := "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze"
-	addr, err := btcutil.DecodeAddress(address, &chaincfg.RegressionNetParams)
+	addr, err := btcutil.DecodeAddress(address, &chaincfg.TestNet3Params)
 	lockingScript, err := txscript.PayToAddrScript(addr)
 	if err != nil {
 		fmt.Println("Error creating locking script:", err)

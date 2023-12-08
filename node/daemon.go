@@ -48,13 +48,18 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
-	storeDb, err := store.NewStore(dbPath, 1000, 10000, "zkbtc", false)
+	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
 		logger.Error("new store error:%v,dbPath:%s", err, dbPath)
 		return nil, err
 	}
+	var result interface{}
+	err = storeDb.GetObj(ethCurHeightKey, &result)
+	if err != nil {
+		logger.Error("get eth current height error:%v", err)
+		return nil, err
+	}
 	memoryStore := store.NewMemoryStore()
-
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
 	ethProofResp := make(chan ProofResponse, 1000)
