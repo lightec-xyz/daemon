@@ -1,4 +1,4 @@
-package cmd
+package subcmd
 
 import (
 	"encoding/json"
@@ -21,6 +21,11 @@ var runCmd = &cobra.Command{
 		//	return
 		//}
 		daemon, err := node.NewDaemon(node.TestnetDaemonConfig())
+		err = daemon.Init()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "daemon init error:%v", err)
+			return
+		}
 		err = daemon.Run()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "daemon run error:%v", err)

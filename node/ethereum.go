@@ -80,6 +80,7 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 }
 
 func (e *EthereumAgent) Init() error {
+	logger.Info("ethereum agent init now")
 	logger.Info("init ethereum agent")
 	has, err := e.store.Has(ethCurHeightKey)
 	if err != nil {
@@ -87,6 +88,7 @@ func (e *EthereumAgent) Init() error {
 		return err
 	}
 	if has {
+		logger.Debug("ethereum agent check uncomplete generate proof tx")
 		err := e.checkUnCompleteGenerateProofTx()
 		if err != nil {
 			logger.Error("check uncomplete generate proof tx error:%v", err)

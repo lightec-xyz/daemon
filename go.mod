@@ -16,9 +16,6 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/ybbus/jsonrpc v2.1.2+incompatible
 	go.uber.org/zap v1.26.0
-)
-
-require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/bits-and-blooms/bitset v1.7.0 // indirect

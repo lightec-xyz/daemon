@@ -54,13 +54,14 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 }
 
 func (b *BitcoinAgent) Init() error {
-
+	logger.Info("bitcoin agent init now")
 	has, err := b.store.Has(btcCurHeightKey)
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
 		return err
 	}
 	if has {
+		logger.Debug("bitcoin agent check uncomplete generate proof tx")
 		err := b.checkUnCompleteGenerateProofTx()
 		if err != nil {
 			logger.Error("check uncomplete generate proof tx error:%v", err)

@@ -135,7 +135,7 @@ func TestnetDaemonConfig() NodeConfig {
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
 		BtcInitHeight: 2542131,
-		EthInitHeight: 486185,
+		EthInitHeight: 487104,
 		EthUrl:        "https://ethereum-holesky.publicnode.com",
 		ZkBridgeAddr:  "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
 		ZkBtcAddr:     "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083",
