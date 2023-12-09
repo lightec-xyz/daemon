@@ -80,7 +80,6 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 }
 
 func (e *EthereumAgent) Init() error {
-	logger.Info("ethereum agent init now")
 	logger.Info("init ethereum agent")
 	has, err := e.store.Has(ethCurHeightKey)
 	if err != nil {
