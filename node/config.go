@@ -25,6 +25,7 @@ type NodeConfig struct {
 	EthWhiteList     []string         `json:"ethWhiteList"`
 	EthUrl           string           `json:"ethUrl"`
 	ZkBridgeAddr     string           `json:"zkBridgeAddr"`
+	ZkBtcAddr        string           `json:"zkBtcAddr"`
 	EthBlockTime     int64            `json:"ethBlockTime"`
 	EthPrivateKey    string           `json:"ethPrivateKey"`
 	LogAddr          []string         `json:"logAddr"`
@@ -79,10 +80,11 @@ func LocalDevDaemonConfig() NodeConfig {
 		BtcInitHeight: 2542024,
 		EthInitHeight: 481270,
 		EthUrl:        "https://ethereum-holesky.publicnode.com",
-		ZkBridgeAddr:  "0xc5529b337c2ec0cb075299f68134d9e4d12227c6",
+		ZkBridgeAddr:  "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
+		ZkBtcAddr:     "",
 		EthBlockTime:  10,
 		EthPrivateKey: "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		LogAddr:       []string{"0xc5529b337c2ec0cb075299f68134d9e4d12227c6"},
+		LogAddr:       []string{"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"},
 		LogTopic:      []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"},
 		MultiAddressInfo: MultiAddressInfo{
 			PublicKeyList: [][]byte{
@@ -125,20 +127,21 @@ func TestnetDaemonConfig() NodeConfig {
 		BtcUser:         "lightec",
 		BtcPwd:          "abcd1234",
 		BtcNetwork:      "TestNet",
-		BTcBtcBlockTime: 10 * 60,
+		BTcBtcBlockTime: 2 * 60,
 		BtcOperatorAddr: "tb1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq8yyuhr",
 		BtcPrivateKeys: []string{
 			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		BtcInitHeight: 2542051,
-		EthInitHeight: 481270,
+		BtcInitHeight: 2542131,
+		EthInitHeight: 486185,
 		EthUrl:        "https://ethereum-holesky.publicnode.com",
-		ZkBridgeAddr:  "0xc5529b337c2ec0cb075299f68134d9e4d12227c6",
+		ZkBridgeAddr:  "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
+		ZkBtcAddr:     "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083",
 		EthBlockTime:  10,
 		EthPrivateKey: "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		LogAddr:       []string{"0xc5529b337c2ec0cb075299f68134d9e4d12227c6"},
+		LogAddr:       []string{"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"},
 		LogTopic:      []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"},
 		MultiAddressInfo: MultiAddressInfo{
 			PublicKeyList: [][]byte{

@@ -8,6 +8,9 @@ const (
 	SCANTXOUTSET   = "scantxoutset"
 	GETBLOCK       = "getblock"
 
+	// Network
+	GETNETWORKINFO = "getnetworkinfo"
+
 	// utils
 	CREATEMULTISIG = "createmultisig"
 

@@ -18,8 +18,8 @@ var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
 var endpoint = "https://ethereum-holesky.publicnode.com"
-var zkBridgeAddr = "0xc5529b337c2ec0cb075299f68134d9e4d12227c6"
-var zkBtcAddr = "0xc8027d834954a369a2f6da79fa8c1c7d96dd2c9b"
+var zkBridgeAddr = "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
+var zkBtcAddr = "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083"
 
 func init() {
 	//https://sepolia.publicgoods.network
@@ -27,6 +27,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_ZkbtcBalance(t *testing.T) {
+	balance, err := client.GetZkBtcBalance("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(balance)
 }
 
 func TestClient_TestEth(t *testing.T) {

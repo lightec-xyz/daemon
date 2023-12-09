@@ -180,7 +180,7 @@ func CreateTransaction(secret []byte, inputs []TxIn, outputs []TxOut, network Ne
 	if err != nil {
 		return nil, err
 	}
-	privateKey, _ := btcec.PrivKeyFromBytes(secret)
+	var privateKeys []*btcec.PrivateKey
 	var txInPkScripts [][]byte
 	var txInValues []btcutil.Amount
 	msgTx := wire.NewMsgTx(wire.TxVersion)
@@ -197,6 +197,11 @@ func CreateTransaction(secret []byte, inputs []TxIn, outputs []TxOut, network Ne
 		}
 		txInPkScripts = append(txInPkScripts, pkScriptBytes)
 		txInValues = append(txInValues, btcutil.Amount(input.Amount))
+		privateKey, _ := btcec.PrivKeyFromBytes(secret)
+		if err != nil {
+			return nil, err
+		}
+		privateKeys = append(privateKeys, privateKey)
 	}
 	for _, output := range outputs {
 		address, err := btcutil.DecodeAddress(output.Address, networkParams)
@@ -211,7 +216,7 @@ func CreateTransaction(secret []byte, inputs []TxIn, outputs []TxOut, network Ne
 		msgTx.AddTxOut(txOut)
 	}
 
-	err = createTx(msgTx, txInPkScripts, txInValues, []*btcec.PrivateKey{privateKey}, networkParams)
+	err = createTx(msgTx, txInPkScripts, txInValues, privateKeys, networkParams)
 	if err != nil {
 		return nil, err
 	}

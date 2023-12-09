@@ -151,3 +151,20 @@ func getNetworkParams(network NetWork) (*chaincfg.Params, error) {
 	}
 	return netParams, nil
 }
+
+func GenPayToAddrScript(address string, network NetWork) (string, error) {
+	networkParams, err := getNetworkParams(network)
+	if err != nil {
+		return "", err
+	}
+	addr, err := btcutil.DecodeAddress(address, networkParams)
+	if err != nil {
+		return "", err
+	}
+	txOutScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return "", err
+	}
+	hexLockScript := hex.EncodeToString(txOutScript)
+	return hexLockScript, nil
+}

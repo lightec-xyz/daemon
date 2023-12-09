@@ -25,11 +25,11 @@
         },
         "ethWhiteList":null,
         "ethUrl":"https://ethereum-holesky.publicnode.com",
-        "zkBridgeAddr":"0xc5529b337c2ec0cb075299f68134d9e4d12227c6",
+        "zkBridgeAddr":"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
         "ethBlockTime":10,
         "ethPrivateKey":"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
         "logAddr":[
-            "0xc5529b337c2ec0cb075299f68134d9e4d12227c6"
+            "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
         ],
         "logTopic":[
             "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"

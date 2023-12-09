@@ -149,11 +149,14 @@ func (b *BitcoinAgent) ScanBlock() error {
 	if curHeight < b.initStartHeight {
 		curHeight = b.initStartHeight
 	}
+
 	blockCount, err := b.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error("get block count error:%v", err)
 		return err
 	}
+	blockCount = blockCount - 0
+
 	//todo
 	if curHeight >= blockCount {
 		logger.Debug("btc urrent height:%d,node block count:%d", curHeight, blockCount)
@@ -230,15 +233,14 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 	}
 	var proofRequestList []ProofRequest
 	var depositTxList []DepositTx
-	for txIndex, tx := range blockWithTx.Tx {
+	for _, tx := range blockWithTx.Tx {
 		depositTx, check, err := b.checkTx(tx.Vout)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, nil, err
 		}
-		depositTx.TxId = tx.Txid
-		depositTx.TxIndex = txIndex
 		if check {
+			depositTx.TxId = tx.Txid
 			depositTxList = append(depositTxList, depositTx)
 			request := ProofRequest{
 				TxId:    depositTx.TxId,

@@ -178,6 +178,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		logger.Error("get eth block number error:%v", err)
 		return err
 	}
+	blockNumber = blockNumber - 5
 	//todo
 	if ethHeight >= int64(blockNumber) {
 		logger.Debug("eth current height:%d,node block count:%d", ethHeight, blockNumber)

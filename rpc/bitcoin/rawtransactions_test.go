@@ -56,7 +56,7 @@ func TestClient_SendRawTransaction(t *testing.T) {
 }
 
 func TestClient_GetUtxoByTxId(t *testing.T) {
-	utxo, err := client.GetUtxoByTxId("95e474eaf1e92dec5e2785392a98e0e974885df9d044f456be5bd56d8e8f4fdb", 1)
+	utxo, err := client.GetUtxoByTxId("b5a43b150d8f9a305b9f19b11411f6a166f57080c8347b258ba48ebce77a2bc9", 4)
 	if err != nil {
 		t.Fatal(err)
 	}

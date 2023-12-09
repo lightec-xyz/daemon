@@ -21,8 +21,8 @@ var client *Client
 var err error
 
 func init() {
-	//url := "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02"
-	url := "http://127.0.0.1:8332"
+	url := "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02"
+	//url := "http://127.0.0.1:8332"
 	user := "lightec"
 	pwd := "abcd1234"
 	network := "regtest"
@@ -295,33 +295,21 @@ func TestMultiTransaction(t *testing.T) {
 	secrets := [][]byte{secret1, secret2, secret3}
 	inputs := []bitcoin.TxIn{
 		{
-			Hash:     "d84498c08fadb2276b1010e8a572e351a4969b8bbb58ac9ff71d8fd3748e2faa",
+			Hash:     "b5a43b150d8f9a305b9f19b11411f6a166f57080c8347b258ba48ebce77a2bc9",
 			VOut:     1,
 			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   11999998,
+			Amount:   203382,
 		},
-		//{
-		//	Hash:     "98ea87268149e34d7c818e2cb8fd0b68044beeb0527d0baac83e8619c93450ae",
-		//	VOut:     0,
-		//	PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-		//	Amount:   12000000000,
-		//},
-		//{
-		//	Hash:     "ee3cd919cef42d0ca63f62410fccff3a6c1c8754b9ce564dd3c24f551a6911c4",
-		//	VOut:     1,
-		//	PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-		//	Amount:   1200000000,
-		//},
 	}
 
 	outputs := []bitcoin.TxOut{
 		{
-			Address: "bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5",
-			Amount:  1199999300,
+			Address: "tb1q6lawf77u30mvs6sgcuthchgxdqm4f6n359lc4a",
+			Amount:  203182,
 		},
 	}
 
-	txBytes, err := bitcoin.CreateMultiSigTransaction(2, secrets, inputs, outputs, bitcoin.RegTest)
+	txBytes, err := bitcoin.CreateMultiSigTransaction(2, secrets, inputs, outputs, bitcoin.TestNet)
 	if err != nil {
 		t.Fatal(err)
 	}
