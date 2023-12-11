@@ -12,6 +12,16 @@ var _ NodeAPI = (*NodeClient)(nil)
 
 type NodeClient struct {
 	*rpc.Client
+	timeout time.Duration
+}
+
+func (c *NodeClient) AddWorker(endpoint string, max int) (string, error) {
+	var result string
+	err := c.call(&result, "addWorker", endpoint, max)
+	if err != nil {
+		return "", err
+	}
+	return result, err
 }
 
 func (c *NodeClient) Version() (NodeInfo, error) {
@@ -30,7 +40,8 @@ func NewClient(url string) (*NodeClient, error) {
 		return nil, err
 	}
 	return &NodeClient{
-		client,
+		Client:  client,
+		timeout: 15 * time.Second,
 	}, nil
 }
 
@@ -39,7 +50,7 @@ func (c *NodeClient) call(result interface{}, method string, args ...interface{}
 	if vi.Kind() != reflect.Ptr {
 		return fmt.Errorf("result must be pointer")
 	}
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	return c.CallContext(ctx, result, method, args...)
 }

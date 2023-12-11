@@ -1,6 +1,8 @@
 package node
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -35,4 +37,10 @@ func TestTestnetDaemon(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestConfig(t *testing.T) {
+	config := TestnetDaemonConfig()
+	data, _ := json.Marshal(config)
+	fmt.Printf("%v \n", string(data))
 }

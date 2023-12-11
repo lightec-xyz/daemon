@@ -13,6 +13,11 @@ type Handler struct {
 	memoryDb store.IStore
 }
 
+func (h *Handler) AddWorker(endpoint string, max int) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h *Handler) Version() (rpc.NodeInfo, error) {
 	daemonInfo := rpc.NodeInfo{}
 	return daemonInfo, nil

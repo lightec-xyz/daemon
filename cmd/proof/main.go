@@ -1,7 +1,7 @@
 package main
 
-import "github.com/lightec-xyz/daemon/cmd/proof/subcmd"
+import "github.com/lightec-xyz/daemon/cmd/proof/cmd"
 
 func main() {
-	subcmd.Execute()
+	cmd.Execute()
 }

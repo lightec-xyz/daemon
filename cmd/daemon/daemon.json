@@ -1,27 +1,46 @@
 {
-  "datadir": "~/.daemon",
+  "datadir": "/Users/red/.daemon",
   "network": "testnet",
   "rpcbind": "127.0.0.1",
   "rpcport": "8899",
   "btcUrl": "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
   "btcUser": "lightec",
   "btcPwd": "abcd1234",
-  "btcNetwork": "regtest",
-  "btcBlockTime": 15,
-  "btcOperatorAddr": "",
-  "ethUrl": "https://rpc.notadegen.com/eth/sepolia",
-  "zkBridgeAddr": "0xe9Bcf494514270C9886E87d9bFd4A5Bb258d25c6",
-  "ethBlockTime": 15,
-  "btcWhiteList": [
-    ""
+  "btcNetwork": "TestNet",
+  "btcBlockTime": 120,
+  "btcOperatorAddr": "tb1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq8yyuhr",
+  "btcPrivateKeys": [
+    "b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
+    "62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
+    "9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801"
   ],
-  "ethWhiteList": [
-    ""
+  "btcWhiteList": null,
+  "btcInitHeight": 2542131,
+  "multiAddressInfo": {
+    "PublicKeyList": [
+      "A72WxNBqp3Pl0oLwtrzNH7kSaEhJGGSMzaGudoIJ7bBQ",
+      "A6qcQkU0CgKGTJA/f557ye8cw3QJOqy/crYUAC9tjIwi",
+      "AzUaeXG/ftiG/Kma69w7GV/Hn/6TtJniMJpOaasRVAXg"
+    ],
+    "NRequired": 2
+  },
+  "ethInitHeight": 487104,
+  "ethWhiteList": null,
+  "ethUrl": "https://ethereum-holesky.publicnode.com",
+  "zkBridgeAddr": "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
+  "zkBtcAddr": "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083",
+  "ethBlockTime": 10,
+  "ethPrivateKey": "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
+  "logAddr": [
+    "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
+  ],
+  "logTopic": [
+    "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
   ],
   "workers": [
     {
-      "proofUrl": "http://127.0.0.1:8485",
-      "parallelNums": 3
+      "parallelNums": 3,
+      "proofUrl": "http://127.0.0.1:8485"
     }
   ]
 }

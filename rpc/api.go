@@ -2,6 +2,7 @@ package rpc
 
 type NodeAPI interface {
 	Version() (NodeInfo, error)
+	AddWorker(endpoint string, max int) (string, error)
 }
 
 // ProofAPI api between node and proof
