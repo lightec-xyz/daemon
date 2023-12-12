@@ -46,7 +46,7 @@ type ProofResponse struct { // redeem
 	Msg   string `json:"msg"`
 }
 
-type ProofStatus struct {
-	State int    `json:"state"`
-	Msg   string `json:"msg"`
+type ProofInfo struct {
+	Status int    `json:"state"`
+	Msg    string `json:"msg"`
 }

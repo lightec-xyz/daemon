@@ -86,7 +86,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	workers := []IWorker{NewLocalWorker(1)}
 	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, NewSchedule(workers...))
 	rpcHandler := NewHandler(storeDb, memoryStore)
-	server, err := rpc.NewServer(fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
+	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

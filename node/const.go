@@ -7,6 +7,8 @@ const (
 	Redeem  = "redeem"
 )
 
+const RpcRegisterName = "zkbtc"
+
 const (
 	InitBitcoinHeight  = 2540942
 	InitEthereumHeight = 10127532

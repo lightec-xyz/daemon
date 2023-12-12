@@ -14,12 +14,13 @@ type Handler struct {
 }
 
 func (h *Handler) AddWorker(endpoint string, max int) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	return "ok", nil
 }
 
 func (h *Handler) Version() (rpc.NodeInfo, error) {
-	daemonInfo := rpc.NodeInfo{}
+	daemonInfo := rpc.NodeInfo{
+		Version: "0.0.1",
+	}
 	return daemonInfo, nil
 }
 

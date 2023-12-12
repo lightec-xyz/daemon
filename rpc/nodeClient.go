@@ -17,7 +17,7 @@ type NodeClient struct {
 
 func (c *NodeClient) AddWorker(endpoint string, max int) (string, error) {
 	var result string
-	err := c.call(&result, "addWorker", endpoint, max)
+	err := c.call(&result, "zkbtc_addWorker", endpoint, max)
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +26,7 @@ func (c *NodeClient) AddWorker(endpoint string, max int) (string, error) {
 
 func (c *NodeClient) Version() (NodeInfo, error) {
 	info := NodeInfo{}
-	err := c.call(&info, "version")
+	err := c.call(&info, "zkbtc_version")
 	if err != nil {
 		return info, err
 	}
@@ -34,7 +34,7 @@ func (c *NodeClient) Version() (NodeInfo, error) {
 
 }
 
-func NewClient(url string) (*NodeClient, error) {
+func NewNodeClient(url string) (*NodeClient, error) {
 	client, err := rpc.DialHTTP(url)
 	if err != nil {
 		return nil, err

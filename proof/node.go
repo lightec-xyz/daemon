@@ -4,21 +4,30 @@ import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/store"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 type Node struct {
-	server *rpc.Server
+	server  *rpc.Server
+	handler *Handler
 }
 
 func NewNode(cfg Config) (*Node, error) {
-	host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
-	handler := NewHandler()
-	server, err := rpc.NewWsServer(host, handler)
+	err := logger.InitLogger()
 	if err != nil {
-		logger.Error("new server error:%v", err)
+		logger.Error("init logger error:%v", err)
+		return nil, err
+	}
+	host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
+	memoryStore := store.NewMemoryStore()
+	handler := NewHandler(memoryStore, cfg.ParallelNums)
+	logger.Info("proof worker info: %v", cfg.Info())
+	server, err := rpc.NewWsServer(RpcRegisterName, host, handler)
+	if err != nil {
+		logger.Error("new rpc server error:%v", err)
 		return nil, err
 	}
 	return &Node{
@@ -27,22 +36,21 @@ func NewNode(cfg Config) (*Node, error) {
 }
 
 func (node *Node) Start() error {
+	logger.Info("proof worker node start now ....")
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(ch, syscall.SIGHUP, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-ch
 		switch msg {
 		case syscall.SIGHUP:
 			logger.Info("node get SIGHUP")
-
-		case syscall.SIGQUIT:
-			fallthrough
-		case syscall.SIGTERM:
-			logger.Info("get shutdown sigterm...")
+		case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM:
+			logger.Info("get shutdown signal ...")
 			err := node.Close()
 			if err != nil {
-				logger.Error(err.Error())
+				logger.Error(" node close info error:%v", err)
 			}
+			return err
 		}
 	}
 }
@@ -51,8 +59,9 @@ func (node *Node) Close() error {
 	if node.server != nil {
 		err := node.server.Shutdown()
 		if err != nil {
-			logger.Error("proof server shutdown error:%v", err)
+			logger.Error(" proof worker node exit now: %v", err)
 		}
+		return err
 	}
 	return nil
 }

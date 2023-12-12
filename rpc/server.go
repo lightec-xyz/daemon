@@ -4,66 +4,74 @@ import (
 	"context"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/lightec-xyz/daemon/logger"
-	"log"
 	"net/http"
+	"time"
 )
 
 type Server struct {
-	server *http.Server
-	name   string
+	httpServer *http.Server
+	name       string
 }
 
-func NewServer(addr string, handler interface{}) (*Server, error) {
+func NewServer(name, addr string, handler interface{}) (*Server, error) {
 	//todo
 	rpcServer := rpc.NewServer()
-	err := rpcServer.RegisterName("zkbtc", handler)
+	err := rpcServer.RegisterName(name, handler)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("register name error:%v %v", name, err)
+		return nil, err
 	}
-	rpcServer.SetBatchLimits(100, 100)
-	server := &http.Server{
-		Addr:    addr,
-		Handler: rpcServer,
+	rpcServer.SetBatchLimits(BatchRequestLimit, BatchResponseMaxSize)
+	httpServer := &http.Server{
+		Addr:           addr,
+		Handler:        rpcServer,
+		ReadTimeout:    HttpReadTimeOut,
+		WriteTimeout:   HttpWriteTimeOut,
+		MaxHeaderBytes: MaxHeaderBytes,
+		IdleTimeout:    30 * time.Minute,
 	}
-	http.Handle("/", rpcServer)
 	go func() {
-		err := http.ListenAndServe(addr, nil)
+		err := httpServer.ListenAndServe()
 		if err != nil {
-			//todo
+			logger.Info("rpc server exit now: %v", err)
 		}
 	}()
-	return &Server{server: server}, nil
+	return &Server{httpServer: httpServer, name: name}, nil
 }
 
-func NewWsServer(addr string, handler interface{}) (*Server, error) {
+func NewWsServer(name, addr string, handler interface{}) (*Server, error) {
 	//todo
 	rpcServ := rpc.NewServer()
-	err := rpcServ.RegisterName("zkbtc", handler)
+	err := rpcServ.RegisterName(name, handler)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("register name error:%v %v", name, err)
+		return nil, err
 	}
 	rpcHandler := rpcServ.WebsocketHandler([]string{"*"})
-	rpcServ.SetBatchLimits(100, 100)
-	server := &http.Server{
-		Addr:    addr,
-		Handler: rpcServ,
+	rpcServ.SetBatchLimits(BatchRequestLimit, BatchResponseMaxSize)
+	httpServer := &http.Server{
+		Addr:           addr,
+		Handler:        rpcHandler,
+		ReadTimeout:    HttpReadTimeOut,
+		WriteTimeout:   HttpWriteTimeOut,
+		MaxHeaderBytes: MaxHeaderBytes,
+		IdleTimeout:    3 * time.Hour,
 	}
-	http.Handle("/", rpcHandler)
 	go func() {
-		err := http.ListenAndServe(addr, nil)
+		err := httpServer.ListenAndServe()
 		if err != nil {
-			logger.Error("new ws server error:%v", err)
+			logger.Info("rpc server exit now: %v", err)
 		}
 	}()
-	return &Server{server: server}, nil
+	return &Server{httpServer: httpServer, name: name}, nil
 }
 
 func (s *Server) Shutdown() error {
-
-	if s.server != nil {
-		err := s.server.Shutdown(context.TODO())
+	if s.httpServer != nil {
+		err := s.httpServer.Shutdown(context.TODO())
 		if err != nil {
-			logger.Error("server shutdown error:%v", err)
+			logger.Error("rpc server shutdown %v error:%v", s.name, err)
+			return err
 		}
 	}
 	return nil

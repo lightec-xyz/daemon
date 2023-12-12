@@ -1,18 +1,16 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "start  proof node",
-	Long:  `start generate zk proof node in lightec protocol`,
+	Short: "generate zk proof node",
+	Long:  `example: ./proof run`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("run called")
+		
 	},
 }
 
