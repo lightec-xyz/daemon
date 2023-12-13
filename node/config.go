@@ -30,8 +30,26 @@ type NodeConfig struct {
 	EthPrivateKey    string           `json:"ethPrivateKey"`
 	LogAddr          []string         `json:"logAddr"`
 	LogTopic         []string         `json:"logTopic"`
+	Workers          []WorkerConfig   `json:"workers"`
+}
 
-	Workers []WorkerConfig `json:"workers"`
+func Check(c *NodeConfig) error {
+	if c.DataDir == "" {
+		return fmt.Errorf("datadir is empty")
+	}
+	if c.Rpcbind == "" {
+		return fmt.Errorf("rpcbind is empty")
+	}
+	if c.RpcPort == "" {
+		return fmt.Errorf("rpcport is empty")
+	}
+	if c.BtcUrl == "" {
+		return fmt.Errorf("btcUrl is empty")
+	}
+	if c.EthUrl == "" {
+		return fmt.Errorf("ethereumUrl is empty")
+	}
+	return nil
 }
 
 type MultiAddressInfo struct {

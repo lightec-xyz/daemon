@@ -25,11 +25,14 @@ Ethereum Holesky Network
 2. the daemon config file location is: ***~/.daemon/daemon.json***
 
 ### Command
+daemon
 
     // run daemon process
     ./daemon run
    
+proof worker
 
+    ./proof  run
 
     
     

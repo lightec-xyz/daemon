@@ -12,7 +12,7 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "an cross-chain bridge node between Ethereum and Bitcoin",
-	Long:  "a node for a cross-chain bridge between Ethereum and Bitcoin implemented in the lightec protocol",
+	Long:  "a node for a cross-chain bridge between Ethereum and Bitcoin implemented in the lightning  protocol",
 }
 
 func Execute() {
@@ -34,14 +34,11 @@ func initConfig() {
 	} else {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
-
 		viper.AddConfigPath(fmt.Sprintf("%s/.daemon", home))
 		viper.SetConfigType("json")
 		viper.SetConfigName("daemon")
 	}
-
 	viper.AutomaticEnv()
-
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}

@@ -6,6 +6,15 @@ import (
 	"strconv"
 )
 
+type ProofStatus int
+
+const (
+	ProofDefault ProofStatus = iota
+	ProofPending
+	ProofSuccess
+	ProofFailed
+)
+
 type DepositTx struct {
 	TxId    string
 	TxIndex int

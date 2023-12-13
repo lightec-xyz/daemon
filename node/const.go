@@ -1,6 +1,12 @@
 package node
 
-// todo
+// testnet
+
+const (
+	TestnetBtcOperatorAddress = ""
+	TestnetEthZkBridgeAddress
+	TestnetEthZkBtcAddress
+)
 
 const (
 	Deposit = "deposit"
@@ -19,13 +25,4 @@ const ProofPrefix = "p"
 var (
 	btcCurHeightKey = []byte("btcCurHeight")
 	ethCurHeightKey = []byte("ethCurHeight")
-)
-
-type ProofStatus int
-
-const (
-	ProofDefault ProofStatus = iota
-	ProofPending
-	ProofSuccess
-	ProofFailed
 )

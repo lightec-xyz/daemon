@@ -38,13 +38,13 @@ func NewNode(cfg Config) (*Node, error) {
 func (node *Node) Start() error {
 	logger.Info("proof worker node start now ....")
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-ch
 		switch msg {
 		case syscall.SIGHUP:
 			logger.Info("node get SIGHUP")
-		case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM:
+		case syscall.SIGQUIT, syscall.SIGTERM:
 			logger.Info("get shutdown signal ...")
 			err := node.Close()
 			if err != nil {
