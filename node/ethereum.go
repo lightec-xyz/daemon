@@ -62,7 +62,7 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		ethClient:            ethClient,
 		store:                store,
 		memoryStore:          memoryStore,
-		blockTime:            time.Duration(cfg.EthBlockTime) * time.Second,
+		blockTime:            cfg.EthScanBlockTime,
 		proofRequest:         proofRequest,
 		proofResponse:        proofResponse,
 		checkProofHeightNums: 100,

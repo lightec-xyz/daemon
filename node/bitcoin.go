@@ -40,7 +40,7 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 		ethClient:            ethClient,
 		store:                store,
 		memoryStore:          memoryStore,
-		blockTime:            time.Duration(cfg.BTcBtcBlockTime) * time.Second,
+		blockTime:            cfg.BtcScanBlockTime,
 		operateAddr:          cfg.BtcOperatorAddr,
 		proofRequest:         request,
 		proofResponse:        response,

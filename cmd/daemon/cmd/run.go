@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/spf13/cobra"
@@ -9,6 +8,7 @@ import (
 	"os"
 )
 
+var datadir *string
 var rpcbind *string
 var rpcport *string
 var btcUrl *string
@@ -16,15 +16,27 @@ var btcUser *string
 var btcPwd *string
 var ethUrl *string
 var ethPrivateKey *string
-var workers *[]string
+var network *string
+
+const (
+	datadirFlag       = "datadir"
+	rpcbindFlag       = "rpcbind"
+	rpcportFlag       = "rpcport"
+	btcUrlFlag        = "btcUrl"
+	btcUserFlag       = "btcUser"
+	btcPwdFlag        = "btcPwd"
+	ethUrlFlag        = "ethUrl"
+	networkFlag       = "network"
+	ethPrivateKeyFlag = "ethPrivateKey"
+)
 
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "run daemon",
 	Long:  `Start daemon program`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//todo
-		config, err := toConfig(viper.AllSettings())
+		datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getConfig()
+		config, err := node.NewNodeConfig(datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, "", ethUrl, ethPrivate)
 		//config := node.TestnetDaemonConfig()
 		cobra.CheckErr(err)
 		daemon, err := node.NewDaemon(config)
@@ -39,47 +51,49 @@ var runCmd = &cobra.Command{
 }
 
 func init() {
-	rpcbind = runCmd.Flags().String("rpcbind", "", "rpc server host")
-	rpcport = runCmd.Flags().String("rpcport", "", "rpc server port")
-	btcUrl = runCmd.Flags().String("btcUrl", "", "bitcoin json rpc endpoint")
-	btcUser = runCmd.Flags().String("btcUser", "", "bitcoin json rpc username")
-	btcPwd = runCmd.Flags().String("btcPwd", "", "bitcoin json rpc password")
-	ethUrl = runCmd.Flags().String("ethUrl", "", "ethereum json rpc endpoint")
-	ethPrivateKey = runCmd.Flags().String("ethPrivateKey", "", "ethereum private key")
-	workers = runCmd.Flags().StringArray("workers", nil, "remote generate proof workers")
+	rpcbind = runCmd.Flags().String(rpcbindFlag, "", "rpc server host")
+	datadir = runCmd.Flags().String(datadirFlag, "", "rpc server host")
+	rpcport = runCmd.Flags().String(rpcportFlag, "", "rpc server port")
+	btcUrl = runCmd.Flags().String(btcUrlFlag, "", "bitcoin json rpc endpoint")
+	btcUser = runCmd.Flags().String(btcUserFlag, "", "bitcoin json rpc username")
+	btcPwd = runCmd.Flags().String(btcPwdFlag, "", "bitcoin json rpc password")
+	ethUrl = runCmd.Flags().String(ethUrlFlag, "", "ethereum json rpc endpoint")
+	ethUrl = runCmd.Flags().String(ethUrlFlag, "", "ethereum json rpc endpoint")
+	network = runCmd.Flags().String(networkFlag, "", "lightec network")
+	ethPrivateKey = runCmd.Flags().String(ethPrivateKeyFlag, "", "ethereum private key")
 	rootCmd.AddCommand(runCmd)
 }
 
-func toConfig(data interface{}) (node.NodeConfig, error) {
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return node.NodeConfig{}, err
-	}
-	config := node.NodeConfig{}
-	err = json.Unmarshal(bytes, &config)
-	if err != nil {
-		return node.NodeConfig{}, err
-	}
+func getConfig() (string, string, string, string, string, string, string, string, string) {
+	tDatadir := viper.GetString(datadirFlag)
+	tRpcbind := viper.GetString(rpcbindFlag)
+	tRpcport := viper.GetString(rpcportFlag)
+	tBtcurl := viper.GetString(btcUrlFlag)
+	tBtcUser := viper.GetString(btcUserFlag)
+	tBtcPwd := viper.GetString(btcPwdFlag)
+	tEthUrl := viper.GetString(ethUrlFlag)
+	tNetwork := viper.GetString(networkFlag)
+	tEthPrivateKey := viper.GetString(ethPrivateKeyFlag)
 	if *rpcbind != "" {
-		config.Rpcbind = *rpcbind
+		tRpcbind = *rpcbind
 	}
 	if *rpcport != "" {
-		config.RpcPort = *rpcport
+		tRpcport = *rpcport
 	}
 	if *btcUrl != "" {
-		config.BtcUrl = *btcUrl
+		tBtcurl = *btcUrl
 	}
 	if *btcUser != "" {
-		config.BtcUser = *btcUser
+		tBtcUser = *btcUser
 	}
 	if *btcPwd != "" {
-		config.BtcPwd = *btcPwd
+		tBtcPwd = *btcPwd
 	}
 	if *ethUrl != "" {
-		config.EthUrl = *ethUrl
+		tEthUrl = *ethUrl
 	}
 	if *ethPrivateKey != "" {
-		config.EthPrivateKey = *ethPrivateKey
+		tEthPrivateKey = *ethPrivateKey
 	}
-	return config, nil
+	return tDatadir, tNetwork, tRpcport, tRpcbind, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey
 }

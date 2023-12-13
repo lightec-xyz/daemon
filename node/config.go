@@ -3,53 +3,235 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/lightec-xyz/daemon/logger"
 	"os/user"
+	"time"
 )
 
 type NodeConfig struct {
-	DataDir          string           `json:"datadir"`
-	Network          string           `json:"network"`
-	Rpcbind          string           `json:"rpcbind"`
-	RpcPort          string           `json:"rpcport"`
+	DataDir string `json:"datadir"`
+	Network string `json:"network"`
+	Rpcbind string `json:"rpcbind"`
+	RpcPort string `json:"rpcport"`
+
 	BtcUrl           string           `json:"btcUrl"`
 	BtcUser          string           `json:"btcUser"`
 	BtcPwd           string           `json:"btcPwd"`
 	BtcNetwork       string           `json:"btcNetwork"`
-	BTcBtcBlockTime  int64            `json:"btcBlockTime"`
+	BtcScanBlockTime time.Duration    `json:"btcBlockTime"`
 	BtcOperatorAddr  string           `json:"btcOperatorAddr"`
 	BtcPrivateKeys   []string         `json:"btcPrivateKeys"`
 	BtcWhiteList     []string         `json:"btcWhiteList"`
 	BtcInitHeight    int64            `json:"btcInitHeight"`
 	MultiAddressInfo MultiAddressInfo `json:"multiAddressInfo"`
-	EthInitHeight    int64            `json:"ethInitHeight"`
-	EthWhiteList     []string         `json:"ethWhiteList"`
-	EthUrl           string           `json:"ethUrl"`
-	ZkBridgeAddr     string           `json:"zkBridgeAddr"`
-	ZkBtcAddr        string           `json:"zkBtcAddr"`
-	EthBlockTime     int64            `json:"ethBlockTime"`
-	EthPrivateKey    string           `json:"ethPrivateKey"`
-	LogAddr          []string         `json:"logAddr"`
-	LogTopic         []string         `json:"logTopic"`
-	Workers          []WorkerConfig   `json:"workers"`
+
+	EthInitHeight    int64          `json:"ethInitHeight"`
+	EthWhiteList     []string       `json:"ethWhiteList"`
+	EthUrl           string         `json:"ethUrl"`
+	ZkBridgeAddr     string         `json:"zkBridgeAddr"`
+	ZkBtcAddr        string         `json:"zkBtcAddr"`
+	EthScanBlockTime time.Duration  `json:"ethBlockTime"`
+	EthPrivateKey    string         `json:"ethPrivateKey"`
+	LogAddr          []string       `json:"logAddr"`
+	LogTopic         []string       `json:"logTopic"`
+	Workers          []WorkerConfig `json:"workers"`
 }
 
-func Check(c *NodeConfig) error {
-	if c.DataDir == "" {
-		return fmt.Errorf("datadir is empty")
+func NewNodeConfig(dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, btcNetwork, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+	var config NodeConfig
+	current, err := user.Current()
+	if err != nil {
+		logger.Error("get current user error", err)
+		return config, err
 	}
-	if c.Rpcbind == "" {
-		return fmt.Errorf("rpcbind is empty")
+	if dataDir == "" {
+		dataDir = fmt.Sprintf("%v/.daemon", current.HomeDir)
 	}
-	if c.RpcPort == "" {
-		return fmt.Errorf("rpcport is empty")
+	if network == "" {
+		network = "mainnet"
 	}
-	if c.BtcUrl == "" {
-		return fmt.Errorf("btcUrl is empty")
+	if rpcbind == "" {
+		rpcbind = "127.0.0.1"
 	}
-	if c.EthUrl == "" {
-		return fmt.Errorf("ethereumUrl is empty")
+	if rpcport == "" {
+		rpcport = "30000"
 	}
-	return nil
+	if btcUrl == "" {
+		return config, fmt.Errorf("btcUrl is empty")
+	}
+	if ethUrl == "" {
+		return config, fmt.Errorf("ethUrl is empty")
+	}
+	if ethPrivateKey == "" {
+		return config, fmt.Errorf("ethPrivateKey is empty")
+	}
+
+	switch network {
+	case "mainnet":
+		return newMainnetConfig(dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, btcNetwork, ethUrl, ethPrivateKey)
+	case "testnet":
+		return newTestConfig(dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, btcNetwork, ethUrl, ethPrivateKey)
+	case "local":
+		return newLocalConfig(dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, btcNetwork, ethUrl, ethPrivateKey)
+	default:
+		return config, fmt.Errorf("unsupport network now: %v", network)
+	}
+
+}
+
+func newMainnetConfig(dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, btcNetwork, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+	multiSigPub1, err := hex.DecodeString(BtcMultiSigPublic1)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigPub2, err := hex.DecodeString(BtcMultiSigPublic2)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigPub3, err := hex.DecodeString(BtcMultiSigPublic3)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigAddressInfo := MultiAddressInfo{
+		PublicKeyList: [][]byte{
+			multiSigPub1, multiSigPub2, multiSigPub3,
+		},
+		NRequired: BtcMultiNRequired,
+	}
+	return NodeConfig{
+		DataDir: dataDir,
+		Network: testnet,
+		Rpcbind: rpcbind,
+		RpcPort: rpcport,
+
+		BtcUrl:           btcUrl,
+		BtcUser:          btcUser,
+		BtcPwd:           btcPwd,
+		BtcNetwork:       btcNetwork,
+		BtcScanBlockTime: BtcScanTime,
+		BtcOperatorAddr:  BtcOperatorAddress,
+		BtcPrivateKeys: []string{
+			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
+			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
+			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
+		},
+		BtcInitHeight: InitBitcoinHeight,
+
+		EthInitHeight:    InitEthereumHeight,
+		EthUrl:           ethUrl,
+		ZkBridgeAddr:     EthZkBridgeAddress,
+		ZkBtcAddr:        EthZkBtcAddress,
+		EthScanBlockTime: EthScanTime,
+		EthPrivateKey:    ethPrivateKey,
+		LogAddr:          []string{EthZkBridgeAddress},
+		LogTopic:         RedeemLogTopices,
+		MultiAddressInfo: multiSigAddressInfo,
+	}, nil
+}
+
+func newTestConfig(dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, btcNetwork, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+	multiSigPub1, err := hex.DecodeString(TestnetBtcMultiSigPublic1)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigPub2, err := hex.DecodeString(TestnetBtcMultiSigPublic2)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigPub3, err := hex.DecodeString(TestnetBtcMultiSigPublic3)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigAddressInfo := MultiAddressInfo{
+		PublicKeyList: [][]byte{
+			multiSigPub1, multiSigPub2, multiSigPub3,
+		},
+		NRequired: TestnetBtcMultiNRequired,
+	}
+	return NodeConfig{
+		DataDir:          dataDir,
+		Network:          testnet,
+		Rpcbind:          rpcbind,
+		RpcPort:          rpcport,
+		BtcUrl:           btcUrl,
+		BtcUser:          btcUser,
+		BtcPwd:           btcPwd,
+		BtcNetwork:       btcNetwork,
+		BtcScanBlockTime: TestnetBtcScanTime,
+		BtcOperatorAddr:  TestnetBtcOperatorAddress,
+		BtcPrivateKeys: []string{
+			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
+			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
+			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
+		},
+		BtcInitHeight:    TestnetInitBitcoinHeight,
+		EthInitHeight:    TestnetInitEthereumHeight,
+		EthUrl:           ethUrl,
+		ZkBridgeAddr:     TestnetEthZkBridgeAddress,
+		ZkBtcAddr:        TestnetEthZkBtcAddress,
+		EthScanBlockTime: TestnetEthScanTime,
+		EthPrivateKey:    ethPrivateKey,
+		LogAddr:          []string{TestnetEthZkBridgeAddress},
+		LogTopic:         TestnetRedeemLogTopices,
+		MultiAddressInfo: multiSigAddressInfo,
+	}, nil
+}
+
+func newLocalConfig(dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, btcNetwork, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigPub2, err := hex.DecodeString(LocalBtcMultiSigPublic2)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigPub3, err := hex.DecodeString(LocalBtcMultiSigPublic3)
+	if err != nil {
+		logger.Error("hex decode string error", err)
+		return NodeConfig{}, err
+	}
+	multiSigAddressInfo := MultiAddressInfo{
+		PublicKeyList: [][]byte{
+			multiSigPub1, multiSigPub2, multiSigPub3,
+		},
+		NRequired: LocalBtcMultiNRequired,
+	}
+	return NodeConfig{
+		DataDir:          dataDir,
+		Network:          testnet,
+		Rpcbind:          rpcbind,
+		RpcPort:          rpcport,
+		BtcUrl:           btcUrl,
+		BtcUser:          btcUser,
+		BtcPwd:           btcPwd,
+		BtcNetwork:       btcNetwork,
+		BtcScanBlockTime: LocalBtcScanTime,
+		BtcOperatorAddr:  LocalBtcOperatorAddress,
+		BtcPrivateKeys: []string{
+			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
+			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
+			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
+		},
+		BtcInitHeight:    LocalInitBitcoinHeight,
+		EthInitHeight:    LocalInitEthereumHeight,
+		EthUrl:           ethUrl,
+		ZkBridgeAddr:     LocalEthZkBridgeAddress,
+		ZkBtcAddr:        LocalEthZkBtcAddress,
+		EthScanBlockTime: LocalEthScanTime,
+		EthPrivateKey:    ethPrivateKey,
+		LogAddr:          []string{LocalEthZkBridgeAddress},
+		LogTopic:         LocalRedeemLogTopices,
+		MultiAddressInfo: multiSigAddressInfo,
+	}, nil
 }
 
 type MultiAddressInfo struct {
@@ -62,116 +244,44 @@ type WorkerConfig struct {
 	ProofUrl     string `json:"proofUrl"`
 }
 
+func TestnetDaemonConfig() NodeConfig {
+	user, err := user.Current()
+	config, err := NewNodeConfig(
+		fmt.Sprintf("%v/.daemon", user.HomeDir),
+		"testnet",
+		"127.0.0.1",
+		"8545",
+		"https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
+		"",
+		"",
+		"Testnet",
+		"https://ethereum-holesky.publicnode.com",
+		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
+	)
+	if err != nil {
+		panic(err)
+	}
+	return config
+}
 func LocalDevDaemonConfig() NodeConfig {
 	user, err := user.Current()
 	if err != nil {
 		panic(err)
 	}
-	pub1, err := hex.DecodeString("03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050")
+	config, err := NewNodeConfig(
+		fmt.Sprintf("%v/.daemon", user.HomeDir),
+		"local",
+		"127.0.0.1",
+		"8545",
+		"http://127.0.0.1:8332",
+		"lightec",
+		"Abcd1234",
+		"Regtest",
+		"https://ethereum-holesky.publicnode.com",
+		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
+	)
 	if err != nil {
 		panic(err)
 	}
-	pub2, err := hex.DecodeString("03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22")
-	if err != nil {
-		panic(err)
-	}
-	pub3, err := hex.DecodeString("03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0")
-	if err != nil {
-		panic(err)
-	}
-	return NodeConfig{
-		DataDir:         fmt.Sprintf("%v/.daemon", user.HomeDir),
-		Network:         "devnet",
-		Rpcbind:         "127.0.0.1",
-		RpcPort:         "8899",
-		BtcUrl:          "http://127.0.0.1:8332",
-		BtcUser:         "lightec",
-		BtcPwd:          "abcd1234",
-		BtcNetwork:      "RegTest",
-		BTcBtcBlockTime: 15,
-		BtcOperatorAddr: "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze",
-		BtcPrivateKeys: []string{
-			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
-			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
-			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
-		},
-		BtcInitHeight: 2542024,
-		EthInitHeight: 481270,
-		EthUrl:        "https://ethereum-holesky.publicnode.com",
-		ZkBridgeAddr:  "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
-		ZkBtcAddr:     "",
-		EthBlockTime:  10,
-		EthPrivateKey: "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		LogAddr:       []string{"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"},
-		LogTopic:      []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"},
-		MultiAddressInfo: MultiAddressInfo{
-			PublicKeyList: [][]byte{
-				pub1, pub2, pub3,
-			},
-			NRequired: 2,
-		},
-		Workers: []WorkerConfig{
-			{
-				ParallelNums: 3,
-				ProofUrl:     "http://127.0.0.1:8485",
-			},
-		},
-	}
-}
-
-func TestnetDaemonConfig() NodeConfig {
-	user, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-	pub1, err := hex.DecodeString("03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050")
-	if err != nil {
-		panic(err)
-	}
-	pub2, err := hex.DecodeString("03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22")
-	if err != nil {
-		panic(err)
-	}
-	pub3, err := hex.DecodeString("03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0")
-	if err != nil {
-		panic(err)
-	}
-	return NodeConfig{
-		DataDir:         fmt.Sprintf("%v/.daemon", user.HomeDir),
-		Network:         "testnet",
-		Rpcbind:         "127.0.0.1",
-		RpcPort:         "8899",
-		BtcUrl:          "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
-		BtcUser:         "lightec",
-		BtcPwd:          "abcd1234",
-		BtcNetwork:      "TestNet",
-		BTcBtcBlockTime: 2 * 60,
-		BtcOperatorAddr: "tb1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq8yyuhr",
-		BtcPrivateKeys: []string{
-			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
-			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
-			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
-		},
-		BtcInitHeight: 2542131,
-		EthInitHeight: 487104,
-		EthUrl:        "https://ethereum-holesky.publicnode.com",
-		ZkBridgeAddr:  "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
-		ZkBtcAddr:     "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083",
-		EthBlockTime:  10,
-		EthPrivateKey: "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		LogAddr:       []string{"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"},
-		LogTopic:      []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"},
-		MultiAddressInfo: MultiAddressInfo{
-			PublicKeyList: [][]byte{
-				pub1, pub2, pub3,
-			},
-			NRequired: 2,
-		},
-		Workers: []WorkerConfig{
-			{
-				ParallelNums: 3,
-				ProofUrl:     "http://127.0.0.1:8485",
-			},
-		},
-	}
+	return config
 }
