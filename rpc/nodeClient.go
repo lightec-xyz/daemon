@@ -15,6 +15,15 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
+func (c *NodeClient) Stop() error {
+	var result string
+	err := c.call(&result, "zkbtc_stop")
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func (c *NodeClient) AddWorker(endpoint string, max int) (string, error) {
 	var result string
 	err := c.call(&result, "zkbtc_addWorker", endpoint, max)

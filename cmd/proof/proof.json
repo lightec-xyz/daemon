@@ -1,7 +1,0 @@
-{
-  "datadir": "/Users/red/.daemon",
-  "network": "testnet",
-  "rpcbind": "127.0.0.1",
-  "rpcport": "88888",
-  "parallelNums": 3
-}

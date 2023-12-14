@@ -1,15 +1,19 @@
 package node
 
-import "time"
+import (
+	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
+	"time"
+)
 
 // ********************* mainnet ************************
 const (
+	LightecMainnet     = "mainnet"
 	BtcOperatorAddress = "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze"
 	BtcMultiSigPublic1 = "03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050"
 	BtcMultiSigPublic2 = "03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22"
 	BtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
 	BtcMultiNRequired  = 2
-
+	BtcNetwork         = btctx.MainNet
 	EthZkBridgeAddress = "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
 	EthZkBtcAddress    = "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083"
 
@@ -24,12 +28,13 @@ var RedeemLogTopices = []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd
 
 // ********************* testnet ************************
 const (
+	LightecTestnet            = "testnet"
 	TestnetBtcOperatorAddress = "tb1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq8yyuhr"
 	TestnetBtcMultiSigPublic1 = "03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050"
 	TestnetBtcMultiSigPublic2 = "03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22"
 	TestnetBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
 	TestnetBtcMultiNRequired  = 2
-
+	TestnetBtcNetwork         = btctx.TestNet
 	TestnetEthZkBridgeAddress = "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
 	TestnetEthZkBtcAddress    = "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083"
 
@@ -44,12 +49,13 @@ var TestnetRedeemLogTopices = []string{"0xb28ad0403b0a341130002b9eef334c5daa3c10
 
 // ********************* local ************************
 const (
+	Lighteclocal            = "local"
 	LocalBtcOperatorAddress = "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze"
 	LocalBtcMultiSigPublic1 = "03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050"
 	LocalBtcMultiSigPublic2 = "03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22"
 	LocalBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
 	LocalBtcMultiNRequired  = 2
-
+	LocalBtcNetwork         = btctx.RegTest
 	LocalEthZkBridgeAddress = "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
 	LocalEthZkBtcAddress    = "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083"
 

@@ -26,7 +26,6 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.daemon/proof.json)")
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func initConfig() {

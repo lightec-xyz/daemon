@@ -28,6 +28,7 @@ type Daemon struct {
 	nodeConfig     NodeConfig
 	exitScanSignal chan struct{}
 	manager        *Manager
+	exitSignal     chan os.Signal
 }
 
 func NewDaemon(cfg NodeConfig) (*Daemon, error) {
@@ -84,8 +85,10 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	//	return nil, err
 	//}
 	workers := []IWorker{NewLocalWorker(1)}
-	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, NewSchedule(workers...))
-	rpcHandler := NewHandler(storeDb, memoryStore)
+	schedule := NewSchedule(workers...)
+	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, schedule)
+	exitSignal := make(chan os.Signal, 1)
+	rpcHandler := NewHandler(storeDb, memoryStore, schedule, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
@@ -97,6 +100,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		nodeConfig:     cfg,
 		exitScanSignal: make(chan struct{}, 1),
 		manager:        manager,
+		exitSignal:     exitSignal,
 	}
 	return daemon, nil
 }
@@ -115,7 +119,6 @@ func (d *Daemon) Init() error {
 }
 
 func (d *Daemon) Run() error {
-	ch := make(chan os.Signal, 1)
 	for _, node := range d.agents {
 		go func(tNode IAgent) {
 			//todo
@@ -135,21 +138,19 @@ func (d *Daemon) Run() error {
 			}
 		}(node)
 	}
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
 	for {
-		msg := <-ch
+		msg := <-d.exitSignal
 		switch msg {
 		case syscall.SIGHUP:
 			logger.Info("daemon get SIGHUP")
-
-		case syscall.SIGQUIT:
-			fallthrough
-		case syscall.SIGTERM:
-			logger.Info("get shutdown sigterm...")
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
+			logger.Info("get shutdown signal ,exit now ...")
 			err := d.Close()
 			if err != nil {
 				logger.Error(err.Error())
 			}
+			return nil
 		}
 	}
 }

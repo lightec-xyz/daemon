@@ -8,35 +8,34 @@ import (
 	"os"
 )
 
-var datadir *string
-var rpcbind *string
-var rpcport *string
-var btcUrl *string
-var btcUser *string
-var btcPwd *string
-var ethUrl *string
-var ethPrivateKey *string
-var network *string
+var btcUrl string
+var btcUser string
+var btcPwd string
+var ethUrl string
+var ethPrivateKey string
+var enableLocalWorker bool
 
 const (
-	datadirFlag       = "datadir"
-	rpcbindFlag       = "rpcbind"
-	rpcportFlag       = "rpcport"
-	btcUrlFlag        = "btcUrl"
-	btcUserFlag       = "btcUser"
-	btcPwdFlag        = "btcPwd"
-	ethUrlFlag        = "ethUrl"
-	networkFlag       = "network"
-	ethPrivateKeyFlag = "ethPrivateKey"
+	datadirFlag           = "datadir"
+	rpcbindFlag           = "rpcbind"
+	rpcportFlag           = "rpcport"
+	btcUrlFlag            = "btcUrl"
+	btcUserFlag           = "btcUser"
+	btcPwdFlag            = "btcPwd"
+	ethUrlFlag            = "ethUrl"
+	networkFlag           = "network"
+	ethPrivateKeyFlag     = "ethPrivateKey"
+	enableLocalWorkerFlag = "enableLocalWorker"
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "run daemon",
-	Long:  `Start daemon program`,
+	Use:     "run",
+	Short:   "run daemon",
+	Example: "./daemon run",
 	Run: func(cmd *cobra.Command, args []string) {
-		datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getConfig()
-		config, err := node.NewNodeConfig(datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, "", ethUrl, ethPrivate)
+		enableLocalWorker, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
+		//fmt.Printf("datadir:%s, network:%s, rpcbind:%s, rpcport:%s, btcUrl:%s, btcUser:%s, btcPwd:%s, ethUrl:%s, ethPrivateKey:%s \n", datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
+		config, err := node.NewNodeConfig(enableLocalWorker, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
 		//config := node.TestnetDaemonConfig()
 		cobra.CheckErr(err)
 		daemon, err := node.NewDaemon(config)
@@ -51,49 +50,36 @@ var runCmd = &cobra.Command{
 }
 
 func init() {
-	rpcbind = runCmd.Flags().String(rpcbindFlag, "", "rpc server host")
-	datadir = runCmd.Flags().String(datadirFlag, "", "rpc server host")
-	rpcport = runCmd.Flags().String(rpcportFlag, "", "rpc server port")
-	btcUrl = runCmd.Flags().String(btcUrlFlag, "", "bitcoin json rpc endpoint")
-	btcUser = runCmd.Flags().String(btcUserFlag, "", "bitcoin json rpc username")
-	btcPwd = runCmd.Flags().String(btcPwdFlag, "", "bitcoin json rpc password")
-	ethUrl = runCmd.Flags().String(ethUrlFlag, "", "ethereum json rpc endpoint")
-	ethUrl = runCmd.Flags().String(ethUrlFlag, "", "ethereum json rpc endpoint")
-	network = runCmd.Flags().String(networkFlag, "", "lightec network")
-	ethPrivateKey = runCmd.Flags().String(ethPrivateKeyFlag, "", "ethereum private key")
+
+	runCmd.Flags().StringVar(&btcUrl, btcUrlFlag, "", "bitcoin json rpc endpoint")
+	runCmd.Flags().StringVar(&btcUser, btcUserFlag, "", "bitcoin json rpc username")
+	runCmd.Flags().StringVar(&btcPwd, btcPwdFlag, "", "bitcoin json rpc password")
+	runCmd.Flags().StringVar(&ethUrl, ethUrlFlag, "", "ethereum json rpc endpoint")
+	runCmd.Flags().StringVar(&ethPrivateKey, ethPrivateKeyFlag, "", "ethereum private key")
 	rootCmd.AddCommand(runCmd)
 }
 
-func getConfig() (string, string, string, string, string, string, string, string, string) {
-	tDatadir := viper.GetString(datadirFlag)
-	tRpcbind := viper.GetString(rpcbindFlag)
-	tRpcport := viper.GetString(rpcportFlag)
-	tBtcurl := viper.GetString(btcUrlFlag)
-	tBtcUser := viper.GetString(btcUserFlag)
-	tBtcPwd := viper.GetString(btcPwdFlag)
-	tEthUrl := viper.GetString(ethUrlFlag)
-	tNetwork := viper.GetString(networkFlag)
-	tEthPrivateKey := viper.GetString(ethPrivateKeyFlag)
-	if *rpcbind != "" {
-		tRpcbind = *rpcbind
+func getRunConfig() (tEnableLocalWorker bool, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey string) {
+	tBtcurl = viper.GetString(btcUrlFlag)
+	tBtcUser = viper.GetString(btcUserFlag)
+	tBtcPwd = viper.GetString(btcPwdFlag)
+	tEthUrl = viper.GetString(ethUrlFlag)
+	tEthPrivateKey = viper.GetString(ethPrivateKeyFlag)
+	tEnableLocalWorker = viper.GetBool(enableLocalWorkerFlag)
+	if btcUrl != "" {
+		tBtcurl = btcUrl
 	}
-	if *rpcport != "" {
-		tRpcport = *rpcport
+	if btcUser != "" {
+		tBtcUser = btcUser
 	}
-	if *btcUrl != "" {
-		tBtcurl = *btcUrl
+	if btcPwd != "" {
+		tBtcPwd = btcPwd
 	}
-	if *btcUser != "" {
-		tBtcUser = *btcUser
+	if ethUrl != "" {
+		tEthUrl = ethUrl
 	}
-	if *btcPwd != "" {
-		tBtcPwd = *btcPwd
+	if ethPrivateKey != "" {
+		tEthPrivateKey = ethPrivateKey
 	}
-	if *ethUrl != "" {
-		tEthUrl = *ethUrl
-	}
-	if *ethPrivateKey != "" {
-		tEthPrivateKey = *ethPrivateKey
-	}
-	return tDatadir, tNetwork, tRpcport, tRpcbind, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey
+	return tEnableLocalWorker, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey
 }

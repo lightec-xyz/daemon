@@ -9,6 +9,11 @@ import (
 )
 
 var cfgFile string
+var datadir string
+var rpcbind string
+var rpcport string
+var network string
+
 var rootCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "an cross-chain bridge node between Ethereum and Bitcoin",
@@ -25,7 +30,11 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.daemon/daemon.json)")
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVar(&datadir, datadirFlag, "", "daemon storage directory")
+	rootCmd.PersistentFlags().StringVar(&rpcbind, rpcbindFlag, "", "rpc server host")
+	rootCmd.PersistentFlags().StringVar(&rpcport, rpcportFlag, "", "rpc server port")
+	rootCmd.PersistentFlags().StringVar(&network, networkFlag, "", "lightec network")
+	getRootConfig()
 }
 
 func initConfig() {
@@ -42,5 +51,22 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
-
+}
+func getRootConfig() {
+	tDatadir := viper.GetString(datadirFlag)
+	tRpcbind := viper.GetString(rpcbindFlag)
+	tRpcport := viper.GetString(rpcportFlag)
+	tNetwork := viper.GetString(networkFlag)
+	if tDatadir != "" && datadir == "" {
+		datadir = tDatadir
+	}
+	if tRpcbind != "" && rpcbind == "" {
+		rpcbind = tRpcbind
+	}
+	if tRpcport != "" && rpcport == "" {
+		rpcport = tRpcport
+	}
+	if tNetwork != "" && network == "" {
+		network = tNetwork
+	}
 }

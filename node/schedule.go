@@ -5,16 +5,29 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"sort"
+	"sync"
 )
 
 type Schedule struct {
 	Workers []IWorker
+	sync.Mutex
 }
 
 func NewSchedule(workers ...IWorker) *Schedule {
 	return &Schedule{
 		Workers: workers,
 	}
+}
+
+func (m *Schedule) AddWorker(endpoint string, nums int) error {
+	client, err := rpc.NewProofClient(endpoint)
+	if err != nil {
+		logger.Error("new worker error:%v %v", endpoint, err)
+		return err
+	}
+	newWorker := NewWorker(client, nums)
+	m.Workers = append(m.Workers, newWorker)
+	return nil
 }
 
 func (m *Schedule) GenZKProof(worker IWorker, req ProofRequest) (ProofResponse, error) {
@@ -42,7 +55,6 @@ func (m *Schedule) GenZKProof(worker IWorker, req ProofRequest) (ProofResponse, 
 
 func (m *Schedule) findBestWorker() (IWorker, bool, error) {
 	// todo
-
 	var tmpWorkers []IWorker
 	for _, worker := range m.Workers {
 		if worker.CurrentNums() < worker.ParallelNums() {

@@ -5,17 +5,31 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/spf13/cobra"
+	"strconv"
 )
 
-// addWorkerCmd represents the addWorker command
 var addWorkerCmd = &cobra.Command{
-	Use:   "addWorker",
-	Short: "add a new worker to daemon",
-	Long:  `example: daemon addWorker http://127.0.0.1:8485 1`,
+	Use:     "addWorker",
+	Short:   "add a new worker to daemon",
+	Example: "example: ./daemon addWorker http://127.0.0.1:8485 1",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("addWorker called", args)
-
+		if rpcbind == "" || rpcport == "" || len(args) != 2 {
+			fmt.Printf("input data error")
+			return
+		}
+		endpoint := args[0]
+		client, err := rpc.NewNodeClient(fmt.Sprintf("http://%s:%s", rpcbind, rpcport))
+		cobra.CheckErr(err)
+		nums, err := strconv.ParseInt(args[1], 10, 64)
+		if err != nil {
+			fmt.Printf("args error")
+			return
+		}
+		result, err := client.AddWorker(endpoint, int(nums))
+		cobra.CheckErr(err)
+		fmt.Printf("result: %s\n", result)
 	},
 }
 
