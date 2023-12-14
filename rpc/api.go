@@ -3,6 +3,7 @@ package rpc
 type NodeAPI interface {
 	Version() (NodeInfo, error)
 	AddWorker(endpoint string, max int) (string, error)
+	ProofInfo(proofId string) (ProofInfo, error)
 	Stop() error
 }
 

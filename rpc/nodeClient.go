@@ -15,6 +15,15 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
+func (c *NodeClient) ProofInfo(proofId string) (ProofInfo, error) {
+	var result ProofInfo
+	err := c.call(&result, "zkbtc_proofInfo", proofId)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
 func (c *NodeClient) Stop() error {
 	var result string
 	err := c.call(&result, "zkbtc_stop")

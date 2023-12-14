@@ -42,7 +42,7 @@ func (m *Manager) run() {
 				m.proofQueue.PushBack(req)
 			}
 		case <-m.exit:
-			logger.Debug("receive proof request exit signal")
+			logger.Debug("manager proof queue exit ...")
 			return
 
 		}
@@ -55,7 +55,7 @@ func (m *Manager) genProof() {
 	for {
 		select {
 		case <-m.exit:
-			logger.Debug("gen proof goroutine exit")
+			logger.Debug("gen proof goroutine exit ...")
 			return
 		default:
 			if m.proofQueue.Len() == 0 {
@@ -70,7 +70,7 @@ func (m *Manager) genProof() {
 				continue
 			}
 			if !find {
-				logger.Warn("current no find worker to do proof")
+				logger.Warn(" no find best worker to gen proof")
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -86,7 +86,7 @@ func (m *Manager) genProof() {
 				proofResponse, err := m.schedule.GenZKProof(worker, proofRequest)
 				if err != nil {
 					//todo add queue again, retry ?
-					logger.Error("gen proof error:%v", err)
+					logger.Error("gen proof error:%v %v", proofRequest.TxId, err)
 					return
 				}
 				logger.Info("worker response proof: %v", proofResponse.String())

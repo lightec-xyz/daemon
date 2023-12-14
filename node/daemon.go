@@ -42,8 +42,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
 	}
-	//todo
-	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, "")
+	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
 	if err != nil {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
@@ -55,12 +54,6 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error("new store error:%v,dbPath:%s", err, dbPath)
 		return nil, err
 	}
-	//var result interface{}
-	//err = storeDb.GetObj(ethCurHeightKey, &result)
-	//if err != nil {
-	//	logger.Error("get eth current height error:%v", err)
-	//	return nil, err
-	//}
 	memoryStore := store.NewMemoryStore()
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
@@ -78,16 +71,18 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	agents = append(agents, ethAgent)
-	//todo
-	//workers, err := NewWorkers(cfg.Workers)
-	//if err != nil {
-	//	logger.Error("new workers error:%v", err)
-	//	return nil, err
-	//}
-	workers := []IWorker{NewLocalWorker(1)}
+
+
+	workers := make([]IWorker, 1)
+	if cfg.EnableLocalWorker {
+		logger.Info("local worker enable")
+		workers = append(workers, NewLocalWorker(1))
+	}
 	schedule := NewSchedule(workers...)
 	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, schedule)
 	exitSignal := make(chan os.Signal, 1)
+
+	// todo new store
 	rpcHandler := NewHandler(storeDb, memoryStore, schedule, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
 	if err != nil {

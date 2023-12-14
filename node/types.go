@@ -73,7 +73,6 @@ type TxProof struct {
 }
 
 // todo
-
 type ProofRequest struct {
 	// redeem
 	Inputs  []TxIn  `json:"inputs"`

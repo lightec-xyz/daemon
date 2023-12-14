@@ -16,13 +16,24 @@ func TxIdToProofId(txId string) string {
 }
 
 func getEthAddrFromScript(script string) (string, error) {
-	//todo
+	// todo
 	data, err := hex.DecodeString(script)
 	if err != nil {
 		return "", err
 	}
 	data = data[2:]
 	return hex.EncodeToString(data), nil
+}
+
+func BtcToSat(value float64) int64 {
+	valueRat := NewRat().Mul(NewRat().SetFloat64(value), NewRat().SetUint64(100000000))
+	floatStr := valueRat.FloatString(1)
+	valuesStr := strings.Split(floatStr, ".")
+	amountBig, ok := big.NewInt(0).SetString(valuesStr[0], 10)
+	if !ok {
+		panic(fmt.Sprintf("never should happen:%v", value))
+	}
+	return amountBig.Int64()
 }
 
 func privateKeyToEthAddr(secret string) (string, error) {
@@ -68,4 +79,8 @@ func Str2Big(amount string, decimals int) (*big.Int, error) {
 		bigAmt, _ := amt.Int(nil)
 		return bigAmt, nil
 	}
+}
+func NewRat() *big.Rat {
+	rat := new(big.Rat)
+	return rat
 }

@@ -18,8 +18,22 @@ type Handler struct {
 	schedule *Schedule
 }
 
+func (h *Handler) ProofInfo(proofId string) (rpc.ProofInfo, error) {
+	var txProof TxProof
+	err := h.store.GetObj(proofId, &txProof)
+	if err != nil {
+		logger.Error("get proof error: %v %v", proofId, err)
+		return rpc.ProofInfo{}, err
+	}
+	result := rpc.ProofInfo{
+		Status: 1,
+		Msg:    "success",
+	}
+	return result, nil
+}
+
 func (h *Handler) Stop() error {
-	logger.Debug("node stop now ...")
+	logger.Debug("rpc handler receive stop signal")
 	h.exitCh <- syscall.SIGQUIT
 	return nil
 }

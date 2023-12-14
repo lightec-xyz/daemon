@@ -38,7 +38,7 @@ func TestMockMergeTx(t *testing.T) {
 }
 
 func TestOther(t *testing.T) {
-	result := floatToInt(0.00204582)
+	result := floatToInt(0.123456789)
 	t.Log(result)
 
 }
