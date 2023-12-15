@@ -26,6 +26,7 @@ type NodeConfig struct {
 	BtcInitHeight    int64            `json:"btcInitHeight"`
 	MultiAddressInfo MultiAddressInfo `json:"multiAddressInfo"`
 
+	AutoSubmit       bool           `json:"autoSubmit"`
 	EthInitHeight    int64          `json:"ethInitHeight"`
 	EthWhiteList     []string       `json:"ethWhiteList"`
 	EthUrl           string         `json:"ethUrl"`
@@ -46,7 +47,7 @@ func NewNodeConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, b
 	if dataDir == "" {
 		current, err := user.Current()
 		if err != nil {
-			logger.Error("get current user error", err)
+			logger.Error("get current user error: %v", err)
 			return config, err
 		}
 		dataDir = fmt.Sprintf("%v/%v.daemon", current.HomeDir, network)
@@ -83,17 +84,17 @@ func NewNodeConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, b
 func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(BtcMultiSigPublic1)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error: %v", err)
 		return NodeConfig{}, err
 	}
 	multiSigPub2, err := hex.DecodeString(BtcMultiSigPublic2)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error:%v", err)
 		return NodeConfig{}, err
 	}
 	multiSigPub3, err := hex.DecodeString(BtcMultiSigPublic3)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error:%v", err)
 		return NodeConfig{}, err
 	}
 	multiSigAddressInfo := MultiAddressInfo{
@@ -137,17 +138,17 @@ func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport
 func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(TestnetBtcMultiSigPublic1)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error:%v", err)
 		return NodeConfig{}, err
 	}
 	multiSigPub2, err := hex.DecodeString(TestnetBtcMultiSigPublic2)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error:%v", err)
 		return NodeConfig{}, err
 	}
 	multiSigPub3, err := hex.DecodeString(TestnetBtcMultiSigPublic3)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error:%v", err)
 		return NodeConfig{}, err
 	}
 	multiSigAddressInfo := MultiAddressInfo{
@@ -191,17 +192,17 @@ func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, b
 func newLocalConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error: %v", err)
 		return NodeConfig{}, err
 	}
 	multiSigPub2, err := hex.DecodeString(LocalBtcMultiSigPublic2)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error: %v", err)
 		return NodeConfig{}, err
 	}
 	multiSigPub3, err := hex.DecodeString(LocalBtcMultiSigPublic3)
 	if err != nil {
-		logger.Error("hex decode string error", err)
+		logger.Error("hex decode string error: %v", err)
 		return NodeConfig{}, err
 	}
 	multiSigAddressInfo := MultiAddressInfo{

@@ -3,6 +3,7 @@ package ethereum
 import (
 	"context"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -12,6 +13,7 @@ import (
 	"github.com/lightec-xyz/daemon/transaction/ethereum/zkbridge"
 	"github.com/onrik/ethrpc"
 	"math/big"
+	"strings"
 	"time"
 )
 
@@ -93,6 +95,45 @@ func (c *Client) GetNonce(addr string) (uint64, error) {
 		return 0, err
 	}
 	return nonce, nil
+}
+
+func (c *Client) GetPendingNonce(addr string) (uint64, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	nonce, err := c.PendingNonceAt(ctx, common.HexToAddress(addr))
+	if err != nil {
+		return 0, err
+	}
+	return nonce, nil
+}
+
+func (c *Client) GetEstimateGaslimit(from, to, txId string, index uint32, amount *big.Int, proofData []byte) (uint64, error) {
+	//todo
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	zkBridgeAbi, err := abi.JSON(strings.NewReader(zkbridge.ZkbridgeMetaData.ABI))
+	if err != nil {
+		return 0, err
+	}
+	fixedTxId := [32]byte{}
+	copy(fixedTxId[:], common.FromHex(txId))
+	txData, err := zkBridgeAbi.Pack("deposit", fixedTxId, index, amount, proofData)
+	if err != nil {
+		return 0, err
+	}
+	toAddress := common.HexToAddress(to)
+	gas, err := c.EstimateGas(ctx, ethereum.CallMsg{
+		From:      common.HexToAddress(from),
+		To:        &toAddress,
+		Gas:       0,
+		Value:     big.NewInt(0),
+		GasFeeCap: big.NewInt(200000000000),
+		Data:      txData,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return gas, nil
 }
 
 func (c *Client) GetGasPrice() (*big.Int, error) {

@@ -29,6 +29,29 @@ func init() {
 	}
 }
 
+func TestClient_GetPendingNonce(t *testing.T) {
+	nonce, err := client.GetPendingNonce("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(nonce)
+}
+
+func TestClient_GetEstimateGasLimit(t *testing.T) {
+	gasLimit, err := client.GetEstimateGaslimit(
+		"0x771815eFD58e8D6e66773DB0bc002899c00d5b0c",
+		"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
+		"c937229bbd89dadb76e6f7285220e765c6e195b553cf0df6cd3e7505077df970",
+		1,
+		big.NewInt(9000000),
+		[]byte("wo heni"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(gasLimit)
+}
+
 func TestClient_ZkbtcBalance(t *testing.T) {
 	balance, err := client.GetZkBtcBalance("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	if err != nil {

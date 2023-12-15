@@ -32,19 +32,22 @@ type EthereumAgent struct {
 	btcNetwork           btctx.NetWork
 	logAddr              []string
 	logTopic             []string
-	privateKeys          []*btcec.PrivateKey
+	privateKeys          []*btcec.PrivateKey //todo
 	initStartHeight      int64
-	ethPrivate           string
+	ethPrivate           string //todo
 	ethSubmitAddress     string
+	autoSubmit           bool
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	proofRequest chan []ProofRequest, proofResponse <-chan ProofResponse) (IAgent, error) {
 	submitTxEthAddr, err := privateKeyToEthAddr(cfg.EthPrivateKey)
 	if err != nil {
+		logger.Error("privateKeyToEthAddr error:%v", err)
 		return nil, err
 	}
-	// todo test
+	logger.Info("ethereum submit address:%v", submitTxEthAddr)
+	// todo
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -75,6 +78,7 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		initStartHeight:      cfg.EthInitHeight,
 		ethSubmitAddress:     submitTxEthAddr,
 		ethPrivate:           cfg.EthPrivateKey,
+		autoSubmit:           cfg.AutoSubmit,
 	}, nil
 }
 
@@ -110,10 +114,9 @@ func (e *EthereumAgent) Init() error {
 }
 
 func (e *EthereumAgent) checkUnCompleteGenerateProofTx() error {
-	return nil
 	currentHeight, err := e.getEthHeight()
 	if err != nil {
-		logger.Error("get btc current height error:%v", err)
+		logger.Error("get eth current height error:%v", err)
 		return err
 	}
 	start := currentHeight - e.checkProofHeightNums
@@ -140,10 +143,11 @@ func (e *EthereumAgent) checkUnCompleteGenerateProofTx() error {
 				logger.Error("get proof error:%v", err)
 				return err
 			}
+			//todo
 			proofList = append(proofList, ProofRequest{
-				TxId:  proof.TxId,
-				PType: Redeem,
-				Msg:   proof.Msg,
+				TxId:      proof.TxId,
+				ProofType: Redeem,
+				Msg:       proof.Msg,
 			})
 		}
 	}
@@ -185,12 +189,12 @@ func (e *EthereumAgent) ScanBlock() error {
 		logger.Debug("ethereum parse block:%d", index)
 		redeemTxList, proofRequestList, err := e.parseBlock(index)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("eth parse block error: %v %v", index, err)
 			return err
 		}
 		err = e.saveDataToDb(index, redeemTxList)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("ethereum save data error: %v %v", index, err)
 			return err
 		}
 		e.proofRequest <- proofRequestList
@@ -213,19 +217,20 @@ func (e *EthereumAgent) Transfer() {
 				logger.Error("update proof error:%v", err)
 				continue
 			}
-			//todo
-			txhash, err := e.RedeemBtcTx(response)
-			if err != nil {
-				logger.Error("redeem btc tx error:%v", err)
-				continue
+			if e.autoSubmit && response.Status == ProofSuccess {
+				txhash, err := e.RedeemBtcTx(response)
+				if err != nil {
+					logger.Error("redeem btc tx error:%v", err)
+					continue
+				}
+				err = e.UpdateUtxoChanage(txhash)
+				if err != nil {
+					//todo
+					logger.Error("update utxo change error:%v", err)
+					continue
+				}
+				logger.Info("success redeem btc tx:%v", response)
 			}
-			err = e.UpdateUtxoChanage(txhash)
-			if err != nil {
-				//todo
-				logger.Error("update utxo change error:%v", err)
-				continue
-			}
-			logger.Info("success redeem btc tx:%v", response)
 		}
 	}
 
@@ -270,7 +275,12 @@ func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {
 		}
 		pTxId := fmt.Sprintf("%s%s", ProofPrefix, tx.TxId)
 		err = e.store.BatchPutObj(pTxId, TxProof{
-			PTxId: pTxId,
+			Height:    height,
+			BlockHash: tx.BlockHash,
+			TxId:      tx.TxId,
+			ProofType: Redeem,
+			Proof:     "",
+			Status:    ProofDefault,
 		})
 		if err != nil {
 			logger.Error("put proof tx error: %v %v", tx.TxId, err)
@@ -302,7 +312,8 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 		logger.Error("ethereum rpc get block error:%v", err)
 		return nil, nil, err
 	}
-	logs, err := e.ethClient.GetLogs(block.Hash().String(), e.logAddr, e.logTopic)
+	blockHash := block.Hash().String()
+	logs, err := e.ethClient.GetLogs(blockHash, e.logAddr, e.logTopic)
 	if err != nil {
 		logger.Error("ethereum rpc get logs error:%v", err)
 		return nil, nil, err
@@ -316,12 +327,16 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 			return nil, nil, err
 		}
 		if ok {
+			redeemTx.Height = height
+			redeemTx.BlockHash = blockHash
 			redeemTxList = append(redeemTxList, redeemTx)
 			proofRequestList = append(proofRequestList, ProofRequest{
-				Inputs:  redeemTx.Inputs,
-				Outputs: redeemTx.Outputs,
-				TxId:    redeemTx.TxId,
-				PType:   Redeem,
+				Height:    height,
+				BlockHash: blockHash,
+				Inputs:    redeemTx.Inputs,
+				Outputs:   redeemTx.Outputs,
+				TxId:      redeemTx.TxId,
+				ProofType: Redeem,
 			})
 			logger.Info("found redeem zkbtc tx: %v", redeemTx.String())
 		}
@@ -382,6 +397,7 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 		return "", err
 	}
 	err = builder.Sign(func(hash []byte) ([][]byte, error) {
+		// todo
 		var sigs [][]byte
 		for _, privkey := range e.privateKeys {
 			sig := ecdsa.Sign(privkey, hash)
@@ -430,9 +446,9 @@ func (e *EthereumAgent) CheckRedeemTx(log types.Log) (RedeemTx, bool, error) {
 		logger.Error("deserialize btc tx error:%v", err)
 		return redeemTx, false, err
 	}
-	var inputs []TxIn
+	var inputs []Utxo
 	for _, in := range transaction.TxIn {
-		inputs = append(inputs, TxIn{
+		inputs = append(inputs, Utxo{
 			TxId:  in.PreviousOutPoint.Hash.String(),
 			Index: in.PreviousOutPoint.Index,
 		})
@@ -453,10 +469,12 @@ func (e *EthereumAgent) CheckRedeemTx(log types.Log) (RedeemTx, bool, error) {
 func (e *EthereumAgent) updateProof(resp ProofResponse) error {
 	pTxId := TxIdToProofId(resp.TxId)
 	err := e.store.PutObj(pTxId, TxProof{
-		PTxId:  pTxId,
-		TxId:   resp.TxId,
-		Msg:    resp.Msg,
-		Status: ProofSuccess,
+		Height:    resp.Height,
+		BlockHash: resp.BlockHash,
+		TxId:      resp.TxId,
+		ProofType: Redeem,
+		Proof:     resp.Proof,
+		Status:    resp.Status,
 	})
 	return err
 }

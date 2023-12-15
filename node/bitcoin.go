@@ -2,11 +2,13 @@ package node
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"math/big"
 	"strings"
 	"time"
 )
@@ -26,7 +28,7 @@ type BitcoinAgent struct {
 	ethPrivateKey        string // todo keyStore
 	minDepositValue      float64
 	initStartHeight      int64
-	ethAutoSubmit        bool
+	autoSubmit           bool
 	exitSign             chan struct{}
 }
 
@@ -34,6 +36,7 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 	request chan []ProofRequest, response <-chan ProofResponse) (IAgent, error) {
 	submitTxEthAddr, err := privateKeyToEthAddr(cfg.EthPrivateKey)
 	if err != nil {
+		logger.Error("privateKeyToEthAddr error:%v", err)
 		return nil, err
 	}
 	return &BitcoinAgent{
@@ -51,6 +54,7 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 		submitTxEthAddr:      submitTxEthAddr,
 		exitSign:             make(chan struct{}, 1),
 		initStartHeight:      cfg.BtcInitHeight,
+		autoSubmit:           cfg.AutoSubmit,
 	}, nil
 }
 
@@ -88,8 +92,6 @@ func (b *BitcoinAgent) Init() error {
 
 // checkUnCompleteGenerateProofTx check uncompleted generate proof tx,resend again
 func (b *BitcoinAgent) checkUnCompleteGenerateProofTx() error {
-	//todo
-	return nil
 	currentHeight, err := b.getCurrentHeight()
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
@@ -119,10 +121,11 @@ func (b *BitcoinAgent) checkUnCompleteGenerateProofTx() error {
 				logger.Error("get proof error:%v", err)
 				return err
 			}
+			//todo
 			proofList = append(proofList, ProofRequest{
-				TxId:  proof.TxId,
-				PType: Deposit,
-				Msg:   proof.Msg,
+				TxId:      proof.TxId,
+				ProofType: Deposit,
+				Msg:       proof.Msg,
 			})
 		}
 	}
@@ -191,11 +194,12 @@ func (b *BitcoinAgent) saveDataToDb(height int64, depositTxList []DepositTx) err
 		}
 		pTxId := TxIdToProofId(depositTx.TxId)
 		err = b.store.BatchPutObj(pTxId, TxProof{
-			PTxId:  pTxId,
-			TxId:   depositTx.TxId,
-			ToAddr: depositTx.EthAddr,
-			Amount: depositTx.Amount,
-			Status: ProofDefault,
+			Height:    height,
+			BlockHash: depositTx.BlockHash,
+			TxId:      depositTx.TxId,
+			ProofType: Deposit,
+			Proof:     "",
+			Status:    ProofDefault,
 		})
 		if err != nil {
 			logger.Error("batch put proof tx error: %v %v", depositTx.TxId, err)
@@ -240,17 +244,22 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DepositTx, []ProofRequest, er
 			return nil, nil, err
 		}
 		if check {
-			depositTx.TxId = tx.Txid
+			depositTx.Height = height
+			depositTx.BlockHash = blockHash
 			depositTxList = append(depositTxList, depositTx)
 			request := ProofRequest{
-				TxId:    depositTx.TxId,
-				Vout:    depositTx.TxIndex,
+
+				Utxos:   depositTx.Utxos,
 				EthAddr: depositTx.EthAddr,
 				Amount:  depositTx.Amount,
-				PType:   Deposit,
+
+				Height:    height,
+				BlockHash: blockHash,
+				TxId:      depositTx.TxId,
+				ProofType: Deposit,
 			}
 			proofRequestList = append(proofRequestList, request)
-			logger.Info("found zkbtc deposit tx: %v", request.String())
+			logger.Info("found zkbtc deposit tx:%v", request.String())
 		}
 	}
 	return depositTxList, proofRequestList, nil
@@ -271,10 +280,10 @@ func (b *BitcoinAgent) Transfer() {
 				logger.Error("update proof error: %v %v", response.TxId, err)
 				continue
 			}
-			//todo
-			if b.ethAutoSubmit {
+			if b.autoSubmit && response.Status == ProofSuccess {
 				err = b.MintZKBtcTx(response)
 				if err != nil {
+					//todo cli replace ?
 					logger.Error("mint btc tx error:%v", err)
 					continue
 				}
@@ -284,9 +293,19 @@ func (b *BitcoinAgent) Transfer() {
 	}
 }
 
+func (b *BitcoinAgent) getRealNonce(address string) (uint64, error) {
+	pendingNonce, err := b.ethClient.GetPendingNonce(address)
+	if err != nil {
+		logger.Error("get pending nonce error: %v %v", address, err)
+		return 0, err
+	}
+	return pendingNonce, nil
+
+}
+
 func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 	//todo
-	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
+	nonce, err := b.getRealNonce(b.submitTxEthAddr)
 	if err != nil {
 		logger.Error("get nonce error: %v %v", b.submitTxEthAddr, err)
 		return err
@@ -302,12 +321,11 @@ func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) error {
 		return err
 	}
 	gasLimit := uint64(500000)
-	amountBig, err := Str2Big(resp.Amount, 8)
-	if err != nil {
-		return fmt.Errorf("parse big error amount:%v", resp.Amount)
-	}
+	amountBig := big.NewInt(resp.Amount)
+	//todo
 	proofBytes := []byte(resp.Proof)
-	txHash, err := b.ethClient.Deposit(b.ethPrivateKey, resp.TxId, uint32(resp.Vout), nonce, gasLimit, chainId, gasPrice,
+	index := resp.Utxos[0].Index
+	txHash, err := b.ethClient.Deposit(b.ethPrivateKey, resp.TxId, index, nonce, gasLimit, chainId, gasPrice,
 		amountBig, proofBytes)
 	if err != nil {
 		logger.Error("mint btc tx error:%v", err)
@@ -328,36 +346,46 @@ func (b *BitcoinAgent) checkTx(tx types.Tx) (DepositTx, bool, error) {
 		return depositTx, false, nil
 	}
 	if txOuts[1].Value <= b.minDepositValue {
+		logger.Warn("deposit tx less than min value: %v %v", b.minDepositValue, tx.Txid)
 		return depositTx, false, nil
 	}
 	if !(txOuts[0].ScriptPubKey.Type == "nulldata" && strings.HasPrefix(txOuts[0].ScriptPubKey.Hex, "6a")) {
+		logger.Warn("find deposit tx but check rule fail: %v", tx.Txid)
 		return depositTx, false, nil
 	}
-	//todo
 	ethAddr, err := getEthAddrFromScript(txOuts[0].ScriptPubKey.Hex)
 	if err != nil {
-		logger.Error("get eth addr from script error:%v", err)
+		logger.Error("get eth addr from script error:%v %v", txOuts[0].ScriptPubKey.Hex, err)
 		return depositTx, false, err
 	}
+	//todo
+	utxoList := []Utxo{
+		{
+			TxId:  tx.Txid,
+			Index: 1,
+		},
+	}
+	depositTx.Utxos = utxoList
+	depositTx.TxId = tx.Txid
 	depositTx.EthAddr = ethAddr
-	depositTx.TxIndex = 1
-	depositTx.Amount = fmt.Sprintf("%0.8f", txOuts[1].Value) //todo
+	depositTx.Amount = BtcToSat(txOuts[1].Value)
 	return depositTx, true, nil
 }
 
 func (b *BitcoinAgent) updateProof(resp ProofResponse) error {
 	pTxId := TxIdToProofId(resp.TxId)
 	err := b.store.PutObj(pTxId, TxProof{
-		PTxId:  pTxId,
-		TxId:   resp.TxId,
-		Msg:    resp.Msg,
-		Status: ProofSuccess,
+		Height:    resp.Height,
+		BlockHash: resp.BlockHash,
+		TxId:      resp.TxId,
+		ProofType: Deposit,
+		Proof:     resp.Proof,
+		Status:    resp.Status,
 	})
 	return err
 }
 
 func (b *BitcoinAgent) Close() error {
-
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
@@ -366,4 +394,20 @@ func (b *BitcoinAgent) Name() string {
 
 func (b *BitcoinAgent) BlockTime() time.Duration {
 	return b.blockTime
+}
+
+func getEthAddrFromScript(script string) (string, error) {
+	// todo
+	// example https://live.blockcypher.com/btc-testnet/tx/fa1bee4165f1720b33047792e47743aeb406940f4b2527874929db9cdbb9da42/
+	if len(script) < 5 {
+		return "", fmt.Errorf("scritp lenght is less than 4")
+	}
+	if !strings.HasPrefix(script, "6a") {
+		return "", fmt.Errorf("script is not start with 6a")
+	}
+	isHexAddress := common.IsHexAddress(script[4:])
+	if !isHexAddress {
+		return "", fmt.Errorf("script is not hex address")
+	}
+	return script[4:], nil
 }

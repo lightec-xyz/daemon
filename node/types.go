@@ -6,27 +6,28 @@ import (
 	"strconv"
 )
 
-type ProofStatus int
-
 const (
-	ProofDefault ProofStatus = iota
+	ProofDefault = iota
 	ProofPending
 	ProofSuccess
 	ProofFailed
 )
 
 type DepositTx struct {
-	TxId    string
-	TxIndex int
-	EthAddr string
-	Amount  string
+	Height    int64
+	BlockHash string
+	TxId      string
+	Utxos     []Utxo
+	EthAddr   string
+	Amount    int64 // btc
 }
 
 type RedeemTx struct {
-	Inputs  []TxIn
-	Outputs []TxOut
-	TxIndex uint32
-	TxId    string
+	Height    int64
+	BlockHash string
+	Inputs    []Utxo
+	Outputs   []TxOut
+	TxId      string
 }
 
 func (rt *RedeemTx) String() string {
@@ -51,9 +52,9 @@ func (rt *RedeemTx) String() string {
 
 }
 
-type TxIn struct {
-	TxId  string
-	Index uint32
+type Utxo struct {
+	TxId  string `json:"txId"`
+	Index uint32 `json:"index"`
 }
 
 type TxOut struct {
@@ -62,38 +63,39 @@ type TxOut struct {
 }
 
 type TxProof struct {
-	PTxId  string      `json:"pTxId"`
-	Proof  string      `json:"proof"`
-	Status ProofStatus `json:"status"`
-	TxId   string      `json:"txId"`
-	PType  string      `json:"type"`
-	ToAddr string      `json:"toAddr"`
-	Amount string      `json:"amount"`
-	Msg    string      `json:"msg"`
+	Height    int64  `json:"height"`
+	BlockHash string `json:"blockHash"`
+	TxId      string `json:"txId"`
+	ProofType string `json:"type"`
+	Proof     string `json:"proof"`
+	Msg       string `json:"msg"`
+	Status    int    `json:"status"`
 }
 
 // todo
 type ProofRequest struct {
 	// redeem
-	Inputs  []TxIn  `json:"inputs"`
+	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
 
 	// deposit
-	Amount  string `json:"amount"`
+	Utxos   []Utxo
+	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
-	Vout    int    `json:"index"`
 
-	TxId  string `json:"txId"`
-	PType string `json:"type"`
-	Proof string `json:"proof"`
-	Msg   string `json:"msg"`
+	Height    int64  `json:"height"`
+	BlockHash string `json:"blockHash"`
+	TxId      string `json:"txId"`
+	ProofType string `json:"type"`
+	Proof     string `json:"proof"`
+	Msg       string `json:"msg"`
 }
 
 func (req *ProofRequest) String() string {
-	if req.PType == Deposit {
-		return fmt.Sprintf("txType:%v, txId:%v,Vout:%v, amount:%v, ethAddr:%v", req.PType, req.TxId, req.Vout, req.Amount, req.EthAddr)
-	} else if req.PType == Redeem {
-		return fmt.Sprintf("txType:%v, txId:%v, %v", req.PType, req.TxId, formatUtxoInfo(req.Inputs, req.Outputs))
+	if req.ProofType == Deposit {
+		return fmt.Sprintf("txType:%v,txid: %v, utxos:%v, amount:%v, ethAddr:%v", req.ProofType, req.TxId, req.Utxos, req.Amount, req.EthAddr)
+	} else if req.ProofType == Redeem {
+		return fmt.Sprintf("txType:%v,txid:%v, utxos:%v, outputs: %v", req.ProofType, req.TxId, formatUtxo(req.Inputs), formatOut(req.Outputs))
 	}
 	return ""
 }
@@ -101,46 +103,49 @@ func (req *ProofRequest) String() string {
 // todo
 type ProofResponse struct {
 	// redeem
-	Inputs  []TxIn  `json:"inputs"`
+	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
 
 	// deposit
-	Amount  string `json:"amount"`
-	Vout    int    `json:"index"`
+	Utxos   []Utxo
+	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
-	TxId  string `json:"txId"`
-	PType string `json:"type"`
-	Proof string `json:"proof"`
-	Msg   string `json:"msg"`
+	Height    int64  `json:"height"`
+	BlockHash string `json:"blockHash"`
+	TxId      string `json:"txId"`
+	ProofType string `json:"type"`
+	Proof     string `json:"proof"`
+	Msg       string `json:"msg"`
+	Status    int    `json:"status"`
 }
 
 func (resp *ProofResponse) String() string {
-	if resp.PType == Deposit {
-		return fmt.Sprintf("txType:%v, txId:%v,Vout:%v, amount:%v, ethAddr:%v", resp.PType, resp.TxId, resp.Vout, resp.Amount, resp.EthAddr)
-	} else if resp.PType == Redeem {
-		return fmt.Sprintf("txType:%v, txId:%v, %v", resp.PType, resp.TxId, formatUtxoInfo(resp.Inputs, resp.Outputs))
+	if resp.ProofType == Deposit {
+		return fmt.Sprintf("txType:%v, utxos:%v, amount:%v, ethAddr:%v,statrus: %v", resp.ProofType, resp.Utxos, resp.Amount, resp.EthAddr, resp.Status)
+	} else if resp.ProofType == Redeem {
+		return fmt.Sprintf("txType:%v, utxos:%v, outputs: %v,status:%v", resp.ProofType, formatUtxo(resp.Inputs), formatOut(resp.Outputs), resp.Status)
 	}
 	return ""
 }
 
-func formatUtxoInfo(inputs []TxIn, outputs []TxOut) string {
+func formatUtxo(utxos []Utxo) string {
 	var buf bytes.Buffer
-	buf.WriteString("inputs:[")
-	for _, vin := range inputs {
+	for _, vin := range utxos {
 		buf.WriteString(vin.TxId)
 		buf.WriteString(":")
 		buf.WriteString(strconv.Itoa(int(vin.Index)))
 		buf.WriteString(",")
 	}
-	buf.WriteString("]")
-	buf.WriteString("outputs:[")
+	return buf.String()
+}
+func formatOut(outputs []TxOut) string {
+	var buf bytes.Buffer
 	for _, out := range outputs {
 		buf.WriteString(fmt.Sprintf("%x", out.PkScript))
 		buf.WriteString(":")
 		buf.WriteString(fmt.Sprintf("%v", out.Value))
 		buf.WriteString(",")
 	}
-	buf.WriteString("]")
 	return buf.String()
 }

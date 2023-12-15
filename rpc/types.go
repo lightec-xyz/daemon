@@ -4,9 +4,9 @@ type NodeInfo struct {
 	Version string
 	Desc    string
 }
-type TxIn struct {
-	TxId  string
-	Index uint32
+type Utxo struct {
+	TxId  string `json:"txId"`
+	Index uint32 `json:"index"`
 }
 
 type TxOut struct {
@@ -16,34 +16,38 @@ type TxOut struct {
 
 type ProofRequest struct {
 	// redeem
-	Inputs  []TxIn  `json:"inputs"`
+	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
 
 	// deposit
-	Amount  string `json:"amount"`
+	Utxos   []Utxo
+	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
-	Vout    int    `json:"index"`
 
-	TxId  string `json:"txId"`
-	PType string `json:"type"`
-	Proof string `json:"proof"`
-	Msg   string `json:"msg"`
+	Height    int64  `json:"height"`
+	BlockHash string `json:"blockHash"`
+	TxId      string `json:"txId"`
+	ProofType string `json:"type"`
+	Proof     string `json:"proof"`
+	Msg       string `json:"msg"`
 }
 
 type ProofResponse struct { // redeem
 	// redeem
-	Inputs  []TxIn  `json:"inputs"`
+	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
 
 	// deposit
-	Amount  string `json:"amount"`
+	Utxos   []Utxo
+	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
-	Vout    int    `json:"index"`
 
-	TxId  string `json:"txId"`
-	PType string `json:"type"`
-	Proof string `json:"proof"`
-	Msg   string `json:"msg"`
+	Height    int64  `json:"height"`
+	BlockHash string `json:"blockHash"`
+	TxId      string `json:"txId"`
+	ProofType string `json:"type"`
+	Proof     string `json:"proof"`
+	Msg       string `json:"msg"`
 }
 
 type ProofInfo struct {

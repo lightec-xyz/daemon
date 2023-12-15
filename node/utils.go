@@ -2,7 +2,6 @@ package node
 
 import (
 	"crypto/ecdsa"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -13,16 +12,6 @@ import (
 func TxIdToProofId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", ProofPrefix, txId)
 	return pTxID
-}
-
-func getEthAddrFromScript(script string) (string, error) {
-	// todo
-	data, err := hex.DecodeString(script)
-	if err != nil {
-		return "", err
-	}
-	data = data[2:]
-	return hex.EncodeToString(data), nil
 }
 
 func BtcToSat(value float64) int64 {

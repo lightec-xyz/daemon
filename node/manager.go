@@ -85,18 +85,17 @@ func (m *Manager) genProof() {
 			go func() {
 				proofResponse, err := m.schedule.GenZKProof(worker, proofRequest)
 				if err != nil {
-					//todo add queue again, retry ?
+					//todo add queue again or cli retry ?
 					logger.Error("gen proof error:%v %v", proofRequest.TxId, err)
-					return
 				}
 				logger.Info("worker response proof: %v", proofResponse.String())
-				switch proofResponse.PType {
+				switch proofResponse.ProofType {
 				case Deposit:
 					m.btcProofResp <- proofResponse
 				case Redeem:
 					m.ethProofResp <- proofResponse
 				default:
-					logger.Error("never should happen proof type:%v", proofResponse.PType)
+					logger.Error("never should happen proof type:%v", proofResponse.ProofType)
 				}
 			}()
 		}
