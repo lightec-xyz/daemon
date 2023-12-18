@@ -52,5 +52,6 @@ type ProofResponse struct { // redeem
 
 type ProofInfo struct {
 	Status int    `json:"state"`
+	Proof  string `json:"proof"`
 	Msg    string `json:"msg"`
 }

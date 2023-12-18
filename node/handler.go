@@ -18,7 +18,8 @@ type Handler struct {
 	schedule *Schedule
 }
 
-func (h *Handler) ProofInfo(proofId string) (rpc.ProofInfo, error) {
+func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
+	proofId := TxIdToProofId(txId)
 	var txProof TxProof
 	err := h.store.GetObj(proofId, &txProof)
 	if err != nil {
@@ -26,8 +27,9 @@ func (h *Handler) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 		return rpc.ProofInfo{}, err
 	}
 	result := rpc.ProofInfo{
-		Status: 1,
-		Msg:    "success",
+		Status: txProof.Status,
+		Msg:    txProof.Msg,
+		Proof:  txProof.Proof,
 	}
 	return result, nil
 }

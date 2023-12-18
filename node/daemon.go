@@ -58,8 +58,10 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
 	ethProofResp := make(chan ProofResponse, 1000)
+	nonceManager := NewNonceManager()
+	keyStore := NewKeyStore(cfg.EthPrivateKey)
 	var agents []IAgent
-	btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp)
+	btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp, nonceManager, keyStore)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -71,7 +73,6 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	agents = append(agents, ethAgent)
-
 
 	workers := make([]IWorker, 1)
 	if cfg.EnableLocalWorker {

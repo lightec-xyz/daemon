@@ -32,6 +32,15 @@ func (client *Client) Sendrawtransaction(hexData string) (string, error) {
 	return result, err
 }
 
+func (client *Client) CheckTx(txHash string) (bool, error) {
+	var result types.RawTransaction
+	err := client.Call(GETRAWTRANSACTION, &result, txHash, true)
+	if err != nil {
+		return false, err
+	}
+	return true, err
+}
+
 func (client *Client) GetRawTransaction(txHash string) (types.RawTransaction, error) {
 	var result types.RawTransaction
 	err := client.Call(GETRAWTRANSACTION, &result, txHash, true)

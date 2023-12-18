@@ -32,9 +32,8 @@ type EthereumAgent struct {
 	btcNetwork           btctx.NetWork
 	logAddr              []string
 	logTopic             []string
-	privateKeys          []*btcec.PrivateKey //todo
+	privateKeys          []*btcec.PrivateKey //todo just env
 	initStartHeight      int64
-	ethPrivate           string //todo
 	ethSubmitAddress     string
 	autoSubmit           bool
 }
@@ -77,7 +76,6 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		privateKeys:          privateKeys,
 		initStartHeight:      cfg.EthInitHeight,
 		ethSubmitAddress:     submitTxEthAddr,
-		ethPrivate:           cfg.EthPrivateKey,
 		autoSubmit:           cfg.AutoSubmit,
 	}, nil
 }
@@ -218,15 +216,19 @@ func (e *EthereumAgent) Transfer() {
 				continue
 			}
 			if e.autoSubmit && response.Status == ProofSuccess {
-				txhash, err := e.RedeemBtcTx(response)
+				exists, err := e.btcClient.CheckTx(response.BtcTxId)
 				if err != nil {
-					logger.Error("redeem btc tx error:%v", err)
+					logger.Error("check btc tx error: %v %v", response.BtcTxId, err)
 					continue
 				}
-				err = e.UpdateUtxoChanage(txhash)
+				if exists {
+					logger.Warn("redeem btc tx submitted: %v", response.BtcTxId)
+					continue
+				}
+				_, err = e.RedeemBtcTx(response)
 				if err != nil {
-					//todo
-					logger.Error("update utxo change error:%v", err)
+					// todo add queue or cli retry
+					logger.Error("redeem btc tx error:%v", err)
 					continue
 				}
 				logger.Info("success redeem btc tx:%v", response)
@@ -234,35 +236,6 @@ func (e *EthereumAgent) Transfer() {
 		}
 	}
 
-}
-
-func (e *EthereumAgent) UpdateUtxoChanage(txid string) error {
-	//todo
-	nonce, err := e.ethClient.GetNonce(e.ethSubmitAddress)
-	if err != nil {
-		logger.Error("get nonce error:%v", err)
-		return err
-	}
-	chainId, err := e.ethClient.GetChainId()
-	if err != nil {
-		logger.Error("get chain id error:%v", err)
-		return err
-	}
-	gasPrice, err := e.ethClient.GetGasPrice()
-	if err != nil {
-		logger.Error("get gas price error:%v", err)
-		return err
-	}
-	gasLimit := uint64(500000)
-	proofBytes := []byte("test ok")
-	txHash, err := e.ethClient.UpdateUtxoChange(e.ethPrivate, txid, nonce, gasLimit, chainId, gasPrice,
-		proofBytes)
-	if err != nil {
-		logger.Error("update utxo change error:%v", err)
-		return err
-	}
-	logger.Info("success send update utxo change  hash:%v", txHash)
-	return nil
 }
 
 func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {

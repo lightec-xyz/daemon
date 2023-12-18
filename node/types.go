@@ -3,7 +3,11 @@ package node
 import (
 	"bytes"
 	"fmt"
+	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/store"
 	"strconv"
+	"sync"
 )
 
 const (
@@ -77,6 +81,7 @@ type ProofRequest struct {
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
+	BtcTxId string  `json:"btcTxId"`
 
 	// deposit
 	Utxos   []Utxo
@@ -105,6 +110,7 @@ type ProofResponse struct {
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
+	BtcTxId string  `json:"btcTxId"`
 
 	// deposit
 	Utxos   []Utxo
@@ -148,4 +154,45 @@ func formatOut(outputs []TxOut) string {
 		buf.WriteString(",")
 	}
 	return buf.String()
+}
+
+type NonceManager struct {
+	sync.Mutex
+}
+
+func NewNonceManager() *NonceManager {
+	return &NonceManager{}
+}
+
+func (nm *NonceManager) GetNonce(address string, ethClient *ethereum.Client, store store.IStore) (uint64, error) {
+	//todo
+	nm.Lock()
+	defer nm.Unlock()
+	if ethClient == nil {
+		return 0, fmt.Errorf("ethClient is nil")
+	}
+	chainNonce, err := ethClient.GetNonce(address)
+	if err != nil {
+		logger.Error("nonce manager get nonce error: %v %v", address, err)
+		return 0, err
+	}
+	hasObj, err := store.HasObj(address)
+	if err != nil {
+		return 0, err
+	}
+	if hasObj {
+		var nonce uint64
+		err := store.GetObj(address, &nonce)
+		if err != nil {
+			return 0, err
+		}
+		if chainNonce <= nonce {
+			return nonce + 1, nil
+		}
+		return chainNonce, nil
+
+	} else {
+		return chainNonce, nil
+	}
+
 }

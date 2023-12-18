@@ -50,6 +50,11 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 	}, nil
 }
 
+func (c *Client) CheckDepositProof(txId string) (bool, error) {
+	//todo
+	return false, nil
+}
+
 func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]types.Log, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()

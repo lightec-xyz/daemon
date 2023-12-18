@@ -72,6 +72,7 @@ var LocalRedeemLogTopices = []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002
 const (
 	Deposit = "deposit"
 	Redeem  = "redeem"
+	Verify  = "verify"
 )
 
 const RpcRegisterName = "zkbtc"

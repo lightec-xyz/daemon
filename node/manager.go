@@ -2,7 +2,10 @@ package node
 
 import (
 	"container/list"
+	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	"sync"
 	"time"
@@ -11,6 +14,8 @@ import (
 type Manager struct {
 	proofQueue   *SafeList
 	schedule     *Schedule
+	btcClient    *bitcoin.Client
+	ethClient    *ethereum.Client
 	store        store.IStore
 	memory       store.IStore
 	proofRequest chan []ProofRequest
@@ -75,18 +80,28 @@ func (m *Manager) genProof() {
 				continue
 			}
 			frontElement := m.proofQueue.Front()
-			proofRequest, ok := frontElement.Value.(ProofRequest)
+			request, ok := frontElement.Value.(ProofRequest)
 			if !ok {
 				logger.Error("should never happen,parse proof request error")
 				continue
 			}
-			logger.Info("start gen proof:%v", proofRequest.String())
+
+			proofSubmitted, err := m.CheckProof(request)
+			if err != nil {
+				logger.Error("check proof error:%v", err)
+				continue
+			}
 			m.proofQueue.Remove(frontElement)
+			if proofSubmitted {
+				logger.Info("proof already submitted:%v", request.String())
+				continue
+			}
+			logger.Info("start gen proof:%v", request.String())
 			go func() {
-				proofResponse, err := m.schedule.GenZKProof(worker, proofRequest)
+				proofResponse, err := m.schedule.GenZKProof(worker, request)
 				if err != nil {
 					//todo add queue again or cli retry ?
-					logger.Error("gen proof error:%v %v", proofRequest.TxId, err)
+					logger.Error("gen proof error:%v %v", request.TxId, err)
 				}
 				logger.Info("worker response proof: %v", proofResponse.String())
 				switch proofResponse.ProofType {
@@ -99,6 +114,28 @@ func (m *Manager) genProof() {
 				}
 			}()
 		}
+	}
+}
+
+func (m *Manager) CheckProof(request ProofRequest) (bool, error) {
+	if request.ProofType == Deposit {
+		txId := request.Utxos[0].TxId
+		exists, err := m.ethClient.CheckDepositProof(txId)
+		if err != nil {
+			logger.Error("check deposit proof error:%v", err)
+			return false, err
+		}
+		return exists, nil
+	} else if request.ProofType == Redeem {
+		exists, err := m.btcClient.CheckTx(request.BtcTxId)
+		if err != nil {
+			logger.Error("check btc tx error: %v %v", request.BtcTxId, err)
+			return false, err
+		}
+		return exists, nil
+	} else {
+		//todo
+		return false, fmt.Errorf("unknown proof type")
 	}
 }
 
