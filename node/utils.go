@@ -9,11 +9,6 @@ import (
 	"strings"
 )
 
-func TxIdToProofId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", ProofPrefix, txId)
-	return pTxID
-}
-
 func BtcToSat(value float64) int64 {
 	valueRat := NewRat().Mul(NewRat().SetFloat64(value), NewRat().SetUint64(100000000))
 	floatStr := valueRat.FloatString(1)

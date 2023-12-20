@@ -1,5 +1,18 @@
 package rpc
 
+type Transaction struct {
+	EthereumTx EthereumTx `json:"ethereumTx"`
+	Bitcoin    BitcoinTx  `json:"bitcoinTx"`
+}
+
+type EthereumTx struct {
+	Hash string `json:"hash"`
+}
+
+type BitcoinTx struct {
+	Hash string `json:"hash"`
+}
+
 type NodeInfo struct {
 	Version string
 	Desc    string

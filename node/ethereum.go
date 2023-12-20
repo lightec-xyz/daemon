@@ -82,12 +82,12 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 
 func (e *EthereumAgent) Init() error {
 	logger.Info("init ethereum agent")
-	has, err := e.store.Has(ethCurHeightKey)
+	exists, err := ReadInitEthereumHeight(e.store)
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
 		return err
 	}
-	if has {
+	if exists {
 		logger.Debug("ethereum agent check uncompleted generate proof tx")
 		err := e.checkUnCompleteGenerateProofTx()
 		if err != nil {
@@ -96,7 +96,7 @@ func (e *EthereumAgent) Init() error {
 		}
 	} else {
 		logger.Debug("init eth current height: %v", e.initStartHeight)
-		err := e.store.PutObj(ethCurHeightKey, e.initStartHeight)
+		err := WriteEthereumHeight(e.store, e.initStartHeight)
 		if err != nil {
 			logger.Error("put eth current height error:%v", err)
 			return err
@@ -112,55 +112,49 @@ func (e *EthereumAgent) Init() error {
 }
 
 func (e *EthereumAgent) checkUnCompleteGenerateProofTx() error {
-	currentHeight, err := e.getEthHeight()
-	if err != nil {
-		logger.Error("get eth current height error:%v", err)
-		return err
-	}
-	start := currentHeight - e.checkProofHeightNums
-	var proofList []ProofRequest
-	for index := start; index < currentHeight; index++ {
-		hasObj, err := e.store.HasObj(index)
-		if err != nil {
-			logger.Error("get txIdList error:%v", err)
-			return err
-		}
-		if !hasObj {
-			continue
-		}
-		var txIdList []string
-		err = e.store.GetObj(index, &txIdList)
-		if err != nil {
-			logger.Error("get txIdList error:%v", err)
-			return err
-		}
-		for _, txId := range txIdList {
-			var proof TxProof
-			err := e.store.GetObj(TxIdToProofId(txId), &proof)
-			if err != nil {
-				logger.Error("get proof error:%v", err)
-				return err
-			}
-			//todo
-			proofList = append(proofList, ProofRequest{
-				TxId:      proof.TxId,
-				ProofType: Redeem,
-				Msg:       proof.Msg,
-			})
-		}
-	}
-	e.proofRequest <- proofList
+	//currentHeight, err := e.getEthHeight()
+	//if err != nil {
+	//	logger.Error("get eth current height error:%v", err)
+	//	return err
+	//}
+	//start := currentHeight - e.checkProofHeightNums
+	//var proofList []ProofRequest
+	//for index := start; index < currentHeight; index++ {
+	//	hasObj, err := e.store.HasObj(index)
+	//	if err != nil {
+	//		logger.Error("get txIdList error:%v", err)
+	//		return err
+	//	}
+	//	if !hasObj {
+	//		continue
+	//	}
+	//	var txIdList []string
+	//	err = e.store.GetObj(index, &txIdList)
+	//	if err != nil {
+	//		logger.Error("get txIdList error:%v", err)
+	//		return err
+	//	}
+	//	for _, txId := range txIdList {
+	//		var proof TxProof
+	//		err := e.store.GetObj(TxIdToProofId(txId), &proof)
+	//		if err != nil {
+	//			logger.Error("get proof error:%v", err)
+	//			return err
+	//		}
+	//		//todo
+	//		proofList = append(proofList, ProofRequest{
+	//			TxId:      proof.TxId,
+	//			ProofType: Redeem,
+	//			Msg:       proof.Msg,
+	//		})
+	//	}
+	//}
+	//e.proofRequest <- proofList
 	return nil
 }
 
 func (e *EthereumAgent) getEthHeight() (int64, error) {
-	var curHeight int64
-	err := e.store.GetObj(ethCurHeightKey, &curHeight)
-	if err != nil {
-		logger.Error("get eth current height error:%v", err)
-		return 0, err
-	}
-	return curHeight, nil
+	return ReadEthereumHeight(e.store)
 }
 
 func (e *EthereumAgent) ScanBlock() error {
@@ -215,7 +209,7 @@ func (e *EthereumAgent) Transfer() {
 				logger.Error("update proof error:%v", err)
 				continue
 			}
-			if e.autoSubmit && response.Status == ProofSuccess {
+			if e.autoSubmit && ProofStatus(response.Status) == ProofSuccess {
 				exists, err := e.btcClient.CheckTx(response.BtcTxId)
 				if err != nil {
 					logger.Error("check btc tx error: %v %v", response.BtcTxId, err)
@@ -225,10 +219,15 @@ func (e *EthereumAgent) Transfer() {
 					logger.Warn("redeem btc tx submitted: %v", response.BtcTxId)
 					continue
 				}
-				_, err = e.RedeemBtcTx(response)
+				txHash, err := e.RedeemBtcTx(response)
 				if err != nil {
 					// todo add queue or cli retry
 					logger.Error("redeem btc tx error:%v", err)
+					continue
+				}
+				err = e.updateDestChainHash(response.TxId, txHash)
+				if err != nil {
+					logger.Error("update dest hash error: %v %v", response.TxId, err)
 					continue
 				}
 				logger.Info("success redeem btc tx:%v", response)
@@ -238,39 +237,40 @@ func (e *EthereumAgent) Transfer() {
 
 }
 
-func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {
-	var txIdList []string
+func (e *EthereumAgent) updateDestChainHash(txId, ethTxHash string) error {
+	err := WriteDestChainHash(e.store, txId, ethTxHash)
+	if err != nil {
+		logger.Error("write dest hash error: %v %v", txId, err)
+		return err
+	}
+	return nil
+
+}
+
+func (e *EthereumAgent) saveDataToDb(height int64, list []*EthereumTx) error {
+	err := WriteEthereumTx(e.store, list)
+	if err != nil {
+		logger.Error("put redeem tx error: %v %v", height, err)
+		return err
+	}
+	var txProof []TxProof
 	for _, tx := range list {
-		err := e.store.BatchPutObj(tx.TxId, tx)
-		if err != nil {
-			logger.Error("put redeem tx error: %v %v", tx.TxId, err)
-			return err
-		}
-		pTxId := fmt.Sprintf("%s%s", ProofPrefix, tx.TxId)
-		err = e.store.BatchPutObj(pTxId, TxProof{
+		proof := TxProof{
 			Height:    height,
 			BlockHash: tx.BlockHash,
 			TxId:      tx.TxId,
 			ProofType: Redeem,
 			Proof:     "",
 			Status:    ProofDefault,
-		})
-		if err != nil {
-			logger.Error("put proof tx error: %v %v", tx.TxId, err)
-			return err
 		}
+		txProof = append(txProof, proof)
 	}
-	err := e.store.BatchPutObj(height, txIdList)
-	if err != nil {
-		logger.Error("put txIdList error: %v %v", height, err)
-		return err
-	}
-	err = e.store.BatchPutObj(ethCurHeightKey, height)
+	err = WriteProof(e.store, txProof)
 	if err != nil {
 		logger.Error("put eth current height error:%v %v", height, err)
 		return err
 	}
-	err = e.store.BatchWriteObj()
+	err = WriteEthereumHeight(e.store, height)
 	if err != nil {
 		logger.Error("batch write error: %v %v", height, err)
 		return err
@@ -279,7 +279,7 @@ func (e *EthereumAgent) saveDataToDb(height int64, list []RedeemTx) error {
 
 }
 
-func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, error) {
+func (e *EthereumAgent) parseBlock(height int64) ([]*EthereumTx, []ProofRequest, error) {
 	block, err := e.ethClient.GetBlock(height)
 	if err != nil {
 		logger.Error("ethereum rpc get block error:%v", err)
@@ -291,7 +291,7 @@ func (e *EthereumAgent) parseBlock(height int64) ([]RedeemTx, []ProofRequest, er
 		logger.Error("ethereum rpc get logs error:%v", err)
 		return nil, nil, err
 	}
-	var redeemTxList []RedeemTx
+	var redeemTxList []*EthereumTx
 	var proofRequestList []ProofRequest
 	for _, log := range logs {
 		redeemTx, ok, err := e.CheckRedeemTx(log)
@@ -400,8 +400,8 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 	return txHash, nil
 }
 
-func (e *EthereumAgent) CheckRedeemTx(log types.Log) (RedeemTx, bool, error) {
-	redeemTx := RedeemTx{}
+func (e *EthereumAgent) CheckRedeemTx(log types.Log) (*EthereumTx, bool, error) {
+	redeemTx := &EthereumTx{}
 	//todo more check
 	if len(log.Data) <= 64 {
 		return redeemTx, false, nil
@@ -440,16 +440,12 @@ func (e *EthereumAgent) CheckRedeemTx(log types.Log) (RedeemTx, bool, error) {
 }
 
 func (e *EthereumAgent) updateProof(resp ProofResponse) error {
-	pTxId := TxIdToProofId(resp.TxId)
-	err := e.store.PutObj(pTxId, TxProof{
-		Height:    resp.Height,
-		BlockHash: resp.BlockHash,
-		TxId:      resp.TxId,
-		ProofType: Redeem,
-		Proof:     resp.Proof,
-		Status:    resp.Status,
-	})
-	return err
+	err := UpdateProof(e.store, resp.TxId, resp.Proof, Deposit, ProofStatus(resp.Status))
+	if err != nil {
+		logger.Error("update proof error: %v %v", resp.TxId, err)
+		return err
+	}
+	return nil
 }
 
 func (e *EthereumAgent) Close() error {

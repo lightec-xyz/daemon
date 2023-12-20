@@ -69,6 +69,10 @@ const (
 var LocalRedeemLogTopices = []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"}
 
 // ***********************************************************
+
+const BtcDeposit = 0
+const BtcRedeem = 1
+
 const (
 	Deposit = "deposit"
 	Redeem  = "redeem"
@@ -76,10 +80,3 @@ const (
 )
 
 const RpcRegisterName = "zkbtc"
-
-const ProofPrefix = "p"
-
-var (
-	btcCurHeightKey = []byte("btcCurHeight")
-	ethCurHeightKey = []byte("ethCurHeight")
-)

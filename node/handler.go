@@ -18,6 +18,10 @@ type Handler struct {
 	schedule *Schedule
 }
 
+func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
+	panic(h)
+}
+
 func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
 	proofId := TxIdToProofId(txId)
 	var txProof TxProof

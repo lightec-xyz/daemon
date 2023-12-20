@@ -10,23 +10,28 @@ import (
 	"sync"
 )
 
+type ProofStatus int
+
 const (
-	ProofDefault = iota
+	ProofDefault ProofStatus = iota
 	ProofPending
 	ProofSuccess
 	ProofFailed
 )
 
-type DepositTx struct {
+type BitcoinTx struct {
+	EthAddr string
+	Amount  int64 // btc
+
+	EthTxHash string
 	Height    int64
 	BlockHash string
 	TxId      string
 	Utxos     []Utxo
-	EthAddr   string
-	Amount    int64 // btc
+	TxType    int
 }
 
-type RedeemTx struct {
+type EthereumTx struct {
 	Height    int64
 	BlockHash string
 	Inputs    []Utxo
@@ -34,7 +39,7 @@ type RedeemTx struct {
 	TxId      string
 }
 
-func (rt *RedeemTx) String() string {
+func (rt *EthereumTx) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("inputs:[")
 	for _, vin := range rt.Inputs {
@@ -67,13 +72,13 @@ type TxOut struct {
 }
 
 type TxProof struct {
-	Height    int64  `json:"height"`
-	BlockHash string `json:"blockHash"`
-	TxId      string `json:"txId"`
-	ProofType string `json:"type"`
-	Proof     string `json:"proof"`
-	Msg       string `json:"msg"`
-	Status    int    `json:"status"`
+	Height    int64       `json:"height"`
+	BlockHash string      `json:"blockHash"`
+	TxId      string      `json:"txId"`
+	ProofType string      `json:"type"`
+	Proof     string      `json:"proof"`
+	Msg       string      `json:"msg"`
+	Status    ProofStatus `json:"status"`
 }
 
 // todo

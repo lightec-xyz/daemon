@@ -17,8 +17,8 @@ var err error
 var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
-var endpoint = "https://ethereum-holesky.publicnode.com"
-var zkBridgeAddr = "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
+var endpoint = "https://rpc.holesky.ethpandaops.io"
+var zkBridgeAddr = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"
 var zkBtcAddr = "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083"
 
 func init() {
@@ -69,14 +69,13 @@ func TestClient_TestEth(t *testing.T) {
 }
 
 func TestClient_GetLogs(t *testing.T) {
-	block, err := client.GetBlock(472244)
+	block, err := client.GetBlock(487136)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(block)
 	logs, err := client.GetLogs(block.Hash().Hex(),
-		[]string{"0xada86dce6d7e0d69ce4e25256b58ac1dcbbe2129"},
-		[]string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"})
+		[]string{"0xa7becea4ce9040336d7d4aad84e684d1daeabea1"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
