@@ -19,6 +19,14 @@ const (
 	ProofFailed
 )
 
+type ProofType int
+
+const (
+	Deposit = iota + 1
+	Redeem
+	Verify
+)
+
 type BitcoinTx struct {
 	EthAddr string
 	Amount  int64 // btc
@@ -36,7 +44,12 @@ type EthereumTx struct {
 	BlockHash string
 	Inputs    []Utxo
 	Outputs   []TxOut
-	TxId      string
+
+	Amount int64
+	TxId   string
+	Vout   int
+
+	TxHash string
 }
 
 func (rt *EthereumTx) String() string {
@@ -71,13 +84,10 @@ type TxOut struct {
 	PkScript []byte
 }
 
-type TxProof struct {
-	Height    int64       `json:"height"`
-	BlockHash string      `json:"blockHash"`
+type Proof struct {
 	TxId      string      `json:"txId"`
-	ProofType string      `json:"type"`
+	ProofType ProofType   `json:"type"`
 	Proof     string      `json:"proof"`
-	Msg       string      `json:"msg"`
 	Status    ProofStatus `json:"status"`
 }
 
@@ -93,12 +103,12 @@ type ProofRequest struct {
 	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
-	Height    int64  `json:"height"`
-	BlockHash string `json:"blockHash"`
-	TxId      string `json:"txId"`
-	ProofType string `json:"type"`
-	Proof     string `json:"proof"`
-	Msg       string `json:"msg"`
+	Height    int64     `json:"height"`
+	BlockHash string    `json:"blockHash"`
+	TxId      string    `json:"txId"`
+	ProofType ProofType `json:"type"`
+	Proof     string    `json:"proof"`
+	Msg       string    `json:"msg"`
 }
 
 func (req *ProofRequest) String() string {
@@ -122,13 +132,13 @@ type ProofResponse struct {
 	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
-	Height    int64  `json:"height"`
-	BlockHash string `json:"blockHash"`
-	TxId      string `json:"txId"`
-	ProofType string `json:"type"`
-	Proof     string `json:"proof"`
-	Msg       string `json:"msg"`
-	Status    int    `json:"status"`
+	Height    int64     `json:"height"`
+	BlockHash string    `json:"blockHash"`
+	TxId      string    `json:"txId"`
+	ProofType ProofType `json:"type"`
+	Proof     string    `json:"proof"`
+	Msg       string    `json:"msg"`
+	Status    int       `json:"status"`
 }
 
 func (resp *ProofResponse) String() string {
@@ -171,33 +181,36 @@ func NewNonceManager() *NonceManager {
 
 func (nm *NonceManager) GetNonce(address string, ethClient *ethereum.Client, store store.IStore) (uint64, error) {
 	//todo
-	nm.Lock()
-	defer nm.Unlock()
 	if ethClient == nil {
 		return 0, fmt.Errorf("ethClient is nil")
 	}
+	nm.Lock()
+	defer nm.Unlock()
 	chainNonce, err := ethClient.GetNonce(address)
 	if err != nil {
 		logger.Error("nonce manager get nonce error: %v %v", address, err)
 		return 0, err
 	}
-	hasObj, err := store.HasObj(address)
+	exists, err := CheckAddressNonce(store, address)
 	if err != nil {
+		logger.Error("check address nonce error: %v %v", address, err)
 		return 0, err
 	}
-	if hasObj {
-		var nonce uint64
-		err := store.GetObj(address, &nonce)
+	nonce := chainNonce
+	if exists {
+		dbNonce, err := ReadAddressNonce(store, address)
 		if err != nil {
+			logger.Error("nonce manager get nonce error: %v %v", address, err)
 			return 0, err
 		}
-		if chainNonce <= nonce {
-			return nonce + 1, nil
+		if chainNonce <= dbNonce+1 {
+			nonce = dbNonce + 1
 		}
-		return chainNonce, nil
-
-	} else {
-		return chainNonce, nil
 	}
-
+	err = WriteAddressNonce(store, address, nonce)
+	if err != nil {
+		logger.Error("write address nonce error: %v %v", address, err)
+		return 0, err
+	}
+	return nonce, nil
 }

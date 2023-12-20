@@ -65,10 +65,12 @@ func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]
 		addresses = append(addresses, address)
 	}
 	var topics [][]common.Hash
+	var matchTopic []common.Hash
 	for _, topic := range topicList {
 		topicHash := common.HexToHash(topic)
-		topics = append(topics, []common.Hash{topicHash})
+		matchTopic = append(matchTopic, topicHash)
 	}
+	topics = append(topics, matchTopic)
 
 	filterQuery := ethereum.FilterQuery{
 		BlockHash: &blockHash,
@@ -196,7 +198,7 @@ func (c *Client) Deposit(secret, txId string, index uint32,
 
 }
 
-func (c *Client) UpdateUtxoChange(secret, txId string, nonce, gasLimit uint64, chainID, gasPrice *big.Int, proof []byte) (string, error) {
+func (c *Client) UpdateUtxoChange(secret string, txIds []string, nonce, gasLimit uint64, chainID, gasPrice *big.Int, proof []byte) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
@@ -209,17 +211,25 @@ func (c *Client) UpdateUtxoChange(secret, txId string, nonce, gasLimit uint64, c
 	}
 	auth.Context = ctx
 	auth.Nonce = big.NewInt(int64(nonce))
-	//auth.GasPrice = gasPrice todo
 	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
-	fixedTxId := [32]byte{}
-	copy(fixedTxId[:], common.FromHex(txId))
-	transaction, err := c.zkBridgeCall.UpdateChange(auth, fixedTxId, proof)
+	// todo
+	transaction, err := c.zkBridgeCall.UpdateChange(auth, TxIdsToFixedIds(txIds)[0], proof)
 	if err != nil {
 		return "", err
 	}
 	return transaction.Hash().Hex(), nil
 
+}
+
+func TxIdsToFixedIds(txIds []string) [][32]byte {
+	fixedTxIds := make([][32]byte, 0)
+	for _, txId := range txIds {
+		fixedTxId := [32]byte{}
+		copy(fixedTxId[:], common.FromHex(txId))
+		fixedTxIds = append(fixedTxIds, fixedTxId)
+	}
+	return fixedTxIds
 }
 
 func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice,

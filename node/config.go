@@ -129,8 +129,8 @@ func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport
 		ZkBtcAddr:        EthZkBtcAddress,
 		EthScanBlockTime: EthScanTime,
 		EthPrivateKey:    ethPrivateKey,
-		LogAddr:          []string{EthZkBridgeAddress},
-		LogTopic:         RedeemLogTopices,
+		LogAddr:          LogAddrs,
+		LogTopic:         LogTopics,
 		MultiAddressInfo: multiSigAddressInfo,
 	}, nil
 }
@@ -183,8 +183,8 @@ func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, b
 		ZkBtcAddr:        TestnetEthZkBtcAddress,
 		EthScanBlockTime: TestnetEthScanTime,
 		EthPrivateKey:    ethPrivateKey,
-		LogAddr:          []string{TestnetEthZkBridgeAddress},
-		LogTopic:         TestnetRedeemLogTopices,
+		LogAddr:          TestLogAddrs,
+		LogTopic:         TestLogTopics,
 		MultiAddressInfo: multiSigAddressInfo,
 	}, nil
 }
@@ -237,8 +237,8 @@ func newLocalConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, 
 		ZkBtcAddr:        LocalEthZkBtcAddress,
 		EthScanBlockTime: LocalEthScanTime,
 		EthPrivateKey:    ethPrivateKey,
-		LogAddr:          []string{LocalEthZkBridgeAddress},
-		LogTopic:         LocalRedeemLogTopices,
+		LogAddr:          LocalLogAddrs,
+		LogTopic:         LocalLogTopics,
 		MultiAddressInfo: multiSigAddressInfo,
 	}, nil
 }
@@ -264,7 +264,7 @@ func TestnetDaemonConfig() NodeConfig {
 		"https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
 		"",
 		"",
-		"https://ethereum-holesky.publicnode.com",
+		"https://go.getblock.io/0d372517498b419a97613e2bbf882a30",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
 	if err != nil {
@@ -285,8 +285,8 @@ func LocalDevDaemonConfig() NodeConfig {
 		"8545",
 		"http://127.0.0.1:8332",
 		"lightec",
-		"Abcd1234",
-		"https://ethereum-holesky.publicnode.com",
+		"abcd1234",
+		"https://go.getblock.io/0d372517498b419a97613e2bbf882a30",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
 	if err != nil {

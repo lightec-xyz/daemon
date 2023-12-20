@@ -8,6 +8,7 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	btcrpc "github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"math/big"
@@ -31,9 +32,16 @@ func (m *Mock) DepositBtc(value int64) error {
 		logger.Error("no utxo found")
 		return err
 	}
-	utxo := utxoSet.Unspents[0]
-	if utxo.Amount <= 0.0001 {
-		logger.Error("utxo amount less than 0.0001")
+
+	var utxo types.Unspents
+	for _, item := range utxoSet.Unspents {
+		if item.Amount > 0.0001 {
+			utxo = item
+			break
+		}
+	}
+	if utxo.Amount == 0 {
+		logger.Error("no utxo found")
 		return err
 	}
 
@@ -63,6 +71,7 @@ func (m *Mock) DepositBtc(value int64) error {
 
 	//todo
 	outpuValue := inputValue - floatToInt(networkInfo.Relayfee) - 50
+	fmt.Println(outpuValue)
 	var btcTxOuts []btctx.TxOut
 	btcTxOuts = append(btcTxOuts, btctx.TxOut{
 		Amount:  outpuValue,
@@ -85,23 +94,57 @@ func (m *Mock) DepositBtc(value int64) error {
 		return err
 	}
 	logger.Info("success send btc tx hash:%v", txHash)
-	return nil
 
+	err = m.DepositBtcToEth(txHash, 0, big.NewInt(outpuValue))
+	if err != nil {
+		logger.Error("deposit btc to eth error:%v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (m *Mock) DepositBtcToEth(txId string, index uint32, amount *big.Int) error {
+	nonce, err := m.ethClient.GetNonce(m.cfg.EthAddr)
+	if err != nil {
+		logger.Error("get nonce error:%v", err)
+		return err
+	}
+	chainID, err := m.ethClient.ChainID(context.Background())
+	if err != nil {
+		logger.Error("get chain id error:%v", err)
+		return err
+	}
+	gasPrice, err := m.ethClient.GetGasPrice()
+	if err != nil {
+		logger.Error("get gas price error:%v", err)
+		return err
+	}
+	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(3))
+	gasLimit := uint64(500000)
+	ethTxHash, err := m.ethClient.Deposit(m.cfg.EthPrivateKey, txId, index, nonce, gasLimit, chainID, gasPrice,
+		amount, []byte("test proof"))
+	if err != nil {
+		logger.Error(" deposit eth error:%v", err)
+		return err
+	}
+	logger.Info("success deposit eth tx hash:%v", ethTxHash)
+	return nil
 }
 
 func (m *Mock) RedeemTx(amount int64) error {
 	redeemAmount := big.NewInt(amount)
 	minerFee := big.NewInt(300)
 	fromAddr := m.cfg.EthAddr
-	balance, err := m.ethClient.GetZkBtcBalance(fromAddr)
-	if err != nil {
-		logger.Error("get balance error:%v", err)
-		return err
-	}
-	if balance.Cmp(big.NewInt(10000)) < 0 {
-		logger.Error("balance less than 10000")
-		return err
-	}
+	//balance, err := m.ethClient.GetZkBtcBalance(fromAddr)
+	//if err != nil {
+	//	logger.Error("get balance error:%v", err)
+	//	return err
+	//}
+	//if balance.Cmp(big.NewInt(10000)) < 0 {
+	//	logger.Error("balance less than 10000")
+	//	return err
+	//}
 	payToAddrScript, err := btctx.GenPayToAddrScript(m.cfg.BtcDepositAddr, m.cfg.Network)
 	if err != nil {
 		logger.Error("gen pay to addr script error:%v", err)
@@ -138,6 +181,7 @@ func (m *Mock) RedeemTx(amount int64) error {
 		return err
 	}
 	logger.Info("success redeem hash:%v", txhash)
+
 	return nil
 }
 
@@ -232,8 +276,6 @@ func NewConfig(network string) (Config, error) {
 	} else {
 		cfg = NewDevConfig()
 	}
-	btctx.NewKeyPairFromSecret("")
-
 	return cfg, nil
 }
 

@@ -69,29 +69,23 @@ func TestClient_TestEth(t *testing.T) {
 }
 
 func TestClient_GetLogs(t *testing.T) {
-	block, err := client.GetBlock(487136)
+	//563180
+	//563166
+	block, err := client.GetBlock(563180)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(block)
+	//t.Log(block)
+	address := []string{"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51", "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"}
+	topic := []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a", "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"}
 	logs, err := client.GetLogs(block.Hash().Hex(),
-		[]string{"0xa7becea4ce9040336d7d4aad84e684d1daeabea1"}, nil)
+		address, topic)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(logs)
-
+	//t.Log(logs)
 	for _, log := range logs {
-		//0000000000000000000000000000000000000000000000000000000000000020
-		//0000000000000000000000000000000000000000000000000000000000000071
-		//02000000011aae5c5a37f9003aaa12c63dcebdfcd0e5cb6d753c4265ec055d06
-		//97e5e0d6100100000000ffffffff026e86010000000000160014d7fae4fbdc8b
-		//f6c86a08c7177c5d06683754ea71ecdc7ee202000000160014fb5defb676e7f0
-		//a6711e3bc385849572a57fbe7e00000000000000000000000000000000000000
-		version := log.Data[0:32]
-		length := log.Data[32:64]
-		fmt.Printf("%x %x \n", version, length)
-		fmt.Printf("%x\n", log.Data)
+		t.Log(log.Address.Hex(), log.Address.String(), log.Index, log.Topics, fmt.Sprintf("%x", log.Data))
 	}
 }
 
@@ -207,7 +201,7 @@ func TestUpdateUtxoChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	txHash, err := client.UpdateUtxoChange(privateKey, txId,
+	txHash, err := client.UpdateUtxoChange(privateKey, []string{txId},
 		nonce, uint64(gasLimit), chainID, gasPrice, proofBytes)
 	if err != nil {
 		t.Fatal(err)

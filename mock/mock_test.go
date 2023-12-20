@@ -10,7 +10,7 @@ var mock *Mock
 
 func init() {
 	logger.InitLogger()
-	mock, err = NewMock("testnet")
+	mock, err = NewMock("local")
 	if err != nil {
 		panic(err)
 	}

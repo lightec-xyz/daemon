@@ -14,6 +14,7 @@ import (
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -32,10 +33,16 @@ type EthereumAgent struct {
 	btcNetwork           btctx.NetWork
 	logAddr              []string
 	logTopic             []string
-	privateKeys          []*btcec.PrivateKey //todo just env
-	initStartHeight      int64
-	ethSubmitAddress     string
-	autoSubmit           bool
+
+	logDepositAddr   string
+	logRedeemAddr    string
+	topicDepositAddr string
+	topicRedeemAddr  string
+
+	privateKeys      []*btcec.PrivateKey //todo just test
+	initStartHeight  int64
+	ethSubmitAddress string
+	autoSubmit       bool
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
@@ -135,7 +142,7 @@ func (e *EthereumAgent) checkUnCompleteGenerateProofTx() error {
 	//		return err
 	//	}
 	//	for _, txId := range txIdList {
-	//		var proof TxProof
+	//		var proof Proof
 	//		err := e.store.GetObj(TxIdToProofId(txId), &proof)
 	//		if err != nil {
 	//			logger.Error("get proof error:%v", err)
@@ -143,7 +150,7 @@ func (e *EthereumAgent) checkUnCompleteGenerateProofTx() error {
 	//		}
 	//		//todo
 	//		proofList = append(proofList, ProofRequest{
-	//			TxId:      proof.TxId,
+	//			TxHash:      proof.TxHash,
 	//			ProofType: Redeem,
 	//			Msg:       proof.Msg,
 	//		})
@@ -179,17 +186,24 @@ func (e *EthereumAgent) ScanBlock() error {
 	}
 	for index := ethHeight + 1; index <= int64(blockNumber); index++ {
 		logger.Debug("ethereum parse block:%d", index)
-		redeemTxList, proofRequestList, err := e.parseBlock(index)
+		redeemTxes, depositTxes, requests, proofs, err := e.parseBlock(index)
 		if err != nil {
 			logger.Error("eth parse block error: %v %v", index, err)
 			return err
 		}
-		err = e.saveDataToDb(index, redeemTxList)
+		err = e.saveDataToDb(index, redeemTxes, proofs)
 		if err != nil {
 			logger.Error("ethereum save data error: %v %v", index, err)
 			return err
 		}
-		e.proofRequest <- proofRequestList
+		e.proofRequest <- requests
+		if len(depositTxes) > 0 {
+			err := e.updateDepositFinalStatus(depositTxes)
+			if err != nil {
+				logger.Error("update deposit final status error: %v %v", index, err)
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -209,28 +223,33 @@ func (e *EthereumAgent) Transfer() {
 				logger.Error("update proof error:%v", err)
 				continue
 			}
-			if e.autoSubmit && ProofStatus(response.Status) == ProofSuccess {
-				exists, err := e.btcClient.CheckTx(response.BtcTxId)
-				if err != nil {
-					logger.Error("check btc tx error: %v %v", response.BtcTxId, err)
-					continue
+			exists, err := e.btcClient.CheckTx(response.BtcTxId)
+			if err != nil {
+				// todo ?
+				logger.Error("check btc tx error: %v %v", response.BtcTxId, err)
+				continue
+			}
+			if exists {
+				logger.Warn("redeem btc tx submitted: %v", response.BtcTxId)
+				continue
+			}
+			if e.autoSubmit {
+				if ProofStatus(response.Status) == ProofSuccess {
+					txHash, err := e.RedeemBtcTx(response)
+					if err != nil {
+						// todo add queue or cli retry
+						logger.Error("redeem btc tx error:%v", err)
+						continue
+					}
+					err = e.updateDestChainHash(response.TxId, txHash)
+					if err != nil {
+						logger.Error("update dest hash error: %v %v", response.TxId, err)
+						continue
+					}
+					logger.Info("success redeem btc tx:%v", response)
+				} else {
+					// todo
 				}
-				if exists {
-					logger.Warn("redeem btc tx submitted: %v", response.BtcTxId)
-					continue
-				}
-				txHash, err := e.RedeemBtcTx(response)
-				if err != nil {
-					// todo add queue or cli retry
-					logger.Error("redeem btc tx error:%v", err)
-					continue
-				}
-				err = e.updateDestChainHash(response.TxId, txHash)
-				if err != nil {
-					logger.Error("update dest hash error: %v %v", response.TxId, err)
-					continue
-				}
-				logger.Info("success redeem btc tx:%v", response)
 			}
 		}
 	}
@@ -247,25 +266,13 @@ func (e *EthereumAgent) updateDestChainHash(txId, ethTxHash string) error {
 
 }
 
-func (e *EthereumAgent) saveDataToDb(height int64, list []*EthereumTx) error {
-	err := WriteEthereumTx(e.store, list)
+func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []EthereumTx, proofs []Proof) error {
+	err := WriteEthereumTx(e.store, redeemTxes)
 	if err != nil {
 		logger.Error("put redeem tx error: %v %v", height, err)
 		return err
 	}
-	var txProof []TxProof
-	for _, tx := range list {
-		proof := TxProof{
-			Height:    height,
-			BlockHash: tx.BlockHash,
-			TxId:      tx.TxId,
-			ProofType: Redeem,
-			Proof:     "",
-			Status:    ProofDefault,
-		}
-		txProof = append(txProof, proof)
-	}
-	err = WriteProof(e.store, txProof)
+	err = WriteProof(e.store, proofs)
 	if err != nil {
 		logger.Error("put eth current height error:%v %v", height, err)
 		return err
@@ -276,45 +283,146 @@ func (e *EthereumAgent) saveDataToDb(height int64, list []*EthereumTx) error {
 		return err
 	}
 	return nil
-
 }
 
-func (e *EthereumAgent) parseBlock(height int64) ([]*EthereumTx, []ProofRequest, error) {
+func (e *EthereumAgent) updateDepositFinalStatus(depositTx []EthereumTx) error {
+	err := UpdateDepositTxFinal(e.store, depositTx)
+	if err != nil {
+		logger.Error("update deposit final status error: %v %v", depositTx, err)
+		return err
+	}
+	return nil
+}
+
+func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []ProofRequest, []Proof, error) {
 	block, err := e.ethClient.GetBlock(height)
 	if err != nil {
 		logger.Error("ethereum rpc get block error:%v", err)
-		return nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	blockHash := block.Hash().String()
 	logs, err := e.ethClient.GetLogs(blockHash, e.logAddr, e.logTopic)
 	if err != nil {
 		logger.Error("ethereum rpc get logs error:%v", err)
-		return nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	var redeemTxList []*EthereumTx
-	var proofRequestList []ProofRequest
+	var redeemTxes []EthereumTx
+	var depositTxes []EthereumTx
+	var proofs []Proof
+	var requests []ProofRequest
 	for _, log := range logs {
-		redeemTx, ok, err := e.CheckRedeemTx(log)
+		depositTx, isDeposit, err := e.isDepositTx(log)
 		if err != nil {
-			logger.Error("check redeem tx error:%v", err)
-			return nil, nil, err
+			logger.Error("check is deposit tx error:%v", err)
+			return nil, nil, nil, nil, err
 		}
-		if ok {
-			redeemTx.Height = height
-			redeemTx.BlockHash = blockHash
-			redeemTxList = append(redeemTxList, redeemTx)
-			proofRequestList = append(proofRequestList, ProofRequest{
-				Height:    height,
-				BlockHash: blockHash,
-				Inputs:    redeemTx.Inputs,
-				Outputs:   redeemTx.Outputs,
-				TxId:      redeemTx.TxId,
-				ProofType: Redeem,
-			})
-			logger.Info("found redeem zkbtc tx: %v", redeemTx.String())
+		if isDeposit {
+			logger.Info("ethereum agent find deposit zkbtc tx: %v", depositTx.String())
+			depositTxes = append(depositTxes, depositTx)
+			continue
+		}
+
+		redeemTx, isRedeem, err := e.isRedeemTx(log)
+		if err != nil {
+			logger.Error("check is redeem tx error:%v", err)
+			return nil, nil, nil, nil, err
+		}
+		if isRedeem {
+			logger.Info("ethereum agent find redeem zkbtc tx: %v", redeemTx.String())
+			proofs = append(proofs, NewRedeemProof(redeemTx.TxHash))
+			requests = append(requests, NewRedeemProofRequest(redeemTx.TxHash))
+			redeemTxes = append(redeemTxes, redeemTx)
+			continue
 		}
 	}
-	return redeemTxList, proofRequestList, nil
+	return redeemTxes, depositTxes, requests, proofs, nil
+}
+
+func (e *EthereumAgent) isDepositTx(log types.Log) (EthereumTx, bool, error) {
+	depositTx := EthereumTx{}
+	if log.Removed {
+		return depositTx, false, nil
+	}
+	if len(log.Topics) != 3 {
+		return depositTx, false, nil
+	}
+	// todo
+	if strings.ToLower(log.Address.Hex()) == e.logDepositAddr && strings.ToLower(log.Topics[0].Hex()) == e.topicDepositAddr {
+		txId := strings.ToLower(log.Topics[1].Hex())
+		vout, err := strconv.ParseInt(strings.ToLower(log.Topics[2].Hex()), 16, 32)
+		if err != nil {
+			logger.Error("parse vout error:%v", err)
+			return depositTx, false, err
+		}
+		amount, err := strconv.ParseInt(fmt.Sprintf("%x", log.Data), 16, 64)
+		if err != nil {
+			logger.Error("parse amount error:%v", err)
+			return depositTx, false, err
+		}
+		depositTx = EthereumTx{
+			TxId:   txId,
+			TxHash: log.TxHash.String(),
+			Vout:   int(vout),
+			Amount: amount,
+		}
+		return depositTx, true, nil
+	} else {
+		return depositTx, false, nil
+	}
+
+}
+
+func (e *EthereumAgent) isRedeemTx(log types.Log) (EthereumTx, bool, error) {
+	redeemTx := EthereumTx{}
+	if log.Removed {
+		return redeemTx, false, nil
+	}
+	if len(log.Topics) != 2 {
+		return redeemTx, false, nil
+	}
+
+	//todo more check
+	if strings.ToLower(log.Address.Hex()) == e.logRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.topicRedeemAddr {
+		btcTxId := strings.ToLower(log.Topics[1].Hex())
+		if len(log.Data) <= 64 {
+			return redeemTx, false, nil
+		}
+		dataLength := log.Data[32:64]
+		l, err := strconv.ParseInt(fmt.Sprintf("%x", dataLength), 16, 32)
+		if err != nil {
+			logger.Error("parse data length error:%v", err)
+			return redeemTx, false, err
+		}
+		txData := log.Data[64 : 64+l]
+		transaction := btctx.NewTransaction()
+		err = transaction.Deserialize(bytes.NewReader(txData))
+		if err != nil {
+			logger.Error("deserialize btc tx error:%v", err)
+			return redeemTx, false, err
+		}
+		var inputs []Utxo
+		for _, in := range transaction.TxIn {
+			inputs = append(inputs, Utxo{
+				TxId:  in.PreviousOutPoint.Hash.String(),
+				Index: in.PreviousOutPoint.Index,
+			})
+		}
+		var outputs []TxOut
+		for _, out := range transaction.TxOut {
+			outputs = append(outputs, TxOut{
+				Value:    out.Value,
+				PkScript: out.PkScript,
+			})
+		}
+		redeemTx.TxId = btcTxId
+		redeemTx.Inputs = inputs
+		redeemTx.Outputs = outputs
+		redeemTx.TxHash = log.TxHash.String()
+		return redeemTx, true, nil
+	} else {
+		return redeemTx, false, nil
+	}
+
 }
 
 func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
@@ -400,45 +508,6 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 	return txHash, nil
 }
 
-func (e *EthereumAgent) CheckRedeemTx(log types.Log) (*EthereumTx, bool, error) {
-	redeemTx := &EthereumTx{}
-	//todo more check
-	if len(log.Data) <= 64 {
-		return redeemTx, false, nil
-	}
-	dataLength := log.Data[32:64]
-	l, err := strconv.ParseInt(fmt.Sprintf("%x", dataLength), 16, 32)
-	if err != nil {
-		logger.Error("parse data length error:%v", err)
-		return redeemTx, false, err
-	}
-	txData := log.Data[64 : 64+l]
-	transaction := btctx.NewTransaction()
-	err = transaction.Deserialize(bytes.NewReader(txData))
-	if err != nil {
-		logger.Error("deserialize btc tx error:%v", err)
-		return redeemTx, false, err
-	}
-	var inputs []Utxo
-	for _, in := range transaction.TxIn {
-		inputs = append(inputs, Utxo{
-			TxId:  in.PreviousOutPoint.Hash.String(),
-			Index: in.PreviousOutPoint.Index,
-		})
-	}
-	var outputs []TxOut
-	for _, out := range transaction.TxOut {
-		outputs = append(outputs, TxOut{
-			Value:    out.Value,
-			PkScript: out.PkScript,
-		})
-	}
-	redeemTx.Inputs = inputs
-	redeemTx.Outputs = outputs
-	redeemTx.TxId = log.TxHash.String()
-	return redeemTx, true, nil
-}
-
 func (e *EthereumAgent) updateProof(resp ProofResponse) error {
 	err := UpdateProof(e.store, resp.TxId, resp.Proof, Deposit, ProofStatus(resp.Status))
 	if err != nil {
@@ -457,4 +526,20 @@ func (e *EthereumAgent) Name() string {
 }
 func (e *EthereumAgent) BlockTime() time.Duration {
 	return e.blockTime
+}
+
+func NewRedeemProofRequest(txId string) ProofRequest {
+	return ProofRequest{
+		TxId:      txId,
+		ProofType: Redeem,
+	}
+}
+
+func NewRedeemProof(txId string) Proof {
+	return Proof{
+		TxId:      txId,
+		ProofType: Redeem,
+		Proof:     "",
+		Status:    ProofDefault,
+	}
 }

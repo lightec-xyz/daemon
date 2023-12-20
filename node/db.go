@@ -34,7 +34,7 @@ func WriteBitcoinTx(store store.IStore, height int64, txes []*BitcoinTx) error {
 	return nil
 }
 
-func WriteProof(store store.IStore, txes []TxProof) error {
+func WriteProof(store store.IStore, txes []Proof) error {
 	for _, tx := range txes {
 		err := store.PutObj(TxIdToProofId(tx.TxId), tx)
 		if err != nil {
@@ -50,13 +50,14 @@ func UpdateRedeemInfo(store store.IStore, txes []*BitcoinTx) error {
 	return nil
 }
 
-func UpdateProof(store store.IStore, txId, proof, proofType string, status ProofStatus) error {
-	return store.PutObj(TxIdToProofId(txId), TxProof{
+func UpdateProof(store store.IStore, txId, proof string, proofType ProofType, status ProofStatus) error {
+	txProof := Proof{
 		TxId:      txId,
 		Proof:     proof,
 		Status:    status,
 		ProofType: proofType,
-	})
+	}
+	return store.PutObj(TxIdToProofId(txId), txProof)
 }
 
 func WriteDestChainHash(store store.IStore, txId, destHash string) error {
@@ -81,15 +82,50 @@ func ReadInitEthereumHeight(store store.IStore) (bool, error) {
 	return store.HasObj(ethCurHeightKey)
 }
 
-func WriteEthereumTx(store store.IStore, txes []*EthereumTx) error {
+func WriteEthereumTx(store store.IStore, txes []EthereumTx) error {
 	for _, tx := range txes {
-		err := store.PutObj(tx.TxId, tx)
+		err := store.PutObj(tx.TxHash, tx)
 		if err != nil {
 			logger.Error("put ethereum tx error:%v", err)
 			return err
 		}
 	}
 	return nil
+}
+
+func UpdateDepositTxFinal(store store.IStore, depositTxes []EthereumTx) error {
+	// todo
+	return nil
+}
+
+func ReadAddressNonce(store store.IStore, address string) (uint64, error) {
+	key := fmt.Sprintf("%s%s", NoncePrefix, address)
+	var nonce uint64
+	err := store.GetObj(key, &nonce)
+	if err != nil {
+		logger.Error("nonce manager get nonce error: %v %v", address, err)
+		return 0, err
+	}
+	return nonce, nil
+}
+
+func WriteAddressNonce(store store.IStore, address string, nonce uint64) error {
+	key := fmt.Sprintf("%s%s", NoncePrefix, address)
+	err := store.PutObj(key, nonce)
+	if err != nil {
+		logger.Error("write address nonce error: %v %v", address, err)
+		return err
+	}
+	return nil
+}
+func CheckAddressNonce(store store.IStore, address string) (bool, error) {
+	key := fmt.Sprintf("%s%s", NoncePrefix, address)
+	ok, err := store.HasObj(key)
+	if err != nil {
+		logger.Error("nonce manager get nonce error: %v %v", address, err)
+		return false, err
+	}
+	return ok, nil
 }
 
 func TxIdToProofId(txId string) string {
