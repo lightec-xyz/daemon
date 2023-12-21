@@ -1,13 +1,14 @@
 # Table
 
-    title          keyType        valueType
+| key          | keyType | value         | valueType |
+|--------------|---------|---------------|-----------|
+| btcCurHeight | string  | height        | int64     |
+| ethCurHeight | string  | height        | int64     |
+| btcTxId      | string  | BitcoinTx     | object    |
+| ethTxId      | string  | EthereumTx    | object    |
+| proofId      | string  | Proof         | object    |
+| depositId    | string  | destChainHash | string    |
 
-------------------------------------------------------
 
-    currentHeight: blockHeight =  int64
-    txIdList     : blockHeight =  []string
-    transaction  : txId        =  depositTx 
-    txProof      : pTxId       =  txProof 
     
-    bridgeTxId   : qTxid  = txId
     

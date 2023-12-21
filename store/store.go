@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/binary"
 	"github.com/lightec-xyz/daemon/codec"
 	"github.com/lightec-xyz/daemon/logger"
 )
@@ -9,6 +10,10 @@ var var_ IStore = (*Store)(nil)
 
 type Store struct {
 	levelDb *LevelDb
+}
+
+func (s *Store) Iterator(prefix []byte, start []byte) Iterator {
+	return s.levelDb.NewIterator(prefix, start)
 }
 
 func NewStore(file string, cache int, handles int, namespace string, readonly bool) (*Store, error) {
@@ -55,7 +60,7 @@ func (s *Store) BatchWrite() error {
 }
 
 func (s *Store) HasObj(key interface{}) (bool, error) {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return false, err
@@ -64,7 +69,7 @@ func (s *Store) HasObj(key interface{}) (bool, error) {
 }
 
 func (s *Store) GetObj(key interface{}, value interface{}) error {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -78,7 +83,7 @@ func (s *Store) GetObj(key interface{}, value interface{}) error {
 }
 
 func (s *Store) DeleteObj(key interface{}) error {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -91,7 +96,7 @@ func (s *Store) PutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -105,7 +110,7 @@ func (s *Store) BatchPutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -114,7 +119,7 @@ func (s *Store) BatchPutObj(key interface{}, value interface{}) error {
 }
 
 func (s *Store) BatchDeleteObj(key interface{}) error {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -125,7 +130,7 @@ func (s *Store) BatchDeleteObj(key interface{}) error {
 func (s *Store) BatchWriteObj() error {
 	return s.BatchWrite()
 }
-func objKeyEncode(key interface{}) ([]byte, error) {
+func KeyEncode(key interface{}) ([]byte, error) {
 	//todo
 	switch key.(type) {
 	case []byte:
@@ -133,6 +138,18 @@ func objKeyEncode(key interface{}) ([]byte, error) {
 		return keyBytes, nil
 	case string:
 		keyBytes := []byte(key.(string))
+		return keyBytes, nil
+	case uint64:
+		keyBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(keyBytes, key.(uint64))
+		return keyBytes, nil
+	case int64:
+		keyBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(keyBytes, key.(uint64))
+		return keyBytes, nil
+	case int:
+		keyBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(keyBytes, key.(uint64))
 		return keyBytes, nil
 	default:
 		keyBytes, err := codec.Marshal(key)

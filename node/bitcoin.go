@@ -92,46 +92,8 @@ func (b *BitcoinAgent) Init() error {
 
 // checkUnGenerateProof check uncompleted generate proof tx,resend again
 func (b *BitcoinAgent) checkUnGenerateProof() error {
+	// todo
 	return nil
-	//currentHeight, err := b.getCurrentHeight()
-	//if err != nil {
-	//	logger.Error("get btc current height error:%v", err)
-	//	return err
-	//}
-	//start := currentHeight - b.checkProofHeightNums
-	//var proofList []ProofRequest
-	//for index := start; index < currentHeight; index++ {
-	//	var txIdList []string
-	//	hasObj, err := b.store.HasObj(index)
-	//	if err != nil {
-	//		logger.Error("get txIdList error:%v", err)
-	//		return err
-	//	}
-	//	if !hasObj {
-	//		continue
-	//	}
-	//	err = b.store.GetObj(index, &txIdList)
-	//	if err != nil {
-	//		logger.Error("get txIdList error:%v", err)
-	//		return err
-	//	}
-	//	for _, txId := range txIdList {
-	//		var proof Proof
-	//		err := b.store.GetObj(TxIdToProofId(txId), &proof)
-	//		if err != nil {
-	//			logger.Error("get proof error:%v", err)
-	//			return err
-	//		}
-	//		//todo
-	//		proofList = append(proofList, ProofRequest{
-	//			TxHash:      proof.TxHash,
-	//			ProofType: Deposit,
-	//			Msg:       proof.Msg,
-	//		})
-	//	}
-	//}
-	//b.proofRequest <- proofList
-	//return nil
 }
 
 func (b *BitcoinAgent) getCurrentHeight() (int64, error) {
@@ -175,11 +137,11 @@ func (b *BitcoinAgent) ScanBlock() error {
 		b.proofRequest <- proofRequests
 
 		if len(redeemTxes) > 0 {
-			err := b.updateRedeemTxInfo(index, redeemTxes)
-			if err != nil {
-				logger.Error("update tx info error: %v %v", index, err)
-				return err
-			}
+			//err := b.updateRedeemTxInfo(index, redeemTxes)
+			//if err != nil {
+			//	logger.Error("update tx info error: %v %v", index, err)
+			//	return err
+			//}
 			err = b.updateContractUtxoChange(redeemTxes)
 			if err != nil {
 				logger.Error("update utxo error: %v %v", index, err)
@@ -190,18 +152,13 @@ func (b *BitcoinAgent) ScanBlock() error {
 	return nil
 }
 
-func (b *BitcoinAgent) updateRedeemTxInfo(height int64, txList []*BitcoinTx) error {
+func (b *BitcoinAgent) updateRedeemTxInfo(height int64, txList []BitcoinTx) error {
 	// todo
-	err := UpdateRedeemInfo(b.store, txList)
-	if err != nil {
-		logger.Error("update redeem info error: %v %v", height, err)
-		return err
-	}
 	return nil
 
 }
 
-func (b *BitcoinAgent) saveDataToDb(height int64, depositTxes []*BitcoinTx, proofs []Proof) error {
+func (b *BitcoinAgent) saveDataToDb(height int64, depositTxes []BitcoinTx, proofs []Proof) error {
 	//todo
 	err := WriteBitcoinTx(b.store, height, depositTxes)
 	if err != nil {
@@ -221,7 +178,7 @@ func (b *BitcoinAgent) saveDataToDb(height int64, depositTxes []*BitcoinTx, proo
 	return nil
 }
 
-func (b *BitcoinAgent) parseBlock(height int64) ([]*BitcoinTx, []*BitcoinTx, []ProofRequest, []Proof, error) {
+func (b *BitcoinAgent) parseBlock(height int64) ([]BitcoinTx, []BitcoinTx, []ProofRequest, []Proof, error) {
 	blockHash, err := b.btcClient.GetBlockHash(height)
 	if err != nil {
 		logger.Error("btcClient get block hash error: %v %v", height, err)
@@ -232,8 +189,8 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]*BitcoinTx, []*BitcoinTx, []P
 		logger.Error("btcClient get block error: %v %v", blockHash, err)
 		return nil, nil, nil, nil, err
 	}
-	var depositTxes []*BitcoinTx
-	var redeemTxes []*BitcoinTx
+	var depositTxes []BitcoinTx
+	var redeemTxes []BitcoinTx
 	var requests []ProofRequest
 	var proofs []Proof
 	for _, tx := range blockWithTx.Tx {
@@ -307,16 +264,12 @@ func (b *BitcoinAgent) Transfer() {
 }
 
 func (b *BitcoinAgent) updateDestChainHash(txId, ethTxHash string) error {
-	err := WriteDestChainHash(b.store, txId, ethTxHash)
-	if err != nil {
-		logger.Error("write dest hash error: %v %v", txId, err)
-		return err
-	}
+	// todo
 	return nil
 
 }
 
-func (b *BitcoinAgent) updateContractUtxoChange(utxoList []*BitcoinTx) error {
+func (b *BitcoinAgent) updateContractUtxoChange(utxoList []BitcoinTx) error {
 	// todo
 	var txIds []string
 	for _, tx := range utxoList {
@@ -385,43 +338,42 @@ func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof string, amount int64) (str
 	return txHash, nil
 }
 
-func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (*BitcoinTx, bool) {
+func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (BitcoinTx, bool) {
 	// todo more check
+	btcTx := BitcoinTx{}
 	for _, vin := range tx.Vin {
 		if vin.Prevout.ScriptPubKey.Address == b.operatorAddr {
-			bitcoinTx := &BitcoinTx{
-				TxId:   tx.Txid,
-				TxType: BtcRedeem,
-			}
-			return bitcoinTx, true
+			btcTx.TxId = tx.Txid
+			btcTx.TxType = Deposit
+			return btcTx, true
 		}
 	}
-	return nil, false
+	return btcTx, false
 }
 
-func (b *BitcoinAgent) isDepositTx(tx types.Tx) (*BitcoinTx, bool, error) {
+func (b *BitcoinAgent) isDepositTx(tx types.Tx) (BitcoinTx, bool, error) {
 	// todo more rule
+	depositTx := BitcoinTx{}
 	txOuts := tx.Vout
 	if len(txOuts) < 2 {
-		return nil, false, nil
+		return depositTx, false, nil
 	}
 	if txOuts[1].ScriptPubKey.Address != b.operatorAddr {
-		return nil, false, nil
+		return depositTx, false, nil
 	}
 	if txOuts[1].Value <= b.minDepositValue {
 		logger.Warn("deposit tx less than min value: %v %v", b.minDepositValue, tx.Txid)
-		return nil, false, nil
+		return depositTx, false, nil
 	}
 	if !(txOuts[0].ScriptPubKey.Type == "nulldata" && strings.HasPrefix(txOuts[0].ScriptPubKey.Hex, "6a")) {
 		logger.Warn("find deposit tx but check rule fail: %v", tx.Txid)
-		return nil, false, nil
+		return depositTx, false, nil
 	}
 	ethAddr, err := getEthAddrFromScript(txOuts[0].ScriptPubKey.Hex)
 	if err != nil {
 		logger.Error("get eth addr from script error:%v %v", txOuts[0].ScriptPubKey.Hex, err)
-		return nil, false, err
+		return depositTx, false, err
 	}
-	depositTx := &BitcoinTx{}
 	utxoList := []Utxo{
 		{
 			TxId:  tx.Txid,

@@ -115,44 +115,7 @@ func (e *EthereumAgent) Init() error {
 }
 
 func (e *EthereumAgent) checkUnGenerateProof() error {
-	//currentHeight, err := e.getEthHeight()
-	//if err != nil {
-	//	logger.Error("get eth current height error:%v", err)
-	//	return err
-	//}
-	//start := currentHeight - e.checkProofHeightNums
-	//var proofList []ProofRequest
-	//for index := start; index < currentHeight; index++ {
-	//	hasObj, err := e.store.HasObj(index)
-	//	if err != nil {
-	//		logger.Error("get txIdList error:%v", err)
-	//		return err
-	//	}
-	//	if !hasObj {
-	//		continue
-	//	}
-	//	var txIdList []string
-	//	err = e.store.GetObj(index, &txIdList)
-	//	if err != nil {
-	//		logger.Error("get txIdList error:%v", err)
-	//		return err
-	//	}
-	//	for _, txId := range txIdList {
-	//		var proof Proof
-	//		err := e.store.GetObj(TxIdToProofId(txId), &proof)
-	//		if err != nil {
-	//			logger.Error("get proof error:%v", err)
-	//			return err
-	//		}
-	//		//todo
-	//		proofList = append(proofList, ProofRequest{
-	//			TxHash:      proof.TxHash,
-	//			ProofType: Redeem,
-	//			Msg:       proof.Msg,
-	//		})
-	//	}
-	//}
-	//e.proofRequest <- proofList
+	// todo
 	return nil
 }
 
@@ -194,7 +157,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		}
 		e.proofRequest <- requests
 		if len(depositTxes) > 0 {
-			err := e.updateDepositFinalStatus(depositTxes)
+			err := e.updateDepositDestChainHash(depositTxes)
 			if err != nil {
 				logger.Error("update deposit final status error: %v %v", index, err)
 				return err
@@ -254,17 +217,13 @@ func (e *EthereumAgent) Transfer() {
 }
 
 func (e *EthereumAgent) updateDestChainHash(txId, ethTxHash string) error {
-	err := WriteDestChainHash(e.store, txId, ethTxHash)
-	if err != nil {
-		logger.Error("write dest hash error: %v %v", txId, err)
-		return err
-	}
+	// todo
 	return nil
 
 }
 
 func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []EthereumTx, proofs []Proof) error {
-	err := WriteEthereumTx(e.store, redeemTxes)
+	err := WriteEthereumTx(e.store, height, redeemTxes)
 	if err != nil {
 		logger.Error("put redeem tx error: %v %v", height, err)
 		return err
@@ -274,6 +233,13 @@ func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []EthereumTx, proo
 		logger.Error("put eth current height error:%v %v", height, err)
 		return err
 	}
+
+	err = WriteRedeemDestChainHash(e.store, redeemTxes)
+	if err != nil {
+		logger.Error("batch write error: %v %v", height, err)
+		return err
+	}
+
 	err = WriteEthereumHeight(e.store, height)
 	if err != nil {
 		logger.Error("batch write error: %v %v", height, err)
@@ -282,8 +248,8 @@ func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []EthereumTx, proo
 	return nil
 }
 
-func (e *EthereumAgent) updateDepositFinalStatus(depositTx []EthereumTx) error {
-	err := UpdateDepositTxFinal(e.store, depositTx)
+func (e *EthereumAgent) updateDepositDestChainHash(depositTx []EthereumTx) error {
+	err := WriteDepositDestChainHash(e.store, depositTx)
 	if err != nil {
 		logger.Error("update deposit final status error: %v %v", depositTx, err)
 		return err
@@ -360,10 +326,10 @@ func (e *EthereumAgent) isDepositTx(log types.Log) (EthereumTx, bool, error) {
 			return depositTx, false, err
 		}
 		depositTx = EthereumTx{
-			TxId:   txId,
-			TxHash: log.TxHash.String(),
-			Vout:   int(vout),
-			Amount: amount,
+			BtcTxId: txId,
+			TxHash:  log.TxHash.String(),
+			Vout:    int(vout),
+			Amount:  amount,
 		}
 		return depositTx, true, nil
 	} else {
@@ -414,7 +380,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (EthereumTx, bool, error) {
 				PkScript: out.PkScript,
 			})
 		}
-		redeemTx.TxId = btcTxId
+		redeemTx.BtcTxId = btcTxId
 		redeemTx.Inputs = inputs
 		redeemTx.Outputs = outputs
 		redeemTx.TxHash = log.TxHash.String()

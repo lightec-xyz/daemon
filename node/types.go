@@ -3,9 +3,6 @@ package node
 import (
 	"bytes"
 	"fmt"
-	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc/ethereum"
-	"github.com/lightec-xyz/daemon/store"
 	"strconv"
 	"sync"
 )
@@ -22,7 +19,7 @@ const (
 type ProofType int
 
 const (
-	Deposit = iota + 1
+	Deposit ProofType = iota + 1
 	Redeem
 	Verify
 )
@@ -36,7 +33,7 @@ type BitcoinTx struct {
 	BlockHash string
 	TxId      string
 	Utxos     []Utxo
-	TxType    int
+	TxType    ProofType
 }
 
 type EthereumTx struct {
@@ -45,9 +42,9 @@ type EthereumTx struct {
 	Inputs    []Utxo
 	Outputs   []TxOut
 
-	Amount int64
-	TxId   string
-	Vout   int
+	Amount  int64
+	BtcTxId string
+	Vout    int
 
 	TxHash string
 }
@@ -177,40 +174,4 @@ type NonceManager struct {
 
 func NewNonceManager() *NonceManager {
 	return &NonceManager{}
-}
-
-func (nm *NonceManager) GetNonce(address string, ethClient *ethereum.Client, store store.IStore) (uint64, error) {
-	//todo
-	if ethClient == nil {
-		return 0, fmt.Errorf("ethClient is nil")
-	}
-	nm.Lock()
-	defer nm.Unlock()
-	chainNonce, err := ethClient.GetNonce(address)
-	if err != nil {
-		logger.Error("nonce manager get nonce error: %v %v", address, err)
-		return 0, err
-	}
-	exists, err := CheckAddressNonce(store, address)
-	if err != nil {
-		logger.Error("check address nonce error: %v %v", address, err)
-		return 0, err
-	}
-	nonce := chainNonce
-	if exists {
-		dbNonce, err := ReadAddressNonce(store, address)
-		if err != nil {
-			logger.Error("nonce manager get nonce error: %v %v", address, err)
-			return 0, err
-		}
-		if chainNonce <= dbNonce+1 {
-			nonce = dbNonce + 1
-		}
-	}
-	err = WriteAddressNonce(store, address, nonce)
-	if err != nil {
-		logger.Error("write address nonce error: %v %v", address, err)
-		return 0, err
-	}
-	return nonce, nil
 }

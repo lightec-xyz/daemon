@@ -24,7 +24,7 @@ func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
 
 func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
 	var txProof Proof
-	proofId := TxIdToProofId(txId)
+	proofId := ProofId(txId)
 	err := h.store.GetObj(proofId, &txProof)
 	if err != nil {
 		logger.Error("get proof error: %v %v", proofId, err)

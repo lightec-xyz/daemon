@@ -2,6 +2,8 @@
 
 A node for a cross-chain bridge between Ethereum and Bitcoin implemented in the Lightning protocol
 
+***Note:*** The project is continuously in development, and there may be incompatible changes in the code and API.
+
 ## Network
 
 Bitcoin Testnet Network:

@@ -23,9 +23,9 @@ func ReadInitBitcoinHeight(store store.IStore) (bool, error) {
 	return store.HasObj(btcCurHeightKey)
 }
 
-func WriteBitcoinTx(store store.IStore, height int64, txes []*BitcoinTx) error {
+func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
 	for _, tx := range txes {
-		err := store.PutObj(TxId(height, tx.TxId), tx)
+		err := store.PutObj(TxIdKey(height, tx.TxId), tx)
 		if err != nil {
 			logger.Error("put bitcoin tx error:%v", err)
 			return err
@@ -34,19 +34,31 @@ func WriteBitcoinTx(store store.IStore, height int64, txes []*BitcoinTx) error {
 	return nil
 }
 
+func WriteDepositDestChainHash(store store.IStore, txList []EthereumTx) error {
+	// todo
+	for _, tx := range txList {
+		err := store.BatchPutObj(TxIdToDestId(tx.BtcTxId), tx.TxHash)
+		if err != nil {
+			logger.Error("put deposit dest chain error:%v", err)
+			return err
+		}
+	}
+	err := store.BatchWriteObj()
+	if err != nil {
+		logger.Error("put deposit dest chain batch  error:%v", err)
+		return err
+	}
+	return nil
+}
+
 func WriteProof(store store.IStore, txes []Proof) error {
 	for _, tx := range txes {
-		err := store.PutObj(TxIdToProofId(tx.TxId), tx)
+		err := store.PutObj(ProofId(tx.TxId), tx)
 		if err != nil {
 			logger.Error("put proof tx error:%v", err)
 			return err
 		}
 	}
-	return nil
-}
-
-func UpdateRedeemInfo(store store.IStore, txes []*BitcoinTx) error {
-	//todo
 	return nil
 }
 
@@ -57,11 +69,7 @@ func UpdateProof(store store.IStore, txId, proof string, proofType ProofType, st
 		Status:    status,
 		ProofType: proofType,
 	}
-	return store.PutObj(TxIdToProofId(txId), txProof)
-}
-
-func WriteDestChainHash(store store.IStore, txId, destHash string) error {
-	return store.PutObj(TxIdToDestId(txId), destHash)
+	return store.PutObj(ProofId(txId), txProof)
 }
 
 func WriteEthereumHeight(store store.IStore, height int64) error {
@@ -82,9 +90,9 @@ func ReadInitEthereumHeight(store store.IStore) (bool, error) {
 	return store.HasObj(ethCurHeightKey)
 }
 
-func WriteEthereumTx(store store.IStore, txes []EthereumTx) error {
+func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error {
 	for _, tx := range txes {
-		err := store.PutObj(tx.TxHash, tx)
+		err := store.PutObj(TxIdKey(height, tx.BtcTxId), tx)
 		if err != nil {
 			logger.Error("put ethereum tx error:%v", err)
 			return err
@@ -93,51 +101,33 @@ func WriteEthereumTx(store store.IStore, txes []EthereumTx) error {
 	return nil
 }
 
-func UpdateDepositTxFinal(store store.IStore, depositTxes []EthereumTx) error {
-	// todo
-	return nil
-}
-
-func ReadAddressNonce(store store.IStore, address string) (uint64, error) {
-	key := fmt.Sprintf("%s%s", NoncePrefix, address)
-	var nonce uint64
-	err := store.GetObj(key, &nonce)
-	if err != nil {
-		logger.Error("nonce manager get nonce error: %v %v", address, err)
-		return 0, err
+func WriteRedeemDestChainHash(store store.IStore, txList []EthereumTx) error {
+	for _, tx := range txList {
+		err := store.BatchPutObj(TxIdToDestId(tx.TxHash), tx.BtcTxId)
+		if err != nil {
+			logger.Error("put deposit dest chain error:%v", err)
+			return err
+		}
 	}
-	return nonce, nil
-}
-
-func WriteAddressNonce(store store.IStore, address string, nonce uint64) error {
-	key := fmt.Sprintf("%s%s", NoncePrefix, address)
-	err := store.PutObj(key, nonce)
+	err := store.BatchWriteObj()
 	if err != nil {
-		logger.Error("write address nonce error: %v %v", address, err)
+		logger.Error("put deposit dest chain batch  error:%v", err)
 		return err
 	}
 	return nil
 }
-func CheckAddressNonce(store store.IStore, address string) (bool, error) {
-	key := fmt.Sprintf("%s%s", NoncePrefix, address)
-	ok, err := store.HasObj(key)
-	if err != nil {
-		logger.Error("nonce manager get nonce error: %v %v", address, err)
-		return false, err
-	}
-	return ok, nil
-}
 
-func TxIdToProofId(txId string) string {
+func ProofId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", ProofPrefix, txId)
 	return pTxID
 }
-func TxIdToDestId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", DestTxHashPrefix, txId)
+
+func TxIdKey(height int64, txId string) string {
+	pTxID := fmt.Sprintf("%d_%s%s", height, TxPrefix, txId)
 	return pTxID
 }
 
-func TxId(height int64, txId string) string {
-	pTxID := fmt.Sprintf("%d_%s%s", height, TxPrefix, txId)
+func TxIdToDestId(txId string) string {
+	pTxID := fmt.Sprintf("%s%s", DestChainHashPrefix, txId)
 	return pTxID
 }

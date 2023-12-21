@@ -11,6 +11,11 @@ type MemoryStore struct {
 	memoryDb *MemoryDb
 }
 
+func (m *MemoryStore) Iterator(prefix []byte, start []byte) Iterator {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewMemoryStore() *MemoryStore {
 	memoryDb := NewMemoryDb()
 	return &MemoryStore{memoryDb: memoryDb}
@@ -45,7 +50,7 @@ func (m *MemoryStore) BatchWrite() error {
 }
 
 func (m *MemoryStore) HasObj(key interface{}) (bool, error) {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return false, err
@@ -54,7 +59,7 @@ func (m *MemoryStore) HasObj(key interface{}) (bool, error) {
 }
 
 func (m *MemoryStore) GetObj(key interface{}, value interface{}) error {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -68,7 +73,7 @@ func (m *MemoryStore) GetObj(key interface{}, value interface{}) error {
 }
 
 func (m *MemoryStore) DeleteObj(key interface{}) error {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -81,7 +86,7 @@ func (m *MemoryStore) PutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -95,7 +100,7 @@ func (m *MemoryStore) BatchPutObj(key interface{}, value interface{}) error {
 		logger.Error("value can't Marshal error:%v", err)
 		return err
 	}
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
@@ -104,7 +109,7 @@ func (m *MemoryStore) BatchPutObj(key interface{}, value interface{}) error {
 }
 
 func (m *MemoryStore) BatchDeleteObj(key interface{}) error {
-	keyBytes, err := objKeyEncode(key)
+	keyBytes, err := KeyEncode(key)
 	if err != nil {
 		logger.Error("key parse bytes error:%v", err)
 		return err
