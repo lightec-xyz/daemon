@@ -25,11 +25,16 @@ func ReadInitBitcoinHeight(store store.IStore) (bool, error) {
 
 func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
 	for _, tx := range txes {
-		err := store.PutObj(TxIdKey(height, tx.TxId), tx)
+		err := store.BatchPutObj(TxIdKey(height, tx.TxId), tx)
 		if err != nil {
 			logger.Error("put bitcoin tx error:%v", err)
 			return err
 		}
+	}
+	err := store.BatchWriteObj()
+	if err != nil {
+		logger.Error("put bitcoin tx batch error:%v", err)
+		return err
 	}
 	return nil
 }
@@ -53,11 +58,16 @@ func WriteDepositDestChainHash(store store.IStore, txList []EthereumTx) error {
 
 func WriteProof(store store.IStore, txes []Proof) error {
 	for _, tx := range txes {
-		err := store.PutObj(ProofId(tx.TxId), tx)
+		err := store.BatchPutObj(ProofId(tx.TxId), tx)
 		if err != nil {
 			logger.Error("put proof tx error:%v", err)
 			return err
 		}
+	}
+	err := store.BatchWriteObj()
+	if err != nil {
+		logger.Error("put bitcoin tx batch error:%v", err)
+		return err
 	}
 	return nil
 }
@@ -69,7 +79,12 @@ func UpdateProof(store store.IStore, txId, proof string, proofType ProofType, st
 		Status:    status,
 		ProofType: proofType,
 	}
-	return store.PutObj(ProofId(txId), txProof)
+	err := store.PutObj(ProofId(txId), txProof)
+	if err != nil {
+		logger.Error("put proof tx error:%v %v", txId, err)
+		return err
+	}
+	return nil
 }
 
 func WriteEthereumHeight(store store.IStore, height int64) error {
@@ -92,11 +107,16 @@ func ReadInitEthereumHeight(store store.IStore) (bool, error) {
 
 func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error {
 	for _, tx := range txes {
-		err := store.PutObj(TxIdKey(height, tx.BtcTxId), tx)
+		err := store.BatchPutObj(TxIdKey(height, tx.BtcTxId), tx)
 		if err != nil {
 			logger.Error("put ethereum tx error:%v", err)
 			return err
 		}
+	}
+	err := store.BatchWriteObj()
+	if err != nil {
+		logger.Error("put bitcoin tx batch error:%v", err)
+		return err
 	}
 	return nil
 }

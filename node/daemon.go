@@ -74,7 +74,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 	agents = append(agents, ethAgent)
 
-	workers := make([]IWorker, 1)
+	workers := make([]IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
 		workers = append(workers, NewLocalWorker(1))

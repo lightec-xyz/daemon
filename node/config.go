@@ -131,6 +131,7 @@ func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport
 		EthPrivateKey:    ethPrivateKey,
 		LogAddr:          LogAddrs,
 		LogTopic:         LogTopics,
+		AutoSubmit:       true,
 		MultiAddressInfo: multiSigAddressInfo,
 	}, nil
 }
@@ -175,8 +176,8 @@ func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, b
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		BtcInitHeight: TestnetInitBitcoinHeight,
-
+		BtcInitHeight:    TestnetInitBitcoinHeight,
+		AutoSubmit:       true,
 		EthInitHeight:    TestnetInitEthereumHeight,
 		EthUrl:           ethUrl,
 		ZkBridgeAddr:     TestnetEthZkBridgeAddress,
@@ -229,8 +230,8 @@ func newLocalConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, 
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		BtcInitHeight: LocalInitBitcoinHeight,
-
+		BtcInitHeight:    LocalInitBitcoinHeight,
+		AutoSubmit:       true,
 		EthInitHeight:    LocalInitEthereumHeight,
 		EthUrl:           ethUrl,
 		ZkBridgeAddr:     LocalEthZkBridgeAddress,

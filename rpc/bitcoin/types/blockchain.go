@@ -63,7 +63,7 @@ type TxVin struct {
 	TxId        string    `json:"txid"`
 	Vout        int       `json:"vout"`
 	ScriptSig   ScriptSig `json:"scriptSig"`
-	Prevout     *Prevout  `json:"prevout"`
+	Prevout     Prevout   `json:"prevout"`
 	Coinbase    string    `json:"coinbase"`
 	Sequence    int64     `json:"sequence"`
 	Txinwitness []string  `json:"txinwitness"`

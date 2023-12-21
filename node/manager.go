@@ -83,15 +83,17 @@ func (m *Manager) genProof() {
 			request, ok := frontElement.Value.(ProofRequest)
 			if !ok {
 				logger.Error("should never happen,parse proof request error")
+				time.Sleep(1 * time.Second)
 				continue
 			}
+			// todo
+			m.proofQueue.Remove(frontElement)
 
 			proofSubmitted, err := m.CheckProof(request)
 			if err != nil {
 				logger.Error("check proof error:%v", err)
 				continue
 			}
-			m.proofQueue.Remove(frontElement)
 			if proofSubmitted {
 				logger.Info("proof already submitted:%v", request.String())
 				continue
@@ -103,15 +105,22 @@ func (m *Manager) genProof() {
 					//todo add queue again or cli retry ?
 					logger.Error("gen proof error:%v %v", request.TxId, err)
 				}
-				logger.Info("worker response proof: %v", proofResponse.String())
-				switch proofResponse.ProofType {
-				case Deposit:
-					m.btcProofResp <- proofResponse
-				case Redeem:
-					m.ethProofResp <- proofResponse
-				default:
-					logger.Error("never should happen proof type:%v", proofResponse.ProofType)
+				if proofResponse.Status == ProofSuccess {
+					logger.Info("worker response proof: %v", proofResponse.String())
+					switch proofResponse.ProofType {
+					case Deposit:
+						m.btcProofResp <- proofResponse
+					case Redeem:
+						m.ethProofResp <- proofResponse
+					default:
+						logger.Error("never should happen proof type:%v", proofResponse.ProofType)
+					}
+				} else {
+					logger.Error("worker response proof error: %v", proofResponse.String())
+					// todo
+
 				}
+
 			}()
 		}
 	}

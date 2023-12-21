@@ -74,8 +74,8 @@ const (
 	LocalBtcScanTime = 1 * time.Minute
 	LocalEthScanTime = 5 * time.Second
 
-	LocalInitBitcoinHeight  = 2540942
-	LocalInitEthereumHeight = 10127532
+	LocalInitBitcoinHeight  = 11901
+	LocalInitEthereumHeight = 571392
 
 	LocalLogDepositAddr   = "0xbdfb7b89e9c77fe647ac1628416773c143ca4b51"
 	LocalLogRedeemAddr    = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"

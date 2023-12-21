@@ -31,16 +31,18 @@ type ProofRequest struct {
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
+	BtcTxId string  `json:"btcTxId"`
 
 	// deposit
 	Utxos   []Utxo
 	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
+	// other
 	Height    int64  `json:"height"`
 	BlockHash string `json:"blockHash"`
 	TxId      string `json:"txId"`
-	ProofType string `json:"type"`
+	ProofType int    `json:"type"` // todo
 	Proof     string `json:"proof"`
 	Msg       string `json:"msg"`
 }
@@ -49,16 +51,18 @@ type ProofResponse struct { // redeem
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
+	BtcTxId string  `json:"btcTxId"`
 
 	// deposit
 	Utxos   []Utxo
 	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
+	// other
 	Height    int64  `json:"height"`
 	BlockHash string `json:"blockHash"`
 	TxId      string `json:"txId"`
-	ProofType string `json:"type"`
+	ProofType int    `json:"type"` // todo
 	Proof     string `json:"proof"`
 	Msg       string `json:"msg"`
 }

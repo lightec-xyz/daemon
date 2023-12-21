@@ -95,11 +95,11 @@ func (m *Mock) DepositBtc(value int64) error {
 	}
 	logger.Info("success send btc tx hash:%v", txHash)
 
-	err = m.DepositBtcToEth(txHash, 0, big.NewInt(outpuValue))
-	if err != nil {
-		logger.Error("deposit btc to eth error:%v", err)
-		return err
-	}
+	//err = m.DepositBtcToEth(txHash, 0, big.NewInt(outpuValue))
+	//if err != nil {
+	//	logger.Error("deposit btc to eth error:%v", err)
+	//	return err
+	//}
 
 	return nil
 }

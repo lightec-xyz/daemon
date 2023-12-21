@@ -100,6 +100,7 @@ type ProofRequest struct {
 	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
+	// other
 	Height    int64     `json:"height"`
 	BlockHash string    `json:"blockHash"`
 	TxId      string    `json:"txId"`
@@ -129,6 +130,7 @@ type ProofResponse struct {
 	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
+	// other
 	Height    int64       `json:"height"`
 	BlockHash string      `json:"blockHash"`
 	TxId      string      `json:"txId"`

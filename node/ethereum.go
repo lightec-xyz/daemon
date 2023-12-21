@@ -200,12 +200,7 @@ func (e *EthereumAgent) Transfer() {
 						logger.Error("redeem btc tx error:%v", err)
 						continue
 					}
-					err = e.updateDestChainHash(resp.TxId, txHash)
-					if err != nil {
-						logger.Error("update dest hash error: %v %v", resp.TxId, err)
-						continue
-					}
-					logger.Info("success redeem btc tx:%v", resp)
+					logger.Info("success redeem btc tx:%v", txHash)
 				} else {
 					// todo
 					logger.Warn("proof generate failed :%v %v", resp.TxId, resp.Status)
@@ -213,12 +208,6 @@ func (e *EthereumAgent) Transfer() {
 			}
 		}
 	}
-
-}
-
-func (e *EthereumAgent) updateDestChainHash(txId, ethTxHash string) error {
-	// todo
-	return nil
 
 }
 
@@ -295,7 +284,7 @@ func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []
 		if isRedeem {
 			logger.Info("ethereum agent find redeem zkbtc tx: %v", redeemTx.String())
 			proofs = append(proofs, NewRedeemProof(redeemTx.TxHash))
-			requests = append(requests, NewRedeemProofRequest(redeemTx.TxHash))
+			requests = append(requests, NewRedeemProofRequest(redeemTx.TxHash, redeemTx.BtcTxId, redeemTx.Inputs, redeemTx.Outputs))
 			redeemTxes = append(redeemTxes, redeemTx)
 			continue
 		}
@@ -494,10 +483,13 @@ func (e *EthereumAgent) BlockTime() time.Duration {
 	return e.blockTime
 }
 
-func NewRedeemProofRequest(txId string) ProofRequest {
+func NewRedeemProofRequest(txId, btcTxId string, inputs []Utxo, outputs []TxOut) ProofRequest {
 	return ProofRequest{
 		TxId:      txId,
 		ProofType: Redeem,
+		Inputs:    inputs,
+		Outputs:   outputs,
+		BtcTxId:   btcTxId,
 	}
 }
 

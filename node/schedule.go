@@ -33,11 +33,12 @@ func (m *Schedule) AddWorker(endpoint string, nums int) error {
 func (m *Schedule) GenZKProof(worker IWorker, req ProofRequest) (ProofResponse, error) {
 	worker.Add()
 	defer worker.Del()
-	//todo
+	// todo
 	proofResp := ProofResponse{}
 	rpcReq := rpc.ProofRequest{}
 	err := objParse(req, &rpcReq)
 	if err != nil {
+		logger.Error("parse proof request error:%v", err)
 		return proofResp, err
 	}
 	proofResponse, err := worker.GenProof(rpcReq)
@@ -47,8 +48,10 @@ func (m *Schedule) GenZKProof(worker IWorker, req ProofRequest) (ProofResponse, 
 	}
 	err = objParse(proofResponse, &proofResp)
 	if err != nil {
+		logger.Error("parse proof response error:%v", err)
 		return proofResp, nil
 	}
+	proofResp.Status = ProofSuccess
 	return proofResp, nil
 
 }

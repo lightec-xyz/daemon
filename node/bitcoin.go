@@ -248,25 +248,15 @@ func (b *BitcoinAgent) Transfer() {
 						logger.Error("mint btc tx error:%v", err)
 						continue
 					}
-					err = b.updateDestChainHash(resp.TxId, txHash)
-					if err != nil {
-						logger.Error("update deposit info error: %v %v", resp.TxId, err)
-						continue
-					}
+					logger.Info("success mint zkbtc tx: %v", txHash)
 				}
 			} else {
-				logger.Warn("proof generate fail status: %v %v", resp.TxId, resp.Status)
 				//todo retry ?
+				logger.Warn("proof generate fail status: %v %v", resp.TxId, resp.Status)
 			}
 		}
 
 	}
-}
-
-func (b *BitcoinAgent) updateDestChainHash(txId, ethTxHash string) error {
-	// todo
-	return nil
-
 }
 
 func (b *BitcoinAgent) updateContractUtxoChange(utxoList []BitcoinTx) error {
@@ -428,10 +418,11 @@ func getEthAddrFromScript(script string) (string, error) {
 
 func NewDepositProofRequest(txId, ethAddr string, amount int64, utxo []Utxo) ProofRequest {
 	return ProofRequest{
-		TxId:    txId,
-		EthAddr: ethAddr,
-		Amount:  amount,
-		Utxos:   utxo,
+		TxId:      txId,
+		EthAddr:   ethAddr,
+		Amount:    amount,
+		Utxos:     utxo,
+		ProofType: Deposit,
 	}
 }
 
