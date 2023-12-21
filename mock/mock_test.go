@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/lightec-xyz/daemon/logger"
+	"math/big"
 	"testing"
 )
 
@@ -17,6 +18,13 @@ func init() {
 }
 func TestMockDeposit(t *testing.T) {
 	err = mock.DepositBtc(10000)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMock_DepositBtcToEth(t *testing.T) {
+	err := mock.DepositBtcToEth("test", 0, big.NewInt(1000000))
 	if err != nil {
 		t.Fatal(err)
 	}

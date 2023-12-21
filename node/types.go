@@ -132,13 +132,13 @@ type ProofResponse struct {
 	Amount  int64  `json:"amount"`
 	EthAddr string `json:"ethAddr"`
 
-	Height    int64     `json:"height"`
-	BlockHash string    `json:"blockHash"`
-	TxId      string    `json:"txId"`
-	ProofType ProofType `json:"type"`
-	Proof     string    `json:"proof"`
-	Msg       string    `json:"msg"`
-	Status    int       `json:"status"`
+	Height    int64       `json:"height"`
+	BlockHash string      `json:"blockHash"`
+	TxId      string      `json:"txId"`
+	ProofType ProofType   `json:"type"`
+	Proof     string      `json:"proof"`
+	Msg       string      `json:"msg"`
+	Status    ProofStatus `json:"status"`
 }
 
 func (resp *ProofResponse) String() string {

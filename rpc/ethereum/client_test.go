@@ -6,9 +6,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/lightec-xyz/daemon/logger"
 	"log"
 	"math/big"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -71,7 +75,7 @@ func TestClient_TestEth(t *testing.T) {
 func TestClient_GetLogs(t *testing.T) {
 	//563180
 	//563166
-	block, err := client.GetBlock(563180)
+	block, err := client.GetBlock(563166)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +90,27 @@ func TestClient_GetLogs(t *testing.T) {
 	//t.Log(logs)
 	for _, log := range logs {
 		t.Log(log.Address.Hex(), log.Address.String(), log.Index, log.Topics, fmt.Sprintf("%x", log.Data))
+		if strings.ToLower(log.Address.Hex()) == "0xa7becea4ce9040336d7d4aad84e684d1daeabea1" {
+			parseEthDeposit(log)
+		}
+
 	}
+}
+
+func parseEthDeposit(log types.Log) {
+	txId := strings.ToLower(log.Topics[1].Hex())
+	sprintf := strings.TrimPrefix(log.Topics[2].Hex(), "0x")
+	vout, err := strconv.ParseInt(strings.ToLower(sprintf), 16, 32)
+	if err != nil {
+		logger.Error("parse vout error:%v", err)
+		panic(err)
+	}
+	amount, err := strconv.ParseInt(fmt.Sprintf("%x", log.Data), 16, 64)
+	if err != nil {
+		logger.Error("parse amount error:%v", err)
+		panic(err)
+	}
+	fmt.Println(txId, vout, amount)
 }
 
 func TestPrivateKey(t *testing.T) {

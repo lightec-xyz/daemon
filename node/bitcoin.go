@@ -21,7 +21,6 @@ type BitcoinAgent struct {
 	blockTime            time.Duration
 	proofResponse        <-chan ProofResponse
 	proofRequest         chan<- []ProofRequest
-	nonceManager         *NonceManager
 	checkProofHeightNums int64
 	whiteList            map[string]bool // todo
 	operatorAddr         string
@@ -51,7 +50,6 @@ func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient 
 		proofResponse:        response,
 		checkProofHeightNums: 100, // todo
 		minDepositValue:      0,   // todo
-		nonceManager:         nonceManager,
 		keyStore:             keyStore,
 		submitTxEthAddr:      submitTxEthAddr,
 		exitSign:             make(chan struct{}, 1),
@@ -69,7 +67,7 @@ func (b *BitcoinAgent) Init() error {
 	}
 	if exists {
 		logger.Debug("bitcoin agent check uncompleted generate proof tx")
-		err := b.checkUnCompleteGenerateProofTx()
+		err := b.checkUnGenerateProof()
 		if err != nil {
 			logger.Error("check uncompleted generate proof tx error:%v", err)
 			return err
@@ -92,8 +90,8 @@ func (b *BitcoinAgent) Init() error {
 	return nil
 }
 
-// checkUnCompleteGenerateProofTx check uncompleted generate proof tx,resend again
-func (b *BitcoinAgent) checkUnCompleteGenerateProofTx() error {
+// checkUnGenerateProof check uncompleted generate proof tx,resend again
+func (b *BitcoinAgent) checkUnGenerateProof() error {
 	return nil
 	//currentHeight, err := b.getCurrentHeight()
 	//if err != nil {
@@ -234,9 +232,9 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]*BitcoinTx, []*BitcoinTx, []P
 		logger.Error("btcClient get block error: %v %v", blockHash, err)
 		return nil, nil, nil, nil, err
 	}
-	var requests []ProofRequest
 	var depositTxes []*BitcoinTx
 	var redeemTxes []*BitcoinTx
+	var requests []ProofRequest
 	var proofs []Proof
 	for _, tx := range blockWithTx.Tx {
 		redeemTx, isRedeem := b.isRedeemTx(tx)
@@ -268,38 +266,40 @@ func (b *BitcoinAgent) Transfer() {
 		case <-b.exitSign:
 			logger.Info("bitcoin transfer goroutine exit ...")
 			return
-		case response := <-b.proofResponse:
-			logger.Info("bitcoinAgent receive deposit proof response: %v", response.String())
-			err := b.updateProof(response)
+		case resp := <-b.proofResponse:
+			logger.Info("bitcoinAgent receive deposit proof resp: %v", resp.String())
+			err := b.updateDepositProof(resp.TxId, resp.Proof, resp.Status)
 			if err != nil {
-				logger.Error("update proof error: %v %v", response.TxId, err)
+				logger.Error("update proof error: %v %v", resp.TxId, err)
 				continue
 			}
-			exists, err := b.ethClient.CheckDepositProof(response.TxId)
-			if err != nil {
-				// todo retry  add queue?
-				logger.Error("check deposit proof error: %v %v", response.TxId, err)
-				continue
-			}
-			if exists {
-				logger.Warn("deposit utxo already exists: %v", response.TxId)
-				continue
-			}
-			if b.autoSubmit {
-				if ProofStatus(response.Status) == ProofSuccess {
-					txHash, err := b.MintZKBtcTx(response)
+			if resp.Status == ProofSuccess {
+				exists, err := b.ethClient.CheckDepositProof(resp.TxId)
+				if err != nil {
+					// todo retry  add queue?
+					logger.Error("check deposit proof error: %v %v", resp.TxId, err)
+					continue
+				}
+				if exists {
+					logger.Warn("deposit utxo already exists: %v", resp.TxId)
+					continue
+				}
+				if b.autoSubmit {
+					txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.Amount)
 					if err != nil {
 						//todo add queue or cli retry ?
 						logger.Error("mint btc tx error:%v", err)
 						continue
 					}
-					err = b.updateDestChainHash(response.TxId, txHash)
+					err = b.updateDestChainHash(resp.TxId, txHash)
 					if err != nil {
-						logger.Error("update deposit info error: %v %v", response.TxId, err)
+						logger.Error("update deposit info error: %v %v", resp.TxId, err)
 						continue
 					}
 				}
-
+			} else {
+				logger.Warn("proof generate fail status: %v %v", resp.TxId, resp.Status)
+				//todo retry ?
 			}
 		}
 
@@ -322,7 +322,7 @@ func (b *BitcoinAgent) updateContractUtxoChange(utxoList []*BitcoinTx) error {
 	for _, tx := range utxoList {
 		txIds = append(txIds, tx.TxId)
 	}
-	nonce, err := b.nonceManager.GetNonce(b.submitTxEthAddr, b.ethClient, b.store)
+	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
 	if err != nil {
 		logger.Error("get  nonce error:%v", err)
 		return err
@@ -348,9 +348,9 @@ func (b *BitcoinAgent) updateContractUtxoChange(utxoList []*BitcoinTx) error {
 	return nil
 }
 
-func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) (string, error) {
-	//todo
-	nonce, err := b.nonceManager.GetNonce(b.submitTxEthAddr, b.ethClient, b.store)
+func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof string, amount int64) (string, error) {
+	//todo need assign nonce ？
+	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
 	if err != nil {
 		logger.Error("get nonce error:%v", err)
 		return "", err
@@ -366,11 +366,16 @@ func (b *BitcoinAgent) MintZKBtcTx(resp ProofResponse) (string, error) {
 		return "", err
 	}
 	//todo
+	if len(utxo) == 0 {
+		logger.Error("no utxo")
+		return "", fmt.Errorf("no utxo")
+	}
+	txId := utxo[0].TxId
+	index := utxo[0].Index
 	gasLimit := uint64(500000)
-	amountBig := big.NewInt(resp.Amount)
-	proofBytes := []byte(resp.Proof)
-	index := resp.Utxos[0].Index
-	txHash, err := b.ethClient.Deposit(b.keyStore.GetPrivateKey(), resp.TxId, index, nonce, gasLimit, chainId, gasPrice,
+	amountBig := big.NewInt(amount)
+	proofBytes := []byte(proof)
+	txHash, err := b.ethClient.Deposit(b.keyStore.GetPrivateKey(), txId, index, nonce, gasLimit, chainId, gasPrice,
 		amountBig, proofBytes)
 	if err != nil {
 		logger.Error("mint btc tx error:%v", err)
@@ -431,10 +436,10 @@ func (b *BitcoinAgent) isDepositTx(tx types.Tx) (*BitcoinTx, bool, error) {
 	return depositTx, true, nil
 }
 
-func (b *BitcoinAgent) updateProof(resp ProofResponse) error {
-	err := UpdateProof(b.store, resp.TxId, resp.Proof, Deposit, ProofStatus(resp.Status))
+func (b *BitcoinAgent) updateDepositProof(txId, proof string, status ProofStatus) error {
+	err := UpdateProof(b.store, txId, proof, Deposit, status)
 	if err != nil {
-		logger.Error("update proof error: %v %v", resp.TxId, err)
+		logger.Error("update proof error: %v %v", txId, err)
 		return err
 	}
 	return nil
