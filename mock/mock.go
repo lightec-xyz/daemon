@@ -93,18 +93,12 @@ func (m *Mock) DepositBtc(value int64) error {
 		logger.Error("send btc tx error:%v", err)
 		return err
 	}
-	logger.Info("success send btc tx hash:%v", txHash)
-
-	//err = m.DepositBtcToEth(txHash, 0, big.NewInt(outpuValue))
-	//if err != nil {
-	//	logger.Error("deposit btc to eth error:%v", err)
-	//	return err
-	//}
+	logger.Info("success send btc tx hash:%v index: %v", txHash, 1)
 
 	return nil
 }
 
-func (m *Mock) DepositBtcToEth(txId string, index uint32, amount *big.Int) error {
+func (m *Mock) DepositBtcToEth(txId, receiverAddr string, index uint32, amount *big.Int) error {
 	nonce, err := m.ethClient.GetNonce(m.cfg.EthAddr)
 	if err != nil {
 		logger.Error("get nonce error:%v", err)
@@ -122,7 +116,7 @@ func (m *Mock) DepositBtcToEth(txId string, index uint32, amount *big.Int) error
 	}
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(3))
 	gasLimit := uint64(500000)
-	ethTxHash, err := m.ethClient.Deposit(m.cfg.EthPrivateKey, txId, index, nonce, gasLimit, chainID, gasPrice,
+	ethTxHash, err := m.ethClient.Deposit(m.cfg.EthPrivateKey, receiverAddr, txId, index, nonce, gasLimit, chainID, gasPrice,
 		amount, []byte("test proof"))
 	if err != nil {
 		logger.Error(" deposit eth error:%v", err)

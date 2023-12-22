@@ -75,13 +75,13 @@ func TestClient_TestEth(t *testing.T) {
 func TestClient_GetLogs(t *testing.T) {
 	//563180
 	//563166
-	block, err := client.GetBlock(563166)
+	block, err := client.GetBlock(576047)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//t.Log(block)
-	address := []string{"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51", "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"}
-	topic := []string{"0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a", "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"}
+	address := []string{"0x52ebc075616195cc7deb79d5c21bd9b04acc33ee", "0x8b404b735afe5bcdce85a1ce753c79715f86062c"}
+	topic := []string{"0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce", "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"}
 	logs, err := client.GetLogs(block.Hash().Hex(),
 		address, topic)
 	if err != nil {
@@ -90,9 +90,6 @@ func TestClient_GetLogs(t *testing.T) {
 	//t.Log(logs)
 	for _, log := range logs {
 		t.Log(log.Address.Hex(), log.Address.String(), log.Index, log.Topics, fmt.Sprintf("%x", log.Data))
-		if strings.ToLower(log.Address.Hex()) == "0xa7becea4ce9040336d7d4aad84e684d1daeabea1" {
-			parseEthDeposit(log)
-		}
 
 	}
 }
@@ -195,7 +192,7 @@ func TestDepositeTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	txHash, err := client.Deposit(privateKey, txId, index,
+	txHash, err := client.Deposit(privateKey, txId, "", index,
 		nonce, uint64(gasLimit), chainID, gasPrice, amount, proofBytes)
 	if err != nil {
 		t.Fatal(err)

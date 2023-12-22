@@ -33,7 +33,7 @@ func init() {
 }
 
 func TestClient_GetBlockHeader(t *testing.T) {
-	header, err := client.GetBlockHeader("0ca10b19b94eedc77da894b15c6a62407e73a8eb312c8d9befd1769448f92ce7")
+	header, err := client.GetBlockHeader("6dd9258faef568db4816b9cd61bd0b920772bc5f3e440f1f6c12baae64f44144")
 	if err != nil {
 		panic(err)
 	}

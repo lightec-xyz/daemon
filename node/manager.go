@@ -24,7 +24,18 @@ type Manager struct {
 	exit         chan struct{}
 }
 
-func NewManager(proofRequest chan []ProofRequest, btcProofResp, ethProofResp chan ProofResponse, store, memory store.IStore, schedule *Schedule) *Manager {
+func NewManager(cfg NodeConfig, proofRequest chan []ProofRequest, btcProofResp, ethProofResp chan ProofResponse, store, memory store.IStore, schedule *Schedule) (*Manager, error) {
+	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcNetwork)
+	if err != nil {
+		logger.Error("new bitcoin rpc client error:%v", err)
+		return nil, err
+	}
+	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
+	if err != nil {
+		logger.Error("new ethereum rpc client error:%v", err)
+		return nil, err
+	}
+
 	return &Manager{
 		proofQueue:   NewSafeList(),
 		schedule:     schedule,
@@ -33,8 +44,10 @@ func NewManager(proofRequest chan []ProofRequest, btcProofResp, ethProofResp cha
 		proofRequest: proofRequest,
 		btcProofResp: btcProofResp,
 		ethProofResp: ethProofResp,
+		btcClient:    btcClient,
+		ethClient:    ethClient,
 		exit:         make(chan struct{}, 1),
-	}
+	}, nil
 }
 
 func (m *Manager) run() {
@@ -92,7 +105,6 @@ func (m *Manager) genProof() {
 			proofSubmitted, err := m.CheckProof(request)
 			if err != nil {
 				logger.Error("check proof error:%v", err)
-				continue
 			}
 			if proofSubmitted {
 				logger.Info("proof already submitted:%v", request.String())
@@ -104,21 +116,16 @@ func (m *Manager) genProof() {
 				if err != nil {
 					//todo add queue again or cli retry ?
 					logger.Error("gen proof error:%v %v", request.TxId, err)
+					return
 				}
-				if proofResponse.Status == ProofSuccess {
-					logger.Info("worker response proof: %v", proofResponse.String())
-					switch proofResponse.ProofType {
-					case Deposit:
-						m.btcProofResp <- proofResponse
-					case Redeem:
-						m.ethProofResp <- proofResponse
-					default:
-						logger.Error("never should happen proof type:%v", proofResponse.ProofType)
-					}
-				} else {
-					logger.Error("worker response proof error: %v", proofResponse.String())
-					// todo
-
+				logger.Info("worker response proof: %v", proofResponse.String())
+				switch proofResponse.ProofType {
+				case Deposit:
+					m.btcProofResp <- proofResponse
+				case Redeem:
+					m.ethProofResp <- proofResponse
+				default:
+					logger.Error("never should happen proof type:%v", proofResponse.ProofType)
 				}
 
 			}()

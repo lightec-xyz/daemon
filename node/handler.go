@@ -33,6 +33,7 @@ func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
 	result := rpc.ProofInfo{
 		Status: int(txProof.Status),
 		Proof:  txProof.Proof,
+		Msg:    "success",
 	}
 	return result, nil
 }

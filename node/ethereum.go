@@ -31,16 +31,11 @@ type EthereumAgent struct {
 	exitSign             chan struct{}
 	multiAddressInfo     MultiAddressInfo
 	btcNetwork           btctx.NetWork
-
-	logDepositAddr   string
-	logRedeemAddr    string
-	topicDepositAddr string
-	topicRedeemAddr  string
-
-	privateKeys      []*btcec.PrivateKey //todo just test
-	initStartHeight  int64
-	ethSubmitAddress string
-	autoSubmit       bool
+	addrFilter           EthAddrFilter
+	privateKeys          []*btcec.PrivateKey //todo just test
+	initStartHeight      int64
+	ethSubmitAddress     string
+	autoSubmit           bool
 }
 
 func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
@@ -80,6 +75,7 @@ func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient
 		initStartHeight:      cfg.EthInitHeight,
 		ethSubmitAddress:     submitTxEthAddr,
 		autoSubmit:           cfg.AutoSubmit,
+		addrFilter:           cfg.EthAddrFilter,
 	}, nil
 }
 
@@ -137,7 +133,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		logger.Error("get eth block number error:%v", err)
 		return err
 	}
-	blockNumber = blockNumber - 5
+	blockNumber = blockNumber - 0
 	//todo
 	if ethHeight >= int64(blockNumber) {
 		logger.Debug("eth current height:%d,latest block number :%d", ethHeight, blockNumber)
@@ -253,8 +249,8 @@ func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []
 		return nil, nil, nil, nil, err
 	}
 	blockHash := block.Hash().String()
-	logAddrs := []string{e.logDepositAddr, e.logRedeemAddr}
-	logTopics := []string{e.topicDepositAddr, e.topicRedeemAddr}
+	logAddrs := []string{e.addrFilter.LogDepositAddr, e.addrFilter.LogRedeemAddr}
+	logTopics := []string{e.addrFilter.LogTopicDepositAddr, e.addrFilter.LogTopicRedeemAddr}
 	logs, err := e.ethClient.GetLogs(blockHash, logAddrs, logTopics)
 	if err != nil {
 		logger.Error("ethereum rpc get logs error:%v", err)
@@ -271,7 +267,8 @@ func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []
 			return nil, nil, nil, nil, err
 		}
 		if isDeposit {
-			logger.Info("ethereum agent find deposit zkbtc tx: %v", depositTx.String())
+			logger.Info("ethereum agent find deposit zkbtc ethTxHash:%v,btcTxId:%v,index:%v,amount:%v",
+				depositTx.TxHash, depositTx.BtcTxId, depositTx.Vout, depositTx.Amount)
 			depositTxes = append(depositTxes, depositTx)
 			continue
 		}
@@ -301,7 +298,7 @@ func (e *EthereumAgent) isDepositTx(log types.Log) (EthereumTx, bool, error) {
 		return depositTx, false, nil
 	}
 	// todo
-	if strings.ToLower(log.Address.Hex()) == e.logDepositAddr && strings.ToLower(log.Topics[0].Hex()) == e.topicDepositAddr {
+	if strings.ToLower(log.Address.Hex()) == e.addrFilter.LogDepositAddr && strings.ToLower(log.Topics[0].Hex()) == e.addrFilter.LogTopicDepositAddr {
 		txId := strings.ToLower(log.Topics[1].Hex())
 		hexVout := strings.TrimPrefix(strings.ToLower(log.Topics[2].Hex()), "0x")
 		vout, err := strconv.ParseInt(hexVout, 16, 32)
@@ -337,7 +334,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (EthereumTx, bool, error) {
 	}
 
 	//todo more check
-	if strings.ToLower(log.Address.Hex()) == e.logRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.topicRedeemAddr {
+	if strings.ToLower(log.Address.Hex()) == e.addrFilter.LogRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.addrFilter.LogTopicRedeemAddr {
 		btcTxId := strings.ToLower(log.Topics[1].Hex())
 		if len(log.Data) <= 64 {
 			return redeemTx, false, nil
@@ -473,7 +470,7 @@ func (e *EthereumAgent) updateRedeemProof(txId, proof string, status ProofStatus
 }
 
 func (e *EthereumAgent) Close() error {
-	//todo
+	close(e.exitSign)
 	return nil
 }
 func (e *EthereumAgent) Name() string {

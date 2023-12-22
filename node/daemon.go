@@ -80,9 +80,12 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		workers = append(workers, NewLocalWorker(1))
 	}
 	schedule := NewSchedule(workers...)
-	manager := NewManager(proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, schedule)
+	manager, err := NewManager(cfg, proofRequest, btcProofResp, ethProofResp, storeDb, memoryStore, schedule)
+	if err != nil {
+		logger.Error("new manager error: %v", err)
+		return nil, err
+	}
 	exitSignal := make(chan os.Signal, 1)
-
 	// todo new store
 	rpcHandler := NewHandler(storeDb, memoryStore, schedule, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)

@@ -3,6 +3,7 @@ package bitcoin
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
+	"strings"
 )
 
 func (client *Client) Createrawtransaction(inputs []types.TxIn, outputs []types.TxOut) (string, error) {
@@ -33,10 +34,12 @@ func (client *Client) Sendrawtransaction(hexData string) (string, error) {
 }
 
 func (client *Client) CheckTx(txHash string) (bool, error) {
+	//todo
+	txId := strings.TrimPrefix(txHash, "0x")
 	var result types.RawTransaction
-	err := client.Call(GETRAWTRANSACTION, &result, txHash, true)
+	err := client.Call(GETTRANSACTION, &result, txId, true)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	return true, err
 }

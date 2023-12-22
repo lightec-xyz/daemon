@@ -37,6 +37,14 @@ type NodeConfig struct {
 	LogAddr          []string       `json:"logAddr"`
 	LogTopic         []string       `json:"logTopic"`
 	Workers          []WorkerConfig `json:"workers"`
+	EthAddrFilter    EthAddrFilter
+}
+
+type EthAddrFilter struct {
+	LogDepositAddr      string
+	LogRedeemAddr       string
+	LogTopicDepositAddr string
+	LogTopicRedeemAddr  string
 }
 
 func NewNodeConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
@@ -133,6 +141,12 @@ func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport
 		LogTopic:         LogTopics,
 		AutoSubmit:       true,
 		MultiAddressInfo: multiSigAddressInfo,
+		EthAddrFilter: EthAddrFilter{
+			LogDepositAddr:      LogDepositAddr,
+			LogRedeemAddr:       LogRedeemAddr,
+			LogTopicDepositAddr: TopicDepositAddr,
+			LogTopicRedeemAddr:  TopicRedeemAddr,
+		},
 	}, nil
 }
 
@@ -187,6 +201,12 @@ func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, b
 		LogAddr:          TestLogAddrs,
 		LogTopic:         TestLogTopics,
 		MultiAddressInfo: multiSigAddressInfo,
+		EthAddrFilter: EthAddrFilter{
+			LogDepositAddr:      TestLogDepositAddr,
+			LogRedeemAddr:       TestLogRedeemAddr,
+			LogTopicDepositAddr: TestTopicDepositAddr,
+			LogTopicRedeemAddr:  TestTopicRedeemAddr,
+		},
 	}, nil
 }
 
@@ -241,6 +261,12 @@ func newLocalConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, 
 		LogAddr:          LocalLogAddrs,
 		LogTopic:         LocalLogTopics,
 		MultiAddressInfo: multiSigAddressInfo,
+		EthAddrFilter: EthAddrFilter{
+			LogDepositAddr:      LocalLogDepositAddr,
+			LogRedeemAddr:       LocalLogRedeemAddr,
+			LogTopicDepositAddr: LocalTopicDepositAddr,
+			LogTopicRedeemAddr:  LocalTopicRedeemAddr,
+		},
 	}, nil
 }
 

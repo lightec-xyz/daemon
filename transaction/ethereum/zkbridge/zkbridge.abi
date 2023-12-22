@@ -27,13 +27,24 @@
           "type": "address"
         },
         {
-          "internalType": "contract VariationTrendInterface",
+          "internalType": "contract EconomicVariationInterface",
           "name": "_variationAddress",
           "type": "address"
         }
       ],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "DepositAccountIsBridge",
+      "type": "error"
     },
     {
       "inputs": [
@@ -193,19 +204,6 @@
     },
     {
       "inputs": [],
-      "name": "litToken",
-      "outputs": [
-        {
-          "internalType": "contract LITInterface",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
       "name": "minDepositAmount",
       "outputs": [
         {
@@ -231,45 +229,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "utxoManager",
-      "outputs": [
-        {
-          "internalType": "contract UTXOManagerInterface",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "variationTrend",
-      "outputs": [
-        {
-          "internalType": "contract VariationTrendInterface",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "zkBTCToken",
-      "outputs": [
-        {
-          "internalType": "contract zkBTCInterface",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "bytes32",
@@ -285,6 +244,11 @@
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "receiveAddress",
+          "type": "address"
         },
         {
           "internalType": "bytes",

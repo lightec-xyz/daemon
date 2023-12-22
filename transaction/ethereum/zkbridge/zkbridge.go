@@ -37,7 +37,7 @@ type UTXOManagerInterfaceTxOut struct {
 
 // ZkbridgeMetaData contains all meta data concerning the Zkbridge contract.
 var ZkbridgeMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_feeAccount\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"_utxoAddress\",\"type\":\"address\"},{\"internalType\":\"contractLITInterface\",\"name\":\"_litAddress\",\"type\":\"address\"},{\"internalType\":\"contractzkBTCInterface\",\"name\":\"_zkBTCAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"needed\",\"type\":\"uint256\"}],\"name\":\"InsufficientBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"InvalidChangeProof\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minDepositAmount\",\"type\":\"uint256\"}],\"name\":\"InvalidDepositAmount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"InvalidDepositProof\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"lockScriptLength\",\"type\":\"uint256\"}],\"name\":\"InvalidLockScriptLength\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"lockScript\",\"type\":\"bytes\"}],\"name\":\"LockScriptIsChange\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"rawTx\",\"type\":\"bytes\"}],\"name\":\"CreateRedeemUnsignedTx\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"changeLockScript\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"}],\"name\":\"checkReceiveLockScript\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"targetAmount\",\"type\":\"uint256\"}],\"name\":\"estimateTxWeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeAccount\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeRate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"getBridgeToll\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"userAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"feeAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"feeAmount\",\"type\":\"uint256\"}],\"name\":\"getLITMintAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"userAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"changeAmount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"}],\"name\":\"getTxOuts\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"scriptPubKey\",\"type\":\"bytes\"}],\"internalType\":\"structUTXOManagerInterface.TxOut[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"litToken\",\"outputs\":[{\"internalType\":\"contractLITInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minDepositAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"redeemAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"btcMinerFee\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"}],\"name\":\"redeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalDepositAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"updateChange\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"utxoManager\",\"outputs\":[{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"verifyChangeProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"verifyDepositProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"zkBTCToken\",\"outputs\":[{\"internalType\":\"contractzkBTCInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_feeAccount\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"_utxoAddress\",\"type\":\"address\"},{\"internalType\":\"contractLITInterface\",\"name\":\"_litAddress\",\"type\":\"address\"},{\"internalType\":\"contractzkBTCInterface\",\"name\":\"_zkBTCAddress\",\"type\":\"address\"},{\"internalType\":\"contractEconomicVariationInterface\",\"name\":\"_variationAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"DepositAccountIsBridge\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"needed\",\"type\":\"uint256\"}],\"name\":\"InsufficientBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"InvalidChangeProof\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minDepositAmount\",\"type\":\"uint256\"}],\"name\":\"InvalidDepositAmount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"InvalidDepositProof\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"lockScriptLength\",\"type\":\"uint256\"}],\"name\":\"InvalidLockScriptLength\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"lockScript\",\"type\":\"bytes\"}],\"name\":\"LockScriptIsChange\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"rawTx\",\"type\":\"bytes\"}],\"name\":\"CreateRedeemUnsignedTx\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"changeLockScript\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeAccount\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minDepositAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalDepositAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"receiveAddress\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"targetAmount\",\"type\":\"uint256\"}],\"name\":\"estimateTxWeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"}],\"name\":\"checkReceiveLockScript\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"redeemAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"btcMinerFee\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"}],\"name\":\"redeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"userAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"changeAmount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"}],\"name\":\"getTxOuts\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"scriptPubKey\",\"type\":\"bytes\"}],\"internalType\":\"structUTXOManagerInterface.TxOut[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"updateChange\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"verifyDepositProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"verifyChangeProof\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"getBridgeDepositToll\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"userAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"feeAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"getBridgeRedeemToll\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"userAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"feeAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"feeAmount\",\"type\":\"uint256\"}],\"name\":\"getDepositLITMintAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"feeAmount\",\"type\":\"uint256\"}],\"name\":\"getRedeemLITMintAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // ZkbridgeABI is the input ABI used to generate the binding from.
@@ -310,46 +310,15 @@ func (_Zkbridge *ZkbridgeCallerSession) FeeAccount() (common.Address, error) {
 	return _Zkbridge.Contract.FeeAccount(&_Zkbridge.CallOpts)
 }
 
-// FeeRate is a free data retrieval call binding the contract method 0x978bbdb9.
+// GetBridgeDepositToll is a free data retrieval call binding the contract method 0x3382d33e.
 //
-// Solidity: function feeRate() view returns(uint256)
-func (_Zkbridge *ZkbridgeCaller) FeeRate(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _Zkbridge.contract.Call(opts, &out, "feeRate")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// FeeRate is a free data retrieval call binding the contract method 0x978bbdb9.
-//
-// Solidity: function feeRate() view returns(uint256)
-func (_Zkbridge *ZkbridgeSession) FeeRate() (*big.Int, error) {
-	return _Zkbridge.Contract.FeeRate(&_Zkbridge.CallOpts)
-}
-
-// FeeRate is a free data retrieval call binding the contract method 0x978bbdb9.
-//
-// Solidity: function feeRate() view returns(uint256)
-func (_Zkbridge *ZkbridgeCallerSession) FeeRate() (*big.Int, error) {
-	return _Zkbridge.Contract.FeeRate(&_Zkbridge.CallOpts)
-}
-
-// GetBridgeToll is a free data retrieval call binding the contract method 0xe3bb93a9.
-//
-// Solidity: function getBridgeToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
-func (_Zkbridge *ZkbridgeCaller) GetBridgeToll(opts *bind.CallOpts, amount *big.Int) (struct {
+// Solidity: function getBridgeDepositToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
+func (_Zkbridge *ZkbridgeCaller) GetBridgeDepositToll(opts *bind.CallOpts, amount *big.Int) (struct {
 	UserAmount *big.Int
 	FeeAmount  *big.Int
 }, error) {
 	var out []interface{}
-	err := _Zkbridge.contract.Call(opts, &out, "getBridgeToll", amount)
+	err := _Zkbridge.contract.Call(opts, &out, "getBridgeDepositToll", amount)
 
 	outstruct := new(struct {
 		UserAmount *big.Int
@@ -366,32 +335,77 @@ func (_Zkbridge *ZkbridgeCaller) GetBridgeToll(opts *bind.CallOpts, amount *big.
 
 }
 
-// GetBridgeToll is a free data retrieval call binding the contract method 0xe3bb93a9.
+// GetBridgeDepositToll is a free data retrieval call binding the contract method 0x3382d33e.
 //
-// Solidity: function getBridgeToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
-func (_Zkbridge *ZkbridgeSession) GetBridgeToll(amount *big.Int) (struct {
+// Solidity: function getBridgeDepositToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
+func (_Zkbridge *ZkbridgeSession) GetBridgeDepositToll(amount *big.Int) (struct {
 	UserAmount *big.Int
 	FeeAmount  *big.Int
 }, error) {
-	return _Zkbridge.Contract.GetBridgeToll(&_Zkbridge.CallOpts, amount)
+	return _Zkbridge.Contract.GetBridgeDepositToll(&_Zkbridge.CallOpts, amount)
 }
 
-// GetBridgeToll is a free data retrieval call binding the contract method 0xe3bb93a9.
+// GetBridgeDepositToll is a free data retrieval call binding the contract method 0x3382d33e.
 //
-// Solidity: function getBridgeToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
-func (_Zkbridge *ZkbridgeCallerSession) GetBridgeToll(amount *big.Int) (struct {
+// Solidity: function getBridgeDepositToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
+func (_Zkbridge *ZkbridgeCallerSession) GetBridgeDepositToll(amount *big.Int) (struct {
 	UserAmount *big.Int
 	FeeAmount  *big.Int
 }, error) {
-	return _Zkbridge.Contract.GetBridgeToll(&_Zkbridge.CallOpts, amount)
+	return _Zkbridge.Contract.GetBridgeDepositToll(&_Zkbridge.CallOpts, amount)
 }
 
-// GetLITMintAmount is a free data retrieval call binding the contract method 0x45f3a3ab.
+// GetBridgeRedeemToll is a free data retrieval call binding the contract method 0x44272ac0.
 //
-// Solidity: function getLITMintAmount(uint256 feeAmount) pure returns(uint256)
-func (_Zkbridge *ZkbridgeCaller) GetLITMintAmount(opts *bind.CallOpts, feeAmount *big.Int) (*big.Int, error) {
+// Solidity: function getBridgeRedeemToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
+func (_Zkbridge *ZkbridgeCaller) GetBridgeRedeemToll(opts *bind.CallOpts, amount *big.Int) (struct {
+	UserAmount *big.Int
+	FeeAmount  *big.Int
+}, error) {
 	var out []interface{}
-	err := _Zkbridge.contract.Call(opts, &out, "getLITMintAmount", feeAmount)
+	err := _Zkbridge.contract.Call(opts, &out, "getBridgeRedeemToll", amount)
+
+	outstruct := new(struct {
+		UserAmount *big.Int
+		FeeAmount  *big.Int
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.UserAmount = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.FeeAmount = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+
+	return *outstruct, err
+
+}
+
+// GetBridgeRedeemToll is a free data retrieval call binding the contract method 0x44272ac0.
+//
+// Solidity: function getBridgeRedeemToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
+func (_Zkbridge *ZkbridgeSession) GetBridgeRedeemToll(amount *big.Int) (struct {
+	UserAmount *big.Int
+	FeeAmount  *big.Int
+}, error) {
+	return _Zkbridge.Contract.GetBridgeRedeemToll(&_Zkbridge.CallOpts, amount)
+}
+
+// GetBridgeRedeemToll is a free data retrieval call binding the contract method 0x44272ac0.
+//
+// Solidity: function getBridgeRedeemToll(uint256 amount) view returns(uint256 userAmount, uint256 feeAmount)
+func (_Zkbridge *ZkbridgeCallerSession) GetBridgeRedeemToll(amount *big.Int) (struct {
+	UserAmount *big.Int
+	FeeAmount  *big.Int
+}, error) {
+	return _Zkbridge.Contract.GetBridgeRedeemToll(&_Zkbridge.CallOpts, amount)
+}
+
+// GetDepositLITMintAmount is a free data retrieval call binding the contract method 0x2acd03e9.
+//
+// Solidity: function getDepositLITMintAmount(uint256 feeAmount) view returns(uint256)
+func (_Zkbridge *ZkbridgeCaller) GetDepositLITMintAmount(opts *bind.CallOpts, feeAmount *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _Zkbridge.contract.Call(opts, &out, "getDepositLITMintAmount", feeAmount)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -403,18 +417,49 @@ func (_Zkbridge *ZkbridgeCaller) GetLITMintAmount(opts *bind.CallOpts, feeAmount
 
 }
 
-// GetLITMintAmount is a free data retrieval call binding the contract method 0x45f3a3ab.
+// GetDepositLITMintAmount is a free data retrieval call binding the contract method 0x2acd03e9.
 //
-// Solidity: function getLITMintAmount(uint256 feeAmount) pure returns(uint256)
-func (_Zkbridge *ZkbridgeSession) GetLITMintAmount(feeAmount *big.Int) (*big.Int, error) {
-	return _Zkbridge.Contract.GetLITMintAmount(&_Zkbridge.CallOpts, feeAmount)
+// Solidity: function getDepositLITMintAmount(uint256 feeAmount) view returns(uint256)
+func (_Zkbridge *ZkbridgeSession) GetDepositLITMintAmount(feeAmount *big.Int) (*big.Int, error) {
+	return _Zkbridge.Contract.GetDepositLITMintAmount(&_Zkbridge.CallOpts, feeAmount)
 }
 
-// GetLITMintAmount is a free data retrieval call binding the contract method 0x45f3a3ab.
+// GetDepositLITMintAmount is a free data retrieval call binding the contract method 0x2acd03e9.
 //
-// Solidity: function getLITMintAmount(uint256 feeAmount) pure returns(uint256)
-func (_Zkbridge *ZkbridgeCallerSession) GetLITMintAmount(feeAmount *big.Int) (*big.Int, error) {
-	return _Zkbridge.Contract.GetLITMintAmount(&_Zkbridge.CallOpts, feeAmount)
+// Solidity: function getDepositLITMintAmount(uint256 feeAmount) view returns(uint256)
+func (_Zkbridge *ZkbridgeCallerSession) GetDepositLITMintAmount(feeAmount *big.Int) (*big.Int, error) {
+	return _Zkbridge.Contract.GetDepositLITMintAmount(&_Zkbridge.CallOpts, feeAmount)
+}
+
+// GetRedeemLITMintAmount is a free data retrieval call binding the contract method 0x5750e398.
+//
+// Solidity: function getRedeemLITMintAmount(uint256 feeAmount) view returns(uint256)
+func (_Zkbridge *ZkbridgeCaller) GetRedeemLITMintAmount(opts *bind.CallOpts, feeAmount *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _Zkbridge.contract.Call(opts, &out, "getRedeemLITMintAmount", feeAmount)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetRedeemLITMintAmount is a free data retrieval call binding the contract method 0x5750e398.
+//
+// Solidity: function getRedeemLITMintAmount(uint256 feeAmount) view returns(uint256)
+func (_Zkbridge *ZkbridgeSession) GetRedeemLITMintAmount(feeAmount *big.Int) (*big.Int, error) {
+	return _Zkbridge.Contract.GetRedeemLITMintAmount(&_Zkbridge.CallOpts, feeAmount)
+}
+
+// GetRedeemLITMintAmount is a free data retrieval call binding the contract method 0x5750e398.
+//
+// Solidity: function getRedeemLITMintAmount(uint256 feeAmount) view returns(uint256)
+func (_Zkbridge *ZkbridgeCallerSession) GetRedeemLITMintAmount(feeAmount *big.Int) (*big.Int, error) {
+	return _Zkbridge.Contract.GetRedeemLITMintAmount(&_Zkbridge.CallOpts, feeAmount)
 }
 
 // GetTxOuts is a free data retrieval call binding the contract method 0x41a1ca42.
@@ -446,37 +491,6 @@ func (_Zkbridge *ZkbridgeSession) GetTxOuts(userAmount *big.Int, changeAmount *b
 // Solidity: function getTxOuts(uint256 userAmount, uint256 changeAmount, bytes receiveLockScript) view returns((uint64,bytes)[])
 func (_Zkbridge *ZkbridgeCallerSession) GetTxOuts(userAmount *big.Int, changeAmount *big.Int, receiveLockScript []byte) ([]UTXOManagerInterfaceTxOut, error) {
 	return _Zkbridge.Contract.GetTxOuts(&_Zkbridge.CallOpts, userAmount, changeAmount, receiveLockScript)
-}
-
-// LitToken is a free data retrieval call binding the contract method 0x1c0c4564.
-//
-// Solidity: function litToken() view returns(address)
-func (_Zkbridge *ZkbridgeCaller) LitToken(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _Zkbridge.contract.Call(opts, &out, "litToken")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// LitToken is a free data retrieval call binding the contract method 0x1c0c4564.
-//
-// Solidity: function litToken() view returns(address)
-func (_Zkbridge *ZkbridgeSession) LitToken() (common.Address, error) {
-	return _Zkbridge.Contract.LitToken(&_Zkbridge.CallOpts)
-}
-
-// LitToken is a free data retrieval call binding the contract method 0x1c0c4564.
-//
-// Solidity: function litToken() view returns(address)
-func (_Zkbridge *ZkbridgeCallerSession) LitToken() (common.Address, error) {
-	return _Zkbridge.Contract.LitToken(&_Zkbridge.CallOpts)
 }
 
 // MinDepositAmount is a free data retrieval call binding the contract method 0x645006ca.
@@ -541,37 +555,6 @@ func (_Zkbridge *ZkbridgeCallerSession) TotalDepositAmount() (*big.Int, error) {
 	return _Zkbridge.Contract.TotalDepositAmount(&_Zkbridge.CallOpts)
 }
 
-// UtxoManager is a free data retrieval call binding the contract method 0xab8db1b1.
-//
-// Solidity: function utxoManager() view returns(address)
-func (_Zkbridge *ZkbridgeCaller) UtxoManager(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _Zkbridge.contract.Call(opts, &out, "utxoManager")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// UtxoManager is a free data retrieval call binding the contract method 0xab8db1b1.
-//
-// Solidity: function utxoManager() view returns(address)
-func (_Zkbridge *ZkbridgeSession) UtxoManager() (common.Address, error) {
-	return _Zkbridge.Contract.UtxoManager(&_Zkbridge.CallOpts)
-}
-
-// UtxoManager is a free data retrieval call binding the contract method 0xab8db1b1.
-//
-// Solidity: function utxoManager() view returns(address)
-func (_Zkbridge *ZkbridgeCallerSession) UtxoManager() (common.Address, error) {
-	return _Zkbridge.Contract.UtxoManager(&_Zkbridge.CallOpts)
-}
-
 // VerifyChangeProof is a free data retrieval call binding the contract method 0xde4b7179.
 //
 // Solidity: function verifyChangeProof(bytes32 txid, bytes proofData) pure returns(bool)
@@ -634,56 +617,25 @@ func (_Zkbridge *ZkbridgeCallerSession) VerifyDepositProof(txid [32]byte, index 
 	return _Zkbridge.Contract.VerifyDepositProof(&_Zkbridge.CallOpts, txid, index, amount, account, proofData)
 }
 
-// ZkBTCToken is a free data retrieval call binding the contract method 0x281904e4.
+// Deposit is a paid mutator transaction binding the contract method 0x11f4a8b5.
 //
-// Solidity: function zkBTCToken() view returns(address)
-func (_Zkbridge *ZkbridgeCaller) ZkBTCToken(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _Zkbridge.contract.Call(opts, &out, "zkBTCToken")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
+// Solidity: function deposit(bytes32 txid, uint32 index, uint256 amount, address receiveAddress, bytes proofData) returns()
+func (_Zkbridge *ZkbridgeTransactor) Deposit(opts *bind.TransactOpts, txid [32]byte, index uint32, amount *big.Int, receiveAddress common.Address, proofData []byte) (*types.Transaction, error) {
+	return _Zkbridge.contract.Transact(opts, "deposit", txid, index, amount, receiveAddress, proofData)
 }
 
-// ZkBTCToken is a free data retrieval call binding the contract method 0x281904e4.
+// Deposit is a paid mutator transaction binding the contract method 0x11f4a8b5.
 //
-// Solidity: function zkBTCToken() view returns(address)
-func (_Zkbridge *ZkbridgeSession) ZkBTCToken() (common.Address, error) {
-	return _Zkbridge.Contract.ZkBTCToken(&_Zkbridge.CallOpts)
+// Solidity: function deposit(bytes32 txid, uint32 index, uint256 amount, address receiveAddress, bytes proofData) returns()
+func (_Zkbridge *ZkbridgeSession) Deposit(txid [32]byte, index uint32, amount *big.Int, receiveAddress common.Address, proofData []byte) (*types.Transaction, error) {
+	return _Zkbridge.Contract.Deposit(&_Zkbridge.TransactOpts, txid, index, amount, receiveAddress, proofData)
 }
 
-// ZkBTCToken is a free data retrieval call binding the contract method 0x281904e4.
+// Deposit is a paid mutator transaction binding the contract method 0x11f4a8b5.
 //
-// Solidity: function zkBTCToken() view returns(address)
-func (_Zkbridge *ZkbridgeCallerSession) ZkBTCToken() (common.Address, error) {
-	return _Zkbridge.Contract.ZkBTCToken(&_Zkbridge.CallOpts)
-}
-
-// Deposit is a paid mutator transaction binding the contract method 0x79a41059.
-//
-// Solidity: function deposit(bytes32 txid, uint32 index, uint256 amount, bytes proofData) returns()
-func (_Zkbridge *ZkbridgeTransactor) Deposit(opts *bind.TransactOpts, txid [32]byte, index uint32, amount *big.Int, proofData []byte) (*types.Transaction, error) {
-	return _Zkbridge.contract.Transact(opts, "deposit", txid, index, amount, proofData)
-}
-
-// Deposit is a paid mutator transaction binding the contract method 0x79a41059.
-//
-// Solidity: function deposit(bytes32 txid, uint32 index, uint256 amount, bytes proofData) returns()
-func (_Zkbridge *ZkbridgeSession) Deposit(txid [32]byte, index uint32, amount *big.Int, proofData []byte) (*types.Transaction, error) {
-	return _Zkbridge.Contract.Deposit(&_Zkbridge.TransactOpts, txid, index, amount, proofData)
-}
-
-// Deposit is a paid mutator transaction binding the contract method 0x79a41059.
-//
-// Solidity: function deposit(bytes32 txid, uint32 index, uint256 amount, bytes proofData) returns()
-func (_Zkbridge *ZkbridgeTransactorSession) Deposit(txid [32]byte, index uint32, amount *big.Int, proofData []byte) (*types.Transaction, error) {
-	return _Zkbridge.Contract.Deposit(&_Zkbridge.TransactOpts, txid, index, amount, proofData)
+// Solidity: function deposit(bytes32 txid, uint32 index, uint256 amount, address receiveAddress, bytes proofData) returns()
+func (_Zkbridge *ZkbridgeTransactorSession) Deposit(txid [32]byte, index uint32, amount *big.Int, receiveAddress common.Address, proofData []byte) (*types.Transaction, error) {
+	return _Zkbridge.Contract.Deposit(&_Zkbridge.TransactOpts, txid, index, amount, receiveAddress, proofData)
 }
 
 // Redeem is a paid mutator transaction binding the contract method 0x0449015a.

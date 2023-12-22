@@ -171,8 +171,9 @@ func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
 	return balance, nil
 }
 
-func (c *Client) Deposit(secret, txId string, index uint32,
+func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
 	nonce, gasLimit uint64, chainID, gasPrice, amount *big.Int, proof []byte) (string, error) {
+	address := common.HexToAddress(receiveAddr)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
@@ -190,7 +191,7 @@ func (c *Client) Deposit(secret, txId string, index uint32,
 	auth.GasLimit = gasLimit
 	fixedTxId := [32]byte{}
 	copy(fixedTxId[:], common.FromHex(txId))
-	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, proof)
+	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, address, proof)
 	if err != nil {
 		return "", err
 	}

@@ -242,7 +242,7 @@ func (b *BitcoinAgent) Transfer() {
 					continue
 				}
 				if b.autoSubmit {
-					txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.Amount)
+					txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.EthAddr, resp.Amount)
 					if err != nil {
 						//todo add queue or cli retry ?
 						logger.Error("mint btc tx error:%v", err)
@@ -291,7 +291,7 @@ func (b *BitcoinAgent) updateContractUtxoChange(utxoList []BitcoinTx) error {
 	return nil
 }
 
-func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof string, amount int64) (string, error) {
+func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof, receiverAddr string, amount int64) (string, error) {
 	//todo need assign nonce ？
 	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
 	if err != nil {
@@ -318,7 +318,7 @@ func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof string, amount int64) (str
 	gasLimit := uint64(500000)
 	amountBig := big.NewInt(amount)
 	proofBytes := []byte(proof)
-	txHash, err := b.ethClient.Deposit(b.keyStore.GetPrivateKey(), txId, index, nonce, gasLimit, chainId, gasPrice,
+	txHash, err := b.ethClient.Deposit(b.keyStore.GetPrivateKey(), txId, receiverAddr, index, nonce, gasLimit, chainId, gasPrice,
 		amountBig, proofBytes)
 	if err != nil {
 		logger.Error("mint btc tx error:%v", err)
