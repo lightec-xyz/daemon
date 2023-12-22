@@ -26,6 +26,16 @@ Ethereum Holesky Network
 1. the daemon default storage location is: ***~/.daemon***
 2. the daemon config file location is: ***~/.daemon/daemon.json***
 
+When you deploy for the first time, you need to modify the relevant parameters. The following are the required
+parameters. You can find other detailed explanations [here](./doc/config.md).
+
+    {
+        "btcUrl": "http://127.0.0.1:8332",      / /Bitcoin Core jsonrpc endpoint                           
+        "btcUser": "lightec",                   // The bitcoin jsonrpc authentication username, if you have set one
+        "btcPwd": "abcd1234",                   // The bitcoin jsonrpc authentication password
+        "ethUrl": "http://localhost:8545"       // Ethereum jsonrpc endpoint
+    }
+
 ### Command
 
 daemon

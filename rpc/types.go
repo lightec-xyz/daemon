@@ -1,8 +1,11 @@
 package rpc
 
 type Transaction struct {
-	EthereumTx EthereumTx `json:"ethereumTx"`
-	Bitcoin    BitcoinTx  `json:"bitcoinTx"`
+	SourceHash string `json:"sourceHash"`
+	DestHash   string `json:"destHash"`
+	Proof      struct {
+		Hash string `json:"hash"`
+	}
 }
 
 type EthereumTx struct {
@@ -68,7 +71,8 @@ type ProofResponse struct { // redeem
 }
 
 type ProofInfo struct {
-	Status int    `json:"state"`
-	Proof  string `json:"proof"`
-	Msg    string `json:"msg"`
+	TxId      string `json:"txId"`
+	ProofType int    `json:"type"`
+	Proof     string `json:"proof"`
+	Status    int    `json:"status"`
 }

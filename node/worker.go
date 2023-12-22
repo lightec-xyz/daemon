@@ -82,7 +82,7 @@ func (l *LocalWorker) CurrentNums() int {
 func (l *LocalWorker) GenProof(req rpc.ProofRequest) (rpc.ProofResponse, error) {
 	// todo
 	logger.Info("local worker gen proof now: %v %v", req.TxId, req.ProofType)
-	time.Sleep(3 * time.Second)
+	time.Sleep(6 * time.Second)
 	response := rpc.ProofResponse{}
 	err := objParse(req, &response)
 	if err != nil {

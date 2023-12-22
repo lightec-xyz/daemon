@@ -38,14 +38,9 @@ type EthereumAgent struct {
 	autoSubmit           bool
 }
 
-func NewEthereumAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
+func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	proofRequest chan []ProofRequest, proofResponse <-chan ProofResponse) (IAgent, error) {
-	submitTxEthAddr, err := privateKeyToEthAddr(cfg.EthPrivateKey)
-	if err != nil {
-		logger.Error("privateKeyToEthAddr error:%v", err)
-		return nil, err
-	}
-	logger.Info("ethereum submit address:%v", submitTxEthAddr)
+
 	// todo
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
@@ -461,6 +456,7 @@ func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
 }
 
 func (e *EthereumAgent) updateRedeemProof(txId, proof string, status ProofStatus) error {
+	logger.Debug("update Redeem proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(e.store, txId, proof, Redeem, status)
 	if err != nil {
 		logger.Error("update proof error: %v %v", txId, err)

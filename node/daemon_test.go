@@ -40,7 +40,7 @@ func TestTestnetDaemon(t *testing.T) {
 }
 
 func TestConfig(t *testing.T) {
-	config := TestnetDaemonConfig()
+	config := LocalDevDaemonConfig()
 	data, _ := json.Marshal(config)
 	fmt.Printf("%v \n", string(data))
 }

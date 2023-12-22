@@ -32,13 +32,8 @@ type BitcoinAgent struct {
 	exitSign             chan struct{}
 }
 
-func NewBitcoinAgent(cfg NodeConfig, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	request chan []ProofRequest, response <-chan ProofResponse, nonceManager *NonceManager, keyStore *KeyStore) (IAgent, error) {
-	submitTxEthAddr, err := privateKeyToEthAddr(cfg.EthPrivateKey)
-	if err != nil {
-		logger.Error("privateKeyToEthAddr error:%v", err)
-		return nil, err
-	}
+func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
+	request chan []ProofRequest, response <-chan ProofResponse, keyStore *KeyStore) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
@@ -135,7 +130,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 			return err
 		}
 		b.proofRequest <- proofRequests
-
+		// todo
 		if len(redeemTxes) > 0 {
 			//err := b.updateRedeemTxInfo(index, redeemTxes)
 			//if err != nil {
@@ -379,6 +374,7 @@ func (b *BitcoinAgent) isDepositTx(tx types.Tx) (BitcoinTx, bool, error) {
 }
 
 func (b *BitcoinAgent) updateDepositProof(txId, proof string, status ProofStatus) error {
+	logger.Debug("update DepositTx  proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(b.store, txId, proof, Deposit, status)
 	if err != nil {
 		logger.Error("update proof error: %v %v", txId, err)

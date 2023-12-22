@@ -5,6 +5,7 @@ type NodeAPI interface {
 	AddWorker(endpoint string, max int) (string, error)
 	ProofInfo(proofId string) (ProofInfo, error)
 	Transaction(txHash string) (Transaction, error)
+	Transactions(txId []string) ([]Transaction, error)
 	Stop() error
 }
 

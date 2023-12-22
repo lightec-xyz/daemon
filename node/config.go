@@ -47,24 +47,26 @@ type EthAddrFilter struct {
 	LogTopicRedeemAddr  string
 }
 
-func NewNodeConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	var config NodeConfig
 	if network == "" {
 		network = LightecMainnet
 	}
+	logger.Info("current network: %v", network)
 	if dataDir == "" {
 		current, err := user.Current()
 		if err != nil {
 			logger.Error("get current user error: %v", err)
 			return config, err
 		}
-		dataDir = fmt.Sprintf("%v/%v.daemon", current.HomeDir, network)
+		dataDir = fmt.Sprintf("%v/.daemon", current.HomeDir)
+		logger.Info("datadir: %v", dataDir)
 	}
 	if rpcbind == "" {
 		rpcbind = "127.0.0.1"
 	}
 	if rpcport == "" {
-		rpcport = "30000"
+		rpcport = "9780"
 	}
 	if btcUrl == "" {
 		return config, fmt.Errorf("btcUrl is empty")
@@ -72,24 +74,26 @@ func NewNodeConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, b
 	if ethUrl == "" {
 		return config, fmt.Errorf("ethUrl is empty")
 	}
-	if ethPrivateKey == "" {
-		return config, fmt.Errorf("ethPrivateKey is empty")
+	if autoSubmit {
+		if ethPrivateKey == "" {
+			return config, fmt.Errorf("ethPrivateKey is empty")
+		}
 	}
 
 	switch network {
 	case LightecMainnet:
-		return newMainnetConfig(enableLocalWorker, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
+		return newMainnetConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
 	case LightecTestnet:
-		return newTestConfig(enableLocalWorker, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
+		return newTestConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
 	case Lighteclocal:
-		return newLocalConfig(enableLocalWorker, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
+		return newLocalConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
 	default:
 		return config, fmt.Errorf("unsupport network now: %v", network)
 	}
 
 }
 
-func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(BtcMultiSigPublic1)
 	if err != nil {
 		logger.Error("hex decode string error: %v", err)
@@ -139,7 +143,7 @@ func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport
 		EthPrivateKey:    ethPrivateKey,
 		LogAddr:          LogAddrs,
 		LogTopic:         LogTopics,
-		AutoSubmit:       true,
+		AutoSubmit:       autoSubmit,
 		MultiAddressInfo: multiSigAddressInfo,
 		EthAddrFilter: EthAddrFilter{
 			LogDepositAddr:      LogDepositAddr,
@@ -150,7 +154,7 @@ func newMainnetConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport
 	}, nil
 }
 
-func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(TestnetBtcMultiSigPublic1)
 	if err != nil {
 		logger.Error("hex decode string error:%v", err)
@@ -190,8 +194,9 @@ func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, b
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		BtcInitHeight:    TestnetInitBitcoinHeight,
-		AutoSubmit:       true,
+		BtcInitHeight: TestnetInitBitcoinHeight,
+		AutoSubmit:    autoSubmit,
+
 		EthInitHeight:    TestnetInitEthereumHeight,
 		EthUrl:           ethUrl,
 		ZkBridgeAddr:     TestnetEthZkBridgeAddress,
@@ -210,7 +215,7 @@ func newTestConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, b
 	}, nil
 }
 
-func newLocalConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
 	if err != nil {
 		logger.Error("hex decode string error: %v", err)
@@ -238,20 +243,19 @@ func newLocalConfig(enableLocalWorker bool, dataDir, testnet, rpcbind, rpcport, 
 		Rpcbind:           rpcbind,
 		RpcPort:           rpcport,
 		EnableLocalWorker: enableLocalWorker,
-
-		BtcUrl:           btcUrl,
-		BtcUser:          btcUser,
-		BtcPwd:           btcPwd,
-		BtcNetwork:       string(LocalBtcNetwork),
-		BtcScanBlockTime: LocalBtcScanTime,
-		BtcOperatorAddr:  LocalBtcOperatorAddress,
+		BtcUrl:            btcUrl,
+		BtcUser:           btcUser,
+		BtcPwd:            btcPwd,
+		BtcNetwork:        string(LocalBtcNetwork),
+		BtcScanBlockTime:  LocalBtcScanTime,
+		BtcOperatorAddr:   LocalBtcOperatorAddress,
 		BtcPrivateKeys: []string{
 			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
 		BtcInitHeight:    LocalInitBitcoinHeight,
-		AutoSubmit:       true,
+		AutoSubmit:       autoSubmit,
 		EthInitHeight:    LocalInitEthereumHeight,
 		EthUrl:           ethUrl,
 		ZkBridgeAddr:     LocalEthZkBridgeAddress,
@@ -284,6 +288,7 @@ func TestnetDaemonConfig() NodeConfig {
 	user, err := user.Current()
 	config, err := NewNodeConfig(
 		true,
+		false,
 		fmt.Sprintf("%v/.daemon", user.HomeDir),
 		"testnet",
 		"127.0.0.1",
@@ -305,7 +310,8 @@ func LocalDevDaemonConfig() NodeConfig {
 		panic(err)
 	}
 	config, err := NewNodeConfig(
-		true,
+		false,
+		false,
 		fmt.Sprintf("%v/.daemon", user.HomeDir),
 		"local",
 		"127.0.0.1",

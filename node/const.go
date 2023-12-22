@@ -71,8 +71,8 @@ const (
 	LocalBtcScanTime        = 15 * time.Second
 	LocalEthScanTime        = 5 * time.Second
 
-	LocalInitBitcoinHeight  = 12980
-	LocalInitEthereumHeight = 576019
+	LocalInitBitcoinHeight  = 13680
+	LocalInitEthereumHeight = 577729
 
 	LocalEthZkBridgeAddress = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
 	LocalEthZkBtcAddress    = "0xdf68798c22c683f72e3a1359f9de8bbedb7ab920"

@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+func init() {
+	err := logger.InitLogger()
+	if err != nil {
+		panic(err)
+	}
+}
+
 type IAgent interface {
 	ScanBlock() error
 	Transfer()
@@ -32,11 +39,18 @@ type Daemon struct {
 }
 
 func NewDaemon(cfg NodeConfig) (*Daemon, error) {
-	err := logger.InitLogger()
-	if err != nil {
-		logger.Error("init logger error:%v", err)
-		return nil, err
+
+	var submitTxEthAddr string
+	var err error
+	if cfg.AutoSubmit {
+		submitTxEthAddr, err = privateKeyToEthAddr(cfg.EthPrivateKey)
+		if err != nil {
+			logger.Error("privateKeyToEthAddr error:%v", err)
+			return nil, err
+		}
+		logger.Info("ethereum submit address:%v", submitTxEthAddr)
 	}
+
 	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcNetwork)
 	if err != nil {
 		logger.Error("new btc btcClient error:%v", err)
@@ -58,16 +72,15 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	proofRequest := make(chan []ProofRequest, 10000)
 	btcProofResp := make(chan ProofResponse, 1000)
 	ethProofResp := make(chan ProofResponse, 1000)
-	nonceManager := NewNonceManager()
 	keyStore := NewKeyStore(cfg.EthPrivateKey)
 	var agents []IAgent
-	btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp, nonceManager, keyStore)
+	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, btcProofResp, keyStore)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 	agents = append(agents, btcAgent)
-	ethAgent, err := NewEthereumAgent(cfg, storeDb, memoryStore, btcClient, ethClient, proofRequest, ethProofResp)
+	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, ethProofResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

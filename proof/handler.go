@@ -5,6 +5,7 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
+	"time"
 )
 
 var _ rpc.ProofAPI = (*Handler)(nil)
@@ -25,6 +26,7 @@ func (h *Handler) GenZkProof(request rpc.ProofRequest) (rpc.ProofResponse, error
 	//todo ffi
 	logger.Debug("new proof request: %v", request)
 	response := rpc.ProofResponse{}
+	time.Sleep(5 * time.Second)
 	err := objParse(request, &response)
 	if err != nil {
 		logger.Error("parse proof request error:%v", err)
@@ -37,8 +39,9 @@ func (h *Handler) GenZkProof(request rpc.ProofRequest) (rpc.ProofResponse, error
 func (h *Handler) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	logger.Debug("proof info: %v", proofId)
 	status := rpc.ProofInfo{
-		Status: 1,
-		Msg:    "success",
+		Status: 2,
+		Proof:  "",
+		TxId:   "",
 	}
 	return status, nil
 }

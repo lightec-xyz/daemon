@@ -2,9 +2,11 @@ package node
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -20,11 +22,24 @@ func NewSchedule(workers ...IWorker) *Schedule {
 }
 
 func (m *Schedule) AddWorker(endpoint string, nums int) error {
-	client, err := rpc.NewProofClient(endpoint)
-	if err != nil {
-		logger.Error("new worker error:%v %v", endpoint, err)
-		return err
+	var client rpc.ProofAPI
+	var err error
+	if strings.HasPrefix(endpoint, "http") {
+		client, err = rpc.NewProofClient(endpoint)
+		if err != nil {
+			logger.Error("new worker error:%v %v", endpoint, err)
+			return err
+		}
+	} else if strings.HasPrefix(endpoint, "ws") {
+		client, err = rpc.NewWsProofClient(endpoint)
+		if err != nil {
+			logger.Error("new worker error:%v %v", endpoint, err)
+			return err
+		}
+	} else {
+		return fmt.Errorf("unSupport protocol: %v", endpoint)
 	}
+
 	newWorker := NewWorker(client, nums)
 	m.Workers = append(m.Workers, newWorker)
 	return nil

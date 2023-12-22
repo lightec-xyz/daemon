@@ -89,7 +89,7 @@ func (m *Manager) genProof() {
 			}
 			if !find {
 				logger.Warn(" no find best worker to gen proof")
-				time.Sleep(1 * time.Second)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			frontElement := m.proofQueue.Front()

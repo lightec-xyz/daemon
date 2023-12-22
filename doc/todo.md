@@ -1,5 +1,0 @@
-### ToDoList
-
-* cmd
-* eth nonce
-* 

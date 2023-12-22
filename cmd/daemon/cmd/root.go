@@ -33,7 +33,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&datadir, datadirFlag, "", "daemon storage directory")
 	rootCmd.PersistentFlags().StringVar(&rpcbind, rpcbindFlag, "", "rpc server host")
 	rootCmd.PersistentFlags().StringVar(&rpcport, rpcportFlag, "", "rpc server port")
-	rootCmd.PersistentFlags().StringVar(&network, networkFlag, "", "lightec network")
+	rootCmd.PersistentFlags().StringVar(&network, networkFlag, "local", "lightec network")
 	getRootConfig()
 }
 

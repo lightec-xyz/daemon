@@ -25,7 +25,7 @@ func ReadInitBitcoinHeight(store store.IStore) (bool, error) {
 
 func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
 	for _, tx := range txes {
-		err := store.BatchPutObj(TxIdKey(height, tx.TxId), tx)
+		err := store.BatchPutObj(DbTxIdKey(height, tx.TxId), tx)
 		if err != nil {
 			logger.Error("put bitcoin tx error:%v", err)
 			return err
@@ -42,7 +42,7 @@ func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
 func WriteDepositDestChainHash(store store.IStore, txList []EthereumTx) error {
 	// todo
 	for _, tx := range txList {
-		err := store.BatchPutObj(TxIdToDestId(tx.BtcTxId), tx.TxHash)
+		err := store.BatchPutObj(DbTxIdToDestId(tx.BtcTxId), tx.TxHash)
 		if err != nil {
 			logger.Error("put deposit dest chain error:%v", err)
 			return err
@@ -58,7 +58,7 @@ func WriteDepositDestChainHash(store store.IStore, txList []EthereumTx) error {
 
 func WriteProof(store store.IStore, txes []Proof) error {
 	for _, tx := range txes {
-		err := store.BatchPutObj(ProofId(tx.TxId), tx)
+		err := store.BatchPutObj(DbProofId(tx.TxId), tx)
 		if err != nil {
 			logger.Error("put proof tx error:%v", err)
 			return err
@@ -79,7 +79,7 @@ func UpdateProof(store store.IStore, txId, proof string, proofType ProofType, st
 		Status:    status,
 		ProofType: proofType,
 	}
-	err := store.PutObj(ProofId(txId), txProof)
+	err := store.PutObj(DbProofId(txId), txProof)
 	if err != nil {
 		logger.Error("put proof tx error:%v %v", txId, err)
 		return err
@@ -107,7 +107,7 @@ func ReadInitEthereumHeight(store store.IStore) (bool, error) {
 
 func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error {
 	for _, tx := range txes {
-		err := store.BatchPutObj(TxIdKey(height, tx.BtcTxId), tx)
+		err := store.BatchPutObj(DbTxIdKey(height, tx.BtcTxId), tx)
 		if err != nil {
 			logger.Error("put ethereum tx error:%v", err)
 			return err
@@ -123,7 +123,7 @@ func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error 
 
 func WriteRedeemDestChainHash(store store.IStore, txList []EthereumTx) error {
 	for _, tx := range txList {
-		err := store.BatchPutObj(TxIdToDestId(tx.TxHash), tx.BtcTxId)
+		err := store.BatchPutObj(DbTxIdToDestId(tx.TxHash), tx.BtcTxId)
 		if err != nil {
 			logger.Error("put deposit dest chain error:%v", err)
 			return err
@@ -137,17 +137,22 @@ func WriteRedeemDestChainHash(store store.IStore, txList []EthereumTx) error {
 	return nil
 }
 
-func ProofId(txId string) string {
+func DbProofId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", ProofPrefix, txId)
 	return pTxID
 }
 
-func TxIdKey(height int64, txId string) string {
+func DbTxIdKey(height int64, txId string) string {
 	pTxID := fmt.Sprintf("%d_%s%s", height, TxPrefix, txId)
 	return pTxID
 }
 
-func TxIdToDestId(txId string) string {
+func DbTxId(txId string) string {
+	pTxID := fmt.Sprintf("%s%s", TxPrefix, txId)
+	return pTxID
+}
+
+func DbTxIdToDestId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", DestChainHashPrefix, txId)
 	return pTxID
 }

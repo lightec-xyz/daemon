@@ -35,7 +35,7 @@ func TestStore_Iterator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	iterator := db.Iterator([]byte("test"), []byte("_03"))
+	iterator := db.Iterator([]byte("test_03"), nil)
 	defer iterator.Release()
 	for iterator.Next() {
 		key := iterator.Key()

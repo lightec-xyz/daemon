@@ -13,7 +13,9 @@ var btcUser string
 var btcPwd string
 var ethUrl string
 var ethPrivateKey string
-var enableLocalWorker bool
+
+//var enableLocalWorker bool
+//var autoSubmit bool
 
 const (
 	datadirFlag           = "datadir"
@@ -26,6 +28,7 @@ const (
 	networkFlag           = "network"
 	ethPrivateKeyFlag     = "ethPrivateKey"
 	enableLocalWorkerFlag = "enableLocalWorker"
+	autoSubmitFlag        = "autoSubmit"
 )
 
 var runCmd = &cobra.Command{
@@ -33,9 +36,10 @@ var runCmd = &cobra.Command{
 	Short:   "run daemon",
 	Example: "./daemon run",
 	Run: func(cmd *cobra.Command, args []string) {
-		enableLocalWorker, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
+		enableLocalWorker, autoSubmit, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
 		//fmt.Printf("datadir:%s, network:%s, rpcbind:%s, rpcport:%s, btcUrl:%s, btcUser:%s, btcPwd:%s, ethUrl:%s, ethPrivateKey:%s \n", datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
-		config, err := node.NewNodeConfig(enableLocalWorker, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
+		config, err := node.NewNodeConfig(enableLocalWorker, autoSubmit, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd,
+			ethUrl, ethPrivate)
 		//config := node.TestnetDaemonConfig()
 		cobra.CheckErr(err)
 		daemon, err := node.NewDaemon(config)
@@ -55,17 +59,19 @@ func init() {
 	runCmd.Flags().StringVar(&btcUser, btcUserFlag, "", "bitcoin json rpc username")
 	runCmd.Flags().StringVar(&btcPwd, btcPwdFlag, "", "bitcoin json rpc password")
 	runCmd.Flags().StringVar(&ethUrl, ethUrlFlag, "", "ethereum json rpc endpoint")
-	runCmd.Flags().StringVar(&ethPrivateKey, ethPrivateKeyFlag, "", "ethereum private key")
+	//runCmd.Flags().StringVar(&ethPrivateKey, ethPrivateKeyFlag, "", "ethereum private key")
+	//runCmd.Flags().BoolVar(&autoSubmit, autoSubmitFlag, false, "autoSubmit eth tx")
 	rootCmd.AddCommand(runCmd)
 }
 
-func getRunConfig() (tEnableLocalWorker bool, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey string) {
+func getRunConfig() (tEnableLocalWorker, tAutoSubmit bool, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey string) {
 	tBtcurl = viper.GetString(btcUrlFlag)
 	tBtcUser = viper.GetString(btcUserFlag)
 	tBtcPwd = viper.GetString(btcPwdFlag)
 	tEthUrl = viper.GetString(ethUrlFlag)
 	tEthPrivateKey = viper.GetString(ethPrivateKeyFlag)
 	tEnableLocalWorker = viper.GetBool(enableLocalWorkerFlag)
+	tAutoSubmit = viper.GetBool(autoSubmitFlag)
 	if btcUrl != "" {
 		tBtcurl = btcUrl
 	}
@@ -81,5 +87,5 @@ func getRunConfig() (tEnableLocalWorker bool, tBtcurl, tBtcUser, tBtcPwd, tEthUr
 	if ethPrivateKey != "" {
 		tEthPrivateKey = ethPrivateKey
 	}
-	return tEnableLocalWorker, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey
+	return tEnableLocalWorker, tAutoSubmit, tBtcurl, tBtcUser, tBtcPwd, tEthUrl, tEthPrivateKey
 }

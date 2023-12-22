@@ -18,22 +18,32 @@ type Handler struct {
 	schedule *Schedule
 }
 
+func (h *Handler) Transactions(txId []string) ([]rpc.Transaction, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) getTransaction(hash string) (rpc.Transaction, error) {
+	panic(h)
+}
+
 func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
 	panic(h)
 }
 
 func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
 	var txProof Proof
-	proofId := ProofId(txId)
+	proofId := DbProofId(txId)
 	err := h.store.GetObj(proofId, &txProof)
 	if err != nil {
-		logger.Error("get proof error: %v %v", proofId, err)
+		logger.Error("get proof error: %v %v", txId, err)
 		return rpc.ProofInfo{}, err
 	}
 	result := rpc.ProofInfo{
-		Status: int(txProof.Status),
-		Proof:  txProof.Proof,
-		Msg:    "success",
+		Status:    int(txProof.Status),
+		Proof:     txProof.Proof,
+		TxId:      txProof.TxId,
+		ProofType: int(txProof.ProofType),
 	}
 	return result, nil
 }
@@ -45,6 +55,7 @@ func (h *Handler) Stop() error {
 }
 
 func (h *Handler) AddWorker(endpoint string, max int) (string, error) {
+	logger.Debug("add new worker now: %v %v", endpoint, max)
 	err := h.schedule.AddWorker(endpoint, max)
 	if err != nil {
 		return "", err

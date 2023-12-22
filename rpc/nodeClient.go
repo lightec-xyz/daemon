@@ -15,6 +15,11 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
+func (c *NodeClient) Transactions(txId []string) ([]Transaction, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (c *NodeClient) Transaction(txHash string) (Transaction, error) {
 	var result Transaction
 	err := c.call(&result, "zkbtc_transaction", txHash)
