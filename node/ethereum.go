@@ -361,8 +361,8 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 				PkScript: out.PkScript,
 			})
 		}
-		if transaction.TxHash().String() != btcTxId {
-			logger.Error("never should happen btc tx not match error: %v %v", log.TxHash.String())
+		if strings.TrimPrefix(transaction.TxHash().String(), "0x") != strings.TrimPrefix(btcTxId, "0x") {
+			logger.Error("never should happen btc tx not match error: txHash:%v, logBtcTxId:%v,decodeTxHash:%v", log.TxHash.String(), btcTxId, transaction.TxHash().String())
 			return redeemTx, false, fmt.Errorf("tx hash not match:%v", log.TxHash.String())
 		}
 		redeemTx = NewRedeemEthTx(log.TxHash.String(), btcTxId, inputs, outputs)

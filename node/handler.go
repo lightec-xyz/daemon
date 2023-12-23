@@ -55,7 +55,7 @@ func (h *Handler) Stop() error {
 }
 
 func (h *Handler) AddWorker(endpoint string, max int) (string, error) {
-	logger.Debug("add new worker now: %v %v", endpoint, max)
+	logger.Info("add new worker now: %v %v", endpoint, max)
 	err := h.schedule.AddWorker(endpoint, max)
 	if err != nil {
 		return "", err

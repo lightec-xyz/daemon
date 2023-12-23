@@ -116,7 +116,7 @@ func (m *Mock) DepositBtcToEth(txId, receiverAddr string, index uint32, amount *
 	}
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(3))
 	gasLimit := uint64(500000)
-	ethTxHash, err := m.ethClient.Deposit(m.cfg.EthPrivateKey, receiverAddr, txId, index, nonce, gasLimit, chainID, gasPrice,
+	ethTxHash, err := m.ethClient.Deposit(m.cfg.EthPrivateKey, txId, receiverAddr, index, nonce, gasLimit, chainID, gasPrice,
 		amount, []byte("test proof"))
 	if err != nil {
 		logger.Error(" deposit eth error:%v", err)

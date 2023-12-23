@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -191,7 +192,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 	for _, tx := range blockWithTx.Tx {
 		redeemTx, isRedeem := b.isRedeemTx(tx)
 		if isRedeem {
-			logger.Info("bitcoin agent find redeem tx: %v", tx.Txid)
+			logger.Info("bitcoin agent find redeem tx: %v,inputs:%v ,outputs:%v", tx.Txid, formatUtxo(redeemTx.Inputs), formatOut(redeemTx.Outputs))
 			redeemTxes = append(redeemTxes, redeemTx)
 			continue
 		}
@@ -201,7 +202,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			return nil, nil, nil, nil, err
 		}
 		if isDeposit {
-			logger.Info("bitcoin agent find  deposit tx: %v", tx.Txid)
+			logger.Info("bitcoin agent find  deposit tx: %v, ethAddr:%v,amount:%v,utxo:%v", tx.Txid, depositTx.EthAddr, depositTx.Amount, formatUtxo(depositTx.Utxo))
 			proofs = append(proofs, NewDepositTxProof(tx.Txid))
 			requests = append(requests, NewDepositProofRequest(depositTx.TxHash, depositTx.EthAddr, depositTx.Amount, depositTx.Utxo))
 			depositTxes = append(depositTxes, depositTx)
@@ -325,12 +326,31 @@ func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof, receiverAddr string, amou
 
 func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
 	// todo more check
+	var inputs []Utxo
+	isRedeemTx := false
 	for _, vin := range tx.Vin {
 		if vin.Prevout.ScriptPubKey.Address == b.operatorAddr {
-			return NewRedeemBtcTx(tx.Txid), true
+			isRedeemTx = true
 		}
+		inputs = append(inputs, Utxo{
+			TxId:  vin.TxId,
+			Index: uint32(vin.Vout),
+		})
 	}
-	return Transaction{}, false
+	var outputs []TxOut
+	for _, out := range tx.Vout {
+		scriptHex, err := hex.DecodeString(out.ScriptPubKey.Hex)
+		if err != nil {
+			logger.Error("decode hex error:%v %v", tx.Txid, err)
+			return Transaction{}, false
+		}
+		outputs = append(outputs, TxOut{
+			Value:    BtcToSat(out.Value),
+			PkScript: scriptHex,
+		})
+	}
+	redeemBtcTx := NewRedeemBtcTx(tx.Txid, inputs, outputs)
+	return redeemBtcTx, isRedeemTx
 }
 
 func (b *BitcoinAgent) isDepositTx(tx types.Tx) (Transaction, bool, error) {
@@ -434,9 +454,11 @@ func NewDepositBtcTx(txId, ethAddr string, utxo []Utxo, amount int64) Transactio
 	}
 }
 
-func NewRedeemBtcTx(txId string) Transaction {
+func NewRedeemBtcTx(txId string, inputs []Utxo, outputs []TxOut) Transaction {
 	return Transaction{
 		TxHash:    txId,
+		Inputs:    inputs,
+		Outputs:   outputs,
 		TxType:    RedeemTx,
 		ChainType: Bitcoin,
 	}

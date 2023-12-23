@@ -15,7 +15,7 @@ func init() {
 }
 
 func TestProofClient(t *testing.T) {
-	proofInfo, err := nodeClient.ProofInfo("0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58")
+	proofInfo, err := nodeClient.ProofInfo("0x6192c3a62383898cf4368638c718b9343099f64adb654347a55163e886a43758")
 	if err != nil {
 		t.Fatal(err)
 	}
