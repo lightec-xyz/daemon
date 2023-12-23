@@ -24,6 +24,38 @@ const (
 	Verify
 )
 
+type TxType = int
+
+const (
+	DepositTx TxType = iota + 1
+	RedeemTx
+)
+
+type ChainType = int
+
+const (
+	Bitcoin ChainType = iota + 1
+	Ethereum
+)
+
+type Transaction struct {
+	TxHash   string
+	DestHash string
+	Height   int64
+
+	BtcTxId string
+
+	Amount  int64
+	EthAddr string
+	Utxo    []Utxo
+
+	Inputs  []Utxo
+	Outputs []TxOut
+
+	TxType    TxType
+	ChainType ChainType
+}
+
 type BitcoinTx struct {
 	EthAddr string
 	Amount  int64 // btc

@@ -40,7 +40,6 @@ type EthereumAgent struct {
 
 func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	proofRequest chan []ProofRequest, proofResponse <-chan ProofResponse) (IAgent, error) {
-
 	// todo
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
@@ -202,7 +201,7 @@ func (e *EthereumAgent) Transfer() {
 
 }
 
-func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []EthereumTx, proofs []Proof) error {
+func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []Transaction, proofs []Proof) error {
 	err := WriteEthereumTx(e.store, height, redeemTxes)
 	if err != nil {
 		logger.Error("put redeem tx error: %v %v", height, err)
@@ -228,7 +227,7 @@ func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []EthereumTx, proo
 	return nil
 }
 
-func (e *EthereumAgent) updateDepositDestChainHash(depositTx []EthereumTx) error {
+func (e *EthereumAgent) updateDepositDestChainHash(depositTx []Transaction) error {
 	err := WriteDepositDestChainHash(e.store, depositTx)
 	if err != nil {
 		logger.Error("update deposit final status error: %v %v", depositTx, err)
@@ -237,7 +236,7 @@ func (e *EthereumAgent) updateDepositDestChainHash(depositTx []EthereumTx) error
 	return nil
 }
 
-func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []ProofRequest, []Proof, error) {
+func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, []ProofRequest, []Proof, error) {
 	block, err := e.ethClient.GetBlock(height)
 	if err != nil {
 		logger.Error("ethereum rpc get block error:%v", err)
@@ -251,8 +250,8 @@ func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []
 		logger.Error("ethereum rpc get logs error:%v", err)
 		return nil, nil, nil, nil, err
 	}
-	var redeemTxes []EthereumTx
-	var depositTxes []EthereumTx
+	var redeemTxes []Transaction
+	var depositTxes []Transaction
 	var proofs []Proof
 	var requests []ProofRequest
 	for _, log := range logs {
@@ -262,8 +261,8 @@ func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []
 			return nil, nil, nil, nil, err
 		}
 		if isDeposit {
-			logger.Info("ethereum agent find deposit zkbtc ethTxHash:%v,btcTxId:%v,index:%v,amount:%v",
-				depositTx.TxHash, depositTx.BtcTxId, depositTx.Vout, depositTx.Amount)
+			logger.Info("ethereum agent find deposit zkbtc ethTxHash:%v,btcTxId:%v,utxo:%v",
+				depositTx.TxHash, depositTx.BtcTxId, formatUtxo(depositTx.Utxo))
 			depositTxes = append(depositTxes, depositTx)
 			continue
 		}
@@ -274,7 +273,8 @@ func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []
 			return nil, nil, nil, nil, err
 		}
 		if isRedeem {
-			logger.Info("ethereum agent find redeem zkbtc tx: %v", redeemTx.String())
+			logger.Info("ethereum agent find redeem zkbtc  ethTxHash:%v,btcTxId:%v,input:%v,output:%v",
+				redeemTx.TxHash, redeemTx.BtcTxId, formatUtxo(redeemTx.Inputs), formatOut(redeemTx.Outputs))
 			proofs = append(proofs, NewRedeemProof(redeemTx.TxHash))
 			requests = append(requests, NewRedeemProofRequest(redeemTx.TxHash, redeemTx.BtcTxId, redeemTx.Inputs, redeemTx.Outputs))
 			redeemTxes = append(redeemTxes, redeemTx)
@@ -284,43 +284,43 @@ func (e *EthereumAgent) parseBlock(height int64) ([]EthereumTx, []EthereumTx, []
 	return redeemTxes, depositTxes, requests, proofs, nil
 }
 
-func (e *EthereumAgent) isDepositTx(log types.Log) (EthereumTx, bool, error) {
-	depositTx := EthereumTx{}
+func (e *EthereumAgent) isDepositTx(log types.Log) (Transaction, bool, error) {
 	if log.Removed {
-		return depositTx, false, nil
+		return Transaction{}, false, nil
 	}
 	if len(log.Topics) != 3 {
-		return depositTx, false, nil
+		return Transaction{}, false, nil
 	}
 	// todo
 	if strings.ToLower(log.Address.Hex()) == e.addrFilter.LogDepositAddr && strings.ToLower(log.Topics[0].Hex()) == e.addrFilter.LogTopicDepositAddr {
-		txId := strings.ToLower(log.Topics[1].Hex())
+		btcTxId := strings.ToLower(log.Topics[1].Hex())
 		hexVout := strings.TrimPrefix(strings.ToLower(log.Topics[2].Hex()), "0x")
 		vout, err := strconv.ParseInt(hexVout, 16, 32)
 		if err != nil {
 			logger.Error("parse vout error:%v", err)
-			return depositTx, false, err
+			return Transaction{}, false, err
 		}
 		amount, err := strconv.ParseInt(fmt.Sprintf("%x", log.Data), 16, 64)
 		if err != nil {
 			logger.Error("parse amount error:%v", err)
-			return depositTx, false, err
+			return Transaction{}, false, err
 		}
-		depositTx = EthereumTx{
-			BtcTxId: txId,
-			TxHash:  log.TxHash.String(),
-			Vout:    int(vout),
-			Amount:  amount,
+		utxo := []Utxo{
+			{
+				TxId:  btcTxId,
+				Index: uint32(vout),
+			},
 		}
+		depositTx := NewDepositEthTx(log.TxHash.String(), btcTxId, utxo, amount)
 		return depositTx, true, nil
 	} else {
-		return depositTx, false, nil
+		return Transaction{}, false, nil
 	}
 
 }
 
-func (e *EthereumAgent) isRedeemTx(log types.Log) (EthereumTx, bool, error) {
-	redeemTx := EthereumTx{}
+func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
+	redeemTx := Transaction{}
 	if log.Removed {
 		return redeemTx, false, nil
 	}
@@ -361,10 +361,11 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (EthereumTx, bool, error) {
 				PkScript: out.PkScript,
 			})
 		}
-		redeemTx.BtcTxId = btcTxId
-		redeemTx.Inputs = inputs
-		redeemTx.Outputs = outputs
-		redeemTx.TxHash = log.TxHash.String()
+		if transaction.TxHash().String() != btcTxId {
+			logger.Error("never should happen btc tx not match error: %v %v", log.TxHash.String())
+			return redeemTx, false, fmt.Errorf("tx hash not match:%v", log.TxHash.String())
+		}
+		redeemTx = NewRedeemEthTx(log.TxHash.String(), btcTxId, inputs, outputs)
 		return redeemTx, true, nil
 	} else {
 		return redeemTx, false, nil
@@ -492,5 +493,27 @@ func NewRedeemProof(txId string) Proof {
 		ProofType: Redeem,
 		Proof:     "",
 		Status:    ProofDefault,
+	}
+}
+
+func NewDepositEthTx(txHash, btcTxId string, utxo []Utxo, amount int64) Transaction {
+	return Transaction{
+		TxHash:    txHash,
+		BtcTxId:   btcTxId,
+		Utxo:      utxo,
+		Amount:    amount,
+		ChainType: Ethereum,
+		TxType:    DepositTx,
+	}
+}
+func NewRedeemEthTx(txId string, destHash string, inputs []Utxo, outputs []TxOut) Transaction {
+	return Transaction{
+		TxHash:    txId,
+		DestHash:  destHash,
+		BtcTxId:   destHash,
+		Inputs:    inputs,
+		Outputs:   outputs,
+		ChainType: Ethereum,
+		TxType:    RedeemTx,
 	}
 }

@@ -23,10 +23,10 @@ func ReadInitBitcoinHeight(store store.IStore) (bool, error) {
 	return store.HasObj(btcCurHeightKey)
 }
 
-func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
+func WriteBitcoinTx(store store.IStore, height int64, txes []Transaction) error {
 	batch := store.Batch()
 	for _, tx := range txes {
-		err := batch.BatchPutObj(DbTxIdKey(height, tx.TxId), tx)
+		err := batch.BatchPutObj(DbTxIdKey(height, tx.TxHash), tx)
 		if err != nil {
 			logger.Error("put bitcoin tx error:%v", err)
 			return err
@@ -40,7 +40,7 @@ func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
 	return nil
 }
 
-func WriteDepositDestChainHash(store store.IStore, txList []EthereumTx) error {
+func WriteDepositDestChainHash(store store.IStore, txList []Transaction) error {
 	// todo
 	batch := store.Batch()
 	for _, tx := range txList {
@@ -108,7 +108,7 @@ func ReadInitEthereumHeight(store store.IStore) (bool, error) {
 	return store.HasObj(ethCurHeightKey)
 }
 
-func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error {
+func WriteEthereumTx(store store.IStore, height int64, txes []Transaction) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbTxIdKey(height, tx.BtcTxId), tx)
@@ -125,7 +125,7 @@ func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error 
 	return nil
 }
 
-func WriteRedeemDestChainHash(store store.IStore, txList []EthereumTx) error {
+func WriteRedeemDestChainHash(store store.IStore, txList []Transaction) error {
 	batch := store.Batch()
 	for _, tx := range txList {
 		err := batch.BatchPutObj(DbTxIdToDestId(tx.TxHash), tx.BtcTxId)
