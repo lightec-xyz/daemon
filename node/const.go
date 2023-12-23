@@ -71,12 +71,13 @@ const (
 	LocalBtcScanTime        = 15 * time.Second
 	LocalEthScanTime        = 5 * time.Second
 
-	LocalInitBitcoinHeight  = 15690
-	LocalInitEthereumHeight = 583490
+	LocalInitBitcoinHeight  = 16491
+	LocalInitEthereumHeight = 585392
 
 	LocalEthZkBridgeAddress = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
 	LocalEthZkBtcAddress    = "0xdf68798c22c683f72e3a1359f9de8bbedb7ab920"
 
+	// utxo manager contract
 	LocalLogDepositAddr = "0x52ebc075616195cc7deb79d5c21bd9b04acc33ee"
 	LocalLogRedeemAddr  = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
 
@@ -89,7 +90,7 @@ var LocalLogTopics = []string{LocalTopicDepositAddr, LocalTopicRedeemAddr}
 
 // ***********************************************************
 
-const BtcDeposit = 0
-const BtcRedeem = 1
-
 const RpcRegisterName = "zkbtc"
+
+const BitcoinNetwork = "bitcoin"
+const EthereumNetwork = "ethereum"

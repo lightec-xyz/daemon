@@ -18,34 +18,69 @@ type Handler struct {
 	schedule *Schedule
 }
 
-func (h *Handler) Transactions(txId []string) ([]rpc.Transaction, error) {
-	//TODO implement me
-	panic("implement me")
+func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string, error) {
+	if network == BitcoinNetwork {
+		txIds, err := ReadBitcoinTxIds(h.store, int64(height))
+		if err != nil {
+			logger.Error("read bitcoin tx ids error: %v %v", height, err)
+			return nil, err
+		}
+		return txIds, nil
+
+	} else if network == EthereumNetwork {
+		txIds, err := ReadEthereumTxIds(h.store, int64(height))
+		if err != nil {
+			logger.Error("read bitcoin tx ids error: %v %v", height, err)
+			return nil, err
+		}
+		return txIds, nil
+	} else {
+		return nil, fmt.Errorf("unsupported network: %v", network)
+	}
+
 }
 
-func (h *Handler) getTransaction(hash string) (rpc.Transaction, error) {
-	panic(h)
+func (h *Handler) Transactions(txIds []string) ([]rpc.Transaction, error) {
+	var txList []rpc.Transaction
+	for _, txId := range txIds {
+		transaction, err := h.Transaction(txId)
+		if err != nil {
+			logger.Error("read transaction error: %v %v", txId, err)
+			return nil, err
+		}
+		txList = append(txList, transaction)
+	}
+	return txList, nil
+
 }
 
 func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
-	panic(h)
+	tx, err := ReadTransaction(h.store, txHash)
+	if err != nil {
+		logger.Error("read transaction error: %v %v", txHash, err)
+		return rpc.Transaction{}, err
+	}
+	transaction := rpc.Transaction{}
+	err = objParse(tx, &transaction)
+	if err != nil {
+		logger.Error("parse transaction error: %v %v", txHash, err)
+		return rpc.Transaction{}, err
+	}
+	return transaction, err
 }
 
 func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
-	var txProof Proof
-	proofId := DbProofId(txId)
-	err := h.store.GetObj(proofId, &txProof)
+	proof, err := ReadProof(h.store, txId)
 	if err != nil {
-		logger.Error("get proof error: %v %v", txId, err)
+		logger.Error("read proof error: %v %v", txId, err)
 		return rpc.ProofInfo{}, err
 	}
-	result := rpc.ProofInfo{
-		Status:    int(txProof.Status),
-		Proof:     txProof.Proof,
-		TxId:      txProof.TxId,
-		ProofType: int(txProof.ProofType),
+	rpcProof := rpc.ProofInfo{
+		Status: int(proof.Status),
+		Proof:  proof.Proof,
+		TxId:   proof.TxId,
 	}
-	return result, nil
+	return rpcProof, nil
 }
 
 func (h *Handler) Stop() error {

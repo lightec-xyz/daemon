@@ -4,8 +4,8 @@
 |--------------|---------|---------------|-----------|
 | btcCurHeight | string  | height        | int64     |
 | ethCurHeight | string  | height        | int64     |
-| btcTxId      | string  | BitcoinTx     | object    |
-| ethTxId      | string  | EthereumTx    | object    |
+| height       | string  | txIdList      | object    |
+| txId         | string  | Transaction   | object    |
 | proofId      | string  | Proof         | object    |
 | depositId    | string  | destChainHash | string    |
 

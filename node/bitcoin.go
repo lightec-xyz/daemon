@@ -156,7 +156,12 @@ func (b *BitcoinAgent) updateRedeemTxInfo(height int64, txList []BitcoinTx) erro
 
 func (b *BitcoinAgent) saveDataToDb(height int64, depositTxes []Transaction, proofs []Proof) error {
 	//todo
-	err := WriteBitcoinTx(b.store, height, depositTxes)
+	err := WriteBitcoinTxIds(b.store, height, depositTxes)
+	if err != nil {
+		logger.Error("write btc tx ids error: %v %v", height, err)
+		return err
+	}
+	err = WriteBitcoinTx(b.store, depositTxes)
 	if err != nil {
 		logger.Error("write deposit tx error: %v %v", height, err)
 		return err

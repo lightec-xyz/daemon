@@ -202,7 +202,13 @@ func (e *EthereumAgent) Transfer() {
 }
 
 func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []Transaction, proofs []Proof) error {
-	err := WriteEthereumTx(e.store, height, redeemTxes)
+
+	err := WriteEthereumTxIds(e.store, height, redeemTxes)
+	if err != nil {
+		logger.Error("write ethereum tx ids error: %v %v", height, err)
+		return err
+	}
+	err = WriteEthereumTx(e.store, redeemTxes)
 	if err != nil {
 		logger.Error("put redeem tx error: %v %v", height, err)
 		return err
@@ -506,9 +512,9 @@ func NewDepositEthTx(txHash, btcTxId string, utxo []Utxo, amount int64) Transact
 		TxType:    DepositTx,
 	}
 }
-func NewRedeemEthTx(txId string, destHash string, inputs []Utxo, outputs []TxOut) Transaction {
+func NewRedeemEthTx(txHash string, destHash string, inputs []Utxo, outputs []TxOut) Transaction {
 	return Transaction{
-		TxHash:    txId,
+		TxHash:    txHash,
 		DestHash:  destHash,
 		BtcTxId:   destHash,
 		Inputs:    inputs,

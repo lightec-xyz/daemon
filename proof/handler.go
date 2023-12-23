@@ -22,17 +22,17 @@ func NewHandler(memoryStore store.IStore, max int) *Handler {
 	}
 }
 
-func (h *Handler) GenZkProof(request rpc.ProofRequest) (rpc.ProofResponse, error) {
+func (h *Handler) GenZkProof(req rpc.ProofRequest) (rpc.ProofResponse, error) {
 	//todo ffi
-	logger.Debug("new proof request: %v", request)
+	logger.Debug("new proof req: %v %v %v", req.TxId, req.ProofType)
 	response := rpc.ProofResponse{}
-	time.Sleep(5 * time.Second)
-	err := objParse(request, &response)
+	time.Sleep(10 * time.Second)
+	err := objParse(req, &response)
 	if err != nil {
-		logger.Error("parse proof request error:%v", err)
+		logger.Error("parse proof req error:%v", err)
 		return response, nil
 	}
-	logger.Debug("proof generated: %v", response)
+	logger.Debug("proof generated: %v", response.TxId)
 	return response, nil
 }
 

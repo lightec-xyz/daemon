@@ -2,7 +2,7 @@ package node
 
 const (
 	ProofPrefix         = "p_" // p_ + hash
-	TxPrefix            = "t_" // height + t_ + hash
+	TxPrefix            = "t_" // t_ + hash
 	DestChainHashPrefix = "d_" // d_ + hash
 )
 

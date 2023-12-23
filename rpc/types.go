@@ -1,11 +1,21 @@
 package rpc
 
 type Transaction struct {
-	SourceHash string `json:"sourceHash"`
-	DestHash   string `json:"destHash"`
-	Proof      struct {
-		Hash string `json:"hash"`
-	}
+	TxHash   string
+	DestHash string
+	Height   int64
+
+	BtcTxId string
+
+	Amount  int64
+	EthAddr string
+	Utxo    []Utxo
+
+	Inputs  []Utxo
+	Outputs []TxOut
+
+	TxType    int
+	ChainType int
 }
 
 type EthereumTx struct {

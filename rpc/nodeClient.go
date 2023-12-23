@@ -15,9 +15,22 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
-func (c *NodeClient) Transactions(txId []string) ([]Transaction, error) {
-	//TODO implement me
-	panic("implement me")
+func (c *NodeClient) TransactionsByHeight(height uint64, network string) ([]string, error) {
+	var result []string
+	err := c.call(&result, "zkbtc_transactionsByHeight", height, network)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (c *NodeClient) Transactions(txIds []string) ([]Transaction, error) {
+	var result []Transaction
+	err := c.call(&result, "zkbtc_transactions", txIds)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (c *NodeClient) Transaction(txHash string) (Transaction, error) {

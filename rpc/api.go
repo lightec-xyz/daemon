@@ -3,8 +3,9 @@ package rpc
 type NodeAPI interface {
 	Version() (NodeInfo, error)
 	AddWorker(endpoint string, max int) (string, error)
-	ProofInfo(proofId string) (ProofInfo, error)
+	ProofInfo(txId string) (ProofInfo, error)
 	Transaction(txHash string) (Transaction, error)
+	TransactionsByHeight(height uint64, network string) ([]string, error)
 	Transactions(txId []string) ([]Transaction, error)
 	Stop() error
 }

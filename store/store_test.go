@@ -18,24 +18,28 @@ func init() {
 }
 
 func TestStore_Iterator(t *testing.T) {
-	err := db.Put([]byte("test_01"), []byte("test01"))
+	err := db.Put([]byte("123_test_01"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.Put([]byte("test_02"), []byte("test02"))
+	err = db.Put([]byte("123_test_02"), []byte("test02"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.Put([]byte("test_03"), []byte("test03"))
+	err = db.Put([]byte("123_test_03"), []byte("12ddddddd"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.Put([]byte("test_04"), []byte("test04"))
+	//err = db.Put([]byte("123_test_03"), []byte("aaaaaa"))
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	err = db.Put([]byte("123_test_04"), []byte("test04"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	iterator := db.Iterator([]byte("test_03"), nil)
+	iterator := db.Iterator([]byte("123"), nil)
 	defer iterator.Release()
 	for iterator.Next() {
 		key := iterator.Key()
