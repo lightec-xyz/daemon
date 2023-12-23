@@ -44,7 +44,7 @@ daemon
     ./daemon run 
 
     // add remote worker to daemon 
-    ./daemon addWorker http://127.0.0.1:8485 1
+    ./daemon --rpcbind 127.0.0.1 --rpcport 9780 addWorker ws://127.0.0.1:30001 1
 
     // stop daemon
     ./daemon stop 

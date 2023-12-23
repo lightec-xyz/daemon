@@ -24,14 +24,15 @@ func ReadInitBitcoinHeight(store store.IStore) (bool, error) {
 }
 
 func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
+	batch := store.Batch()
 	for _, tx := range txes {
-		err := store.BatchPutObj(DbTxIdKey(height, tx.TxId), tx)
+		err := batch.BatchPutObj(DbTxIdKey(height, tx.TxId), tx)
 		if err != nil {
 			logger.Error("put bitcoin tx error:%v", err)
 			return err
 		}
 	}
-	err := store.BatchWriteObj()
+	err := batch.BatchWriteObj()
 	if err != nil {
 		logger.Error("put bitcoin tx batch error:%v", err)
 		return err
@@ -41,14 +42,15 @@ func WriteBitcoinTx(store store.IStore, height int64, txes []BitcoinTx) error {
 
 func WriteDepositDestChainHash(store store.IStore, txList []EthereumTx) error {
 	// todo
+	batch := store.Batch()
 	for _, tx := range txList {
-		err := store.BatchPutObj(DbTxIdToDestId(tx.BtcTxId), tx.TxHash)
+		err := batch.BatchPutObj(DbTxIdToDestId(tx.BtcTxId), tx.TxHash)
 		if err != nil {
 			logger.Error("put deposit dest chain error:%v", err)
 			return err
 		}
 	}
-	err := store.BatchWriteObj()
+	err := batch.BatchWriteObj()
 	if err != nil {
 		logger.Error("put deposit dest chain batch  error:%v", err)
 		return err
@@ -57,14 +59,15 @@ func WriteDepositDestChainHash(store store.IStore, txList []EthereumTx) error {
 }
 
 func WriteProof(store store.IStore, txes []Proof) error {
+	batch := store.Batch()
 	for _, tx := range txes {
-		err := store.BatchPutObj(DbProofId(tx.TxId), tx)
+		err := batch.BatchPutObj(DbProofId(tx.TxId), tx)
 		if err != nil {
 			logger.Error("put proof tx error:%v", err)
 			return err
 		}
 	}
-	err := store.BatchWriteObj()
+	err := batch.BatchWriteObj()
 	if err != nil {
 		logger.Error("put bitcoin tx batch error:%v", err)
 		return err
@@ -106,14 +109,15 @@ func ReadInitEthereumHeight(store store.IStore) (bool, error) {
 }
 
 func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error {
+	batch := store.Batch()
 	for _, tx := range txes {
-		err := store.BatchPutObj(DbTxIdKey(height, tx.BtcTxId), tx)
+		err := batch.BatchPutObj(DbTxIdKey(height, tx.BtcTxId), tx)
 		if err != nil {
 			logger.Error("put ethereum tx error:%v", err)
 			return err
 		}
 	}
-	err := store.BatchWriteObj()
+	err := batch.BatchWriteObj()
 	if err != nil {
 		logger.Error("put bitcoin tx batch error:%v", err)
 		return err
@@ -122,14 +126,15 @@ func WriteEthereumTx(store store.IStore, height int64, txes []EthereumTx) error 
 }
 
 func WriteRedeemDestChainHash(store store.IStore, txList []EthereumTx) error {
+	batch := store.Batch()
 	for _, tx := range txList {
-		err := store.BatchPutObj(DbTxIdToDestId(tx.TxHash), tx.BtcTxId)
+		err := batch.BatchPutObj(DbTxIdToDestId(tx.TxHash), tx.BtcTxId)
 		if err != nil {
 			logger.Error("put deposit dest chain error:%v", err)
 			return err
 		}
 	}
-	err := store.BatchWriteObj()
+	err := batch.BatchWriteObj()
 	if err != nil {
 		logger.Error("put deposit dest chain batch  error:%v", err)
 		return err

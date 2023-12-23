@@ -12,10 +12,6 @@ type Store struct {
 	levelDb *LevelDb
 }
 
-func (s *Store) Iterator(prefix []byte, start []byte) Iterator {
-	return s.levelDb.NewIterator(prefix, start)
-}
-
 func NewStore(file string, cache int, handles int, namespace string, readonly bool) (*Store, error) {
 	levelDb, err := NewLevelDb(file, cache, handles, namespace, readonly)
 	if err != nil {
@@ -47,16 +43,8 @@ func (s *Store) Delete(key []byte) error {
 	return s.levelDb.Delete(key)
 }
 
-func (s *Store) BatchPut(key []byte, value []byte) error {
-	return s.levelDb.batch.Put(key, value)
-}
-
-func (s *Store) BatchDelete(key []byte) error {
-	return s.levelDb.batch.Delete(key)
-}
-
-func (s *Store) BatchWrite() error {
-	return s.levelDb.batch.Write()
+func (s *Store) Batch() IBatch {
+	return NewBatch(s.levelDb.NewBatch())
 }
 
 func (s *Store) HasObj(key interface{}) (bool, error) {
@@ -104,32 +92,10 @@ func (s *Store) PutObj(key interface{}, value interface{}) error {
 	return s.Put(keyBytes, bytes)
 }
 
-func (s *Store) BatchPutObj(key interface{}, value interface{}) error {
-	bytes, err := codec.Marshal(value)
-	if err != nil {
-		logger.Error("value can't Marshal error:%v", err)
-		return err
-	}
-	keyBytes, err := KeyEncode(key)
-	if err != nil {
-		logger.Error("key parse bytes error:%v", err)
-		return err
-	}
-	return s.BatchPut(keyBytes, bytes)
+func (s *Store) Iterator(prefix []byte, start []byte) Iterator {
+	return s.levelDb.NewIterator(prefix, start)
 }
 
-func (s *Store) BatchDeleteObj(key interface{}) error {
-	keyBytes, err := KeyEncode(key)
-	if err != nil {
-		logger.Error("key parse bytes error:%v", err)
-		return err
-	}
-	return s.BatchDelete(keyBytes)
-}
-
-func (s *Store) BatchWriteObj() error {
-	return s.BatchWrite()
-}
 func KeyEncode(key interface{}) ([]byte, error) {
 	//todo
 	switch key.(type) {

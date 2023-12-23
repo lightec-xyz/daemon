@@ -11,6 +11,11 @@ type MemoryStore struct {
 	memoryDb *MemoryDb
 }
 
+func (m *MemoryStore) Batch() IBatch {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m *MemoryStore) Iterator(prefix []byte, start []byte) Iterator {
 	//TODO implement me
 	panic("implement me")
@@ -35,18 +40,6 @@ func (m *MemoryStore) Put(key []byte, value []byte) error {
 
 func (m *MemoryStore) Delete(key []byte) error {
 	return m.memoryDb.Delete(key)
-}
-
-func (m *MemoryStore) BatchPut(key []byte, value []byte) error {
-	return m.memoryDb.batch.Put(key, value)
-}
-
-func (m *MemoryStore) BatchDelete(key []byte) error {
-	return m.memoryDb.batch.Delete(key)
-}
-
-func (m *MemoryStore) BatchWrite() error {
-	return m.memoryDb.batch.Write()
 }
 
 func (m *MemoryStore) HasObj(key interface{}) (bool, error) {
@@ -92,31 +85,4 @@ func (m *MemoryStore) PutObj(key interface{}, value interface{}) error {
 		return err
 	}
 	return m.Put(keyBytes, bytes)
-}
-
-func (m *MemoryStore) BatchPutObj(key interface{}, value interface{}) error {
-	bytes, err := codec.Marshal(value)
-	if err != nil {
-		logger.Error("value can't Marshal error:%v", err)
-		return err
-	}
-	keyBytes, err := KeyEncode(key)
-	if err != nil {
-		logger.Error("key parse bytes error:%v", err)
-		return err
-	}
-	return m.BatchPut(keyBytes, bytes)
-}
-
-func (m *MemoryStore) BatchDeleteObj(key interface{}) error {
-	keyBytes, err := KeyEncode(key)
-	if err != nil {
-		logger.Error("key parse bytes error:%v", err)
-		return err
-	}
-	return m.BatchDelete(keyBytes)
-}
-
-func (m *MemoryStore) BatchWriteObj() error {
-	return m.BatchWrite()
 }
