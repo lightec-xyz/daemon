@@ -14,8 +14,8 @@ const (
 	BtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
 	BtcMultiNRequired  = 2
 	BtcNetwork         = btctx.MainNet
-	EthZkBridgeAddress = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
-	EthZkBtcAddress    = "0xdf68798c22c683f72e3a1359f9de8bbedb7ab920"
+	EthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"
+	EthZkBtcAddress    = "0xd2a00777a7e5b6afaa5c053a6425619653541c82"
 
 	BtcScanTime = 1 * time.Minute
 	EthScanTime = 5 * time.Second
@@ -23,7 +23,7 @@ const (
 	InitBitcoinHeight  = 2540942
 	InitEthereumHeight = 10127532
 
-	LogDepositAddr   = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
+	LogDepositAddr   = "0x07417a531e376ce150493ffa98cd5516b544441d"
 	LogRedeemAddr    = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"
 	TopicDepositAddr = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
 	TopicRedeemAddr  = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
@@ -41,8 +41,8 @@ const (
 	TestnetBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
 	TestnetBtcMultiNRequired  = 2
 	TestnetBtcNetwork         = btctx.TestNet
-	TestnetEthZkBridgeAddress = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
-	TestnetEthZkBtcAddress    = "0xdf68798c22c683f72e3a1359f9de8bbedb7ab920"
+	TestnetEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"
+	TestnetEthZkBtcAddress    = "0xd2a00777a7e5b6afaa5c053a6425619653541c82"
 
 	TestnetBtcScanTime = 1 * time.Minute
 	TestnetEthScanTime = 5 * time.Second
@@ -50,7 +50,7 @@ const (
 	TestnetInitBitcoinHeight  = 2540942
 	TestnetInitEthereumHeight = 10127532
 
-	TestLogDepositAddr   = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
+	TestLogDepositAddr   = "0x07417a531e376ce150493ffa98cd5516b544441d"
 	TestLogRedeemAddr    = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"
 	TestTopicDepositAddr = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
 	TestTopicRedeemAddr  = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
@@ -71,15 +71,15 @@ const (
 	LocalBtcScanTime        = 15 * time.Second
 	LocalEthScanTime        = 5 * time.Second
 
-	LocalInitBitcoinHeight  = 16491
-	LocalInitEthereumHeight = 585392
+	LocalInitBitcoinHeight  = 17838
+	LocalInitEthereumHeight = 596751
 
-	LocalEthZkBridgeAddress = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
-	LocalEthZkBtcAddress    = "0xdf68798c22c683f72e3a1359f9de8bbedb7ab920"
+	LocalEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"
+	LocalEthZkBtcAddress    = "0xd2a00777a7e5b6afaa5c053a6425619653541c82"
 
 	// utxo manager contract
-	LocalLogDepositAddr = "0x52ebc075616195cc7deb79d5c21bd9b04acc33ee"
-	LocalLogRedeemAddr  = "0x8b404b735afe5bcdce85a1ce753c79715f86062c"
+	LocalLogDepositAddr = "0xab5146a46e90c497b3d23afab7ddaedf3ff61eaf"
+	LocalLogRedeemAddr  = "0x07417a531e376ce150493ffa98cd5516b544441d"
 
 	LocalTopicDepositAddr = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
 	LocalTopicRedeemAddr  = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
