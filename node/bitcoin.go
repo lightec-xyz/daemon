@@ -138,11 +138,14 @@ func (b *BitcoinAgent) ScanBlock() error {
 			//	logger.Error("update tx info error: %v %v", index, err)
 			//	return err
 			//}
-			err = b.updateContractUtxoChange(redeemTxes)
-			if err != nil {
-				logger.Error("update utxo error: %v %v", index, err)
-				return err
+			if b.autoSubmit {
+				err = b.updateContractUtxoChange(redeemTxes)
+				if err != nil {
+					logger.Error("update utxo error: %v %v", index, err)
+					return err
+				}
 			}
+
 		}
 	}
 	return nil
@@ -266,7 +269,7 @@ func (b *BitcoinAgent) updateContractUtxoChange(utxoList []Transaction) error {
 	for _, tx := range utxoList {
 		txId := tx.TxHash
 		if !strings.HasPrefix(txId, "0x") {
-			txId = fmt.Sprintf("0x%x", txId)
+			txId = fmt.Sprintf("0x%s", txId)
 		}
 		txIds = append(txIds, txId)
 	}

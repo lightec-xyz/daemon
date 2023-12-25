@@ -288,7 +288,7 @@ func TestnetDaemonConfig() NodeConfig {
 	user, err := user.Current()
 	config, err := NewNodeConfig(
 		true,
-		false,
+		true,
 		fmt.Sprintf("%v/.daemon", user.HomeDir),
 		"testnet",
 		"127.0.0.1",
