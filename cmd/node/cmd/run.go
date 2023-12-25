@@ -33,8 +33,8 @@ const (
 
 var runCmd = &cobra.Command{
 	Use:     "run",
-	Short:   "run daemon",
-	Example: "./daemon run",
+	Short:   "run node",
+	Example: "./node run",
 	Run: func(cmd *cobra.Command, args []string) {
 		enableLocalWorker, autoSubmit, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
 		//fmt.Printf("datadir:%s, network:%s, rpcbind:%s, rpcport:%s, btcUrl:%s, btcUser:%s, btcPwd:%s, ethUrl:%s, ethPrivateKey:%s \n", datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
@@ -48,7 +48,7 @@ var runCmd = &cobra.Command{
 		cobra.CheckErr(err)
 		err = daemon.Run()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "daemon run error:%v", err)
+			fmt.Fprintln(os.Stderr, "node run error:%v", err)
 		}
 	},
 }

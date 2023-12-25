@@ -12,8 +12,8 @@ import (
 
 var addWorkerCmd = &cobra.Command{
 	Use:     "addWorker",
-	Short:   "add a new worker to daemon",
-	Example: `example: ./daemon --rpcbind 127.0.0.1 --rpcport 9780 addWorker ws://127.0.0.1:30001 1`,
+	Short:   "add a new worker to node",
+	Example: `example: ./node --rpcbind 127.0.0.1 --rpcport 9780 addWorker ws://127.0.0.1:30001 1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if rpcbind == "" || rpcport == "" || len(args) != 2 {
 			fmt.Printf("input data error")

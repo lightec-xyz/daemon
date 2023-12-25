@@ -15,7 +15,7 @@ var rpcport string
 var network string
 
 var rootCmd = &cobra.Command{
-	Use:   "daemon",
+	Use:   "node",
 	Short: "an cross-chain bridge node between Ethereum and Bitcoin",
 	Long:  "a node for a cross-chain bridge between Ethereum and Bitcoin implemented in the lightning  protocol",
 }
@@ -29,8 +29,8 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.daemon/daemon.json)")
-	rootCmd.PersistentFlags().StringVar(&datadir, datadirFlag, "", "daemon storage directory")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.node/node.json)")
+	rootCmd.PersistentFlags().StringVar(&datadir, datadirFlag, "", "node storage directory")
 	rootCmd.PersistentFlags().StringVar(&rpcbind, rpcbindFlag, "", "rpc server host")
 	rootCmd.PersistentFlags().StringVar(&rpcport, rpcportFlag, "", "rpc server port")
 	rootCmd.PersistentFlags().StringVar(&network, networkFlag, "testnet", "lightec network")
@@ -43,9 +43,9 @@ func initConfig() {
 	} else {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
-		viper.AddConfigPath(fmt.Sprintf("%s/.daemon", home))
+		viper.AddConfigPath(fmt.Sprintf("%s/.node", home))
 		viper.SetConfigType("json")
-		viper.SetConfigName("daemon")
+		viper.SetConfigName("node")
 	}
 	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err == nil {

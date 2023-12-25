@@ -9,8 +9,8 @@ import (
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
 	Use:     "stop",
-	Short:   "stop daemon ",
-	Example: "./daemon stop",
+	Short:   "stop node ",
+	Example: "./node stop",
 	Run: func(cmd *cobra.Command, args []string) {
 		if rpcbind == "" || rpcport == "" {
 			fmt.Println("rpcbind or rpcport is empty")
