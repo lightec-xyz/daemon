@@ -47,7 +47,7 @@ const (
 	TestnetBtcScanTime = 1 * time.Minute
 	TestnetEthScanTime = 5 * time.Second
 
-	TestnetInitBitcoinHeight  = 2544070
+	TestnetInitBitcoinHeight  = 2544080
 	TestnetInitEthereumHeight = 597690
 
 	TestLogRedeemAddr  = "0x3ca427befe5b8b821c09a8d6425fbcee20f952f6"

@@ -229,3 +229,9 @@ func TestUpdateUtxoChange(t *testing.T) {
 	}
 	t.Log(txHash)
 }
+
+func TestClient_Demo(t *testing.T) {
+	ids := TxIdsToFixedIds([]string{"adddd", "dsdsfsd"})
+	t.Log(ids)
+
+}

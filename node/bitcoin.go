@@ -264,7 +264,11 @@ func (b *BitcoinAgent) updateContractUtxoChange(utxoList []Transaction) error {
 	// todo
 	var txIds []string
 	for _, tx := range utxoList {
-		txIds = append(txIds, tx.TxHash)
+		txId := tx.TxHash
+		if !strings.HasPrefix(txId, "0x") {
+			txId = fmt.Sprintf("0x%x", txId)
+		}
+		txIds = append(txIds, txId)
 	}
 	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
 	if err != nil {
