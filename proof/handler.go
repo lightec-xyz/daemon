@@ -24,7 +24,7 @@ func NewHandler(memoryStore store.IStore, max int) *Handler {
 
 func (h *Handler) GenZkProof(req rpc.ProofRequest) (rpc.ProofResponse, error) {
 	//todo ffi
-	logger.Debug("new proof req: %v %v %v", req.TxId, req.ProofType)
+	logger.Debug("new proof req: %v %v ", req.TxId, req.ProofType)
 	response := rpc.ProofResponse{}
 	time.Sleep(10 * time.Second)
 	err := objParse(req, &response)

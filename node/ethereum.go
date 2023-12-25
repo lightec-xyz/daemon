@@ -182,7 +182,9 @@ func (e *EthereumAgent) Transfer() {
 				logger.Warn("redeem btc tx submitted: %v", resp.BtcTxId)
 				continue
 			}
-			if e.autoSubmit {
+			//  todo
+			//if e.autoSubmit {
+			if true {
 				if resp.Status == ProofSuccess {
 					txHash, err := e.RedeemBtcTx(resp)
 					if err != nil {

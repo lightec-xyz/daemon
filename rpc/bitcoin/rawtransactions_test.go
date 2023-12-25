@@ -66,11 +66,11 @@ func TestClient_GetUtxoByTxId(t *testing.T) {
 func TestClient_Getrawtransaction(t *testing.T) {
 	//aabd19556b19981ae317a26d47bb6f69bb0daa230612dd9a857a11aae5c22cab
 	//09f15de0a93ead808978d31e43644ef2d38e7f6f9cdf70a195ae79f93046eaf3
-	tx, err := client.GetRawTransaction("f3558552478bbc873759c4dac9655a19d41efb10cedf66f36be37d97c57155cf")
+	tx, err := client.GetRawTransaction("7a9321ddd1f9ed7433fa6fddf03601d5e4541669319ee76a48280b65f74510e9")
 	if err != nil {
 		panic(err)
 	}
-	t.Log(tx.Confirmations)
+	t.Log(tx.Blockhash)
 }
 
 func TestClient_GetTransaction(t *testing.T) {

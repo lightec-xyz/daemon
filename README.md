@@ -12,7 +12,7 @@ Bitcoin Testnet Network:
 
 Ethereum Holesky Network
 
-* zkBridgeAddress: 0xbdfb7b89e9c77fe647ac1628416773c143ca4b51
+* zkBridgeAddress: 0x3cA427bEFE5B8B821c09A8D6425FBCeE20f952F6
 
 ## Build
 

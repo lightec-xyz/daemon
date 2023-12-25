@@ -41,19 +41,20 @@ const (
 	TestnetBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
 	TestnetBtcMultiNRequired  = 2
 	TestnetBtcNetwork         = btctx.TestNet
-	TestnetEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"
-	TestnetEthZkBtcAddress    = "0xd2a00777a7e5b6afaa5c053a6425619653541c82"
+	TestnetEthZkBridgeAddress = "0x3ca427befe5b8b821c09a8d6425fbcee20f952f6"
+	TestnetEthZkBtcAddress    = "0x3528594509fcf7b06f70976a9fae1c3b0ab92e22"
 
 	TestnetBtcScanTime = 1 * time.Minute
 	TestnetEthScanTime = 5 * time.Second
 
-	TestnetInitBitcoinHeight  = 2540942
-	TestnetInitEthereumHeight = 10127532
+	TestnetInitBitcoinHeight  = 2544070
+	TestnetInitEthereumHeight = 597690
 
-	TestLogDepositAddr   = "0x07417a531e376ce150493ffa98cd5516b544441d"
-	TestLogRedeemAddr    = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"
-	TestTopicDepositAddr = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
-	TestTopicRedeemAddr  = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
+	TestLogRedeemAddr  = "0x3ca427befe5b8b821c09a8d6425fbcee20f952f6"
+	TestLogDepositAddr = "0x96ffb80f74a646940569b599039e0fbd0b3a4711"
+
+	TestTopicDepositAddr = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
+	TestTopicRedeemAddr  = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
 )
 
 var TestLogAddrs = []string{TestLogDepositAddr, TestLogRedeemAddr}
