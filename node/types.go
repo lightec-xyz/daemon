@@ -135,7 +135,7 @@ type ProofRequest struct {
 	// other
 	Height    int64     `json:"height"`
 	BlockHash string    `json:"blockHash"`
-	TxId      string    `json:"txId"`
+	TxHash    string    `json:"txId"`
 	ProofType ProofType `json:"type"`
 	Proof     string    `json:"proof"`
 	Msg       string    `json:"msg"`
@@ -143,9 +143,9 @@ type ProofRequest struct {
 
 func (req *ProofRequest) String() string {
 	if req.ProofType == Deposit {
-		return fmt.Sprintf("txType:%v,txid: %v, utxos:%v, amount:%v, ethAddr:%v", req.ProofType, req.TxId, req.Utxos, req.Amount, req.EthAddr)
+		return fmt.Sprintf("txType:%v,txid: %v, utxos:%v, amount:%v, ethAddr:%v", req.ProofType, req.TxHash, req.Utxos, req.Amount, req.EthAddr)
 	} else if req.ProofType == Redeem {
-		return fmt.Sprintf("txType:%v,txid:%v, utxos:%v, outputs: %v", req.ProofType, req.TxId, formatUtxo(req.Inputs), formatOut(req.Outputs))
+		return fmt.Sprintf("txType:%v,txid:%v, utxos:%v, outputs: %v", req.ProofType, req.TxHash, formatUtxo(req.Inputs), formatOut(req.Outputs))
 	}
 	return ""
 }

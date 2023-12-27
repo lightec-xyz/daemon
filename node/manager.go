@@ -50,6 +50,32 @@ func NewManager(cfg NodeConfig, proofRequest chan []ProofRequest, btcProofResp, 
 	}, nil
 }
 
+func (m *Manager) init() error {
+	dbRequests, err := ReadAllUnGenProof(m.store)
+	if err != nil {
+		logger.Error("read un gen proof error:%v", err)
+		return err
+	}
+	for _, req := range dbRequests {
+		submitted, err := m.CheckProof(req)
+		if err != nil {
+			logger.Error("check proof error:%v", err)
+			return err
+		}
+		if !submitted {
+			logger.Info("add un gen proof request:%v", req.String())
+			m.proofQueue.PushBack(req)
+		} else {
+			err := DeleteUnGenProof(m.store, getChainByProofType(req), req.TxHash)
+			if err != nil {
+				logger.Error("delete un gen proof error:%v", err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (m *Manager) run() {
 	logger.Info("run manager proof queue")
 	for {
@@ -101,7 +127,6 @@ func (m *Manager) genProof() {
 			}
 			// todo
 			m.proofQueue.Remove(frontElement)
-
 			proofSubmitted, err := m.CheckProof(request)
 			if err != nil {
 				logger.Error("check proof error:%v", err)
@@ -115,7 +140,7 @@ func (m *Manager) genProof() {
 				proofResponse, err := m.schedule.GenZKProof(worker, request)
 				if err != nil {
 					//todo add queue again or cli retry ?
-					logger.Error("gen proof error:%v %v", request.TxId, err)
+					logger.Error("gen proof error:%v %v", request.TxHash, err)
 					return
 				}
 				logger.Info("worker response proof: %v", proofResponse.String())
@@ -152,6 +177,16 @@ func (m *Manager) CheckProof(request ProofRequest) (bool, error) {
 	} else {
 		//todo
 		return false, fmt.Errorf("unknown proof type")
+	}
+}
+
+func getChainByProofType(req ProofRequest) ChainType {
+	if req.ProofType == Deposit {
+		return Bitcoin
+	} else if req.ProofType == Redeem {
+		return Ethereum
+	} else {
+		panic("never should happen")
 	}
 }
 

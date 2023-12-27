@@ -130,7 +130,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("bitcoin agent update redeem info error: %v %v", index, err)
 			return err
 		}
-		err = b.saveDepositData(index, depositTxes, proofs)
+		err = b.saveDepositData(index, depositTxes, proofs, proofRequests)
 		if err != nil {
 			logger.Error("bitcoin agent save data to db error: %v %v", index, err)
 			return err
@@ -142,6 +142,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		}
 		b.proofRequest <- proofRequests
 		if len(redeemTxes) > 0 {
+			// todo
 			if b.autoSubmit {
 				err = b.updateContractUtxoChange(redeemTxes)
 				if err != nil {
@@ -159,7 +160,7 @@ func (b *BitcoinAgent) updateRedeemInfo(height int64, txList []Transaction) erro
 	return nil
 }
 
-func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []Transaction, proofs []Proof) error {
+func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []Transaction, proofs []Proof, requests []ProofRequest) error {
 	//todo
 	err := WriteBitcoinTxIds(b.store, height, depositTxes)
 	if err != nil {
@@ -174,6 +175,11 @@ func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []Transaction, 
 	err = WriteProof(b.store, proofs)
 	if err != nil {
 		logger.Error("write proof error: %v %v", height, err)
+		return err
+	}
+	err = WriteUnGenProof(b.store, Bitcoin, requests)
+	if err != nil {
+		logger.Error("write ungen proof error: %v %v", height, err)
 		return err
 	}
 	return nil
@@ -208,8 +214,19 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 		}
 		if isDeposit {
 			logger.Info("bitcoin agent find  deposit tx: %v, ethAddr:%v,amount:%v,utxo:%v", tx.Txid, depositTx.EthAddr, depositTx.Amount, formatUtxo(depositTx.Utxo))
-			proofs = append(proofs, NewDepositTxProof(tx.Txid))
-			requests = append(requests, NewDepositProofRequest(depositTx.TxHash, depositTx.EthAddr, depositTx.Amount, depositTx.Utxo))
+			submitted, err := b.ethClient.CheckDepositProof(depositTx.TxHash)
+			if err != nil {
+				logger.Error("check deposit proof error: %v %v", tx.Txid, err)
+				return nil, nil, nil, nil, err
+			}
+			var depositTxProof Proof
+			if submitted {
+				depositTxProof = NewDepositTxProof(tx.Txid, ProofSuccess)
+			} else {
+				requests = append(requests, NewDepositProofRequest(depositTx.TxHash, depositTx.EthAddr, depositTx.Amount, depositTx.Utxo))
+				depositTxProof = NewDepositTxProof(tx.Txid, ProofDefault)
+			}
+			proofs = append(proofs, depositTxProof)
 			depositTxes = append(depositTxes, depositTx)
 		}
 	}
@@ -436,7 +453,7 @@ func getEthAddrFromScript(script string) (string, error) {
 
 func NewDepositProofRequest(txId, ethAddr string, amount int64, utxo []Utxo) ProofRequest {
 	return ProofRequest{
-		TxId:      txId,
+		TxHash:    txId,
 		EthAddr:   ethAddr,
 		Amount:    amount,
 		Utxos:     utxo,
@@ -444,11 +461,11 @@ func NewDepositProofRequest(txId, ethAddr string, amount int64, utxo []Utxo) Pro
 	}
 }
 
-func NewDepositTxProof(txId string) Proof {
+func NewDepositTxProof(txId string, status ProofStatus) Proof {
 	return Proof{
 		TxId:      txId,
 		ProofType: Deposit,
-		Status:    ProofDefault,
+		Status:    status,
 	}
 }
 

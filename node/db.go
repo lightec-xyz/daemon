@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
+	"strconv"
 	"strings"
 )
 
@@ -228,6 +229,85 @@ func WriteRedeemDestChainHash(store store.IStore, txList []Transaction) error {
 	return nil
 }
 
+func WriteUnGenProof(store store.IStore, chain ChainType, txList []ProofRequest) error {
+	batch := store.Batch()
+	for _, tx := range txList {
+		err := batch.BatchPutObj(DbUnGenProofId(chain, tx.TxHash), nil)
+		if err != nil {
+			logger.Error("put ungen proof error:%v", err)
+			return err
+		}
+	}
+	err := batch.BatchWriteObj()
+	if err != nil {
+		logger.Error("put ungen proof batch  error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func ReadAllUnGenProof(store store.IStore) ([]ProofRequest, error) {
+	var txIds []string
+	var requests []ProofRequest
+	iterator := store.Iterator([]byte(UnGenProofPrefix), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		txIds = append(txIds, getTxId(string(iterator.Key())))
+	}
+	err := iterator.Error()
+	if err != nil {
+		return nil, err
+	}
+	for _, txId := range txIds {
+		id, chainType, err := parseUnGenProofId(txId)
+		if err != nil {
+			return nil, err
+		}
+		var tx Transaction
+		err = store.GetObj(DbTxId(id), &tx)
+		if err != nil {
+			logger.Error("get ungen proof error:%v", err)
+			return nil, err
+		}
+		var req ProofRequest
+		if chainType == Bitcoin {
+			req = NewDepositProofRequest(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
+		} else if chainType == Ethereum {
+			req = NewRedeemProofRequest(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
+		} else {
+			return nil, fmt.Errorf("unknown chain type:%v", chainType)
+		}
+		requests = append(requests, req)
+	}
+	return requests, nil
+}
+
+func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) error {
+	err := store.DeleteObj(DbUnGenProofId(chainType, txId))
+	if err != nil {
+		logger.Error("delete ungen proof error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteUnGenProofs(store store.IStore, chainType ChainType, txes []Transaction) error {
+	batch := store.Batch()
+	for _, tx := range txes {
+		err := batch.BatchDeleteObj(DbUnGenProofId(chainType, tx.TxHash))
+		if err != nil {
+			logger.Error("delete ungen proof error:%v", err)
+			return err
+		}
+	}
+	err := batch.BatchWriteObj()
+	if err != nil {
+		logger.Error("put ungen proof batch  error:%v", err)
+		return err
+	}
+	return nil
+}
+
 func DbProofId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", ProofPrefix, trimOx(txId))
 	return pTxID
@@ -253,6 +333,11 @@ func DbDestId(txId string) string {
 	return pTxID
 }
 
+func DbUnGenProofId(chain ChainType, txId string) string {
+	pTxID := fmt.Sprintf("%s%d_%s", UnGenProofPrefix, chain, trimOx(txId))
+	return pTxID
+}
+
 func trimOx(hash string) string {
 	return strings.TrimPrefix(hash, "0x")
 }
@@ -260,4 +345,17 @@ func trimOx(hash string) string {
 func getTxId(key string) string {
 	txId := key[strings.Index(key, "_")+1:]
 	return txId
+}
+
+func parseUnGenProofId(key string) (string, ChainType, error) {
+	splits := strings.Split(key, "_")
+	if len(splits) != 3 {
+		return "", 0, fmt.Errorf("parse ungen proof id error: %v ", key)
+	}
+	chainType, err := strconv.ParseInt(splits[1], 10, 32)
+	if err != nil {
+		return "", 0, err
+	}
+	return splits[2], ChainType(chainType), nil
+
 }
