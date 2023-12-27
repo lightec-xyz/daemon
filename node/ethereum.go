@@ -36,6 +36,7 @@ type EthereumAgent struct {
 	initStartHeight      int64
 	ethSubmitAddress     string
 	autoSubmit           bool
+	txQueue              *Queue
 }
 
 func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
@@ -140,19 +141,22 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("eth parse block error: %v %v", index, err)
 			return err
 		}
-		err = e.saveDataToDb(index, redeemTxes, proofs)
+		err = e.saveDepositData(index, depositTxes)
+		if err != nil {
+			logger.Error("ethereum update deposit info error: %v %v", index, err)
+			return err
+		}
+		err = e.saveRedeemData(index, redeemTxes, proofs)
 		if err != nil {
 			logger.Error("ethereum save data error: %v %v", index, err)
 			return err
 		}
-		e.proofRequest <- requests
-		if len(depositTxes) > 0 {
-			err := e.updateDepositDestChainHash(depositTxes)
-			if err != nil {
-				logger.Error("update deposit final status error: %v %v", index, err)
-				return err
-			}
+		err = WriteEthereumHeight(e.store, index)
+		if err != nil {
+			logger.Error("batch write error: %v %v", index, err)
+			return err
 		}
+		e.proofRequest <- requests
 	}
 	return nil
 }
@@ -200,11 +204,19 @@ func (e *EthereumAgent) Transfer() {
 			}
 		}
 	}
-
 }
 
-func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []Transaction, proofs []Proof) error {
+func (e *EthereumAgent) saveDepositData(height int64, depositTxes []Transaction) error {
+	// bitcoin  btcTxId -> ethTxHash
+	err := WriteDepositDestChainHash(e.store, depositTxes)
+	if err != nil {
+		logger.Error("update deposit final status error: %v %v", height, err)
+		return err
+	}
+	return err
+}
 
+func (e *EthereumAgent) saveRedeemData(height int64, redeemTxes []Transaction, proofs []Proof) error {
 	err := WriteEthereumTxIds(e.store, height, redeemTxes)
 	if err != nil {
 		logger.Error("write ethereum tx ids error: %v %v", height, err)
@@ -220,14 +232,7 @@ func (e *EthereumAgent) saveDataToDb(height int64, redeemTxes []Transaction, pro
 		logger.Error("put eth current height error:%v %v", height, err)
 		return err
 	}
-
 	err = WriteRedeemDestChainHash(e.store, redeemTxes)
-	if err != nil {
-		logger.Error("batch write error: %v %v", height, err)
-		return err
-	}
-
-	err = WriteEthereumHeight(e.store, height)
 	if err != nil {
 		logger.Error("batch write error: %v %v", height, err)
 		return err
@@ -517,7 +522,6 @@ func NewDepositEthTx(txHash, btcTxId string, utxo []Utxo, amount int64) Transact
 func NewRedeemEthTx(txHash string, destHash string, inputs []Utxo, outputs []TxOut) Transaction {
 	return Transaction{
 		TxHash:    txHash,
-		DestHash:  destHash,
 		BtcTxId:   destHash,
 		Inputs:    inputs,
 		Outputs:   outputs,

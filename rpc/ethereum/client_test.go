@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
@@ -9,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/lightec-xyz/daemon/logger"
+	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"log"
 	"math/big"
 	"strconv"
@@ -75,12 +77,12 @@ func TestClient_TestEth(t *testing.T) {
 func TestClient_GetLogs(t *testing.T) {
 	//563180
 	//563166
-	block, err := client.GetBlock(576047)
+	block, err := client.GetBlock(607368)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//t.Log(block)
-	address := []string{"0x52ebc075616195cc7deb79d5c21bd9b04acc33ee", "0x8b404b735afe5bcdce85a1ce753c79715f86062c"}
+	address := []string{"0x3ca427befe5b8b821c09a8d6425fbcee20f952f6", "0x96ffb80f74a646940569b599039e0fbd0b3a4711"}
 	topic := []string{"0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce", "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"}
 	logs, err := client.GetLogs(block.Hash().Hex(),
 		address, topic)
@@ -89,25 +91,37 @@ func TestClient_GetLogs(t *testing.T) {
 	}
 	//t.Log(logs)
 	for _, log := range logs {
-		t.Log(log.Address.Hex(), log.Address.String(), log.Index, log.Topics, fmt.Sprintf("%x", log.Data))
+		if log.TxHash.String() == "0x224c1c5834fd325da4dea93bdc68f2e09716910be6e10b30f60a1cf345c8a31a" {
+			t.Log(log.Address.Hex(), log.Address.String(), log.Index, log.Topics, fmt.Sprintf("%x", log.Data))
+			parseEthRedeem(log)
+
+		}
 
 	}
 }
 
-func parseEthDeposit(log types.Log) {
-	txId := strings.ToLower(log.Topics[1].Hex())
-	sprintf := strings.TrimPrefix(log.Topics[2].Hex(), "0x")
-	vout, err := strconv.ParseInt(strings.ToLower(sprintf), 16, 32)
-	if err != nil {
-		logger.Error("parse vout error:%v", err)
-		panic(err)
+func parseEthRedeem(log types.Log) (interface{}, error) {
+	btcTxId := strings.ToLower(log.Topics[1].Hex())
+	if len(log.Data) <= 64 {
+		return nil, nil
 	}
-	amount, err := strconv.ParseInt(fmt.Sprintf("%x", log.Data), 16, 64)
+
+	dataLength := log.Data[32:64]
+	l, err := strconv.ParseInt(fmt.Sprintf("%x", dataLength), 16, 32)
 	if err != nil {
-		logger.Error("parse amount error:%v", err)
-		panic(err)
+		logger.Error("parse data length error:%v", err)
+		return nil, err
 	}
-	fmt.Println(txId, vout, amount)
+	txData := log.Data[64 : 64+l+1]
+	transaction := btctx.NewTransaction()
+	err = transaction.Deserialize(bytes.NewReader(txData))
+	if err != nil {
+		logger.Error("deserialize btc tx error:%v", err)
+		return nil, err
+	}
+	fmt.Println(btcTxId)
+	fmt.Println(transaction.TxHash().String())
+	return nil, nil
 }
 
 func TestPrivateKey(t *testing.T) {

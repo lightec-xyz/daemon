@@ -125,19 +125,23 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("bitcoin agent parse block error: %v %v", index, err)
 			return err
 		}
-		err = b.saveDataToDb(index, depositTxes, proofs)
+		err = b.updateRedeemInfo(index, redeemTxes)
+		if err != nil {
+			logger.Error("bitcoin agent update redeem info error: %v %v", index, err)
+			return err
+		}
+		err = b.saveDepositData(index, depositTxes, proofs)
 		if err != nil {
 			logger.Error("bitcoin agent save data to db error: %v %v", index, err)
 			return err
 		}
+		err = WriteBitcoinHeight(b.store, index)
+		if err != nil {
+			logger.Error("write btc height error: %v %v", index, err)
+			return err
+		}
 		b.proofRequest <- proofRequests
-		// todo
 		if len(redeemTxes) > 0 {
-			//err := b.updateRedeemTxInfo(index, redeemTxes)
-			//if err != nil {
-			//	logger.Error("update tx info error: %v %v", index, err)
-			//	return err
-			//}
 			if b.autoSubmit {
 				err = b.updateContractUtxoChange(redeemTxes)
 				if err != nil {
@@ -145,19 +149,17 @@ func (b *BitcoinAgent) ScanBlock() error {
 					return err
 				}
 			}
-
 		}
 	}
 	return nil
 }
 
-func (b *BitcoinAgent) updateRedeemTxInfo(height int64, txList []BitcoinTx) error {
+func (b *BitcoinAgent) updateRedeemInfo(height int64, txList []Transaction) error {
 	// todo
 	return nil
-
 }
 
-func (b *BitcoinAgent) saveDataToDb(height int64, depositTxes []Transaction, proofs []Proof) error {
+func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []Transaction, proofs []Proof) error {
 	//todo
 	err := WriteBitcoinTxIds(b.store, height, depositTxes)
 	if err != nil {
@@ -172,11 +174,6 @@ func (b *BitcoinAgent) saveDataToDb(height int64, depositTxes []Transaction, pro
 	err = WriteProof(b.store, proofs)
 	if err != nil {
 		logger.Error("write proof error: %v %v", height, err)
-		return err
-	}
-	err = WriteBitcoinHeight(b.store, height)
-	if err != nil {
-		logger.Error("write btc height error: %v %v", height, err)
 		return err
 	}
 	return nil

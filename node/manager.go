@@ -12,7 +12,7 @@ import (
 )
 
 type Manager struct {
-	proofQueue   *SafeList
+	proofQueue   *Queue
 	schedule     *Schedule
 	btcClient    *bitcoin.Client
 	ethClient    *ethereum.Client
@@ -159,43 +159,43 @@ func (m *Manager) Close() {
 	close(m.exit)
 }
 
-type SafeList struct {
+type Queue struct {
 	list *list.List
 	mu   sync.Mutex
 }
 
-func NewSafeList() *SafeList {
-	return &SafeList{
+func NewSafeList() *Queue {
+	return &Queue{
 		list: list.New(),
 		mu:   sync.Mutex{},
 	}
 }
 
-func (sl *SafeList) PushBack(value interface{}) {
+func (sl *Queue) PushBack(value interface{}) {
 	sl.mu.Lock()
 	defer sl.mu.Unlock()
 	sl.list.PushBack(value)
 }
 
-func (sl *SafeList) PushFront(value interface{}) {
+func (sl *Queue) PushFront(value interface{}) {
 	sl.mu.Lock()
 	defer sl.mu.Unlock()
 	sl.list.PushFront(value)
 }
 
-func (sl *SafeList) Front() *list.Element {
+func (sl *Queue) Front() *list.Element {
 	sl.mu.Lock()
 	defer sl.mu.Unlock()
 	return sl.list.Front()
 
 }
 
-func (sl *SafeList) Len() int {
+func (sl *Queue) Len() int {
 	sl.mu.Lock()
 	defer sl.mu.Unlock()
 	return sl.list.Len()
 }
-func (sl *SafeList) Remove(e *list.Element) {
+func (sl *Queue) Remove(e *list.Element) {
 	sl.mu.Lock()
 	defer sl.mu.Unlock()
 	sl.list.Remove(e)

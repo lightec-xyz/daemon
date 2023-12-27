@@ -30,9 +30,7 @@ When you deploy for the first time, you need to modify the relevant parameters. 
 parameters. You can find other detailed explanations [here](./doc/config.md).
 
     {
-        "btcUrl": "http://127.0.0.1:8332",      / /Bitcoin Core jsonrpc endpoint                           
-        "btcUser": "lightec",                   // The bitcoin jsonrpc authentication username, if you have set one
-        "btcPwd": "abcd1234",                   // The bitcoin jsonrpc authentication password
+        "btcUrl": "http://127.0.0.1:8332",      / /Bitcoin Core jsonrpc endpoint
         "ethUrl": "http://localhost:8545"       // Ethereum jsonrpc endpoint
     }
 
@@ -41,13 +39,13 @@ parameters. You can find other detailed explanations [here](./doc/config.md).
 daemon
 
     // run daemon process
-    ./daemon run 
+    ./node run 
 
     // add remote worker to daemon 
-    ./daemon --rpcbind 127.0.0.1 --rpcport 9780 addWorker ws://127.0.0.1:30001 1
+    ./node --rpcbind 127.0.0.1 --rpcport 9780 addWorker ws://127.0.0.1:30001 1
 
     // stop daemon
-    ./daemon stop 
+    ./node stop 
 
 proof worker
 
