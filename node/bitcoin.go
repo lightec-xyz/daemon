@@ -20,7 +20,6 @@ type BitcoinAgent struct {
 	store                store.IStore
 	memoryStore          store.IStore
 	blockTime            time.Duration
-	proofResponse        <-chan ProofResponse
 	proofRequest         chan<- []ProofRequest
 	checkProofHeightNums int64
 	whiteList            map[string]bool // todo
@@ -34,7 +33,7 @@ type BitcoinAgent struct {
 }
 
 func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	request chan []ProofRequest, response <-chan ProofResponse, keyStore *KeyStore) (IAgent, error) {
+	request chan []ProofRequest, keyStore *KeyStore) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
@@ -43,7 +42,6 @@ func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore 
 		blockTime:            cfg.BtcScanBlockTime,
 		operatorAddr:         cfg.BtcOperatorAddr,
 		proofRequest:         request,
-		proofResponse:        response,
 		checkProofHeightNums: 100, // todo
 		minDepositValue:      0,   // todo
 		keyStore:             keyStore,
@@ -233,48 +231,38 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 	return depositTxes, redeemTxes, requests, proofs, nil
 }
 
-func (b *BitcoinAgent) Transfer() {
-	// todo queue ?
-	logger.Debug("start bitcoin transfer goroutine")
-	for {
-		select {
-		case <-b.exitSign:
-			logger.Info("bitcoin transfer goroutine exit ...")
-			return
-		case resp := <-b.proofResponse:
-			logger.Info("bitcoinAgent receive deposit proof resp: %v", resp.String())
-			err := b.updateDepositProof(resp.TxId, resp.Proof, resp.Status)
-			if err != nil {
-				logger.Error("update proof error: %v %v", resp.TxId, err)
-				continue
-			}
-			if resp.Status == ProofSuccess {
-				exists, err := b.ethClient.CheckDepositProof(resp.TxId)
-				if err != nil {
-					// todo retry  add queue?
-					logger.Error("check deposit proof error: %v %v", resp.TxId, err)
-					continue
-				}
-				if exists {
-					logger.Warn("deposit utxo already exists: %v", resp.TxId)
-					continue
-				}
-				if b.autoSubmit {
-					txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.EthAddr, resp.Amount)
-					if err != nil {
-						//todo add queue or cli retry ?
-						logger.Error("mint btc tx error:%v", err)
-						continue
-					}
-					logger.Info("success mint zkbtc tx: %v", txHash)
-				}
-			} else {
-				//todo retry ?
-				logger.Warn("proof generate fail status: %v %v", resp.TxId, resp.Status)
-			}
-		}
-
+func (b *BitcoinAgent) Transfer(resp ProofResponse) error {
+	logger.Info("bitcoinAgent receive deposit proof resp: %v", resp.String())
+	err := b.updateDepositProof(resp.TxId, resp.Proof, resp.Status)
+	if err != nil {
+		logger.Error("update proof error: %v %v", resp.TxId, err)
+		return err
 	}
+	if resp.Status == ProofSuccess {
+		exists, err := b.ethClient.CheckDepositProof(resp.TxId)
+		if err != nil {
+			// todo retry  add queue?
+			logger.Error("check deposit proof error: %v %v", resp.TxId, err)
+			return err
+		}
+		if exists {
+			logger.Warn("deposit utxo already exists: %v", resp.TxId)
+			return err
+		}
+		if b.autoSubmit {
+			txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.EthAddr, resp.Amount)
+			if err != nil {
+				//todo add queue or cli retry ?
+				logger.Error("mint btc tx error:%v", err)
+				return err
+			}
+			logger.Info("success mint zkbtc tx: %v", txHash)
+		}
+	} else {
+		//todo retry ?
+		logger.Warn("proof generate fail status: %v %v", resp.TxId, resp.Status)
+	}
+	return nil
 }
 
 func (b *BitcoinAgent) updateContractUtxoChange(utxoList []Transaction) error {
@@ -424,15 +412,10 @@ func (b *BitcoinAgent) updateDepositProof(txId, proof string, status ProofStatus
 }
 
 func (b *BitcoinAgent) Close() error {
-	close(b.exitSign)
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
 	return "Bitcoin Agent"
-}
-
-func (b *BitcoinAgent) BlockTime() time.Duration {
-	return b.blockTime
 }
 
 func getEthAddrFromScript(script string) (string, error) {

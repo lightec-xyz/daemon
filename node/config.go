@@ -281,7 +281,7 @@ type MultiAddressInfo struct {
 
 type WorkerConfig struct {
 	ParallelNums int    `json:"parallelNums"`
-	ProofUrl     string `json:"proofUrl"`
+	Url          string `json:"url"`
 }
 
 func TestnetDaemonConfig() NodeConfig {

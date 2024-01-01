@@ -19,28 +19,26 @@ import (
 )
 
 type EthereumAgent struct {
-	btcClient            *bitcoin.Client
-	ethClient            *ethereum.Client
-	store                store.IStore
-	memoryStore          store.IStore
-	blockTime            time.Duration
-	whiteList            map[string]bool
-	checkProofHeightNums int64
-	proofResponse        <-chan ProofResponse
-	proofRequest         chan []ProofRequest
-	exitSign             chan struct{}
-	multiAddressInfo     MultiAddressInfo
-	btcNetwork           btctx.NetWork
-	addrFilter           EthAddrFilter
-	privateKeys          []*btcec.PrivateKey //todo just test
-	initStartHeight      int64
-	ethSubmitAddress     string
-	autoSubmit           bool
-	txQueue              *Queue
+	btcClient        *bitcoin.Client
+	ethClient        *ethereum.Client
+	store            store.IStore
+	memoryStore      store.IStore
+	blockTime        time.Duration
+	whiteList        map[string]bool
+	proofRequest     chan []ProofRequest
+	exitSign         chan struct{}
+	multiAddressInfo MultiAddressInfo
+	btcNetwork       btctx.NetWork
+	logAddrFilter    EthAddrFilter
+	privateKeys      []*btcec.PrivateKey //todo just test
+	initStartHeight  int64
+	ethSubmitAddress string
+	autoSubmit       bool
+	txQueue          *Queue
 }
 
 func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	proofRequest chan []ProofRequest, proofResponse <-chan ProofResponse) (IAgent, error) {
+	proofRequest chan []ProofRequest) (IAgent, error) {
 	// todo
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
@@ -54,23 +52,21 @@ func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore
 	}
 
 	return &EthereumAgent{
-		btcClient:            btcClient,
-		ethClient:            ethClient,
-		store:                store,
-		memoryStore:          memoryStore,
-		blockTime:            cfg.EthScanBlockTime,
-		proofRequest:         proofRequest,
-		proofResponse:        proofResponse,
-		checkProofHeightNums: 100,
-		exitSign:             make(chan struct{}, 1),
-		whiteList:            make(map[string]bool),
-		multiAddressInfo:     cfg.MultiAddressInfo,
-		btcNetwork:           btctx.NetWork(cfg.BtcNetwork),
-		privateKeys:          privateKeys,
-		initStartHeight:      cfg.EthInitHeight,
-		ethSubmitAddress:     submitTxEthAddr,
-		autoSubmit:           cfg.AutoSubmit,
-		addrFilter:           cfg.EthAddrFilter,
+		btcClient:        btcClient,
+		ethClient:        ethClient,
+		store:            store,
+		memoryStore:      memoryStore,
+		blockTime:        cfg.EthScanBlockTime,
+		proofRequest:     proofRequest,
+		exitSign:         make(chan struct{}, 1),
+		whiteList:        make(map[string]bool),
+		multiAddressInfo: cfg.MultiAddressInfo,
+		btcNetwork:       btctx.NetWork(cfg.BtcNetwork),
+		privateKeys:      privateKeys,
+		initStartHeight:  cfg.EthInitHeight,
+		ethSubmitAddress: submitTxEthAddr,
+		autoSubmit:       cfg.AutoSubmit,
+		logAddrFilter:    cfg.EthAddrFilter,
 	}, nil
 }
 
@@ -161,49 +157,36 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *EthereumAgent) Transfer() {
-	//todo
-	logger.Info("start ethereum transfer goroutine")
-	for {
-		select {
-		case <-e.exitSign:
-			logger.Info("ethereum transfer goroutine exit now ...")
-			return
-		case resp := <-e.proofResponse:
-			logger.Info("receive redeem proof resp: %v", resp.String())
-			err := e.updateRedeemProof(resp.TxId, resp.Proof, resp.Status)
-			if err != nil {
-				logger.Error("update proof error:%v", err)
-				continue
-			}
-			exists, err := e.btcClient.CheckTx(resp.BtcTxId)
-			if err != nil {
-				// todo ?
-				logger.Error("check btc tx error: %v %v", resp.BtcTxId, err)
-				continue
-			}
-			if exists {
-				logger.Warn("redeem btc tx submitted: %v", resp.BtcTxId)
-				continue
-			}
-			//  todo
-			//if e.autoSubmit {
-			if true {
-				if resp.Status == ProofSuccess {
-					txHash, err := e.RedeemBtcTx(resp)
-					if err != nil {
-						// todo add queue or cli retry
-						logger.Error("redeem btc tx error:%v", err)
-						continue
-					}
-					logger.Info("success redeem btc tx:%v", txHash)
-				} else {
-					// todo
-					logger.Warn("proof generate failed :%v %v", resp.TxId, resp.Status)
-				}
-			}
-		}
+func (e *EthereumAgent) Transfer(resp ProofResponse) error {
+	logger.Info("receive redeem proof resp: %v", resp.String())
+	err := e.updateRedeemProof(resp.TxId, resp.Proof, resp.Status)
+	if err != nil {
+		logger.Error("update proof error:%v", err)
+		return err
 	}
+	exists, err := e.btcClient.CheckTx(resp.BtcTxId)
+	if err != nil {
+		// todo ?
+		logger.Error("check btc tx error: %v %v", resp.BtcTxId, err)
+		return err
+	}
+	if exists {
+		logger.Warn("redeem btc tx submitted: %v", resp.BtcTxId)
+		return nil
+	}
+	if resp.Status == ProofSuccess {
+		txHash, err := e.RedeemBtcTx(resp)
+		if err != nil {
+			// todo add queue or cli retry
+			logger.Error("redeem btc tx error:%v", err)
+			return err
+		}
+		logger.Info("success redeem btc tx:%v", txHash)
+	} else {
+		// todo
+		logger.Warn("proof generate failed :%v %v", resp.TxId, resp.Status)
+	}
+	return nil
 }
 
 func (e *EthereumAgent) saveDepositData(height int64, depositTxes []Transaction) error {
@@ -267,8 +250,8 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 		return nil, nil, nil, nil, err
 	}
 	blockHash := block.Hash().String()
-	logAddrs := []string{e.addrFilter.LogDepositAddr, e.addrFilter.LogRedeemAddr}
-	logTopics := []string{e.addrFilter.LogTopicDepositAddr, e.addrFilter.LogTopicRedeemAddr}
+	logAddrs := []string{e.logAddrFilter.LogDepositAddr, e.logAddrFilter.LogRedeemAddr}
+	logTopics := []string{e.logAddrFilter.LogTopicDepositAddr, e.logAddrFilter.LogTopicRedeemAddr}
 	logs, err := e.ethClient.GetLogs(blockHash, logAddrs, logTopics)
 	if err != nil {
 		logger.Error("ethereum rpc get logs error:%v", err)
@@ -299,7 +282,6 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 		if isRedeem {
 			logger.Info("ethereum agent find redeem zkbtc  ethTxHash:%v,btcTxId:%v,input:%v,output:%v",
 				redeemTx.TxHash, redeemTx.BtcTxId, formatUtxo(redeemTx.Inputs), formatOut(redeemTx.Outputs))
-
 			submitted, err := e.btcClient.CheckTx(redeemTx.BtcTxId)
 			if err != nil {
 				logger.Error("check btc tx error:%v", err)
@@ -327,7 +309,7 @@ func (e *EthereumAgent) isDepositTx(log types.Log) (Transaction, bool, error) {
 		return Transaction{}, false, nil
 	}
 	// todo
-	if strings.ToLower(log.Address.Hex()) == e.addrFilter.LogDepositAddr && strings.ToLower(log.Topics[0].Hex()) == e.addrFilter.LogTopicDepositAddr {
+	if strings.ToLower(log.Address.Hex()) == e.logAddrFilter.LogDepositAddr && strings.ToLower(log.Topics[0].Hex()) == e.logAddrFilter.LogTopicDepositAddr {
 		btcTxId := strings.ToLower(log.Topics[1].Hex())
 		hexVout := strings.TrimPrefix(strings.ToLower(log.Topics[2].Hex()), "0x")
 		vout, err := strconv.ParseInt(hexVout, 16, 32)
@@ -364,7 +346,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 	}
 
 	//todo more check
-	if strings.ToLower(log.Address.Hex()) == e.addrFilter.LogRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.addrFilter.LogTopicRedeemAddr {
+	if strings.ToLower(log.Address.Hex()) == e.logAddrFilter.LogRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.logAddrFilter.LogTopicRedeemAddr {
 		btcTxId := strings.ToLower(log.Topics[1].Hex())
 		if len(log.Data) <= 64 {
 			return redeemTx, false, nil
@@ -507,9 +489,6 @@ func (e *EthereumAgent) Close() error {
 }
 func (e *EthereumAgent) Name() string {
 	return "Ethereum Agent"
-}
-func (e *EthereumAgent) BlockTime() time.Duration {
-	return e.blockTime
 }
 
 func NewRedeemProofRequest(txId, btcTxId string, inputs []Utxo, outputs []TxOut) ProofRequest {

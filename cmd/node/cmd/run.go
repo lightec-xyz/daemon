@@ -43,6 +43,7 @@ var runCmd = &cobra.Command{
 		//config := node.TestnetDaemonConfig()
 		cobra.CheckErr(err)
 		daemon, err := node.NewDaemon(config)
+		defer daemon.Close()
 		cobra.CheckErr(err)
 		err = daemon.Init()
 		cobra.CheckErr(err)

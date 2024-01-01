@@ -38,7 +38,7 @@ func NewNode(cfg Config) (*Node, error) {
 func (node *Node) Start() error {
 	logger.Info("proof worker node start now ....")
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
 	for {
 		msg := <-ch
 		switch msg {
