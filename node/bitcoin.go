@@ -238,17 +238,25 @@ func (b *BitcoinAgent) Transfer(resp ProofResponse) error {
 		logger.Error("update proof error: %v %v", resp.TxId, err)
 		return err
 	}
-	if resp.Status == ProofSuccess {
-		exists, err := b.ethClient.CheckDepositProof(resp.TxId)
+	exists, err := CheckDepositDestHash(b.store, b.ethClient, resp.TxId)
+	if err != nil {
+		logger.Error("check btc tx error: %v %v", resp.TxId, err)
+		return err
+	}
+	if exists {
+		err := DeleteUnGenProof(b.store, Bitcoin, resp.TxId)
 		if err != nil {
-			// todo retry  add queue?
-			logger.Error("check deposit proof error: %v %v", resp.TxId, err)
-			return err
+			logger.Error("delete ungen proof error: %v %v", resp.TxId, err)
 		}
-		if exists {
-			logger.Warn("deposit utxo already exists: %v", resp.TxId)
-			return err
+		logger.Warn("deposit btc tx submitted: %v", resp.TxId)
+		return nil
+	}
+	if resp.Status == ProofSuccess {
+		err = DeleteUnGenProof(b.store, Bitcoin, resp.TxId)
+		if err != nil {
+			logger.Error("delete ungen proof error: %v %v", resp.TxId, err)
 		}
+		logger.Warn("deposit btc tx submitted: %v", resp.TxId)
 		if b.autoSubmit {
 			txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.EthAddr, resp.Amount)
 			if err != nil {
@@ -416,6 +424,23 @@ func (b *BitcoinAgent) Close() error {
 }
 func (b *BitcoinAgent) Name() string {
 	return "Bitcoin Agent"
+}
+
+func CheckDepositDestHash(store store.IStore, ethClient *ethereum.Client, txId string) (bool, error) {
+	exists, err := CheckDestHash(store, txId)
+	if err != nil {
+		logger.Error("check dest hash error:%v", err)
+		return false, err
+	}
+	if exists {
+		return true, nil
+	}
+	submitted, err := ethClient.CheckDepositProof(txId)
+	if err != nil {
+		logger.Error("check deposit proof error:%v", err)
+		return false, err
+	}
+	return submitted, nil
 }
 
 func getEthAddrFromScript(script string) (string, error) {

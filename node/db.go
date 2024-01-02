@@ -308,6 +308,14 @@ func DeleteUnGenProofs(store store.IStore, chainType ChainType, txes []Transacti
 	return nil
 }
 
+func CheckDestHash(store store.IStore, txId string) (bool, error) {
+	ok, err := store.HasObj(DbDestId(txId))
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+
 func DbProofId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", ProofPrefix, trimOx(txId))
 	return pTxID

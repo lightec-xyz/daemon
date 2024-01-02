@@ -111,6 +111,7 @@ func (m *manager) genProof() error {
 		proofSubmitted, err := m.CheckProof(request)
 		if err != nil {
 			logger.Error("check proof error:%v", err)
+			continue
 		}
 		if proofSubmitted {
 			logger.Info("proof already submitted:%v", request.String())
@@ -133,7 +134,6 @@ func (m *manager) genProof() error {
 			default:
 				logger.Error("never should happen proof type:%v", proofResponse.ProofType)
 			}
-
 		}()
 
 	}
@@ -142,7 +142,7 @@ func (m *manager) genProof() error {
 func (m *manager) CheckProof(request ProofRequest) (bool, error) {
 	if request.ProofType == Deposit {
 		txId := request.Utxos[0].TxId
-		exists, err := m.ethClient.CheckDepositProof(txId)
+		exists, err := CheckDepositDestHash(m.store, m.ethClient, txId)
 		if err != nil {
 			logger.Error("check deposit proof error:%v", err)
 			return false, err

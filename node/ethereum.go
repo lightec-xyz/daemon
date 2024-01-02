@@ -137,7 +137,7 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("eth parse block error: %v %v", index, err)
 			return err
 		}
-		err = e.saveDepositData(index, depositTxes)
+		err = e.updateDepositData(index, depositTxes)
 		if err != nil {
 			logger.Error("ethereum update deposit info error: %v %v", index, err)
 			return err
@@ -171,10 +171,18 @@ func (e *EthereumAgent) Transfer(resp ProofResponse) error {
 		return err
 	}
 	if exists {
+		err := e.DeleteUnGenProof(resp.TxId)
+		if err != nil {
+			logger.Error("delete ungen proof error: %v %v", resp.TxId, err)
+		}
 		logger.Warn("redeem btc tx submitted: %v", resp.BtcTxId)
 		return nil
 	}
 	if resp.Status == ProofSuccess {
+		err = e.DeleteUnGenProof(resp.TxId)
+		if err != nil {
+			logger.Error("delete ungen proof error: %v %v", resp.TxId, err)
+		}
 		txHash, err := e.RedeemBtcTx(resp)
 		if err != nil {
 			// todo add queue or cli retry
@@ -182,6 +190,7 @@ func (e *EthereumAgent) Transfer(resp ProofResponse) error {
 			return err
 		}
 		logger.Info("success redeem btc tx:%v", txHash)
+
 	} else {
 		// todo
 		logger.Warn("proof generate failed :%v %v", resp.TxId, resp.Status)
@@ -189,14 +198,13 @@ func (e *EthereumAgent) Transfer(resp ProofResponse) error {
 	return nil
 }
 
-func (e *EthereumAgent) saveDepositData(height int64, depositTxes []Transaction) error {
+func (e *EthereumAgent) updateDepositData(height int64, depositTxes []Transaction) error {
 	// bitcoin  btcTxId -> ethTxHash
 	err := WriteDepositDestChainHash(e.store, depositTxes)
 	if err != nil {
 		logger.Error("update deposit final status error: %v %v", height, err)
 		return err
 	}
-
 	// no catch error
 	err = DeleteUnGenProofs(e.store, Bitcoin, depositTxes)
 	if err != nil {
@@ -238,6 +246,15 @@ func (e *EthereumAgent) updateDepositDestChainHash(depositTx []Transaction) erro
 	err := WriteDepositDestChainHash(e.store, depositTx)
 	if err != nil {
 		logger.Error("update deposit final status error: %v %v", depositTx, err)
+		return err
+	}
+	return nil
+}
+
+func (e *EthereumAgent) DeleteUnGenProof(txId string) error {
+	err := DeleteUnGenProof(e.store, Ethereum, txId)
+	if err != nil {
+		logger.Error("delete ungen proof error: %v %v", txId, err)
 		return err
 	}
 	return nil
