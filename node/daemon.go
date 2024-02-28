@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
@@ -28,12 +29,21 @@ type IAgent interface {
 	Name() string
 }
 
+type IBeaconAgent interface {
+	ScanSycnPeriod() error
+	SaveSyncCommitteeProof(resp rpc.SyncCommitteeProofResponse) error
+	Init() error
+	Close() error
+	Name() string
+}
+
 type Daemon struct {
-	agents     []*Agent
-	server     *rpc.Server
-	nodeConfig NodeConfig
-	exitSignal chan struct{}
-	manager    *WrapperManger
+	agents      []*Agent
+	beaconAgent *BeaconAgent
+	server      *rpc.Server
+	nodeConfig  NodeConfig
+	exitSignal  chan struct{}
+	manager     *WrapperManger
 }
 
 func NewDaemon(cfg NodeConfig) (*Daemon, error) {
@@ -53,6 +63,25 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
 	}
+
+	beaconClient, err := beacon.NewClient(cfg.BeaconUrl)
+	if err != nil {
+		logger.Error("new beacon btcClient error:%v", err)
+		return nil, err
+	}
+	//TODO(keep), should be replaced with actual url
+	proofClient, err := rpc.NewSyncCommitteeProofClient("http://127.0.0.1:8980")
+	if err != nil {
+		logger.Error("new proofClient error:%v", err)
+		return nil, err
+	}
+
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofClient)
+	if err != nil{
+		logger.Error("new beacon btcClient error:%v", err)
+		return nil, err
+	}
+
 	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
 	if err != nil {
 		logger.Error("new eth btcClient error:%v", err)
@@ -104,7 +133,8 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents:     agents,
+		agents: agents,
+		beaconAgent:
 		server:     server,
 		nodeConfig: cfg,
 		exitSignal: make(chan struct{}, 1),
@@ -273,3 +303,5 @@ type Agent struct {
 	scanTime  time.Duration
 	proofResp chan ProofResponse
 }
+
+

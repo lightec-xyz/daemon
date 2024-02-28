@@ -1,5 +1,7 @@
 package rpc
 
+import "github.com/prysmaticlabs/prysm/v5/api/server/structs"
+
 type Transaction struct {
 	TxHash   string
 	DestHash string
@@ -85,4 +87,59 @@ type ProofInfo struct {
 	ProofType int    `json:"type"`
 	Proof     string `json:"proof"`
 	Status    int    `json:"status"`
+}
+
+type SyncCommitteeProofGenerateStatus int
+
+const (
+	SyncCommitteeProofGenerateStatus_None       SyncCommitteeProofGenerateStatus = 0
+	SyncCommitteeProofGenerateStatus_Generating SyncCommitteeProofGenerateStatus = 1
+	SyncCommitteeProofGenerateStatus_Done       SyncCommitteeProofGenerateStatus = 2
+)
+
+type SyncCommitteeProofType int
+
+const (
+	SyncCommitteeProofType_None      SyncCommitteeProofType = 0
+	SyncCommitteeProofType_Genesis   SyncCommitteeProofType = 1
+	SyncCommitteeProofType_Unit      SyncCommitteeProofType = 2
+	SyncCommitteeProofType_Recursive SyncCommitteeProofType = 3
+)
+
+type GenesisSyncCommitteeProofRequest struct {
+	Version                    string `json:"version"`
+	AttestedHeader             structs.BeaconBlockHeader
+	CurrentSyncCommittee       structs.SyncCommittee
+	CurrentSyncCommitteeBranch []string
+}
+
+type UnitSyncCommitteeProofRequest struct {
+	Version                 string `json:"version"`
+	AttestedHeader          structs.BeaconBlockHeader
+	CurrentSyncCommittee    structs.SyncCommittee
+	SyncAggregate           structs.SyncAggregate
+	NextSyncCommittee       structs.SyncCommittee
+	NextSyncCommitteeBranch []string
+}
+
+type RecursiveSyncCommitteeProofRequest struct {
+	Version          string `json:"version"`
+	PreProofGOrPoofR string `json:"preProofGOrPoofR"`
+	ProofU           string `json:"proofU"`
+}
+
+type SyncCommitteeProofResponse struct {
+	Version   string                           `json:"version"`
+	Period    uint64                           `json:"period"`
+	ProofType SyncCommitteeProofType           `json:"proofType"`
+	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Proof     string                           `json:"proof"`
+}
+
+type SyncCommitteeProofInfo struct {
+	Version   string                           `json:"version"`
+	Period    uint64                           `json:"period"`
+	ProofType SyncCommitteeProofType           `json:"proofType"`
+	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Proof     string                           `json:"proof"`
 }

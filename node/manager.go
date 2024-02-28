@@ -12,14 +12,15 @@ import (
 )
 
 type manager struct {
-	proofQueue   *Queue
-	schedule     *Schedule
-	btcClient    *bitcoin.Client
-	ethClient    *ethereum.Client
-	store        store.IStore
-	memory       store.IStore
-	btcProofResp chan ProofResponse
-	ethProofResp chan ProofResponse
+	proofQueue              *Queue
+	syncCommitteeProofQueue *Queue
+	schedule                *Schedule
+	btcClient               *bitcoin.Client
+	ethClient               *ethereum.Client
+	store                   store.IStore
+	memory                  store.IStore
+	btcProofResp            chan ProofResponse
+	ethProofResp            chan ProofResponse
 }
 
 func NewManager(cfg NodeConfig, btcProofResp, ethProofResp chan ProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {

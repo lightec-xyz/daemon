@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
+	beaconconfig "github.com/prysmaticlabs/prysm/v5/config/params"
 	"os/user"
 	"time"
 )
@@ -26,10 +27,17 @@ type NodeConfig struct {
 	BtcInitHeight    int64            `json:"btcInitHeight"`
 	MultiAddressInfo MultiAddressInfo `json:"multiAddressInfo"`
 
-	AutoSubmit       bool           `json:"autoSubmit"`
+	AutoSubmit bool `json:"autoSubmit"`
+
+	//Beacon config
+	BeaconInitHeight int64                           `json:"beaconInitHeight"`
+	BeaconUrl        string                          `json:"beaconUrl"`
+	BeaconConfig     *beaconconfig.BeaconChainConfig `json:"beaconConfig"`
+
+	//Eth1 config
 	EthInitHeight    int64          `json:"ethInitHeight"`
 	EthWhiteList     []string       `json:"ethWhiteList"`
-	EthUrl           string         `json:"ethUrl"`
+	EthUrl           string         `json:"ethUrl"` //eth1 url
 	ZkBridgeAddr     string         `json:"zkBridgeAddr"`
 	ZkBtcAddr        string         `json:"zkBtcAddr"`
 	EthScanBlockTime time.Duration  `json:"ethBlockTime"`
@@ -47,7 +55,7 @@ type EthAddrFilter struct {
 	LogTopicRedeemAddr  string
 }
 
-func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	var config NodeConfig
 	if network == "" {
 		network = LightecMainnet
@@ -71,9 +79,13 @@ func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind
 	if btcUrl == "" {
 		return config, fmt.Errorf("btcUrl is empty")
 	}
+	if beaconUrl == "" {
+		return config, fmt.Errorf("beaconUrl is empty")
+	}
 	if ethUrl == "" {
 		return config, fmt.Errorf("ethUrl is empty")
 	}
+
 	if autoSubmit {
 		if ethPrivateKey == "" {
 			return config, fmt.Errorf("ethPrivateKey is empty")
@@ -82,18 +94,18 @@ func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind
 
 	switch network {
 	case LightecMainnet:
-		return newMainnetConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
+		return newMainnetConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey, beaconconfig.MainnetConfig())
 	case LightecTestnet:
-		return newTestConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
+		return newTestConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey, beaconconfig.HoleskyConfig())
 	case Lighteclocal:
-		return newLocalConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey)
+		return newLocalConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey, beaconconfig.HoleskyConfig())
 	default:
 		return config, fmt.Errorf("unsupport network now: %v", network)
 	}
 
 }
 
-func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string, beaconConfig *beaconconfig.BeaconChainConfig) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(BtcMultiSigPublic1)
 	if err != nil {
 		logger.Error("hex decode string error: %v", err)
@@ -133,8 +145,10 @@ func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcb
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		BtcInitHeight: InitBitcoinHeight,
-
+		BtcInitHeight:    InitBitcoinHeight,
+		BeaconInitHeight: InitBeaconHeight,
+		BeaconUrl:        beaconUrl,
+		BeaconConfig:     beaconConfig,
 		EthInitHeight:    InitEthereumHeight,
 		EthUrl:           ethUrl,
 		ZkBridgeAddr:     EthZkBridgeAddress,
@@ -154,7 +168,7 @@ func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcb
 	}, nil
 }
 
-func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string, beaconConfig *beaconconfig.BeaconChainConfig) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(TestnetBtcMultiSigPublic1)
 	if err != nil {
 		logger.Error("hex decode string error:%v", err)
@@ -197,6 +211,11 @@ func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind
 		BtcInitHeight: TestnetInitBitcoinHeight,
 		AutoSubmit:    autoSubmit,
 
+		//BeaconConfig
+		BeaconInitHeight: TestnetInitBeaconHeight,
+		BeaconUrl:        beaconUrl,
+		BeaconConfig:     beaconConfig,
+
 		EthInitHeight:    TestnetInitEthereumHeight,
 		EthUrl:           ethUrl,
 		ZkBridgeAddr:     TestnetEthZkBridgeAddress,
@@ -215,7 +234,7 @@ func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind
 	}, nil
 }
 
-func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivateKey string) (NodeConfig, error) {
+func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string, beaconConfig *beaconconfig.BeaconChainConfig) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
 	if err != nil {
 		logger.Error("hex decode string error: %v", err)
@@ -256,6 +275,9 @@ func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbin
 		},
 		BtcInitHeight:    LocalInitBitcoinHeight,
 		AutoSubmit:       autoSubmit,
+		BeaconInitHeight: LocalInitBeaconHeight,
+		BeaconUrl:        beaconUrl,
+		BeaconConfig:     beaconConfig,
 		EthInitHeight:    LocalInitEthereumHeight,
 		EthUrl:           ethUrl,
 		ZkBridgeAddr:     LocalEthZkBridgeAddress,
@@ -296,6 +318,7 @@ func TestnetDaemonConfig() NodeConfig {
 		"https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
 		"",
 		"",
+		"http://127.0.0.1:8970",
 		"https://go.getblock.io/0d372517498b419a97613e2bbf882a30",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
@@ -319,6 +342,7 @@ func LocalDevDaemonConfig() NodeConfig {
 		"http://127.0.0.1:8332",
 		"lightec",
 		"abcd1234",
+		"http://127.0.0.1:8970",
 		"https://go.getblock.io/0d372517498b419a97613e2bbf882a30",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
