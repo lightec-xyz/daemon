@@ -53,7 +53,7 @@ func (m *manager) init() error {
 		return err
 	}
 	for _, req := range dbRequests {
-		submitted, err := m.CheckProof(req)
+		submitted, err := m.CheckGenProofStatus(req)
 		if err != nil {
 			logger.Error("check proof error:%v", err)
 			return err
@@ -108,7 +108,7 @@ func (m *manager) genProof() error {
 		}
 		// todo
 		m.proofQueue.Remove(frontElement)
-		proofSubmitted, err := m.CheckProof(request)
+		proofSubmitted, err := m.CheckGenProofStatus(request)
 		if err != nil {
 			logger.Error("check proof error:%v", err)
 			continue
@@ -139,7 +139,7 @@ func (m *manager) genProof() error {
 	}
 }
 
-func (m *manager) CheckProof(request ProofRequest) (bool, error) {
+func (m *manager) CheckGenProofStatus(request ProofRequest) (bool, error) {
 	if request.ProofType == Deposit {
 		txId := request.Utxos[0].TxId
 		exists, err := CheckDepositDestHash(m.store, m.ethClient, txId)

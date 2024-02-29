@@ -8,7 +8,6 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -18,14 +17,14 @@ import (
 )
 
 func TestCreateDepositTx_1(t *testing.T) {
-	secret, _, err := base58.CheckDecode("cPbyxXLqYqAjAHDtbvKq7ETd6BsQBbS643RLHH4u3k1YeVAXkAqR")
-	if err != nil {
-		panic(err)
-	}
-	//secret, _ := hex.DecodeString("b29c3157e4a68b240ec821515fc77181c7a828259efbb3c1ab1df9b67d03c645")
+	//secret, _, err := base58.CheckDecode("cPbyxXLqYqAjAHDtbvKq7ETd6BsQBbS643RLHH4u3k1YeVAXkAqR")
+	//if err != nil {
+	//	panic(err)
+	//}
+	secret, _ := hex.DecodeString("f9962336ca15bdd2acd61edfc6857fe733ef36a3c1380acf5f91c17347df93e5")
 	privKey, pubKey := btcec.PrivKeyFromBytes(secret)
-	//fmt.Printf("priv: %v\n", privKey)
-	//fmt.Printf("pub: %v\n", hex.EncodeToString(pubKey.SerializeCompressed()))
+	//fmt.Printf("priv: %v\n", privKey)03d4c6fac559b9e8182288fde7d4e42d6050910c6b0fbcc6bf3ba261e4168ca2d1
+	fmt.Printf("pub: %v\n", hex.EncodeToString(pubKey.SerializeCompressed()))
 	netParams := &chaincfg.TestNet3Params
 	from, _ := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(pubKey.SerializeCompressed()), netParams)
 	fmt.Printf("from addr:%v, from sriptAddress:%v\n", from.EncodeAddress(), hex.EncodeToString(from.ScriptAddress()))

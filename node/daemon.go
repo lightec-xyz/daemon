@@ -175,6 +175,7 @@ func (d *Daemon) Run() error {
 					}
 				case <-d.exitSignal:
 					logger.Error("%v transfer goroutine exit", tAgent.node.Name())
+					return
 				}
 			}
 		}(agent)

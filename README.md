@@ -3,7 +3,6 @@
 A node for a cross-chain bridge between Ethereum and Bitcoin implemented in the Lightning protocol
 
 ***Note:*** The project is continuously in development, and there may be incompatible changes in the code and API.
-
 ## Network
 
 Bitcoin Testnet Network:
@@ -16,7 +15,7 @@ Ethereum Holesky Network
 
 ## Build
 
-    git clone https://<token>@github.com/lightec-xyz/daemon
+    git clone https://github.com/lightec-xyz/daemon
     cd  daemon/cmd/daemon && go build
 
 ## Run
@@ -39,7 +38,7 @@ parameters. You can find other detailed explanations [here](./doc/config.md).
 daemon
 
     // run daemon process
-    ./node run 
+    ./node run --btcUrl http://127.0.0.1:8332 --ethUrl http://localhost:8545
 
     // add remote worker to daemon 
     ./node --rpcbind 127.0.0.1 --rpcport 9780 addWorker ws://127.0.0.1:30001 1
