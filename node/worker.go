@@ -15,6 +15,15 @@ type IWorker interface {
 	CurrentNums() int
 }
 
+type ISyncCommitteeWorker interface {
+	rpc.I
+
+	Add()
+	Del()
+	ParallelNums() int
+	CurrentNums() int
+}
+
 var _ IWorker = (*Worker)(nil)
 
 type Worker struct {
@@ -54,6 +63,47 @@ func (w *Worker) Add() {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 	w.currentNums++
+}
+
+var _ ISyncCommitteeWorker = (*SyncCommitteeWorker)(nil)
+
+type SyncCommitteeWorker struct {
+	client       rpc.SyncCommitteeProofAPI
+	parallelNums int
+	currentNums  int
+	lock         sync.Mutex
+}
+
+func (w *SyncCommitteeWorker) ParallelNums() int {
+	return w.parallelNums
+}
+
+func (w *SyncCommitteeWorker) CurrentNums() int {
+	return w.currentNums
+}
+
+func (w *SyncCommitteeWorker) GenProof(req rpc.SyncCommitteeProofRequest) (rpc.SyncCommitteeProofResponse, error) {
+	return w.client.GenZkSyncCommitteeProof(req)
+}
+
+func (w *SyncCommitteeWorker) Del() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.currentNums--
+}
+
+func (w *SyncCommitteeWorker) Add() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.currentNums++
+}
+
+func NewSyncCommitterWorker(client rpc.SyncCommitteeProofAPI, parallelNums int) *SyncCommitteeWorker {
+	return &SyncCommitteeWorker{
+		client:       client,
+		parallelNums: parallelNums,
+		currentNums:  0,
+	}
 }
 
 var _ IWorker = (*LocalWorker)(nil)

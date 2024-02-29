@@ -6,9 +6,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var genProofCmd = &cobra.Command{
-	Use:     "genProof",
-	Short:   "generate zk proof",
+var genTxProofCmd = &cobra.Command{
+	Use:     "genTxProof",
+	Short:   "generate tx zk proof",
+	Example: "",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("genProof called")
+	},
+}
+
+var genSyncCommitteeProofCmd = &cobra.Command{
+	Use:     "genSyncCommitteeProof",
+	Short:   "generate sync committee zk proof",
 	Example: "",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("genProof called")
@@ -16,5 +25,7 @@ var genProofCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(genProofCmd)
+	rootCmd.AddCommand(genTxProofCmd)
+	rootCmd.AddCommand(genSyncCommitteeProofCmd)
+
 }

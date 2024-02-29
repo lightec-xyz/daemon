@@ -15,3 +15,11 @@ type ProofAPI interface {
 	GenZkProof(request ProofRequest) (ProofResponse, error)
 	ProofInfo(proofId string) (ProofInfo, error)
 }
+
+// TODO(keep), sync committee proof generator interface
+type ISyncCommitteeProof interface {
+	GenGenesisSyncCommitteeProof(request GenesisSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error)
+	GenUnitSyncCommitteeProof(request UnitSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error)
+	GenRecursiveSyncCommitteeProof(request RecursiveSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error)
+	SyncCommitteeProofInfo(period uint64, proofType SyncCommitteeProofType) (SyncCommitteeProofInfo, error)
+}
