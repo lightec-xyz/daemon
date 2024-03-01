@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var _ ProofAPI = (*ProofClient)(nil)
+var _ IProof = (*ProofClient)(nil)
 var _ ISyncCommitteeProof = (*SyncCommitteeProofClient)(nil)
 
 type ProofClient struct {
@@ -44,7 +44,7 @@ func (p *ProofClient) call(result interface{}, method string, args ...interface{
 	return p.CallContext(ctx, result, method, args...)
 }
 
-func NewProofClient(url string) (ProofAPI, error) {
+func NewProofClient(url string) (IProof, error) {
 	client, err := rpc.DialHTTP(url)
 	if err != nil {
 		return nil, err

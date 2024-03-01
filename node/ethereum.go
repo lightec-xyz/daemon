@@ -25,7 +25,7 @@ type EthereumAgent struct {
 	memoryStore      store.IStore
 	blockTime        time.Duration
 	whiteList        map[string]bool
-	proofRequest     chan []ProofRequest
+	proofRequest     chan []ZkProofRequest
 	exitSign         chan struct{}
 	multiAddressInfo MultiAddressInfo
 	btcNetwork       btctx.NetWork
@@ -38,7 +38,7 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	proofRequest chan []ProofRequest) (IAgent, error) {
+	proofRequest chan []ZkProofRequest) (IAgent, error) {
 	// todo
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
@@ -50,7 +50,6 @@ func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore
 		privKey, _ := btcec.PrivKeyFromBytes(hexPriv)
 		privateKeys = append(privateKeys, privKey)
 	}
-
 	return &EthereumAgent{
 		btcClient:        btcClient,
 		ethClient:        ethClient,
@@ -152,14 +151,24 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("batch write error: %v %v", index, err)
 			return err
 		}
-		e.proofRequest <- requests
+		zkProofRequests, err := toRedeemZkProofRequest(requests)
+		if err != nil {
+			logger.Error("to redeem zk proof request error: %v %v", index, err)
+			return err
+		}
+		e.proofRequest <- zkProofRequests
 	}
 	return nil
 }
 
-func (e *EthereumAgent) Transfer(resp ProofResponse) error {
+func (e *EthereumAgent) Submit(response ZkProofResponse) error {
+	resp, err := response.ParseRedeemProof()
+	if err != nil {
+		logger.Error("not proof response")
+		return fmt.Errorf("not proof response")
+	}
 	logger.Info("receive redeem proof resp: %v", resp.String())
-	err := e.updateRedeemProof(resp.TxId, resp.Proof, resp.Status)
+	err = e.updateRedeemProof(resp.TxId, resp.Proof, resp.Status)
 	if err != nil {
 		logger.Error("update proof error:%v", err)
 		return err
@@ -407,7 +416,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 }
 
-func (e *EthereumAgent) RedeemBtcTx(resp ProofResponse) (string, error) {
+func (e *EthereumAgent) RedeemBtcTx(resp RedeemProof) (string, error) {
 	//todo
 	var txIns []btctx.TxIn
 	logger.Debug("************************************")
@@ -505,7 +514,7 @@ func (e *EthereumAgent) Close() error {
 	return nil
 }
 func (e *EthereumAgent) Name() string {
-	return "Ethereum Agent"
+	return "Ethereum WrapperAgent"
 }
 
 func NewRedeemProofRequest(txId, btcTxId string, inputs []Utxo, outputs []TxOut) ProofRequest {

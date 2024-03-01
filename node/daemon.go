@@ -23,26 +23,26 @@ func init() {
 
 type IAgent interface {
 	ScanBlock() error
-	Transfer(resp ProofResponse) error
+	Submit(resp ZkProofResponse) error
 	Init() error
 	Close() error
 	Name() string
 }
 
 type IBeaconAgent interface {
-	ScanSycnPeriod() error
-	SaveSyncCommitteeProof(resp rpc.SyncCommitteeProofResponse) error
+	ScanSyncPeriod() error
+	ProofResp(resp ZkProofResponse) error
 	Init() error
 	Close() error
 	Name() string
 }
 
 type Daemon struct {
-	agents      []*Agent
-	beaconAgent *BeaconAgent
+	agents      []*WrapperAgent
+	beaconAgent *WrapperBeacon
 	server      *rpc.Server
 	nodeConfig  NodeConfig
-	exitSignal  chan struct{}
+	exitSignal  chan os.Signal
 	manager     *WrapperManger
 }
 
@@ -63,25 +63,11 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
 	}
-
 	beaconClient, err := beacon.NewClient(cfg.BeaconUrl)
 	if err != nil {
-		logger.Error("new beacon btcClient error:%v", err)
+		logger.Error("new node btcClient error:%v", err)
 		return nil, err
 	}
-	//TODO(keep), should be replaced with actual url
-	proofClient, err := rpc.NewSyncCommitteeProofClient("http://127.0.0.1:8980")
-	if err != nil {
-		logger.Error("new proofClient error:%v", err)
-		return nil, err
-	}
-
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofClient)
-	if err != nil{
-		logger.Error("new beacon btcClient error:%v", err)
-		return nil, err
-	}
-
 	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
 	if err != nil {
 		logger.Error("new eth btcClient error:%v", err)
@@ -95,37 +81,46 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []ProofRequest, 1000)
-	btcProofResp := make(chan ProofResponse, 1000)
-	ethProofResp := make(chan ProofResponse, 1000)
+	proofRequest := make(chan []ZkProofRequest, 1000)
+	btcProofResp := make(chan ZkProofResponse, 1000)
+	ethProofResp := make(chan ZkProofResponse, 1000)
+	syncCommitResp := make(chan ZkProofResponse, 1000)
+
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient)
+	if err != nil {
+		logger.Error("new node btcClient error:%v", err)
+		return nil, err
+	}
+
 	keyStore := NewKeyStore(cfg.EthPrivateKey)
-	var agents []*Agent
+	var agents []*WrapperAgent
 	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewAgent(btcAgent, cfg.BtcScanBlockTime, btcProofResp))
+	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, btcProofResp))
+
 	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
+	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
 
 	workers := make([]IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
 		workers = append(workers, NewLocalWorker(1))
 	}
-	schedule := NewSchedule(workers...)
-	manager, err := NewManager(cfg, btcProofResp, ethProofResp, storeDb, memoryStore, schedule)
+	schedule := NewSchedule(workers)
+	manager, err := NewManager(cfg, btcProofResp, ethProofResp, syncCommitResp, storeDb, memoryStore, schedule)
 	if err != nil {
 		logger.Error("new manager error: %v", err)
 		return nil, err
 	}
 	exitSignal := make(chan os.Signal, 1)
-	// todo new store
+
 	rpcHandler := NewHandler(storeDb, memoryStore, schedule, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
 	if err != nil {
@@ -133,12 +128,12 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents: agents,
-		beaconAgent:
-		server:     server,
-		nodeConfig: cfg,
-		exitSignal: make(chan struct{}, 1),
-		manager:    NewWrapperManger(manager, proofRequest),
+		agents:      agents,
+		server:      server,
+		nodeConfig:  cfg,
+		exitSignal:  make(chan os.Signal, 1),
+		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Hour, syncCommitResp),
+		manager:     NewWrapperManger(manager, proofRequest),
 	}
 	return daemon, nil
 }
@@ -155,83 +150,36 @@ func (d *Daemon) Init() error {
 		logger.Error("manager init error %v", err)
 		return err
 	}
-
+	err = d.beaconAgent.node.Init()
+	if err != nil {
+		logger.Error("node agent init error %v", err)
+		return err
+	}
 	return nil
 }
 
 func (d *Daemon) Run() error {
+	// syncCommit
+	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.time, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
+	go doProofResponseTask("beacon-ProofResp", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResp, d.exitSignal)
 
-	go func() {
-		proofRequest := d.manager.proofRequest
-		for {
-			select {
-			case <-d.exitSignal:
-				logger.Info("manager proof queue exit ...")
-				return
-			case requests := <-proofRequest:
-				err := d.manager.manager.run(requests)
-				if err != nil {
-					logger.Error("manager run error %v", err)
-				}
-			}
-		}
-	}()
+	// task manager
+	go doProofRequestTask("manager-ProofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
+	go doTask("manager-GenerateProof:", d.manager.manager.genProof, d.exitSignal)
 
-	go func() {
-		for {
-			select {
-			case <-d.exitSignal:
-				logger.Info("manager generate proof exit ...")
-				return
-			default:
-				err := d.manager.manager.genProof()
-				if err != nil {
-					logger.Error("manager gen proof error %v", err)
-
-				}
-			}
-		}
-	}()
-
+	// tx proof
 	for _, agent := range d.agents {
-		go func(tAgent *Agent) {
-			proofResponses := tAgent.proofResp
-			for {
-				select {
-				case response := <-proofResponses:
-					err := tAgent.node.Transfer(response)
-					if err != nil {
-						logger.Error("transfer error %v", err)
-					}
-				case <-d.exitSignal:
-					logger.Error("%v transfer goroutine exit", tAgent.node.Name())
-					return
-				}
-			}
-		}(agent)
+		name := fmt.Sprintf("%s-SubmitProof", agent.node.Name())
+		go doProofResponseTask(name, agent.proofResp, agent.node.Submit, d.exitSignal)
 	}
+	// scan block with tx
 	for _, agent := range d.agents {
-		go func(tAgent *Agent) {
-			ticker := time.NewTicker(tAgent.scanTime)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					err := tAgent.node.ScanBlock()
-					if err != nil {
-						logger.Error("%v run error %v", tAgent.node.Name(), err)
-					}
-				case <-d.exitSignal:
-					logger.Info("%v scan block goroutine exit ", tAgent.node.Name())
-					return
-				}
-			}
-		}(agent)
+		name := fmt.Sprintf("%s-ScanBlock", agent.node.Name())
+		go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
 	}
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
+	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
 	for {
-		msg := <-ch
+		msg := <-d.exitSignal
 		switch msg {
 		case syscall.SIGHUP:
 			logger.Info("daemon get SIGHUP")
@@ -257,13 +205,17 @@ func (d *Daemon) Close() error {
 	if err != nil {
 		logger.Error("rpc server shutdown error:%v", err)
 	}
+	err = d.beaconAgent.node.Close()
+	if err != nil {
+		logger.Error("node agent close error:%v", err)
+	}
 	if d.exitSignal != nil {
 		close(d.exitSignal)
+		//todo waitGroup
+		time.Sleep(5 * time.Second)
 	}
 	return nil
 }
-
-//todo local worker ?
 
 func NewWorkers(workers []WorkerConfig) ([]IWorker, error) {
 	workersList := make([]IWorker, 0)
@@ -279,30 +231,105 @@ func NewWorkers(workers []WorkerConfig) ([]IWorker, error) {
 	return workersList, nil
 }
 
-func NewAgent(agent IAgent, scanTime time.Duration, proofResp chan ProofResponse) *Agent {
-	return &Agent{
-		node:      agent,
-		scanTime:  scanTime,
-		proofResp: proofResp,
+type WrapperBeacon struct {
+	node          IBeaconAgent
+	time          time.Duration // get node period
+	proofResponse chan ZkProofResponse
+}
+
+func NewWrapperBeacon(beacon IBeaconAgent, time time.Duration, proofResponse chan ZkProofResponse) *WrapperBeacon {
+	return &WrapperBeacon{
+		node:          beacon,
+		time:          time,
+		proofResponse: proofResponse,
 	}
 }
 
 type WrapperManger struct {
 	manager      *manager
-	proofRequest chan []ProofRequest
+	proofRequest chan []ZkProofRequest
 }
 
-func NewWrapperManger(manager *manager, request chan []ProofRequest) *WrapperManger {
+func NewWrapperManger(manager *manager, request chan []ZkProofRequest) *WrapperManger {
 	return &WrapperManger{
 		manager:      manager,
 		proofRequest: request,
 	}
 }
 
-type Agent struct {
+type WrapperAgent struct {
 	node      IAgent
 	scanTime  time.Duration
-	proofResp chan ProofResponse
+	proofResp chan ZkProofResponse
 }
 
+func NewWrapperAgent(agent IAgent, scanTime time.Duration, proofResp chan ZkProofResponse) *WrapperAgent {
+	return &WrapperAgent{
+		node:      agent,
+		scanTime:  scanTime,
+		proofResp: proofResp,
+	}
+}
 
+func doTask(name string, fn func() error, exit chan os.Signal) {
+	for {
+		select {
+		case <-exit:
+			logger.Info("%v goroutine exit now ...", name)
+			return
+		default:
+			err := fn()
+			if err != nil {
+				logger.Error("%v error %v", name, err.Error())
+			}
+		}
+	}
+}
+
+func doTimerTask(name string, interval time.Duration, fn func() error, exit chan os.Signal) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-exit:
+			logger.Info("%v goroutine exit now ...", name)
+			return
+		case <-ticker.C:
+			err := fn()
+			if err != nil {
+				logger.Error("%v error %v", name, err.Error())
+			}
+		}
+	}
+}
+
+func doProofRequestTask(name string, req chan []ZkProofRequest, fn func(req []ZkProofRequest) error, exit chan os.Signal) {
+	for {
+		select {
+		case <-exit:
+			logger.Info("%v goroutine exit now ...", name)
+			return
+		case request := <-req:
+			err := fn(request)
+			if err != nil {
+				logger.Error("%v error %v", name, err.Error())
+			}
+		}
+
+	}
+}
+
+func doProofResponseTask(name string, resp chan ZkProofResponse, fn func(resp ZkProofResponse) error, exit chan os.Signal) {
+	for {
+		select {
+		case <-exit:
+			logger.Info("%v goroutine exit now ...", name)
+			return
+		case response := <-resp:
+			err := fn(response)
+			if err != nil {
+				logger.Error("%v error %v", name, err.Error())
+			}
+		}
+	}
+}

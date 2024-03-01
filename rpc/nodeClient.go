@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var _ NodeAPI = (*NodeClient)(nil)
+var _ INode = (*NodeClient)(nil)
 
 type NodeClient struct {
 	*rpc.Client

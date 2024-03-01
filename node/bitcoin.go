@@ -20,7 +20,7 @@ type BitcoinAgent struct {
 	store                store.IStore
 	memoryStore          store.IStore
 	blockTime            time.Duration
-	proofRequest         chan<- []ProofRequest
+	proofRequest         chan<- []ZkProofRequest
 	checkProofHeightNums int64
 	whiteList            map[string]bool // todo
 	operatorAddr         string
@@ -33,7 +33,7 @@ type BitcoinAgent struct {
 }
 
 func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	request chan []ProofRequest, keyStore *KeyStore) (IAgent, error) {
+	requests chan []ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
@@ -41,7 +41,7 @@ func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore 
 		memoryStore:          memoryStore,
 		blockTime:            cfg.BtcScanBlockTime,
 		operatorAddr:         cfg.BtcOperatorAddr,
-		proofRequest:         request,
+		proofRequest:         requests,
 		checkProofHeightNums: 100, // todo
 		minDepositValue:      0,   // todo
 		keyStore:             keyStore,
@@ -138,7 +138,12 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("write btc height error: %v %v", index, err)
 			return err
 		}
-		b.proofRequest <- proofRequests
+		zkProofRequest, err := toDepositZkProofRequest(proofRequests)
+		if err != nil {
+			logger.Error("to deposit zk proof request error: %v %v", index, err)
+			return err
+		}
+		b.proofRequest <- zkProofRequest
 		if len(redeemTxes) > 0 {
 			// todo
 			if b.autoSubmit {
@@ -231,9 +236,15 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 	return depositTxes, redeemTxes, requests, proofs, nil
 }
 
-func (b *BitcoinAgent) Transfer(resp ProofResponse) error {
+func (b *BitcoinAgent) Submit(response ZkProofResponse) error {
+	resp, err := response.ParseDepositProof()
+	if err != nil {
+		logger.Error("not proof response")
+		return fmt.Errorf("not proof response")
+	}
+
 	logger.Info("bitcoinAgent receive deposit proof resp: %v", resp.String())
-	err := b.updateDepositProof(resp.TxId, resp.Proof, resp.Status)
+	err = b.updateDepositProof(resp.TxId, resp.Proof, resp.Status)
 	if err != nil {
 		logger.Error("update proof error: %v %v", resp.TxId, err)
 		return err
@@ -423,7 +434,7 @@ func (b *BitcoinAgent) Close() error {
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
-	return "Bitcoin Agent"
+	return "Bitcoin WrapperAgent"
 }
 
 func CheckDepositDestHash(store store.IStore, ethClient *ethereum.Client, txId string) (bool, error) {

@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-var _ rpc.NodeAPI = (*Handler)(nil)
+var _ rpc.INode = (*Handler)(nil)
 
 type Handler struct {
 	store    store.IStore

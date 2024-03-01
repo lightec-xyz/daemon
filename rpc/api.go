@@ -1,6 +1,6 @@
 package rpc
 
-type NodeAPI interface {
+type INode interface {
 	Version() (NodeInfo, error)
 	AddWorker(endpoint string, max int) (string, error)
 	ProofInfo(txId string) (ProofInfo, error)
@@ -10,8 +10,8 @@ type NodeAPI interface {
 	Stop() error
 }
 
-// ProofAPI api between node and proof
-type ProofAPI interface {
+// IProof api between node and proof
+type IProof interface {
 	GenZkProof(request ProofRequest) (ProofResponse, error)
 	ProofInfo(proofId string) (ProofInfo, error)
 }

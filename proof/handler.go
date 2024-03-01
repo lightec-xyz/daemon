@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var _ rpc.ProofAPI = (*Handler)(nil)
+var _ rpc.IProof = (*Handler)(nil)
 
 type Handler struct {
 	memoryStore     store.IStore

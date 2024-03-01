@@ -21,7 +21,7 @@ const (
 	EthScanTime = 5 * time.Second
 
 	InitBitcoinHeight  = 2540942
-	InitBeaconHeight   = 10127532 //TODO(keep), should find the beacon height, which corresponds to InitEthereumHeight
+	InitBeaconHeight   = 10127532 //TODO(keep), should find the node height, which corresponds to InitEthereumHeight
 	InitEthereumHeight = 10127532
 
 	LogDepositAddr   = "0x07417a531e376ce150493ffa98cd5516b544441d"

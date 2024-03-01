@@ -39,7 +39,7 @@ var runCmd = &cobra.Command{
 		enableLocalWorker, autoSubmit, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
 		//fmt.Printf("datadir:%s, network:%s, rpcbind:%s, rpcport:%s, btcUrl:%s, btcUser:%s, btcPwd:%s, ethUrl:%s, ethPrivateKey:%s \n", datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
 		config, err := node.NewNodeConfig(enableLocalWorker, autoSubmit, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd,
-			ethUrl, ethPrivate)
+			"", ethUrl, ethPrivate)
 		//config := node.TestnetDaemonConfig()
 		cobra.CheckErr(err)
 		daemon, err := node.NewDaemon(config)

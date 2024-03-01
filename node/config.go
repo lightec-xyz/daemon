@@ -302,7 +302,7 @@ type MultiAddressInfo struct {
 }
 
 type WorkerConfig struct {
-	ParallelNums int    `json:"parallelNums"`
+	ParallelNums int    `json:"maxNums"`
 	Url          string `json:"url"`
 }
 

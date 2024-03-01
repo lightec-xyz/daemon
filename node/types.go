@@ -2,10 +2,140 @@ package node
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"sync"
 )
+
+type ZkProofType int
+
+const (
+	DepositTxType ZkProofType = iota + 1
+	RedeemTxType
+	VerifyTxType
+	SyncComGenesisType
+	SyncComUnitType
+	SyncComRecursiveType
+)
+
+type ZkProofRequest struct {
+	reqType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
+	period  uint64
+	body    []byte
+	data    []byte // current request data
+	preData []byte // previous request data
+}
+
+func toDepositZkProofRequest(obj interface{}) ([]ZkProofRequest, error) {
+	panic(obj)
+}
+
+func toRedeemZkProofRequest(obj interface{}) ([]ZkProofRequest, error) {
+	panic(obj)
+}
+
+type ZkProofResponse struct {
+	zkProofType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
+	period      uint64
+	Status      ProofStatus
+	body        []byte
+	proof       []byte
+}
+
+func (zkResp *ZkProofResponse) String() string {
+	return fmt.Sprintf("zkProofType:%v period:%v proof:%v", zkResp.zkProofType, zkResp.period, zkResp.proof)
+}
+
+func (zkRep *ZkProofResponse) ParseDepositProof() (DepositProof, error) {
+	if zkRep.zkProofType != DepositTxType {
+		return DepositProof{}, fmt.Errorf("not deposit proof")
+	}
+	depositProof := DepositProof{}
+	err := json.Unmarshal(zkRep.body, &depositProof)
+	if err != nil {
+		return DepositProof{}, err
+	}
+	return depositProof, nil
+}
+
+func (zkRep *ZkProofResponse) ParseRedeemProof() (RedeemProof, error) {
+	if zkRep.zkProofType != RedeemTxType {
+		return RedeemProof{}, fmt.Errorf("not redeem proof")
+	}
+	redeemProof := RedeemProof{}
+	err := json.Unmarshal(zkRep.body, &redeemProof)
+	if err != nil {
+		return RedeemProof{}, err
+	}
+	return redeemProof, nil
+}
+
+type DepositProof struct {
+	// redeem
+	Inputs  []Utxo  `json:"inputs"`
+	Outputs []TxOut `json:"outputs"`
+	BtcTxId string  `json:"btcTxId"`
+
+	// deposit
+	Utxos   []Utxo
+	Amount  int64  `json:"amount"`
+	EthAddr string `json:"ethAddr"`
+
+	// other
+	Height    int64       `json:"height"`
+	BlockHash string      `json:"blockHash"`
+	TxId      string      `json:"txId"`
+	ProofType ProofType   `json:"type"`
+	Proof     string      `json:"proof"`
+	Msg       string      `json:"msg"`
+	Status    ProofStatus `json:"status"`
+}
+
+func (dp *DepositProof) String() string {
+	return fmt.Sprintf("inputs:%v outputs:%v btcTxId:%v amount:%v ethAddr:%v height:%v blockHash:%v txId:%v type:%v proof:%v msg:%v status:%v",
+		dp.Inputs, dp.Outputs, dp.BtcTxId, dp.Amount, dp.EthAddr, dp.Height, dp.BlockHash, dp.TxId, dp.ProofType, dp.Proof, dp.Msg, dp.Status)
+}
+
+type RedeemProof struct {
+	// redeem
+	Inputs  []Utxo  `json:"inputs"`
+	Outputs []TxOut `json:"outputs"`
+	BtcTxId string  `json:"btcTxId"`
+
+	// deposit
+	Utxos   []Utxo
+	Amount  int64  `json:"amount"`
+	EthAddr string `json:"ethAddr"`
+
+	// other
+	Height    int64       `json:"height"`
+	BlockHash string      `json:"blockHash"`
+	TxId      string      `json:"txId"`
+	ProofType ProofType   `json:"type"`
+	Proof     string      `json:"proof"`
+	Msg       string      `json:"msg"`
+	Status    ProofStatus `json:"status"`
+}
+
+func (dp *RedeemProof) String() string {
+	return fmt.Sprintf("inputs:%v outputs:%v btcTxId:%v amount:%v ethAddr:%v height:%v blockHash:%v txId:%v type:%v proof:%v msg:%v status:%v",
+		dp.Inputs, dp.Outputs, dp.BtcTxId, dp.Amount, dp.EthAddr, dp.Height, dp.BlockHash, dp.TxId, dp.ProofType, dp.Proof, dp.Msg, dp.Status)
+}
+
+type VerifyProof struct {
+}
+
+type GenesisProof struct {
+}
+
+type UnitProof struct {
+}
+
+type RecursiveProof struct {
+}
+
+// ____________________
 
 type ProofStatus int
 
@@ -120,7 +250,6 @@ type Proof struct {
 	Status    ProofStatus `json:"status"`
 }
 
-// todo
 type ProofRequest struct {
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
@@ -141,6 +270,11 @@ type ProofRequest struct {
 	Msg       string    `json:"msg"`
 }
 
+func (req *ProofRequest) Type() string {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (req *ProofRequest) String() string {
 	if req.ProofType == Deposit {
 		return fmt.Sprintf("txType:%v,txid: %v, utxos:%v, amount:%v, ethAddr:%v", req.ProofType, req.TxHash, req.Utxos, req.Amount, req.EthAddr)
@@ -150,7 +284,6 @@ func (req *ProofRequest) String() string {
 	return ""
 }
 
-// todo
 type ProofResponse struct {
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
@@ -170,6 +303,11 @@ type ProofResponse struct {
 	Proof     string      `json:"proof"`
 	Msg       string      `json:"msg"`
 	Status    ProofStatus `json:"status"`
+}
+
+func (resp *ProofResponse) Type() string {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (resp *ProofResponse) String() string {
