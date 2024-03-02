@@ -135,6 +135,29 @@ type UnitProof struct {
 type RecursiveProof struct {
 }
 
+type DownloadStatus int32
+
+const (
+	None        DownloadStatus = 0
+	Downloading DownloadStatus = 1
+	Done        DownloadStatus = 2
+	Fail        DownloadStatus = 3
+)
+
+type UpdateRequest struct {
+	period uint64
+}
+
+type UpdateResponse struct {
+	period uint64
+	data   []byte
+	status DownloadStatus
+}
+
+type UnitProofRequest struct {
+	period uint64
+}
+
 // ____________________
 
 type ProofStatus int

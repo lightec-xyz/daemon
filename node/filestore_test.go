@@ -12,7 +12,27 @@ func init() {
 	}
 }
 func TestFileStoreGenesis(t *testing.T) {
+	err := fileStore.StoreLatestPeriod(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = fileStore.StoreGenesisUpdate("update")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = fileStore.StoreUpdate(1, "update")
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	err = fileStore.StoreUnitProof(1, "unit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = fileStore.StoreRecursiveProof(1, "recursive")
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestFileLatestPeriod(t *testing.T) {

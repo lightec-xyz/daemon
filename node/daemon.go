@@ -32,6 +32,8 @@ type IAgent interface {
 type IBeaconAgent interface {
 	ScanSyncPeriod() error
 	ProofResp(resp ZkProofResponse) error
+	UpdateResp(resp UpdateResponse) error
+	CheckData() error
 	Init() error
 	Close() error
 	Name() string
@@ -162,6 +164,7 @@ func (d *Daemon) Run() error {
 	// syncCommit
 	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.time, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 	go doProofResponseTask("beacon-ProofResp", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResp, d.exitSignal)
+	go doTask("beacon-CheckData", d.beaconAgent.node.CheckData, d.exitSignal)
 
 	// task manager
 	go doProofRequestTask("manager-ProofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
@@ -316,6 +319,21 @@ func doProofRequestTask(name string, req chan []ZkProofRequest, fn func(req []Zk
 			}
 		}
 
+	}
+}
+
+func doUpdateTask(name string, resp chan UpdateResponse, fn func(resp UpdateResponse) error, exit chan os.Signal) {
+	for {
+		select {
+		case <-exit:
+			logger.Info("%v goroutine exit now ...", name)
+			return
+		case response := <-resp:
+			err := fn(response)
+			if err != nil {
+				logger.Error("%v error %v", name, err.Error())
+			}
+		}
 	}
 }
 

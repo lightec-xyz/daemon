@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/lightec-xyz/daemon/logger"
@@ -9,17 +10,10 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 var _ IBeaconAgent = (*BeaconAgent)(nil)
-
-type DownloadStatus int32
-
-const (
-	DownloadStatus_NONE        DownloadStatus = 0
-	DownloadStatus_Downloading DownloadStatus = 1
-	DownloadStatus_Done        DownloadStatus = 2
-)
 
 type Status int32
 
@@ -54,11 +48,11 @@ type BeaconAgent struct {
 	unitProofDir      string
 	recursiveProofDir string
 
-	beaconClient      *beacon.Client
-	proofClient       rpc.ISyncCommitteeProof
-	datadir           string
-	genesisSyncPeriod uint64
-	targetSyncPeriod  atomic.Uint64
+	beaconClient *beacon.Client
+	proofClient  rpc.ISyncCommitteeProof
+	datadir      string
+
+	targetSyncPeriod atomic.Uint64
 
 	proofG              ProofG
 	proofR              []*ProofR
@@ -81,9 +75,11 @@ type BeaconAgent struct {
 	exitCh chan struct{}
 	wg     sync.WaitGroup
 
-	fileStore     *FileStore
-	synComRequest chan ZkProofRequest
-	name          string
+	fileStore         *FileStore
+	zkProofRequest    chan ZkProofRequest
+	name              string
+	genesisSyncPeriod uint64
+	beaconFetch       *BeaconFetch
 }
 
 func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client) (IBeaconAgent, error) {
@@ -92,10 +88,16 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client) (IBeaconAgent, 
 		log.Error(err.Error())
 		return nil, err
 	}
+	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore)
+	if err != nil {
+		log.Error(err.Error())
+		return nil, err
+	}
 	beaconAgent := &BeaconAgent{
 		fileStore:    fileStore,
 		beaconClient: beaconClient,
 		name:         "beaconAgent",
+		beaconFetch:  beaconFetch,
 	}
 	return beaconAgent, nil
 }
@@ -103,6 +105,52 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client) (IBeaconAgent, 
 func (b *BeaconAgent) Init() error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (b *BeaconAgent) initGenesis() error {
+	existsGenesisRaw, err := b.fileStore.CheckGenesisUpdate()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	if !existsGenesisRaw {
+		log.Info("genesis not exists, start get genesis bootstrap")
+		bootStrap, err := b.beaconClient.GetBootstrap(uint64(b.genesisSyncPeriod) * 32)
+		if err != nil {
+			logger.Error("get bootstrap error:%v", err)
+			return err
+		}
+		err = b.fileStore.StoreGenesisUpdate(bootStrap)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+	}
+	existGenesisProof, err := b.fileStore.CheckGenesisProof()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	if !existGenesisProof {
+		var genesisUpdate structs.LightClientBootstrapResponse
+		err := b.fileStore.GetGenesisUpdate(&genesisUpdate)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+		genesisData, err := json.Marshal(genesisUpdate)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+		b.zkProofRequest <- ZkProofRequest{
+			reqType: SyncComGenesisType,
+			body:    genesisData,
+		}
+	}
+	logger.Info("init genesis complete")
+	return nil
+
 }
 
 func (b *BeaconAgent) ScanSyncPeriod() error {
@@ -119,44 +167,107 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 	if currentPeriod >= latestSyncPeriod {
 		return nil
 	}
+
 	for index := currentPeriod + 1; index <= latestSyncPeriod; index++ {
 		log.Info("beacon parse sync period: %d", index)
-		updates, err := b.beaconClient.GetLightClientUpdates(index, 1)
-		if err != nil {
-			logger.Error("get light client updates error:%v", err)
-			return err
+		// todo
+		for {
+			canAddRequest := b.beaconFetch.CanAddRequest()
+			if canAddRequest {
+				b.beaconFetch.SendRequest(index)
+				break
+			} else {
+				time.Sleep(10 * time.Second)
+			}
 		}
-		err = b.fileStore.StoreUpdate(index, updates[0])
-		if err != nil {
-			logger.Error("store update error:%v", err)
-			return err
-		}
-		err = b.CheckAndGenRequest(index, SyncComUnitType)
-		if err != nil {
-			log.Error(err.Error())
-			return err
-		}
-		err = b.fileStore.StoreLatestPeriod(index)
+		err := b.fileStore.StoreLatestPeriod(index)
 		if err != nil {
 			log.Error(err.Error())
 			return err
 		}
 	}
 	return nil
+}
+
+func (b *BeaconAgent) P() {
+
 }
 
 func (b *BeaconAgent) CheckAndGenRequest(period uint64, reqType ZkProofType) error {
-	//todo
-	b.synComRequest <- ZkProofRequest{
+	proofExists, err := b.CheckProofExists(period, reqType)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	if proofExists {
+		logger.Error("%v %v proof exists", period, reqType)
+		return nil
+	}
+	requestData, canGen, err := b.prepareRequestData(period, reqType)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	if !canGen {
+		logger.Info("can`t generate proof: %v %v", period, reqType)
+		return nil
+	}
+	b.zkProofRequest <- ZkProofRequest{
 		period:  period,
 		reqType: reqType,
+		body:    requestData,
 	}
 	return nil
 }
 
-func (b *BeaconAgent) prepareRequestData(period uint64, reqType ZkProofType) ([]byte, error) {
+func (b *BeaconAgent) prepareRequestData(period uint64, reqType ZkProofType) ([]byte, bool, error) {
+	switch reqType {
+	case SyncComGenesisType:
 
-	return nil, nil
+	case SyncComUnitType:
+
+	case SyncComRecursiveType:
+
+	default:
+		logger.Info("never should happen : %v %v", period, reqType)
+		return nil, false, fmt.Errorf("never should happen : %v %v", period, reqType)
+	}
+
+	return nil, false, nil
+}
+
+func (b *BeaconAgent) CheckProofExists(period uint64, reqType ZkProofType) (bool, error) {
+	switch reqType {
+	case SyncComGenesisType:
+		return b.fileStore.CheckGenesisProof()
+	case SyncComUnitType:
+		return b.fileStore.CheckUnitProof(period)
+	case SyncComRecursiveType:
+		return b.fileStore.CheckRecursiveProof(period)
+	default:
+		logger.Info("never should happen : %v %v", period, reqType)
+		return false, fmt.Errorf("never should happen : %v %v", period, reqType)
+	}
+}
+
+func (b *BeaconAgent) CheckData() error {
+	//TODO implement me
+	panic("implement me")
+
+}
+
+func (b *BeaconAgent) UpdateResp(resp UpdateResponse) error {
+	err := b.fileStore.StoreUpdate(resp.period, string(resp.data))
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	err = b.CheckAndGenRequest(resp.period, SyncComUnitType)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	return nil
 }
 
 func (b *BeaconAgent) ProofResp(resp ZkProofResponse) error {
