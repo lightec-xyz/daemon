@@ -9,11 +9,60 @@ import (
 )
 
 var _ IProof = (*ProofClient)(nil)
-var _ ISyncCommitteeProof = (*SyncCommitteeProofClient)(nil)
 
 type ProofClient struct {
 	*rpc.Client
 	timeout time.Duration
+}
+
+func (p *ProofClient) GenDepositProof(req DepositRequest) (DepositResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) GenRedeemProof(req RedeemRequest) (RedeemResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) GenVerifyProof(req VerifyRequest) (VerifyResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) AddReqNum() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) DelReqNum() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) MaxNums() int {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) CurrentNums() int {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (p *ProofClient) ProofInfo(proofId string) (ProofInfo, error) {
@@ -25,8 +74,8 @@ func (p *ProofClient) ProofInfo(proofId string) (ProofInfo, error) {
 	return status, nil
 }
 
-func (p *ProofClient) GenZkProof(request ProofRequest) (ProofResponse, error) {
-	response := ProofResponse{}
+func (p *ProofClient) GenZkProof(request DepositRequest) (DepositResponse, error) {
+	response := DepositResponse{}
 	err := p.call(&response, "zkbtc_genZkProof", request)
 	if err != nil {
 		return response, err
@@ -61,80 +110,6 @@ func NewWsProofClient(url string) (*ProofClient, error) {
 		return nil, err
 	}
 	return &ProofClient{
-		Client:  client,
-		timeout: 3 * time.Hour,
-	}, nil
-}
-
-// TODO(keep), add sync committee proof client
-type SyncCommitteeProofClient struct {
-	*rpc.Client
-	timeout time.Duration
-}
-
-func (p *SyncCommitteeProofClient) SyncCommitteeProofInfo(period uint64, proofType SyncCommitteeProofType) (SyncCommitteeProofInfo, error) {
-	status := SyncCommitteeProofInfo{}
-	err := p.call(&status, "sync_committee_proofInfo", period, proofType)
-	if err != nil {
-		return status, err
-	}
-	return status, nil
-}
-
-func (p *SyncCommitteeProofClient) GenGenesisSyncCommitteeProof(request GenesisSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error) {
-	response := SyncCommitteeProofResponse{}
-	err := p.call(&response, "sync_committee_genGenesisProof", request)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
-}
-
-func (p *SyncCommitteeProofClient) GenUnitSyncCommitteeProof(request UnitSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error) {
-	response := SyncCommitteeProofResponse{}
-	err := p.call(&response, "sync_committee_genUintProof", request)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
-}
-
-func (p *SyncCommitteeProofClient) GenRecursiveSyncCommitteeProof(request RecursiveSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error) {
-	response := SyncCommitteeProofResponse{}
-	err := p.call(&response, "sync_committee_genRecursiveProof", request)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
-}
-
-func (p *SyncCommitteeProofClient) call(result interface{}, method string, args ...interface{}) error {
-	vi := reflect.ValueOf(result)
-	if vi.Kind() != reflect.Ptr {
-		return fmt.Errorf("result must be pointer")
-	}
-	ctx, cancelFunc := context.WithTimeout(context.Background(), p.timeout)
-	defer cancelFunc()
-	return p.CallContext(ctx, result, method, args...)
-}
-
-func NewSyncCommitteeProofClient(url string) (ISyncCommitteeProof, error) {
-	client, err := rpc.DialHTTP(url)
-	if err != nil {
-		return nil, err
-	}
-	return &SyncCommitteeProofClient{
-		Client:  client,
-		timeout: 30 * time.Minute,
-	}, nil
-}
-
-func NewWsSyncCommitteeProofClient(url string) (ISyncCommitteeProof, error) {
-	client, err := rpc.DialWebsocket(context.Background(), url, "")
-	if err != nil {
-		return nil, err
-	}
-	return &SyncCommitteeProofClient{
 		Client:  client,
 		timeout: 3 * time.Hour,
 	}, nil

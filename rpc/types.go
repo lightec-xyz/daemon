@@ -42,7 +42,42 @@ type TxOut struct {
 	PkScript []byte
 }
 
-type ProofRequest struct {
+type RedeemRequest struct {
+}
+
+type RedeemResponse struct {
+	Body []byte
+}
+
+type VerifyRequest struct {
+}
+
+type VerifyResponse struct {
+	Body []byte
+}
+
+type SyncCommGenesisRequest struct {
+}
+
+type SyncCommGenesisResponse struct {
+	Body []byte
+}
+
+type SyncCommUnitsRequest struct {
+}
+
+type SyncCommUnitsResponse struct {
+	Body []byte
+}
+
+type SyncCommRecursiveRequest struct {
+}
+
+type SyncCommRecursiveResponse struct {
+	Body []byte
+}
+
+type DepositRequest struct {
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`
@@ -62,7 +97,8 @@ type ProofRequest struct {
 	Msg       string `json:"msg"`
 }
 
-type ProofResponse struct { // redeem
+type DepositResponse struct {
+	Body []byte
 	// redeem
 	Inputs  []Utxo  `json:"inputs"`
 	Outputs []TxOut `json:"outputs"`

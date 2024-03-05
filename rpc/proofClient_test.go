@@ -7,7 +7,7 @@ func TestProofClient_GenZkProof(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	proof, err := client.GenZkProof(ProofRequest{})
+	proof, err := client.GenZkProof(DepositRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}

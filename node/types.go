@@ -22,17 +22,38 @@ const (
 type ZkProofRequest struct {
 	reqType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
 	period  uint64
-	body    []byte
 	data    []byte // current request data
 	preData []byte // previous request data
 }
 
-func toDepositZkProofRequest(obj interface{}) ([]ZkProofRequest, error) {
-	panic(obj)
+func toDepositZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
+	var result []ZkProofRequest
+	for _, item := range list {
+		body, err := json.Marshal(item)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, ZkProofRequest{
+			reqType: DepositTxType,
+			data:    body,
+		})
+	}
+	return result, nil
 }
 
-func toRedeemZkProofRequest(obj interface{}) ([]ZkProofRequest, error) {
-	panic(obj)
+func toRedeemZkProofRequest(list []PrepareRequest) ([]ZkProofRequest, error) {
+	var result []ZkProofRequest
+	for _, item := range list {
+		body, err := json.Marshal(item)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, ZkProofRequest{
+			reqType: RedeemTxType,
+			data:    body,
+		})
+	}
+	return result, nil
 }
 
 type ZkProofResponse struct {

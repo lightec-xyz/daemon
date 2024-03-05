@@ -7,23 +7,7 @@ import (
 	"time"
 )
 
-type IWorker interface {
-	GenProof(req rpc.ProofRequest) (rpc.ProofResponse, error)
-	Add()
-	Del()
-	ParallelNums() int
-	CurrentNums() int
-}
-
-//type ISyncCommitteeWorker interface {
-//	GenProof(req rpc.SyncCommitteeProofRequest) (rpc.SyncCommitteeProofResponse, error)
-//	Add()
-//	Del()
-//	ParallelNums() int
-//	CurrentNums() int
-//}
-
-var _ IWorker = (*Worker)(nil)
+var _ rpc.IProof = (*Worker)(nil)
 
 type Worker struct {
 	client      rpc.IProof
@@ -32,16 +16,42 @@ type Worker struct {
 	lock        sync.Mutex
 }
 
-func (w *Worker) ParallelNums() int {
+func (w *Worker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) MaxNums() int {
 	return w.maxNums
 }
 
 func (w *Worker) CurrentNums() int {
 	return w.currentNums
-}
-
-func (w *Worker) GenProof(req rpc.ProofRequest) (rpc.ProofResponse, error) {
-	return w.client.GenZkProof(req)
 }
 
 func NewWorker(client rpc.IProof, parallelNums int) *Worker {
@@ -52,46 +62,71 @@ func NewWorker(client rpc.IProof, parallelNums int) *Worker {
 	}
 }
 
-func (w *Worker) Del() {
+func (w *Worker) DelReqNum() {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 	w.currentNums--
 }
 
-func (w *Worker) Add() {
+func (w *Worker) AddReqNum() {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 	w.currentNums++
 }
 
-var _ IWorker = (*LocalWorker)(nil)
+var _ rpc.IProof = (*LocalWorker)(nil)
 
 type LocalWorker struct {
-	parallelNums int
-	currentNums  int
-	lock         sync.Mutex
+	maxNums     int
+	currentNums int
+	lock        sync.Mutex
 }
 
-func NewLocalWorker(maxNums int) IWorker {
+func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func NewLocalWorker(maxNums int) rpc.IProof {
 	return &LocalWorker{
-		parallelNums: maxNums,
-		currentNums:  0,
+		maxNums:     maxNums,
+		currentNums: 0,
 	}
 }
 
-func (l *LocalWorker) ParallelNums() int {
-	return l.parallelNums
+func (l *LocalWorker) MaxNums() int {
+	return l.maxNums
 }
 
 func (l *LocalWorker) CurrentNums() int {
 	return l.currentNums
 }
 
-func (l *LocalWorker) GenProof(req rpc.ProofRequest) (rpc.ProofResponse, error) {
+func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
 	// todo
 	logger.Info("local worker gen proof now: %v %v", req.TxId, req.ProofType)
 	time.Sleep(6 * time.Second)
-	response := rpc.ProofResponse{}
+	response := rpc.DepositResponse{}
 	err := objParse(req, &response)
 	if err != nil {
 		return response, nil
@@ -99,13 +134,13 @@ func (l *LocalWorker) GenProof(req rpc.ProofRequest) (rpc.ProofResponse, error) 
 	return response, nil
 }
 
-func (l *LocalWorker) Add() {
+func (l *LocalWorker) AddReqNum() {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	l.currentNums--
 }
 
-func (l *LocalWorker) Del() {
+func (l *LocalWorker) DelReqNum() {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	l.currentNums++

@@ -2,7 +2,9 @@ package node
 
 import (
 	"container/list"
+	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
@@ -53,7 +55,7 @@ func (m *manager) init() error {
 	//	return err
 	//}
 	//for _, req := range dbRequests {
-	//	submitted, err := m.CheckGenProofStatus(req)
+	//	submitted, err := m.CheckProofStatus(req)
 	//	if err != nil {
 	//		logger.Error("check proof error:%v", err)
 	//		return err
@@ -109,10 +111,9 @@ func (m *manager) genProof() error {
 		time.Sleep(10 * time.Second)
 		return nil
 	}
-
 	// todo
 	m.proofQueue.Remove(element)
-	proofSubmitted, err := m.CheckGenProofStatus(request)
+	proofSubmitted, err := m.CheckProofStatus(request)
 	if err != nil {
 		logger.Error("check proof error:%v", err)
 		return err
@@ -122,59 +123,78 @@ func (m *manager) genProof() error {
 		return nil
 	}
 	//logger.Info("start gen proof:%v", request.String())
-	go func() {
-		proofResponse, err := m.schedule.GenZKProof(worker, request)
-		if err != nil {
-			//todo add queue again or cli retry ?
-			//logger.Error("gen proof error:%v %v", request.TxHash, err)
-			return
-		}
-		logger.Info("worker response proof: %v", proofResponse.String())
-		switch proofResponse.zkProofType {
-		case DepositTxType:
-			m.btcProofResp <- proofResponse
-		case RedeemTxType:
-			m.ethProofResp <- proofResponse
-		case SyncComGenesisType, SyncComUnitType, SyncComRecursiveType:
-			m.syncCommitResp <- proofResponse
-		default:
-			logger.Error("never should happen proof type:%v", proofResponse.zkProofType)
-		}
-	}()
+	go workerGenProof(worker, request, m.syncCommitResp)
+
 	return nil
 }
 
-func (m *manager) CheckGenProofStatus(request ZkProofRequest) (bool, error) {
-	return false, nil
-	//if request.ProofType == Deposit {
-	//	txId := request.Utxos[0].TxId
-	//	exists, err := CheckDepositDestHash(m.store, m.ethClient, txId)
-	//	if err != nil {
-	//		logger.Error("check deposit proof error:%v", err)
-	//		return false, err
-	//	}
-	//	return exists, nil
-	//} else if request.ProofType == Redeem {
-	//	exists, err := m.btcClient.CheckTx(request.BtcTxId)
-	//	if err != nil {
-	//		logger.Error("check btc tx error: %v %v", request.BtcTxId, err)
-	//		return false, err
-	//	}
-	//	return exists, nil
-	//} else {
-	//	//todo
-	//	return false, fmt.Errorf("unknown proof type")
-	//}
+func workerGenProof(worker IWorker, request ZkProofRequest, resp chan ZkProofResponse) error {
+	worker.AddReqNum()
+	defer worker.DelReqNum()
+	var zkbProofResponse ZkProofResponse
+	switch request.reqType {
+	case DepositTxType:
+		proofResponse, err := worker.GenDepositProof(rpc.DepositRequest{})
+		if err != nil {
+			// todo
+			logger.Error("gen deposit proof error:%v", err)
+			return err
+		}
+		zkbProofResponse.zkProofType = DepositTxType
+		zkbProofResponse.proof = proofResponse.Body
+
+	case RedeemTxType:
+		proofResponse, err := worker.GenRedeemProof(rpc.RedeemRequest{})
+		if err != nil {
+			// todo
+			logger.Error("gen redeem proof error:%v", err)
+			return err
+		}
+		zkbProofResponse.zkProofType = RedeemTxType
+		zkbProofResponse.proof = proofResponse.Body
+
+	case SyncComGenesisType:
+		proofResponse, err := worker.GenSyncCommGenesisProof(rpc.SyncCommGenesisRequest{})
+		if err != nil {
+			//todo
+			logger.Error("gen sync comm genesis proof error:%v", err)
+			return err
+		}
+		zkbProofResponse.zkProofType = SyncComGenesisType
+		zkbProofResponse.proof = proofResponse.Body
+
+	case SyncComUnitType:
+		proofResponse, err := worker.GenSyncCommitUnitProof(rpc.SyncCommUnitsRequest{})
+		if err != nil {
+			//todo
+			logger.Error("gen sync comm unit proof error:%v", err)
+			return err
+		}
+		zkbProofResponse.zkProofType = SyncComUnitType
+		zkbProofResponse.proof = proofResponse.Body
+
+	case SyncComRecursiveType:
+		proofResponse, err := worker.GenSyncCommRecursiveProof(rpc.SyncCommRecursiveRequest{})
+		if err != nil {
+			// todo
+			logger.Error("gen sync comm recursive proof error:%v", err)
+			return err
+		}
+		zkbProofResponse.zkProofType = SyncComRecursiveType
+		zkbProofResponse.proof = proofResponse.Body
+	default:
+		logger.Error("never should happen proof type:%v", request.reqType)
+		return fmt.Errorf("never should happen proof type:%v", request.reqType)
+
+	}
+	resp <- zkbProofResponse
+	return nil
+
 }
 
-func getChainByProofType(req ProofRequest) ChainType {
-	if req.ProofType == Deposit {
-		return Bitcoin
-	} else if req.ProofType == Redeem {
-		return Ethereum
-	} else {
-		panic("never should happen")
-	}
+func (m *manager) CheckProofStatus(request ZkProofRequest) (bool, error) {
+	// todo check proof
+	return false, nil
 }
 
 func (m *manager) Close() {

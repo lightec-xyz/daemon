@@ -164,11 +164,12 @@ func (d *Daemon) Init() error {
 func (d *Daemon) Run() error {
 	// syncCommit
 	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.time, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
-	go doProofResponseTask("beacon-ProofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
+	go doProofResponseTask("beacon-DepositResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
+	go doFetchRespTask("beacon-DepositResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchResponse, d.exitSignal)
 	go doTask("beacon-CheckData", d.beaconAgent.node.CheckData, d.exitSignal)
 
-	// task manager
-	go doProofRequestTask("manager-ProofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
+	// proof manager
+	go doProofRequestTask("manager-DepositRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
 	go doTask("manager-GenerateProof:", d.manager.manager.genProof, d.exitSignal)
 
 	// tx proof
@@ -325,7 +326,7 @@ func doProofRequestTask(name string, req chan []ZkProofRequest, fn func(req []Zk
 	}
 }
 
-func doUpdateTask(name string, resp chan downloadResponse, fn func(resp downloadResponse) error, exit chan os.Signal) {
+func doFetchRespTask(name string, resp chan FetchDataResponse, fn func(resp FetchDataResponse) error, exit chan os.Signal) {
 	for {
 		select {
 		case <-exit:

@@ -12,14 +12,14 @@ type INode interface {
 
 // IProof api between node and proof
 type IProof interface {
-	GenZkProof(request ProofRequest) (ProofResponse, error)
-	ProofInfo(proofId string) (ProofInfo, error)
-}
-
-// TODO(keep), sync committee proof generator interface
-type ISyncCommitteeProof interface {
-	GenGenesisSyncCommitteeProof(request GenesisSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error)
-	GenUnitSyncCommitteeProof(request UnitSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error)
-	GenRecursiveSyncCommitteeProof(request RecursiveSyncCommitteeProofRequest) (SyncCommitteeProofResponse, error)
-	SyncCommitteeProofInfo(period uint64, proofType SyncCommitteeProofType) (SyncCommitteeProofInfo, error)
+	GenDepositProof(req DepositRequest) (DepositResponse, error)
+	GenRedeemProof(req RedeemRequest) (RedeemResponse, error)
+	GenVerifyProof(req VerifyRequest) (VerifyResponse, error)
+	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
+	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
+	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
+	AddReqNum()
+	DelReqNum()
+	MaxNums() int
+	CurrentNums() int
 }
