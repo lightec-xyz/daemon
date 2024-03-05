@@ -144,18 +144,33 @@ const (
 	Fail        DownloadStatus = 3
 )
 
-type UpdateRequest struct {
-	period uint64
+type downloadRequest struct {
+	UpdateType ZkProofType
+	Status     DownloadStatus
+	period     uint64
 }
 
-type UpdateResponse struct {
-	period uint64
-	data   []byte
-	status DownloadStatus
+type downloadResponse struct {
+	reqType ZkProofType
+	period  uint64
+	data    []byte
+	status  DownloadStatus
+}
+
+type FetchDataResponse struct {
+	period  uint64
+	reqType ZkProofType
 }
 
 type UnitProofRequest struct {
-	period uint64
+	period  uint64
+	reqType ZkProofType
+}
+
+type PrepareRequest struct {
+	reqType ZkProofType
+	data    []byte
+	preData []byte
 }
 
 // ____________________

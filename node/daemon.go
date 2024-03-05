@@ -31,8 +31,8 @@ type IAgent interface {
 
 type IBeaconAgent interface {
 	ScanSyncPeriod() error
-	ProofResp(resp ZkProofResponse) error
-	UpdateResp(resp UpdateResponse) error
+	ProofResponse(resp ZkProofResponse) error
+	FetchResponse(resp FetchDataResponse) error
 	CheckData() error
 	Init() error
 	Close() error
@@ -87,8 +87,9 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	btcProofResp := make(chan ZkProofResponse, 1000)
 	ethProofResp := make(chan ZkProofResponse, 1000)
 	syncCommitResp := make(chan ZkProofResponse, 1000)
+	fetchDataResp := make(chan FetchDataResponse, 1000)
 
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient)
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -134,7 +135,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		server:      server,
 		nodeConfig:  cfg,
 		exitSignal:  make(chan os.Signal, 1),
-		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Hour, syncCommitResp),
+		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Hour, syncCommitResp, fetchDataResp),
 		manager:     NewWrapperManger(manager, proofRequest),
 	}
 	return daemon, nil
@@ -163,7 +164,7 @@ func (d *Daemon) Init() error {
 func (d *Daemon) Run() error {
 	// syncCommit
 	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.time, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
-	go doProofResponseTask("beacon-ProofResp", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResp, d.exitSignal)
+	go doProofResponseTask("beacon-ProofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 	go doTask("beacon-CheckData", d.beaconAgent.node.CheckData, d.exitSignal)
 
 	// task manager
@@ -235,16 +236,18 @@ func NewWorkers(workers []WorkerConfig) ([]IWorker, error) {
 }
 
 type WrapperBeacon struct {
-	node          IBeaconAgent
-	time          time.Duration // get node period
-	proofResponse chan ZkProofResponse
+	node              IBeaconAgent
+	time              time.Duration // get node period
+	proofResponse     chan ZkProofResponse
+	fetchDataResponse chan FetchDataResponse
 }
 
-func NewWrapperBeacon(beacon IBeaconAgent, time time.Duration, proofResponse chan ZkProofResponse) *WrapperBeacon {
+func NewWrapperBeacon(beacon IBeaconAgent, time time.Duration, proofResponse chan ZkProofResponse, fetchDataResp chan FetchDataResponse) *WrapperBeacon {
 	return &WrapperBeacon{
-		node:          beacon,
-		time:          time,
-		proofResponse: proofResponse,
+		node:              beacon,
+		time:              time,
+		proofResponse:     proofResponse,
+		fetchDataResponse: fetchDataResp,
 	}
 }
 
@@ -322,7 +325,7 @@ func doProofRequestTask(name string, req chan []ZkProofRequest, fn func(req []Zk
 	}
 }
 
-func doUpdateTask(name string, resp chan UpdateResponse, fn func(resp UpdateResponse) error, exit chan os.Signal) {
+func doUpdateTask(name string, resp chan downloadResponse, fn func(resp downloadResponse) error, exit chan os.Signal) {
 	for {
 		select {
 		case <-exit:

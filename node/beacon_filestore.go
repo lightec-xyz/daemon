@@ -93,7 +93,11 @@ func (f *FileStore) StoreRecursiveProof(period uint64, data interface{}) error {
 }
 
 func (f *FileStore) GetRecursiveProof(period uint64, value interface{}) error {
-	return f.GetData(RecursiveDir, parseKey(period), value)
+	return f.GetObj(RecursiveDir, parseKey(period), value)
+}
+
+func (f *FileStore) GetRecursiveData(period uint64) ([]byte, error) {
+	return f.GetData(RecursiveDir, parseKey(period))
 }
 
 func (f *FileStore) CheckRecursiveProof(period uint64) (bool, error) {
@@ -107,12 +111,21 @@ func (f *FileStore) CheckUnitProof(period uint64) (bool, error) {
 func (f *FileStore) StoreUnitProof(period uint64, data interface{}) error {
 	return f.InsertData(UnitDir, parseKey(period), data)
 }
+
+func (f *FileStore) GetUnitData(period uint64) ([]byte, error) {
+	return f.GetData(UnitDir, parseKey(period))
+}
+
 func (f *FileStore) GetUnitProof(period uint64, value interface{}) error {
-	return f.GetData(UnitDir, parseKey(period), value)
+	return f.GetObj(UnitDir, parseKey(period), value)
 }
 
 func (f *FileStore) StoreUpdate(period uint64, data interface{}) error {
 	return f.InsertData(UpdateDir, parseKey(period), data)
+}
+
+func (f *FileStore) GetUpdateData(period uint64) ([]byte, error) {
+	return f.GetData(UpdateDir, parseKey(period))
 }
 
 func (f *FileStore) CheckUpdate(period uint64) (bool, error) {
@@ -120,11 +133,15 @@ func (f *FileStore) CheckUpdate(period uint64) (bool, error) {
 }
 
 func (f *FileStore) GetUpdate(period uint64, value interface{}) error {
-	return f.GetData(UpdateDir, parseKey(period), value)
+	return f.GetObj(UpdateDir, parseKey(period), value)
 }
 
 func (f *FileStore) GetGenesisUpdate(value interface{}) error {
-	return f.GetData(GenesisDir, GenesisRawData, value)
+	return f.GetObj(GenesisDir, GenesisRawData, value)
+}
+
+func (f *FileStore) GetGenesisData() ([]byte, error) {
+	return f.GetData(GenesisDir, GenesisRawData)
 }
 
 func (f *FileStore) StoreGenesisUpdate(data interface{}) error {
@@ -144,7 +161,7 @@ func (f *FileStore) CheckGenesisProof() (bool, error) {
 }
 
 func (f *FileStore) GetGenesisProof(value interface{}) error {
-	return f.GetData(GenesisDir, GenesisProofKey, value)
+	return f.GetObj(GenesisDir, GenesisProofKey, value)
 }
 
 func (f *FileStore) StoreLatestPeriod(period uint64) error {
@@ -157,7 +174,7 @@ func (f *FileStore) CheckLatestPeriod() (bool, error) {
 
 func (f *FileStore) GetLatestPeriod() (uint64, error) {
 	var period uint64
-	err := f.GetData(PeriodDir, LatestPeriodKey, &period)
+	err := f.GetObj(PeriodDir, LatestPeriodKey, &period)
 	if err != nil {
 		logger.Error("get latest period error:%v", err)
 		return 0, err
@@ -210,7 +227,29 @@ func (f *FileStore) InsertData(table, key string, value interface{}) error {
 	return nil
 }
 
-func (f *FileStore) GetData(table, key string, value interface{}) error {
+func (f *FileStore) GetData(table, key string) ([]byte, error) {
+	storeKey, err := f.generateStoreKey(table, key)
+	if err != nil {
+		logger.Error("generate store key error:%v", err)
+		return nil, err
+	}
+	exists, err := fileExists(storeKey)
+	if err != nil {
+		logger.Error("file exists error:%v", err)
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("no find key: %v-%v", table, key)
+	}
+	dataBytes, err := os.ReadFile(storeKey)
+	if err != nil {
+		logger.Error("read file error:%v", err)
+		return nil, err
+	}
+	return dataBytes, nil
+}
+
+func (f *FileStore) GetObj(table, key string, value interface{}) error {
 	if reflect.ValueOf(value).Kind() != reflect.Ptr {
 		return fmt.Errorf("value mutst be a pointer")
 	}
