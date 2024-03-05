@@ -11,11 +11,11 @@ import (
 )
 
 type Schedule struct {
-	Workers []IWorker
-	syncer  sync.Mutex
+	Workers []rpc.IProof
+	lock    sync.Mutex
 }
 
-func NewSchedule(workers []IWorker) *Schedule {
+func NewSchedule(workers []rpc.IProof) *Schedule {
 	// todo
 	return &Schedule{
 		Workers: workers,
@@ -46,9 +46,9 @@ func (m *Schedule) AddWorker(endpoint string, nums int) error {
 	return nil
 }
 
-func (m *Schedule) findBestWorker(proofType ZkProofType) (IWorker, bool, error) {
+func (m *Schedule) findBestWorker(proofType ZkProofType) (rpc.IProof, bool, error) {
 	// todo
-	var tmpWorkers []IWorker
+	var tmpWorkers []rpc.IProof
 	for _, worker := range m.Workers {
 		if worker.CurrentNums() < worker.MaxNums() {
 			tmpWorkers = append(tmpWorkers, worker)

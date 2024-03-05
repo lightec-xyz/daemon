@@ -128,7 +128,7 @@ func (m *manager) genProof() error {
 	return nil
 }
 
-func workerGenProof(worker IWorker, request ZkProofRequest, resp chan ZkProofResponse) error {
+func workerGenProof(worker rpc.IProof, request ZkProofRequest, resp chan ZkProofResponse) error {
 	worker.AddReqNum()
 	defer worker.DelReqNum()
 	var zkbProofResponse ZkProofResponse

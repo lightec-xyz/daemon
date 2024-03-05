@@ -1,7 +1,6 @@
 package node
 
 import (
-	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"sync"
 	"time"
@@ -16,34 +15,40 @@ type Worker struct {
 	lock        sync.Mutex
 }
 
+func NewWorker(client rpc.IProof, parallelNums int) *Worker {
+	return &Worker{
+		client:      client,
+		maxNums:     parallelNums,
+		currentNums: 0,
+	}
+}
+
+func (w *Worker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
+	return w.client.ProofInfo(proofId)
+}
+
 func (w *Worker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	return w.client.GenDepositProof(req)
 }
 
 func (w *Worker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	return w.GenRedeemProof(req)
 }
 
 func (w *Worker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	return w.client.GenVerifyProof(req)
 }
 
 func (w *Worker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	return w.client.GenSyncCommGenesisProof(req)
 }
 
 func (w *Worker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	return w.client.GenSyncCommitUnitProof(req)
 }
 
 func (w *Worker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	return w.client.GenSyncCommRecursiveProof(req)
 }
 
 func (w *Worker) MaxNums() int {
@@ -52,14 +57,6 @@ func (w *Worker) MaxNums() int {
 
 func (w *Worker) CurrentNums() int {
 	return w.currentNums
-}
-
-func NewWorker(client rpc.IProof, parallelNums int) *Worker {
-	return &Worker{
-		client:      client,
-		maxNums:     parallelNums,
-		currentNums: 0,
-	}
 }
 
 func (w *Worker) DelReqNum() {
@@ -74,12 +71,24 @@ func (w *Worker) AddReqNum() {
 	w.currentNums++
 }
 
+func NewLocalWorker(maxNums int) rpc.IProof {
+	return &LocalWorker{
+		maxNums:     maxNums,
+		currentNums: 0,
+	}
+}
+
 var _ rpc.IProof = (*LocalWorker)(nil)
 
 type LocalWorker struct {
 	maxNums     int
 	currentNums int
 	lock        sync.Mutex
+}
+
+func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
@@ -107,13 +116,6 @@ func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 	panic("implement me")
 }
 
-func NewLocalWorker(maxNums int) rpc.IProof {
-	return &LocalWorker{
-		maxNums:     maxNums,
-		currentNums: 0,
-	}
-}
-
 func (l *LocalWorker) MaxNums() int {
 	return l.maxNums
 }
@@ -124,7 +126,6 @@ func (l *LocalWorker) CurrentNums() int {
 
 func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
 	// todo
-	logger.Info("local worker gen proof now: %v %v", req.TxId, req.ProofType)
 	time.Sleep(6 * time.Second)
 	response := rpc.DepositResponse{}
 	err := objParse(req, &response)

@@ -16,33 +16,66 @@ type ProofClient struct {
 }
 
 func (p *ProofClient) GenDepositProof(req DepositRequest) (DepositResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response := DepositResponse{}
+	err := p.call(&response, "zkbtc_genDepositProof", req)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
 }
 
 func (p *ProofClient) GenRedeemProof(req RedeemRequest) (RedeemResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response := RedeemResponse{}
+	err := p.call(&response, "zkbtc_genRedeemProof", req)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
 }
 
 func (p *ProofClient) GenVerifyProof(req VerifyRequest) (VerifyResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response := VerifyResponse{}
+	err := p.call(&response, "zkbtc_genVerifyProof", req)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
 }
 
 func (p *ProofClient) GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response := SyncCommGenesisResponse{}
+	err := p.call(&response, "zkbtc_genSyncCommGenesisProof", req)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
 }
 
 func (p *ProofClient) GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response := SyncCommUnitsResponse{}
+	err := p.call(&response, "zkbtc_genSyncCommitUnitProof", req)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
 }
 
 func (p *ProofClient) GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response := SyncCommRecursiveResponse{}
+	err := p.call(&response, "zkbtc_genSyncCommRecursiveProof", req)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
+}
+
+func (p *ProofClient) ProofInfo(proofId string) (ProofInfo, error) {
+	status := ProofInfo{}
+	err := p.call(&status, "zkbtc_proofInfo", proofId)
+	if err != nil {
+		return status, err
+	}
+	return status, nil
 }
 
 func (p *ProofClient) AddReqNum() {
@@ -63,24 +96,6 @@ func (p *ProofClient) MaxNums() int {
 func (p *ProofClient) CurrentNums() int {
 	//TODO implement me
 	panic("implement me")
-}
-
-func (p *ProofClient) ProofInfo(proofId string) (ProofInfo, error) {
-	status := ProofInfo{}
-	err := p.call(&status, "zkbtc_proofInfo", proofId)
-	if err != nil {
-		return status, err
-	}
-	return status, nil
-}
-
-func (p *ProofClient) GenZkProof(request DepositRequest) (DepositResponse, error) {
-	response := DepositResponse{}
-	err := p.call(&response, "zkbtc_genZkProof", request)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
 }
 
 func (p *ProofClient) call(result interface{}, method string, args ...interface{}) error {

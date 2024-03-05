@@ -4,13 +4,22 @@ import (
 	"encoding/json"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
+	"sync"
 )
 
 var _ rpc.IProof = (*Handler)(nil)
 
 type Handler struct {
-	memoryStore     store.IStore
-	maxParallelNums int // The maximum number of proofs that can be generated at the same time
+	memoryStore store.IStore
+	maxNums     int // The maximum number of proofs that can be generated at the same time
+	proofs      *sync.Map
+	currentNums int
+	lock        sync.Mutex
+}
+
+func (h *Handler) ProofInfo(proofId string) (rpc.ProofInfo, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (h *Handler) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
@@ -65,8 +74,8 @@ func (h *Handler) CurrentNums() int {
 
 func NewHandler(memoryStore store.IStore, max int) *Handler {
 	return &Handler{
-		memoryStore:     memoryStore,
-		maxParallelNums: max,
+		memoryStore: memoryStore,
+		maxNums:     max,
 	}
 }
 

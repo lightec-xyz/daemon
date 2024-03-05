@@ -22,4 +22,5 @@ type IProof interface {
 	DelReqNum()
 	MaxNums() int
 	CurrentNums() int
+	ProofInfo(proofId string) (ProofInfo, error)
 }

@@ -19,19 +19,6 @@ type Transaction struct {
 	TxType    int
 	ChainType int
 }
-
-type EthereumTx struct {
-	Hash string `json:"hash"`
-}
-
-type BitcoinTx struct {
-	Hash string `json:"hash"`
-}
-
-type NodeInfo struct {
-	Version string
-	Desc    string
-}
 type Utxo struct {
 	TxId  string `json:"txId"`
 	Index uint32 `json:"index"`
@@ -40,6 +27,20 @@ type Utxo struct {
 type TxOut struct {
 	Value    int64
 	PkScript []byte
+}
+
+type NodeInfo struct {
+	Version string
+	Desc    string
+}
+
+//------
+
+type DepositRequest struct {
+}
+
+type DepositResponse struct {
+	Body []byte
 }
 
 type RedeemRequest struct {
@@ -57,65 +58,52 @@ type VerifyResponse struct {
 }
 
 type SyncCommGenesisRequest struct {
+	Version                    string `json:"version"`
+	AttestedHeader             structs.BeaconBlockHeader
+	CurrentSyncCommittee       structs.SyncCommittee
+	CurrentSyncCommitteeBranch []string
 }
 
 type SyncCommGenesisResponse struct {
-	Body []byte
+	Body      []byte
+	Version   string                           `json:"version"`
+	Period    uint64                           `json:"period"`
+	ProofType SyncCommitteeProofType           `json:"proofType"`
+	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Proof     string
 }
 
 type SyncCommUnitsRequest struct {
+	Version                 string `json:"version"`
+	AttestedHeader          structs.BeaconBlockHeader
+	CurrentSyncCommittee    structs.SyncCommittee
+	SyncAggregate           structs.SyncAggregate
+	NextSyncCommittee       structs.SyncCommittee
+	NextSyncCommitteeBranch []string
 }
 
 type SyncCommUnitsResponse struct {
-	Body []byte
+	Body      []byte
+	Version   string                           `json:"version"`
+	Period    uint64                           `json:"period"`
+	ProofType SyncCommitteeProofType           `json:"proofType"`
+	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Proof     string
 }
 
 type SyncCommRecursiveRequest struct {
+	Version          string `json:"version"`
+	PreProofGOrPoofR string `json:"preProofGOrPoofR"`
+	ProofU           string `json:"proofU"`
 }
 
 type SyncCommRecursiveResponse struct {
-	Body []byte
-}
-
-type DepositRequest struct {
-	// redeem
-	Inputs  []Utxo  `json:"inputs"`
-	Outputs []TxOut `json:"outputs"`
-	BtcTxId string  `json:"btcTxId"`
-
-	// deposit
-	Utxos   []Utxo
-	Amount  int64  `json:"amount"`
-	EthAddr string `json:"ethAddr"`
-
-	// other
-	Height    int64  `json:"height"`
-	BlockHash string `json:"blockHash"`
-	TxId      string `json:"txId"`
-	ProofType int    `json:"type"` // todo
-	Proof     string `json:"proof"`
-	Msg       string `json:"msg"`
-}
-
-type DepositResponse struct {
-	Body []byte
-	// redeem
-	Inputs  []Utxo  `json:"inputs"`
-	Outputs []TxOut `json:"outputs"`
-	BtcTxId string  `json:"btcTxId"`
-
-	// deposit
-	Utxos   []Utxo
-	Amount  int64  `json:"amount"`
-	EthAddr string `json:"ethAddr"`
-
-	// other
-	Height    int64  `json:"height"`
-	BlockHash string `json:"blockHash"`
-	TxId      string `json:"txId"`
-	ProofType int    `json:"type"` // todo
-	Proof     string `json:"proof"`
-	Msg       string `json:"msg"`
+	Body      []byte
+	Version   string                           `json:"version"`
+	Period    uint64                           `json:"period"`
+	ProofType SyncCommitteeProofType           `json:"proofType"`
+	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Proof     string
 }
 
 type ProofInfo struct {

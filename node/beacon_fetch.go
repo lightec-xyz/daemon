@@ -34,7 +34,7 @@ func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, fetchDataResp c
 }
 
 func (bf *BeaconFetch) canNewRequest() bool {
-	return bf.fetchQueue.Len() < 500
+	return bf.fetchQueue.Len() < 100
 }
 
 func (bf *BeaconFetch) NewUpdateRequest(period uint64) {

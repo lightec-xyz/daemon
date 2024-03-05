@@ -41,7 +41,7 @@ func toDepositZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
 	return result, nil
 }
 
-func toRedeemZkProofRequest(list []PrepareRequest) ([]ZkProofRequest, error) {
+func toRedeemZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
 	var result []ZkProofRequest
 	for _, item := range list {
 		body, err := json.Marshal(item)
