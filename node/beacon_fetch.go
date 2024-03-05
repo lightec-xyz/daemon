@@ -3,8 +3,8 @@ package node
 import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
-	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const MaxReqNums = 10
@@ -12,16 +12,15 @@ const MaxReqNums = 10
 type BeaconFetch struct {
 	beaconClient      *beacon.Client
 	currentReqNums    *atomic.Int64
-	downloadResponse  chan downloadResponse
 	downloadRequest   chan downloadRequest
 	fileStore         *FileStore
 	exit              chan struct{}
 	fetchProofRequest chan FetchDataResponse
 	genesisSyncPeriod uint64
-	download          *sync.Map
+	fetchQueue        *Queue
 }
 
-func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, unitRequest chan FetchDataResponse) (*BeaconFetch, error) {
+func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, fetchDataResp chan FetchDataResponse) (*BeaconFetch, error) {
 	maxReqNums := &atomic.Int64{}
 	maxReqNums.Store(0)
 	return &BeaconFetch{
@@ -29,129 +28,115 @@ func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, unitRequest cha
 		currentReqNums:    maxReqNums,
 		fileStore:         fileStore,
 		exit:              make(chan struct{}, 1),
-		fetchProofRequest: unitRequest,
-		download:          new(sync.Map),
+		fetchProofRequest: fetchDataResp,
+		fetchQueue:        NewQueue(),
 	}, nil
 }
 
 func (bf *BeaconFetch) canNewRequest() bool {
-	return bf.currentReqNums.Load() < MaxReqNums
+	return bf.fetchQueue.Len() < 500
 }
 
 func (bf *BeaconFetch) NewUpdateRequest(period uint64) {
-	bf.downloadRequest <- downloadRequest{
+	bf.fetchQueue.PushFront(downloadRequest{
 		period:     period,
 		UpdateType: SyncComUnitType,
-	}
+	})
 }
 
 func (bf *BeaconFetch) GenesisUpdateRequest() {
-	bf.downloadRequest <- downloadRequest{
+	bf.fetchQueue.PushBack(downloadRequest{
 		period:     bf.genesisSyncPeriod,
 		UpdateType: SyncComGenesisType,
-	}
+	})
 }
 
-func (bf *BeaconFetch) FetchUpdate() {
-	for {
-		select {
-		case <-bf.exit:
-			logger.Info("beacon Run fetch goroutine exit now ...")
-			return
-		case request := <-bf.downloadRequest:
-			if _, exists := bf.download.Load(request.period); exists {
-				continue
-			}
-			logger.Info("get update request %v", request.period)
-			bf.currentReqNums.Add(1)
-			if request.UpdateType == SyncComGenesisType {
-				go bf.getGenesisData(bf.genesisSyncPeriod)
-			} else {
-				go bf.getUpdateData(request.period)
-			}
-		}
+func (bf *BeaconFetch) fetch() error {
+	if bf.fetchQueue.Len() == 0 {
+		time.Sleep(1 * time.Second)
+		return nil
 	}
-}
-
-func (bf *BeaconFetch) FetchRepose() {
-	for {
-		select {
-		case <-bf.exit:
-			logger.Info("beacon FetchRepose fetch goroutine exit now ...")
-			return
-		case response := <-bf.downloadResponse:
-			if response.status == Done {
-				bf.download.Delete(response.period)
-				logger.Info("success update response %v", response.period)
-				bf.currentReqNums.Add(-1)
-				if response.reqType == SyncComGenesisType {
-					bf.fetchProofRequest <- FetchDataResponse{
-						period:  response.period,
-						reqType: SyncComGenesisType,
-					}
-				} else {
-					bf.fetchProofRequest <- FetchDataResponse{
-						period:  response.period,
-						reqType: SyncComUnitType,
-					}
-				}
-
-			} else {
-				// retry until success
-				logger.Warn("fail update response %v", response.period)
-				bf.downloadRequest <- downloadRequest{
-					period:     response.period,
-					UpdateType: response.reqType,
-				}
-			}
-		}
+	if bf.currentReqNums.Load() > MaxReqNums {
+		logger.Warn("fetch too many request now")
+		return nil
 	}
-}
-
-func (bf *BeaconFetch) Close() error {
-	close(bf.exit)
+	element := bf.fetchQueue.Back()
+	request, ok := element.Value.(downloadRequest)
+	if !ok {
+		logger.Error("should never happen,parse proof request error")
+		time.Sleep(1 * time.Second)
+		return nil
+	}
+	bf.fetchQueue.Remove(element)
+	bf.currentReqNums.Add(1)
+	if request.UpdateType == SyncComGenesisType {
+		go bf.getGenesisData(bf.genesisSyncPeriod)
+	} else if request.UpdateType == SyncComUnitType {
+		go bf.getUpdateData(request.period)
+	}
 	return nil
 }
 
-func (bf *BeaconFetch) getGenesisData(period uint64) {
-	updateResponse := downloadResponse{
-		reqType: SyncComGenesisType,
-		period:  period,
+func (bf *BeaconFetch) Fetch() {
+	for {
+		select {
+		case <-bf.exit:
+			logger.Info("beacon Fetch fetch goroutine exit now ...")
+		default:
+			err := bf.fetch()
+			if err != nil {
+				logger.Error(err.Error())
+			}
+		}
 	}
+}
+
+func (bf *BeaconFetch) getGenesisData(period uint64) {
+	defer bf.currentReqNums.Add(-1)
 	bootStrap, err := bf.beaconClient.GetBootstrap(uint64(bf.genesisSyncPeriod) * 32)
 	if err != nil {
-		updateResponse.status = Fail
 		logger.Error("get bootstrap error:%v", err)
+		// retry again
+		bf.GenesisUpdateRequest()
 		return
 	}
 	err = bf.fileStore.StoreGenesisUpdate(bootStrap)
 	if err != nil {
 		// todo
-		updateResponse.status = Fail
 		logger.Error(err.Error())
 		return
 	}
-	updateResponse.status = Done
-	bf.downloadResponse <- updateResponse
+	updateResponse := FetchDataResponse{
+		reqType: SyncComGenesisType,
+		period:  period,
+	}
+	bf.fetchProofRequest <- updateResponse
 }
 
-func (bf *BeaconFetch) getUpdateData(index uint64) {
-	updateResponse := downloadResponse{
-		period: index,
-	}
-	updates, err := bf.beaconClient.GetLightClientUpdates(index, 1)
+func (bf *BeaconFetch) getUpdateData(period uint64) {
+	defer bf.currentReqNums.Add(-1)
+
+	updates, err := bf.beaconClient.GetLightClientUpdates(period, 1)
 	if err != nil {
-		updateResponse.status = Fail
 		logger.Error("get light client updates error:%v", err)
+		// retry again
+		bf.NewUpdateRequest(period)
 		return
 	}
-	err = bf.fileStore.StoreUpdate(index, updates)
+	err = bf.fileStore.StoreUpdate(period, updates)
 	if err != nil {
 		// todo
-		updateResponse.status = Fail
 		logger.Error(err.Error())
 		return
 	}
-	updateResponse.status = Done
-	bf.downloadResponse <- updateResponse
+	updateResponse := FetchDataResponse{
+		period:  period,
+		reqType: SyncComUnitType,
+	}
+	bf.fetchProofRequest <- updateResponse
+}
+
+func (bf *BeaconFetch) Close() error {
+	close(bf.exit)
+	return nil
 }

@@ -1,12 +1,10 @@
 package node
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
-	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"time"
 )
 
@@ -44,52 +42,28 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, fetchDaaResp ch
 }
 
 func (b *BeaconAgent) Init() error {
-	//TODO implement me
-	panic("implement me")
+	err := b.initGenesis()
+	if err != nil {
+		return err
+	}
+	// todo check data
+	return err
 }
 
 func (b *BeaconAgent) initGenesis() error {
-	existsGenesisRaw, err := b.fileStore.CheckGenesisUpdate()
+	existsGenesisProof, err := b.fileStore.CheckGenesisProof()
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("check genesis proof error: %v", err)
 		return err
 	}
-	if !existsGenesisRaw {
-		log.Info("genesis not exists, start get genesis bootstrap")
-		bootStrap, err := b.beaconClient.GetBootstrap(uint64(b.genesisSyncPeriod) * 32)
-		if err != nil {
-			logger.Error("get bootstrap error:%v", err)
-			return err
-		}
-		err = b.fileStore.StoreGenesisUpdate(bootStrap)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	}
-	existGenesisProof, err := b.fileStore.CheckGenesisProof()
-	if err != nil {
-		logger.Error(err.Error())
+	if existsGenesisProof {
 		return err
 	}
-	if !existGenesisProof {
-		var genesisUpdate structs.LightClientBootstrapResponse
-		err := b.fileStore.GetGenesisUpdate(&genesisUpdate)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-		genesisData, err := json.Marshal(genesisUpdate)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-		b.zkProofRequest <- ZkProofRequest{
-			reqType: SyncComGenesisType,
-			body:    genesisData,
-		}
+	err = b.CheckAndNewProofRequest(b.genesisSyncPeriod, SyncComGenesisType)
+	if err != nil {
+		logger.Error("check genesis proof error: %v", err)
+		return nil
 	}
-	logger.Info("init genesis complete")
 	return nil
 
 }
@@ -215,6 +189,7 @@ func (b *BeaconAgent) GetGenesisRaw() ([]byte, bool, error) {
 		return genesisData, true, nil
 	} else {
 		// todo add new request
+		b.beaconFetch.GenesisUpdateRequest()
 		return nil, false, nil
 	}
 }
@@ -227,7 +202,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) ([]byte, []byte, bool, error) {
 	}
 	if !exists {
 		// todo add new request
-
+		b.beaconFetch.NewUpdateRequest(period)
 		return nil, nil, false, nil
 	}
 	prePeriod := period - 1
@@ -238,6 +213,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) ([]byte, []byte, bool, error) {
 	}
 	if !preUpdateExists {
 		// todo add new request
+		b.beaconFetch.NewUpdateRequest(prePeriod)
 		return nil, nil, false, nil
 	}
 	updateData, err := b.fileStore.GetUpdateData(period)
@@ -411,6 +387,11 @@ func (b *BeaconAgent) ProofResponse(resp ZkProofResponse) error {
 }
 
 func (b *BeaconAgent) Close() error {
+	err := b.beaconFetch.Close()
+	if err != nil {
+		log.Error("beacon fetch close error: %v", err)
+		return err
+	}
 	return nil
 }
 
