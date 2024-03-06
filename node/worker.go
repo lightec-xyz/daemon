@@ -87,8 +87,12 @@ type LocalWorker struct {
 }
 
 func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
-	//TODO implement me
-	panic("implement me")
+	time.Sleep(10 * time.Second)
+	return rpc.ProofInfo{
+		Status: 0,
+		Proof:  "",
+		TxId:   proofId,
+	}, nil
 }
 
 func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {

@@ -12,14 +12,30 @@ func init() {
 	}
 }
 func TestFileStoreGenesis(t *testing.T) {
-	err := fileStore.StoreLatestPeriod(1)
+	err := fileStore.StoreLatestPeriod(123)
 	if err != nil {
 		t.Fatal(err)
 	}
+	checkLatestPeriod, err := fileStore.CheckLatestPeriod()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(checkLatestPeriod)
+	period, err := fileStore.GetLatestPeriod()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(period)
 	err = fileStore.StoreGenesisUpdate("update")
 	if err != nil {
 		t.Fatal(err)
 	}
+	genesisUpdate, err := fileStore.CheckGenesisUpdate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(genesisUpdate)
+
 	err = fileStore.StoreUpdate(1, "update")
 	if err != nil {
 		t.Fatal(err)

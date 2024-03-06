@@ -15,7 +15,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
-// Client defines typed wrappers for the Beacon RPC API.
 type Client struct {
 	ctx      context.Context
 	endpoint string
@@ -24,7 +23,6 @@ type Client struct {
 	imp      *http.Client
 }
 
-// Dial connects a client to the given URL.
 func NewClient(rawurl string) (*Client, error) {
 	return &Client{
 		ctx:      context.Background(),
@@ -40,14 +38,14 @@ func (c *Client) Bootstrap(slot uint64) (*structs.LightClientBootstrapResponse, 
 	if err != nil {
 		return nil, err
 	}
-	bootstrap, err := c.GetBootstrap(beaconHeaders.Data.Root)
+	bootstrap, err := c.GetLightClientBootstrap(beaconHeaders.Data.Root)
 	if err != nil {
 		return nil, err
 	}
 	return bootstrap, nil
 }
 
-func (c *Client) GetBootstrap(root string) (*structs.LightClientBootstrapResponse, error) {
+func (c *Client) GetLightClientBootstrap(root string) (*structs.LightClientBootstrapResponse, error) {
 	bootstrap := &structs.LightClientBootstrapResponse{}
 	path := fmt.Sprintf("/eth/v1/beacon/light_client/bootstrap/%v", root)
 	err := c.get(path, nil, &bootstrap)
@@ -67,6 +65,20 @@ func (c *Client) GetBeaconHeaders(slot uint64) (*structs.GetBlockHeaderResponse,
 	return resp, nil
 }
 
+func (c *Client) GetLatestSlot() (uint64, error) {
+	resp := &structs.GetBlockHeaderResponse{}
+	err := c.get("/eth/v1/beacon/headers/finalized", nil, &resp)
+	if err != nil {
+		return 0, err
+	}
+	slot, ok := big.NewInt(0).SetString(resp.Data.Header.Message.Slot, 10)
+	if !ok {
+		return 0, fmt.Errorf("fail to get latest sync committee period")
+	}
+	return slot.Uint64(), nil
+
+}
+
 func (c *Client) GetLatestSyncPeriod() (uint64, error) {
 	resp := &structs.GetBlockHeaderResponse{}
 	err := c.get("/eth/v1/beacon/headers/finalized", nil, &resp)
@@ -81,16 +93,6 @@ func (c *Client) GetLatestSyncPeriod() (uint64, error) {
 	return period, nil
 }
 
-func (c *Client) GetBeaconBlockHeader(slot uint64) (*structs.GetBlockHeaderResponse, error) {
-	resp := &structs.GetBlockHeaderResponse{}
-	path := fmt.Sprintf("/eth/v1/beacon/light_client/updates/%v", slot)
-	err := c.get(path, nil, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
 func (c *Client) GetLightClientUpdates(start uint64, count uint64) ([]structs.LightClientUpdateWithVersion, error) {
 	var updates []structs.LightClientUpdateWithVersion
 	param := Param{}
@@ -103,12 +105,14 @@ func (c *Client) GetLightClientUpdates(start uint64, count uint64) ([]structs.Li
 	return updates, nil
 }
 
-func (c *Client) get(method string, param Param, value interface{}, headers ...Header) error {
+func (c *Client) get(path string, param Param, value interface{}, headers ...Header) error {
 	var reqStr string
 	for k, v := range param {
 		reqStr += fmt.Sprintf("%s=%v&", k, v)
 	}
-	path := fmt.Sprintf("%s?%s", method, reqStr)
+	if len(reqStr) != 0 {
+		path = fmt.Sprintf("%s?%s", path, reqStr)
+	}
 	return c.httpReq(http.MethodGet, path, param, value, headers...)
 }
 

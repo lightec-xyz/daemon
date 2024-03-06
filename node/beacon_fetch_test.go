@@ -1,8 +1,12 @@
 package node
 
-import "testing"
+import (
+	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"testing"
+)
 
 func TestBeaconFetch_Fetch(t *testing.T) {
+	beacon.NewClient("")
 	beaconFetch, err := NewBeaconFetch(nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)

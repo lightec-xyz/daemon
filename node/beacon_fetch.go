@@ -93,7 +93,7 @@ func (bf *BeaconFetch) Fetch() {
 
 func (bf *BeaconFetch) getGenesisData(period uint64) {
 	defer bf.currentReqNums.Add(-1)
-	bootStrap, err := bf.beaconClient.GetBootstrap(uint64(bf.genesisSyncPeriod) * 32)
+	bootStrap, err := bf.beaconClient.Bootstrap(uint64(bf.genesisSyncPeriod) * 32)
 	if err != nil {
 		logger.Error("get bootstrap error:%v", err)
 		// retry again

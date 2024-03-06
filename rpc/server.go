@@ -2,9 +2,12 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/lightec-xyz/daemon/logger"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -14,7 +17,10 @@ type Server struct {
 }
 
 func NewServer(name, addr string, handler interface{}) (*Server, error) {
-	//todo
+	isOpen := isPortOpen(addr)
+	if isOpen {
+		return nil, fmt.Errorf("port is open:%v", addr)
+	}
 	rpcServer := rpc.NewServer()
 	err := rpcServer.RegisterName(name, handler)
 	if err != nil {
@@ -30,17 +36,14 @@ func NewServer(name, addr string, handler interface{}) (*Server, error) {
 		MaxHeaderBytes: MaxHeaderBytes,
 		IdleTimeout:    30 * time.Minute,
 	}
-	go func() {
-		err := httpServer.ListenAndServe()
-		if err != nil {
-			logger.Info("rpc server exit now: %v", err)
-		}
-	}()
 	return &Server{httpServer: httpServer, name: name}, nil
 }
 
 func NewWsServer(name, addr string, handler interface{}) (*Server, error) {
-	//todo
+	isOpen := isPortOpen(addr)
+	if isOpen {
+		return nil, fmt.Errorf("port is open:%v", addr)
+	}
 	rpcServ := rpc.NewServer()
 	err := rpcServ.RegisterName(name, handler)
 	if err != nil {
@@ -57,13 +60,16 @@ func NewWsServer(name, addr string, handler interface{}) (*Server, error) {
 		MaxHeaderBytes: MaxHeaderBytes,
 		IdleTimeout:    3 * time.Hour,
 	}
-	go func() {
-		err := httpServer.ListenAndServe()
-		if err != nil {
-			logger.Info("rpc server exit now: %v", err)
-		}
-	}()
 	return &Server{httpServer: httpServer, name: name}, nil
+}
+
+func (s *Server) Run() error {
+	err := s.httpServer.ListenAndServe()
+	if err != nil {
+		logger.Info("rpc server exit now: %v", err)
+		return err
+	}
+	return nil
 }
 
 func (s *Server) Shutdown() error {
@@ -75,4 +81,17 @@ func (s *Server) Shutdown() error {
 		}
 	}
 	return nil
+}
+
+func isPortOpen(endpoint string) bool {
+	split := strings.Split(endpoint, ":")
+	if len(split) != 2 {
+		return true
+	}
+	listener, err := net.Listen("tcp", ":"+split[1])
+	if err != nil {
+		return true
+	}
+	_ = listener.Close()
+	return false
 }

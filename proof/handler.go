@@ -2,9 +2,12 @@ package proof
 
 import (
 	"encoding/json"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 var _ rpc.IProof = (*Handler)(nil)
@@ -13,43 +16,62 @@ type Handler struct {
 	memoryStore store.IStore
 	maxNums     int // The maximum number of proofs that can be generated at the same time
 	proofs      *sync.Map
-	currentNums int
+	currentNums atomic.Int64
 	lock        sync.Mutex
 }
 
 func (h *Handler) ProofInfo(proofId string) (rpc.ProofInfo, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("proof info: %v", proofId)
+	time.Sleep(10 * time.Second)
+	return rpc.ProofInfo{}, nil
 }
 
 func (h *Handler) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("gen deposit proof")
+	time.Sleep(10 * time.Second)
+	return rpc.DepositResponse{
+		Body: []byte("deposit proof"),
+	}, nil
 }
 
 func (h *Handler) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("gen redeem proof")
+	time.Sleep(10 * time.Second)
+	return rpc.RedeemResponse{
+		Body: []byte("redeem proof"),
+	}, nil
 }
 
 func (h *Handler) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("gen verify proof")
+	time.Sleep(10 * time.Second)
+	return rpc.VerifyResponse{
+		Body: []byte("verify proof"),
+	}, nil
 }
 
 func (h *Handler) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("gen sync comm genesis proof")
+	time.Sleep(10 * time.Second)
+	return rpc.SyncCommGenesisResponse{
+		Body: []byte("genesis proof"),
+	}, nil
 }
 
 func (h *Handler) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("gen sync comm units proof")
+	time.Sleep(10 * time.Second)
+	return rpc.SyncCommUnitsResponse{
+		Body: []byte("units proof"),
+	}, nil
 }
 
 func (h *Handler) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("gen sync comm recursive proof")
+	time.Sleep(10 * time.Second)
+	return rpc.SyncCommRecursiveResponse{
+		Body: []byte("recursive proof"),
+	}, nil
 }
 
 func (h *Handler) AddReqNum() {
@@ -63,13 +85,11 @@ func (h *Handler) DelReqNum() {
 }
 
 func (h *Handler) MaxNums() int {
-	//TODO implement me
-	panic("implement me")
+	return h.maxNums
 }
 
 func (h *Handler) CurrentNums() int {
-	//TODO implement me
-	panic("implement me")
+	return int(h.currentNums.Load())
 }
 
 func NewHandler(memoryStore store.IStore, max int) *Handler {

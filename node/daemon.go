@@ -111,7 +111,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
 
-	workers := make([]IWorker, 0)
+	workers := make([]rpc.IProof, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
 		workers = append(workers, NewLocalWorker(1))
@@ -163,10 +163,10 @@ func (d *Daemon) Init() error {
 
 func (d *Daemon) Run() error {
 	// syncCommit
-	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.time, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
-	go doProofResponseTask("beacon-DepositResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
-	go doFetchRespTask("beacon-DepositResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchResponse, d.exitSignal)
-	go doTask("beacon-CheckData", d.beaconAgent.node.CheckData, d.exitSignal)
+	//go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.time, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
+	//go doProofResponseTask("beacon-DepositResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
+	//go doFetchRespTask("beacon-DepositResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchResponse, d.exitSignal)
+	//go doTask("beacon-CheckData", d.beaconAgent.node.CheckData, d.exitSignal)
 
 	// proof manager
 	go doProofRequestTask("manager-DepositRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
@@ -222,8 +222,8 @@ func (d *Daemon) Close() error {
 	return nil
 }
 
-func NewWorkers(workers []WorkerConfig) ([]IWorker, error) {
-	workersList := make([]IWorker, 0)
+func NewWorkers(workers []WorkerConfig) ([]rpc.IProof, error) {
+	workersList := make([]rpc.IProof, 0)
 	for _, cfg := range workers {
 		client, err := rpc.NewProofClient(cfg.Url)
 		if err != nil {

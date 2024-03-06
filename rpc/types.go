@@ -107,6 +107,7 @@ type SyncCommRecursiveResponse struct {
 }
 
 type ProofInfo struct {
+	reqType   int
 	TxId      string `json:"txId"`
 	ProofType int    `json:"type"`
 	Proof     string `json:"proof"`
