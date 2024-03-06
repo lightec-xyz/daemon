@@ -111,7 +111,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
 
-	workers := make([]rpc.IProof, 0)
+	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
 		workers = append(workers, NewLocalWorker(1))
@@ -169,19 +169,19 @@ func (d *Daemon) Run() error {
 	//go doTask("beacon-CheckData", d.beaconAgent.node.CheckData, d.exitSignal)
 
 	// proof manager
-	go doProofRequestTask("manager-DepositRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
-	go doTask("manager-GenerateProof:", d.manager.manager.genProof, d.exitSignal)
+	//go doProofRequestTask("manager-DepositRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
+	//go doTask("manager-GenerateProof:", d.manager.manager.genProof, d.exitSignal)
 
 	// tx proof
-	for _, agent := range d.agents {
-		name := fmt.Sprintf("%s-SubmitProof", agent.node.Name())
-		go doProofResponseTask(name, agent.proofResp, agent.node.Submit, d.exitSignal)
-	}
+	//for _, agent := range d.agents {
+	//	name := fmt.Sprintf("%s-SubmitProof", agent.node.Name())
+	//	go doProofResponseTask(name, agent.proofResp, agent.node.Submit, d.exitSignal)
+	//}
 	// scan block with tx
-	for _, agent := range d.agents {
-		name := fmt.Sprintf("%s-ScanBlock", agent.node.Name())
-		go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
-	}
+	//for _, agent := range d.agents {
+	//	name := fmt.Sprintf("%s-ScanBlock", agent.node.Name())
+	//	go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+	//}
 	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
 	for {
 		msg := <-d.exitSignal
@@ -222,15 +222,15 @@ func (d *Daemon) Close() error {
 	return nil
 }
 
-func NewWorkers(workers []WorkerConfig) ([]rpc.IProof, error) {
-	workersList := make([]rpc.IProof, 0)
+func NewWorkers(workers []WorkerConfig) ([]rpc.IWorker, error) {
+	workersList := make([]rpc.IWorker, 0)
 	for _, cfg := range workers {
 		client, err := rpc.NewProofClient(cfg.Url)
 		if err != nil {
 			logger.Error("new worker error:%v", err)
 			return nil, err
 		}
-		worker := NewWorker(client, cfg.ParallelNums)
+		worker := NewWorker(client, cfg.MaxNums)
 		workersList = append(workersList, worker)
 	}
 	return workersList, nil
@@ -279,6 +279,7 @@ func NewWrapperAgent(agent IAgent, scanTime time.Duration, proofResp chan ZkProo
 }
 
 func doTask(name string, fn func() error, exit chan os.Signal) {
+	logger.Info("%v goroutine start ...", name)
 	for {
 		select {
 		case <-exit:
@@ -294,6 +295,7 @@ func doTask(name string, fn func() error, exit chan os.Signal) {
 }
 
 func doTimerTask(name string, interval time.Duration, fn func() error, exit chan os.Signal) {
+	logger.Info("%v ticker goroutine start ...", name)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
@@ -311,6 +313,7 @@ func doTimerTask(name string, interval time.Duration, fn func() error, exit chan
 }
 
 func doProofRequestTask(name string, req chan []ZkProofRequest, fn func(req []ZkProofRequest) error, exit chan os.Signal) {
+	logger.Info("%v goroutine start ...", name)
 	for {
 		select {
 		case <-exit:
@@ -327,6 +330,7 @@ func doProofRequestTask(name string, req chan []ZkProofRequest, fn func(req []Zk
 }
 
 func doFetchRespTask(name string, resp chan FetchDataResponse, fn func(resp FetchDataResponse) error, exit chan os.Signal) {
+	logger.Info("%v goroutine start ...", name)
 	for {
 		select {
 		case <-exit:
@@ -342,6 +346,7 @@ func doFetchRespTask(name string, resp chan FetchDataResponse, fn func(resp Fetc
 }
 
 func doProofResponseTask(name string, resp chan ZkProofResponse, fn func(resp ZkProofResponse) error, exit chan os.Signal) {
+	logger.Info("%v goroutine start ...", name)
 	for {
 		select {
 		case <-exit:

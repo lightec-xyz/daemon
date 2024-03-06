@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-const MaxReqNums = 10
+const (
+	MaxReqNums   = 2
+	MaxQueueSize = 2
+)
 
 type BeaconFetch struct {
 	beaconClient      *beacon.Client
@@ -34,10 +37,11 @@ func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, fetchDataResp c
 }
 
 func (bf *BeaconFetch) canNewRequest() bool {
-	return bf.fetchQueue.Len() < 100
+	return bf.fetchQueue.Len() < MaxQueueSize
 }
 
 func (bf *BeaconFetch) NewUpdateRequest(period uint64) {
+	logger.Debug("add new update request to queue: %v", period)
 	bf.fetchQueue.PushFront(downloadRequest{
 		period:     period,
 		UpdateType: SyncComUnitType,
@@ -45,6 +49,7 @@ func (bf *BeaconFetch) NewUpdateRequest(period uint64) {
 }
 
 func (bf *BeaconFetch) GenesisUpdateRequest() {
+	logger.Debug("add  genesis request to queue: %v", bf.genesisSyncPeriod)
 	bf.fetchQueue.PushBack(downloadRequest{
 		period:     bf.genesisSyncPeriod,
 		UpdateType: SyncComGenesisType,
@@ -53,22 +58,24 @@ func (bf *BeaconFetch) GenesisUpdateRequest() {
 
 func (bf *BeaconFetch) fetch() error {
 	if bf.fetchQueue.Len() == 0 {
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 		return nil
 	}
 	if bf.currentReqNums.Load() > MaxReqNums {
-		logger.Warn("fetch too many request now")
+		//logger.Warn("fetch too many request now: maxReqNums:%v", MaxReqNums)
+		time.Sleep(2 * time.Second)
 		return nil
 	}
 	element := bf.fetchQueue.Back()
 	request, ok := element.Value.(downloadRequest)
 	if !ok {
 		logger.Error("should never happen,parse proof request error")
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 		return nil
 	}
 	bf.fetchQueue.Remove(element)
 	bf.currentReqNums.Add(1)
+	logger.Debug("get fetch request period:%v,type:%v,fetch data now", request.period, request.UpdateType)
 	if request.UpdateType == SyncComGenesisType {
 		go bf.getGenesisData(bf.genesisSyncPeriod)
 	} else if request.UpdateType == SyncComUnitType {
@@ -95,8 +102,7 @@ func (bf *BeaconFetch) getGenesisData(period uint64) {
 	defer bf.currentReqNums.Add(-1)
 	bootStrap, err := bf.beaconClient.Bootstrap(uint64(bf.genesisSyncPeriod) * 32)
 	if err != nil {
-		logger.Error("get bootstrap error:%v", err)
-		// retry again
+		logger.Error("get bootstrap error:%v %v", bf.genesisSyncPeriod, err)
 		bf.GenesisUpdateRequest()
 		return
 	}
@@ -110,6 +116,7 @@ func (bf *BeaconFetch) getGenesisData(period uint64) {
 		reqType: SyncComGenesisType,
 		period:  period,
 	}
+	logger.Debug("success get genesis update data:%v", period)
 	bf.fetchProofRequest <- updateResponse
 }
 
@@ -118,7 +125,7 @@ func (bf *BeaconFetch) getUpdateData(period uint64) {
 
 	updates, err := bf.beaconClient.GetLightClientUpdates(period, 1)
 	if err != nil {
-		logger.Error("get light client updates error:%v", err)
+		logger.Error("get light client updates error:%v %v", period, err)
 		// retry again
 		bf.NewUpdateRequest(period)
 		return
@@ -133,6 +140,7 @@ func (bf *BeaconFetch) getUpdateData(period uint64) {
 		period:  period,
 		reqType: SyncComUnitType,
 	}
+	logger.Debug("success get update data:%v", period)
 	bf.fetchProofRequest <- updateResponse
 }
 

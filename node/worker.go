@@ -1,12 +1,106 @@
 package node
 
 import (
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"sync"
 	"time"
 )
 
-var _ rpc.IProof = (*Worker)(nil)
+var _ rpc.IWorker = (*LocalWorker)(nil)
+
+func NewLocalWorker(maxNums int) rpc.IWorker {
+	return &LocalWorker{
+		maxNums:     maxNums,
+		currentNums: 0,
+	}
+}
+
+type LocalWorker struct {
+	maxNums     int
+	currentNums int
+	lock        sync.Mutex
+}
+
+func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
+	logger.Debug("proof info")
+	time.Sleep(10 * time.Second)
+	return rpc.ProofInfo{
+		Status: 0,
+		Proof:  "",
+		TxId:   proofId,
+	}, nil
+}
+
+func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
+	logger.Debug("gen deposit proof")
+	time.Sleep(6 * time.Second)
+	return rpc.DepositResponse{
+		Body: []byte("deposit proof"),
+	}, nil
+}
+
+func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+	logger.Debug("gen redeem proof")
+	time.Sleep(10 * time.Second)
+	return rpc.RedeemResponse{
+		Body: []byte("redeem proof"),
+	}, nil
+}
+
+func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
+	logger.Debug("verify proof")
+	time.Sleep(10 * time.Second)
+	return rpc.VerifyResponse{
+		Body: []byte("verify proof"),
+	}, nil
+}
+
+func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
+	logger.Debug("gen genesis proof")
+	time.Sleep(10 * time.Second)
+	return rpc.SyncCommGenesisResponse{
+		Body: []byte("genesis proof"),
+	}, nil
+}
+
+func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
+	logger.Debug("gen units proof")
+	time.Sleep(10 * time.Second)
+	return rpc.SyncCommUnitsResponse{
+		Body: []byte("units proof"),
+	}, nil
+}
+
+func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
+	logger.Debug("gen recursive proof")
+	time.Sleep(10 * time.Second)
+	return rpc.SyncCommRecursiveResponse{
+		Body: []byte("recursive proof"),
+	}, nil
+}
+
+func (l *LocalWorker) MaxNums() int {
+	return l.maxNums
+}
+
+func (l *LocalWorker) CurrentNums() int {
+	return l.currentNums
+}
+
+func (l *LocalWorker) AddReqNum() {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	l.currentNums--
+}
+
+func (l *LocalWorker) DelReqNum() {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	l.currentNums++
+}
+
+var _ rpc.IWorker = (*Worker)(nil)
 
 type Worker struct {
 	client      rpc.IProof
@@ -69,84 +163,4 @@ func (w *Worker) AddReqNum() {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 	w.currentNums++
-}
-
-func NewLocalWorker(maxNums int) rpc.IProof {
-	return &LocalWorker{
-		maxNums:     maxNums,
-		currentNums: 0,
-	}
-}
-
-var _ rpc.IProof = (*LocalWorker)(nil)
-
-type LocalWorker struct {
-	maxNums     int
-	currentNums int
-	lock        sync.Mutex
-}
-
-func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
-	time.Sleep(10 * time.Second)
-	return rpc.ProofInfo{
-		Status: 0,
-		Proof:  "",
-		TxId:   proofId,
-	}, nil
-}
-
-func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (l *LocalWorker) MaxNums() int {
-	return l.maxNums
-}
-
-func (l *LocalWorker) CurrentNums() int {
-	return l.currentNums
-}
-
-func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	// todo
-	time.Sleep(6 * time.Second)
-	response := rpc.DepositResponse{}
-	err := objParse(req, &response)
-	if err != nil {
-		return response, nil
-	}
-	return response, nil
-}
-
-func (l *LocalWorker) AddReqNum() {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-	l.currentNums--
-}
-
-func (l *LocalWorker) DelReqNum() {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-	l.currentNums++
 }

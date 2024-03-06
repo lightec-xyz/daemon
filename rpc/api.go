@@ -18,9 +18,13 @@ type IProof interface {
 	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
 	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
 	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
+	ProofInfo(proofId string) (ProofInfo, error)
+}
+
+type IWorker interface {
+	IProof
 	AddReqNum()
 	DelReqNum()
 	MaxNums() int
 	CurrentNums() int
-	ProofInfo(proofId string) (ProofInfo, error)
 }

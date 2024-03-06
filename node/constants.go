@@ -21,7 +21,7 @@ const (
 	EthScanTime = 5 * time.Second
 
 	InitBitcoinHeight  = 2540942
-	InitBeaconHeight   = 10127532 //TODO(keep), should find the node height, which corresponds to InitEthereumHeight
+	InitBeaconHeight   = 70
 	InitEthereumHeight = 10127532
 
 	LogDepositAddr   = "0x07417a531e376ce150493ffa98cd5516b544441d"
@@ -49,7 +49,7 @@ const (
 	TestnetEthScanTime = 5 * time.Second
 
 	TestnetInitBitcoinHeight  = 2544083
-	TestnetInitBeaconHeight   = 632188
+	TestnetInitBeaconHeight   = 70
 	TestnetInitEthereumHeight = 598020
 
 	TestLogRedeemAddr  = "0x3ca427befe5b8b821c09a8d6425fbcee20f952f6"
@@ -75,7 +75,7 @@ const (
 	LocalEthScanTime        = 5 * time.Second
 
 	LocalInitBitcoinHeight  = 17838
-	LocalInitBeaconHeight   = 630873 //slot of 596751 in holesky
+	LocalInitBeaconHeight   = 70 //slot of 596751 in holesky
 	LocalInitEthereumHeight = 596751
 
 	LocalEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"

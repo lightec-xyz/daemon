@@ -8,7 +8,7 @@ import (
 
 var ip *string
 var port *string
-var parallelNums *int
+var maxNums *int
 
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -30,14 +30,14 @@ func newConfig() proof.Config {
 	return proof.Config{
 		RpcBind:      *ip,
 		RpcPort:      *port,
-		ParallelNums: *parallelNums,
+		ParallelNums: *maxNums,
 	}
 }
 
 func init() {
 	ip = runCmd.Flags().String("ip", "127.0.0.1", "rpc server host")
 	port = runCmd.Flags().String("port", "30001", "rpc server port")
-	parallelNums = runCmd.Flags().Int("nums", 1, "The maximum number of proofs that can be generated at the same time")
+	maxNums = runCmd.Flags().Int("nums", 1, "The maximum number of proofs that can be generated at the same time")
 	rootCmd.AddCommand(runCmd)
 
 }

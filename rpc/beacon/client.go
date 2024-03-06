@@ -27,8 +27,8 @@ func NewClient(rawurl string) (*Client, error) {
 	return &Client{
 		ctx:      context.Background(),
 		endpoint: rawurl,
-		timeout:  10 * time.Minute,
-		debug:    true,
+		timeout:  30 * time.Minute,
+		debug:    false,
 		imp:      http.DefaultClient,
 	}, nil
 }

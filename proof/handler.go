@@ -74,6 +74,18 @@ func (h *Handler) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (r
 	}, nil
 }
 
+func (h *Handler) MaxNums() (int, error) {
+	logger.Debug("max nums: %v", h.maxNums)
+	time.Sleep(2 * time.Second)
+	return h.maxNums, nil
+}
+
+func (h *Handler) CurrentNums() (int, error) {
+	logger.Debug("current nums: %v", h.currentNums.Load())
+	time.Sleep(2 * time.Second)
+	return int(h.currentNums.Load()), nil
+}
+
 func (h *Handler) AddReqNum() {
 	//TODO implement me
 	panic("implement me")
@@ -82,14 +94,6 @@ func (h *Handler) AddReqNum() {
 func (h *Handler) DelReqNum() {
 	//TODO implement me
 	panic("implement me")
-}
-
-func (h *Handler) MaxNums() int {
-	return h.maxNums
-}
-
-func (h *Handler) CurrentNums() int {
-	return int(h.currentNums.Load())
 }
 
 func NewHandler(memoryStore store.IStore, max int) *Handler {

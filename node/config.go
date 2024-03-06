@@ -16,21 +16,21 @@ type NodeConfig struct {
 	RpcPort           string `json:"rpcport"`
 	EnableLocalWorker bool   `json:"enableLocalWorker"`
 
-	BtcUrl           string           `json:"btcUrl"`
-	BtcUser          string           `json:"btcUser"`
-	BtcPwd           string           `json:"btcPwd"`
-	BtcNetwork       string           `json:"btcNetwork"`
-	BtcScanBlockTime time.Duration    `json:"btcBlockTime"`
-	BtcOperatorAddr  string           `json:"btcOperatorAddr"`
-	BtcPrivateKeys   []string         `json:"btcPrivateKeys"`
-	BtcWhiteList     []string         `json:"btcWhiteList"`
-	BtcInitHeight    int64            `json:"btcInitHeight"`
-	MultiAddressInfo MultiAddressInfo `json:"multiAddressInfo"`
-
-	AutoSubmit bool `json:"autoSubmit"`
+	BtcUrl            string           `json:"btcUrl"`
+	BtcUser           string           `json:"btcUser"`
+	BtcPwd            string           `json:"btcPwd"`
+	BtcNetwork        string           `json:"btcNetwork"`
+	BtcScanBlockTime  time.Duration    `json:"btcBlockTime"`
+	BtcOperatorAddr   string           `json:"btcOperatorAddr"`
+	BtcPrivateKeys    []string         `json:"btcPrivateKeys"`
+	BtcWhiteList      []string         `json:"btcWhiteList"`
+	BtcInitHeight     int64            `json:"btcInitHeight"`
+	MultiAddressInfo  MultiAddressInfo `json:"multiAddressInfo"`
+	GenesisSyncPeriod uint64           `json:"genesisSyncPeriod"`
+	AutoSubmit        bool             `json:"autoSubmit"`
 
 	//Beacon config
-	BeaconInitHeight int64                           `json:"beaconInitHeight"`
+	BeaconInitHeight uint64                          `json:"beaconInitHeight"`
 	BeaconUrl        string                          `json:"beaconUrl"`
 	BeaconConfig     *beaconconfig.BeaconChainConfig `json:"beaconConfig"`
 
@@ -302,8 +302,8 @@ type MultiAddressInfo struct {
 }
 
 type WorkerConfig struct {
-	ParallelNums int    `json:"maxNums"`
-	Url          string `json:"url"`
+	MaxNums int    `json:"maxNums"`
+	Url     string `json:"url"`
 }
 
 func TestnetDaemonConfig() NodeConfig {
@@ -333,7 +333,7 @@ func LocalDevDaemonConfig() NodeConfig {
 		panic(err)
 	}
 	config, err := NewNodeConfig(
-		false,
+		true,
 		false,
 		fmt.Sprintf("%v/.daemon", user.HomeDir),
 		"local",

@@ -32,25 +32,30 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, fetchDaaResp ch
 		return nil, err
 	}
 	beaconAgent := &BeaconAgent{
-		fileStore:    fileStore,
-		beaconClient: beaconClient,
-		name:         "beaconAgent",
-		beaconFetch:  beaconFetch,
-		stateCache:   NewBeaconCache(),
+		fileStore:         fileStore,
+		beaconClient:      beaconClient,
+		name:              "beaconAgent",
+		beaconFetch:       beaconFetch,
+		stateCache:        NewBeaconCache(),
+		genesisSyncPeriod: cfg.BeaconInitHeight,
 	}
 	return beaconAgent, nil
 }
 
 func (b *BeaconAgent) Init() error {
-	err := b.initGenesis()
+	go b.beaconFetch.Fetch()
+	latestPeriodExists, err := b.fileStore.CheckLatestPeriod()
 	if err != nil {
+		logger.Error("check latest period error: %v", err)
 		return err
 	}
-	// todo check data
-	return err
-}
-
-func (b *BeaconAgent) initGenesis() error {
+	if !latestPeriodExists {
+		err := b.fileStore.StoreLatestPeriod(b.genesisSyncPeriod)
+		if err != nil {
+			logger.Error("store latest period error: %v", err)
+			return err
+		}
+	}
 	existsGenesisProof, err := b.fileStore.CheckGenesisProof()
 	if err != nil {
 		logger.Error("check genesis proof error: %v", err)
@@ -64,6 +69,12 @@ func (b *BeaconAgent) initGenesis() error {
 		logger.Error("check genesis proof error: %v", err)
 		return nil
 	}
+	// todo check data
+	return err
+}
+
+func (b *BeaconAgent) initGenesis() error {
+
 	return nil
 
 }
@@ -113,12 +124,12 @@ func (b *BeaconAgent) CheckAndNewProofRequest(period uint64, reqType ZkProofType
 		logger.Error("%v %v proof exists", period, reqType)
 		return nil
 	}
-	canSend, err := b.CheckRequestStatus(period, reqType)
+	existsRequest, err := b.CheckRequestStatus(period, reqType)
 	if err != nil {
 		logger.Info("can`t send proof: %v %v", period, reqType)
 		return err
 	}
-	if !canSend {
+	if existsRequest {
 		logger.Info("can`t send proof: %v %v", period, reqType)
 		return nil
 	}

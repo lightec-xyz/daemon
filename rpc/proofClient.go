@@ -77,6 +77,23 @@ func (p *ProofClient) ProofInfo(proofId string) (ProofInfo, error) {
 	}
 	return status, nil
 }
+func (p *ProofClient) MaxNums() (int, error) {
+	var result int
+	err := p.call(&result, "zkbtc_maxNums")
+	if err != nil {
+		return 0, err
+	}
+	return result, nil
+}
+
+func (p *ProofClient) CurrentNums() (int, error) {
+	var result int
+	err := p.call(&result, "zkbtc_currentNums")
+	if err != nil {
+		return 0, err
+	}
+	return result, nil
+}
 
 func (p *ProofClient) AddReqNum() {
 	//TODO implement me
@@ -84,16 +101,6 @@ func (p *ProofClient) AddReqNum() {
 }
 
 func (p *ProofClient) DelReqNum() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (p *ProofClient) MaxNums() int {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (p *ProofClient) CurrentNums() int {
 	//TODO implement me
 	panic("implement me")
 }

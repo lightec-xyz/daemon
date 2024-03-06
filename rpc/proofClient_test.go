@@ -7,6 +7,16 @@ func TestProofClient_GenZkProof(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	maxNums, err := client.MaxNums()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(maxNums)
+	currentNums, err := client.CurrentNums()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(currentNums)
 	proofInfo, err := client.ProofInfo("")
 	if err != nil {
 		t.Fatal(err)
