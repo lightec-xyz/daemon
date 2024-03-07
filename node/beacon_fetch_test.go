@@ -17,7 +17,7 @@ func TestBeaconFetch_Fetch(t *testing.T) {
 		t.Fatal(err)
 	}
 	fetchResp := make(chan FetchDataResponse, 1)
-	beaconFetch, err := NewBeaconFetch(client, fileStore, fetchResp)
+	beaconFetch, err := NewBeaconFetch(client, fileStore, genesisPeriod, fetchResp)
 	if err != nil {
 		t.Fatal(err)
 	}

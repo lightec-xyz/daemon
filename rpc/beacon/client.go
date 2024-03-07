@@ -16,20 +16,28 @@ import (
 )
 
 type Client struct {
-	ctx      context.Context
-	endpoint string
-	timeout  time.Duration
-	debug    bool
-	imp      *http.Client
+	ctx        context.Context
+	endpoint   string
+	timeout    time.Duration
+	debug      bool
+	httpClient *http.Client
 }
 
 func NewClient(rawurl string) (*Client, error) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        10,
+			IdleConnTimeout:     15 * time.Minute,
+			DisableKeepAlives:   false,
+			MaxIdleConnsPerHost: 10,
+		},
+	}
 	return &Client{
-		ctx:      context.Background(),
-		endpoint: rawurl,
-		timeout:  30 * time.Minute,
-		debug:    false,
-		imp:      http.DefaultClient,
+		ctx:        context.Background(),
+		endpoint:   rawurl,
+		timeout:    15 * time.Minute,
+		debug:      true,
+		httpClient: client,
 	}, nil
 }
 
@@ -130,6 +138,7 @@ func (c *Client) newRequest(ctx context.Context, httpMethod, url, method string,
 			req.Header.Set(key, value)
 		}
 	}
+	req.Header.Set("Connection", "keep-alive")
 	return req, nil
 }
 
@@ -153,7 +162,7 @@ func (c *Client) httpReq(httpMethod, method string, param Param, value interface
 			log.Printf("httpReq request: %v  %v \n", method, string(requestData))
 		}
 	}
-	resp, err := c.imp.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		if resp != nil && resp.Body != nil {
 			defer resp.Body.Close()

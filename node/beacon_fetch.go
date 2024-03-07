@@ -23,7 +23,7 @@ type BeaconFetch struct {
 	fetchQueue        *Queue
 }
 
-func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, fetchDataResp chan FetchDataResponse) (*BeaconFetch, error) {
+func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (*BeaconFetch, error) {
 	maxReqNums := &atomic.Int64{}
 	maxReqNums.Store(0)
 	return &BeaconFetch{
@@ -32,6 +32,7 @@ func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, fetchDataResp c
 		fileStore:         fileStore,
 		exit:              make(chan struct{}, 1),
 		fetchProofRequest: fetchDataResp,
+		genesisSyncPeriod: genesisPeriod,
 		fetchQueue:        NewQueue(),
 	}, nil
 }
@@ -74,7 +75,8 @@ func (bf *BeaconFetch) fetch() error {
 	}
 	bf.fetchQueue.Remove(element)
 	bf.currentReqNums.Add(1)
-	logger.Debug("get fetch request period:%v,type:%v,fetch data now", request.period, request.UpdateType)
+	time.Sleep(1 * time.Second)
+	logger.Debug("get fetch request period:%v,type:%s,fetch data now", request.period, request.UpdateType)
 	if request.UpdateType == SyncComGenesisType {
 		go bf.getGenesisData(bf.genesisSyncPeriod)
 	} else if request.UpdateType == SyncComUnitType {
@@ -100,7 +102,7 @@ func (bf *BeaconFetch) Fetch() {
 
 func (bf *BeaconFetch) getGenesisData(period uint64) {
 	defer bf.currentReqNums.Add(-1)
-	bootStrap, err := bf.beaconClient.Bootstrap(uint64(bf.genesisSyncPeriod) * 32)
+	bootStrap, err := bf.beaconClient.Bootstrap(bf.genesisSyncPeriod)
 	if err != nil {
 		logger.Error("get bootstrap error:%v %v", bf.genesisSyncPeriod, err)
 		// retry again
@@ -110,7 +112,7 @@ func (bf *BeaconFetch) getGenesisData(period uint64) {
 	err = bf.fileStore.StoreGenesisUpdate(bootStrap)
 	if err != nil {
 		// todo
-		logger.Error(err.Error())
+		logger.Error("store genesis update error:%v %v", bf.genesisSyncPeriod, err)
 		return
 	}
 	updateResponse := FetchDataResponse{
@@ -133,7 +135,7 @@ func (bf *BeaconFetch) getUpdateData(period uint64) {
 	err = bf.fileStore.StoreUpdate(period, updates)
 	if err != nil {
 		// todo
-		logger.Error(err.Error())
+		logger.Error("store update error:%v %v", period, err)
 		return
 	}
 	updateResponse := FetchDataResponse{

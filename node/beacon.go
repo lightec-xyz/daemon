@@ -27,7 +27,7 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan
 		log.Error(err.Error())
 		return nil, err
 	}
-	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, fetchDaaResp)
+	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconInitHeight, fetchDaaResp)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err

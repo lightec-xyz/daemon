@@ -16,7 +16,12 @@ func TestClient(t *testing.T) {
 	}
 	t.Log(latestSyncPeriod)
 
-	bootstrap, err := client.Bootstrap(latestSyncPeriod - 1)
+	latestSlot, err := client.GetLatestSlot()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bootstrap, err := client.Bootstrap(latestSlot)
 	if err != nil {
 		t.Fatal(err)
 	}

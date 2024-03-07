@@ -34,6 +34,7 @@ type FileStore struct {
 func NewFileStore(dataDir string) (*FileStore, error) {
 	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
 	periodDataDir := fmt.Sprintf("%s/%s", dataDir, PeriodDir)
+	_ = os.RemoveAll(dataDir)
 	ok, err := DirNoTExistsAndCreate(periodDataDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -215,14 +216,25 @@ func (f *FileStore) InsertData(table, key string, value interface{}) error {
 			return err
 		}
 	}
+	file, err := os.OpenFile(storeKey, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		logger.Error("open file error:%v", err)
+		return err
+	}
+	defer file.Close()
 	dataBytes, err := json.Marshal(value)
 	if err != nil {
 		logger.Error("marshal file error:%v", err)
 		return err
 	}
-	err = os.WriteFile(storeKey, dataBytes, 0644)
+	_, err = file.Write(dataBytes)
 	if err != nil {
 		logger.Error("write file error:%v", err)
+		return err
+	}
+	err = file.Sync()
+	if err != nil {
+		logger.Error("sync file error:%v", err)
 		return err
 	}
 	return nil
