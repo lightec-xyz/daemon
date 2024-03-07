@@ -7,7 +7,7 @@ import (
 )
 
 func TestBeaconFetch_Fetch(t *testing.T) {
-	genesisPeriod := uint64(60)
+	genesisPeriod := uint64(50)
 	client, err := beacon.NewClient("http://127.0.0.1:8970")
 	if err != nil {
 		t.Fatal(err)

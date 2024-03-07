@@ -134,14 +134,15 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 	var zkbProofResponse ZkProofResponse
 	switch request.reqType {
 	case DepositTxType:
+		// todo
+		zkbProofResponse.zkProofType = DepositTxType
 		proofResponse, err := worker.GenDepositProof(rpc.DepositRequest{})
 		if err != nil {
-			// todo
 			logger.Error("gen deposit proof error:%v", err)
 			return err
 		}
-		zkbProofResponse.zkProofType = DepositTxType
 		zkbProofResponse.proof = proofResponse.Body
+		zkbProofResponse.Status = ProofSuccess
 
 	case RedeemTxType:
 		proofResponse, err := worker.GenRedeemProof(rpc.RedeemRequest{})
@@ -152,6 +153,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 		}
 		zkbProofResponse.zkProofType = RedeemTxType
 		zkbProofResponse.proof = proofResponse.Body
+		zkbProofResponse.Status = ProofSuccess
 
 	case SyncComGenesisType:
 		proofResponse, err := worker.GenSyncCommGenesisProof(rpc.SyncCommGenesisRequest{})
@@ -162,6 +164,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 		}
 		zkbProofResponse.zkProofType = SyncComGenesisType
 		zkbProofResponse.proof = proofResponse.Body
+		zkbProofResponse.Status = ProofSuccess
 
 	case SyncComUnitType:
 		proofResponse, err := worker.GenSyncCommitUnitProof(rpc.SyncCommUnitsRequest{})
@@ -172,6 +175,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 		}
 		zkbProofResponse.zkProofType = SyncComUnitType
 		zkbProofResponse.proof = proofResponse.Body
+		zkbProofResponse.Status = ProofSuccess
 
 	case SyncComRecursiveType:
 		proofResponse, err := worker.GenSyncCommRecursiveProof(rpc.SyncCommRecursiveRequest{})
@@ -182,6 +186,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 		}
 		zkbProofResponse.zkProofType = SyncComRecursiveType
 		zkbProofResponse.proof = proofResponse.Body
+		zkbProofResponse.Status = ProofSuccess
 	default:
 		logger.Error("never should happen proof type:%v", request.reqType)
 		return fmt.Errorf("never should happen proof type:%v", request.reqType)

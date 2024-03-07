@@ -19,6 +19,24 @@ const (
 	SyncComRecursiveType
 )
 
+func (zkpr *ZkProofType) String() string {
+	switch *zkpr {
+	case DepositTxType:
+		return "DepositTxType"
+	case RedeemTxType:
+		return "RedeemTxType"
+	case VerifyTxType:
+		return "VerifyTxType"
+	case SyncComGenesisType:
+		return "SyncComGenesisType"
+	case SyncComUnitType:
+		return "SyncComUnitType"
+	case SyncComRecursiveType:
+		return "SyncComRecursiveType"
+	}
+	return ""
+}
+
 type ZkProofRequest struct {
 	reqType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
 	period  uint64

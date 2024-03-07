@@ -89,7 +89,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	syncCommitResp := make(chan ZkProofResponse, 1000)
 	fetchDataResp := make(chan FetchDataResponse, 1000)
 
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, fetchDataResp)
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -135,7 +135,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		server:      server,
 		nodeConfig:  cfg,
 		exitSignal:  make(chan os.Signal, 1),
-		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Hour, syncCommitResp, fetchDataResp),
+		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
 		manager:     NewWrapperManger(manager, proofRequest),
 	}
 	return daemon, nil
@@ -162,24 +162,25 @@ func (d *Daemon) Init() error {
 }
 
 func (d *Daemon) Run() error {
+	logger.Info("start daemon")
 	// syncCommit
-	//go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.time, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
-	//go doProofResponseTask("beacon-DepositResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
-	//go doFetchRespTask("beacon-DepositResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchResponse, d.exitSignal)
-	//go doTask("beacon-CheckData", d.beaconAgent.node.CheckData, d.exitSignal)
+	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
+	go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
+	go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchResponse, d.exitSignal)
+	go doTimerTask("beacon-CheckData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
 
 	// proof manager
-	//go doProofRequestTask("manager-DepositRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
-	//go doTask("manager-GenerateProof:", d.manager.manager.genProof, d.exitSignal)
+	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
+	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
 
-	// tx proof
+	//tx proof
 	//for _, agent := range d.agents {
-	//	name := fmt.Sprintf("%s-SubmitProof", agent.node.Name())
+	//	name := fmt.Sprintf("%s-submitProof", agent.node.Name())
 	//	go doProofResponseTask(name, agent.proofResp, agent.node.Submit, d.exitSignal)
 	//}
-	// scan block with tx
+	//scan block with tx
 	//for _, agent := range d.agents {
-	//	name := fmt.Sprintf("%s-ScanBlock", agent.node.Name())
+	//	name := fmt.Sprintf("%s-scanBlock", agent.node.Name())
 	//	go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
 	//}
 	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
@@ -238,17 +239,19 @@ func NewWorkers(workers []WorkerConfig) ([]rpc.IWorker, error) {
 
 type WrapperBeacon struct {
 	node              IBeaconAgent
-	time              time.Duration // get node period
+	scanPeriodTime    time.Duration // get node period
+	checkDataTime     time.Duration
 	proofResponse     chan ZkProofResponse
 	fetchDataResponse chan FetchDataResponse
 }
 
-func NewWrapperBeacon(beacon IBeaconAgent, time time.Duration, proofResponse chan ZkProofResponse, fetchDataResp chan FetchDataResponse) *WrapperBeacon {
+func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Duration, proofResponse chan ZkProofResponse, fetchDataResp chan FetchDataResponse) *WrapperBeacon {
 	return &WrapperBeacon{
 		node:              beacon,
-		time:              time,
+		scanPeriodTime:    scanPeriodTime,
 		proofResponse:     proofResponse,
 		fetchDataResponse: fetchDataResp,
+		checkDataTime:     checkDataTime, // todo
 	}
 }
 

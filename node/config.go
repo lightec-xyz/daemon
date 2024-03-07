@@ -328,14 +328,16 @@ func TestnetDaemonConfig() NodeConfig {
 	return config
 }
 func LocalDevDaemonConfig() NodeConfig {
-	user, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
+	//user, err := user.Current()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//dataDir := fmt.Sprintf("%v/.daemon", user.HomeDir)
+	dataDir := "/Users/red/lworkspace/lightec/daemon/node/test"
 	config, err := NewNodeConfig(
 		true,
 		false,
-		fmt.Sprintf("%v/.daemon", user.HomeDir),
+		dataDir,
 		"local",
 		"127.0.0.1",
 		"9870",

@@ -58,7 +58,6 @@ func (bf *BeaconFetch) GenesisUpdateRequest() {
 
 func (bf *BeaconFetch) fetch() error {
 	if bf.fetchQueue.Len() == 0 {
-		time.Sleep(2 * time.Second)
 		return nil
 	}
 	if bf.currentReqNums.Load() > MaxReqNums {
@@ -89,6 +88,7 @@ func (bf *BeaconFetch) Fetch() {
 		select {
 		case <-bf.exit:
 			logger.Info("beacon Fetch fetch goroutine exit now ...")
+			return
 		default:
 			err := bf.fetch()
 			if err != nil {
@@ -103,6 +103,7 @@ func (bf *BeaconFetch) getGenesisData(period uint64) {
 	bootStrap, err := bf.beaconClient.Bootstrap(uint64(bf.genesisSyncPeriod) * 32)
 	if err != nil {
 		logger.Error("get bootstrap error:%v %v", bf.genesisSyncPeriod, err)
+		// retry again
 		bf.GenesisUpdateRequest()
 		return
 	}
@@ -122,7 +123,6 @@ func (bf *BeaconFetch) getGenesisData(period uint64) {
 
 func (bf *BeaconFetch) getUpdateData(period uint64) {
 	defer bf.currentReqNums.Add(-1)
-
 	updates, err := bf.beaconClient.GetLightClientUpdates(period, 1)
 	if err != nil {
 		logger.Error("get light client updates error:%v %v", period, err)

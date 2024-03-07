@@ -13,14 +13,15 @@ var _ IBeaconAgent = (*BeaconAgent)(nil)
 type BeaconAgent struct {
 	beaconClient      *beacon.Client
 	fileStore         *FileStore
-	zkProofRequest    chan ZkProofRequest
+	zkProofRequest    chan []ZkProofRequest
 	name              string
 	genesisSyncPeriod uint64
 	beaconFetch       *BeaconFetch
 	stateCache        *BeaconCache
+	proofQueue        *Queue
 }
 
-func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, fetchDaaResp chan FetchDataResponse) (IBeaconAgent, error) {
+func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []ZkProofRequest, fetchDaaResp chan FetchDataResponse) (IBeaconAgent, error) {
 	fileStore, err := NewFileStore(cfg.DataDir)
 	if err != nil {
 		log.Error(err.Error())
@@ -37,19 +38,22 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, fetchDaaResp ch
 		name:              "beaconAgent",
 		beaconFetch:       beaconFetch,
 		stateCache:        NewBeaconCache(),
+		zkProofRequest:    zkProofReq,
 		genesisSyncPeriod: cfg.BeaconInitHeight,
+		proofQueue:        NewQueue(),
 	}
 	return beaconAgent, nil
 }
 
 func (b *BeaconAgent) Init() error {
+	logger.Info("beacon agent init")
 	go b.beaconFetch.Fetch()
-	latestPeriodExists, err := b.fileStore.CheckLatestPeriod()
+	existsLatestPeriod, err := b.fileStore.CheckLatestPeriod()
 	if err != nil {
 		logger.Error("check latest period error: %v", err)
 		return err
 	}
-	if !latestPeriodExists {
+	if !existsLatestPeriod {
 		err := b.fileStore.StoreLatestPeriod(b.genesisSyncPeriod)
 		if err != nil {
 			logger.Error("store latest period error: %v", err)
@@ -62,7 +66,7 @@ func (b *BeaconAgent) Init() error {
 		return err
 	}
 	if existsGenesisProof {
-		return err
+		return nil
 	}
 	err = b.CheckAndNewProofRequest(b.genesisSyncPeriod, SyncComGenesisType)
 	if err != nil {
@@ -80,6 +84,7 @@ func (b *BeaconAgent) initGenesis() error {
 }
 
 func (b *BeaconAgent) ScanSyncPeriod() error {
+	logger.Debug("beacon scan sync period")
 	currentPeriod, err := b.fileStore.GetLatestPeriod()
 	if err != nil {
 		log.Error(err.Error())
@@ -115,6 +120,7 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 }
 
 func (b *BeaconAgent) CheckAndNewProofRequest(period uint64, reqType ZkProofType) error {
+	logger.Debug("beacon check and new proof request: %v %v", period, reqType)
 	proofExists, err := b.CheckProofExists(period, reqType)
 	if err != nil {
 		logger.Error(err.Error())
@@ -147,18 +153,21 @@ func (b *BeaconAgent) CheckAndNewProofRequest(period uint64, reqType ZkProofType
 		logger.Error(err.Error())
 		return err
 	}
-	b.zkProofRequest <- ZkProofRequest{
-		period:  period,
-		reqType: reqType,
-		data:    data,
-		preData: preData,
+	b.zkProofRequest <- []ZkProofRequest{
+		{
+			period:  period,
+			reqType: reqType,
+			data:    data,
+			preData: preData,
+		},
 	}
 
 	return nil
 }
 
 func (b *BeaconAgent) CheckRequestStatus(period uint64, reqType ZkProofType) (bool, error) {
-	// todo
+	//todo
+	logger.Debug("beacon check request status: %v %v", period, reqType)
 	switch reqType {
 	case SyncComGenesisType:
 		return b.stateCache.CheckGenesis(), nil
@@ -173,6 +182,7 @@ func (b *BeaconAgent) CheckRequestStatus(period uint64, reqType ZkProofType) (bo
 
 func (b *BeaconAgent) cacheRequestStatus(period uint64, reqType ZkProofType) error {
 	// todo
+	logger.Debug("beacon cache request status: %v %v", period, reqType)
 	switch reqType {
 	case SyncComGenesisType:
 		return b.stateCache.StoreGenesis()
@@ -276,6 +286,7 @@ func (b *BeaconAgent) GetRecursiveData(period uint64) ([]byte, []byte, bool, err
 
 func (b *BeaconAgent) prepareRequestData(period uint64, reqType ZkProofType) ([]byte, []byte, bool, error) {
 	//todo
+	logger.Debug("beacon prepare request data: %v %v", period, reqType)
 	switch reqType {
 	case SyncComGenesisType:
 		genesisRaw, ok, err := b.GetGenesisRaw()
@@ -305,6 +316,7 @@ func (b *BeaconAgent) prepareRequestData(period uint64, reqType ZkProofType) ([]
 }
 
 func (b *BeaconAgent) CheckProofExists(period uint64, reqType ZkProofType) (bool, error) {
+	logger.Debug("beacon check proof exists: %v %v", period, reqType)
 	switch reqType {
 	case SyncComGenesisType:
 		return b.fileStore.CheckGenesisProof()
@@ -319,12 +331,11 @@ func (b *BeaconAgent) CheckProofExists(period uint64, reqType ZkProofType) (bool
 }
 
 func (b *BeaconAgent) CheckData() error {
-	//TODO implement me
-	panic("implement me")
-
+	return nil
 }
 
 func (b *BeaconAgent) FetchResponse(req FetchDataResponse) error {
+	logger.Debug("beacon fetch response: %v", req)
 	switch req.reqType {
 	case SyncComGenesisType:
 		err := b.CheckAndNewProofRequest(req.period, SyncComGenesisType)
@@ -346,6 +357,7 @@ func (b *BeaconAgent) FetchResponse(req FetchDataResponse) error {
 }
 
 func (b *BeaconAgent) ProofResponse(resp ZkProofResponse) error {
+	logger.Debug("beacon proof response: %v", resp)
 	currentPeriod := resp.period
 	if resp.Status != ProofSuccess {
 		err := b.CheckAndNewProofRequest(currentPeriod, resp.zkProofType)

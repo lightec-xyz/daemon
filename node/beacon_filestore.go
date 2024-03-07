@@ -32,6 +32,7 @@ type FileStore struct {
 }
 
 func NewFileStore(dataDir string) (*FileStore, error) {
+	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
 	periodDataDir := fmt.Sprintf("%s/%s", dataDir, PeriodDir)
 	ok, err := DirNoTExistsAndCreate(periodDataDir)
 	if err != nil {
