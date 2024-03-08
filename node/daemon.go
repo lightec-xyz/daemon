@@ -32,7 +32,7 @@ type IAgent interface {
 type IBeaconAgent interface {
 	ScanSyncPeriod() error
 	ProofResponse(resp ZkProofResponse) error
-	FetchResponse(resp FetchDataResponse) error
+	FetchDataResponse(resp FetchDataResponse) error
 	CheckData() error
 	Init() error
 	Close() error
@@ -142,12 +142,13 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 }
 
 func (d *Daemon) Init() error {
-	for _, agent := range d.agents {
-		if err := agent.node.Init(); err != nil {
-			logger.Error("%v:init agent error %v", agent.node.Name(), err)
-			return err
-		}
-	}
+	//todo
+	//for _, agent := range d.agents {
+	//	if err := agent.node.Init(); err != nil {
+	//		logger.Error("%v:init agent error %v", agent.node.Name(), err)
+	//		return err
+	//	}
+	//}
 	err := d.manager.manager.init()
 	if err != nil {
 		logger.Error("manager init error %v", err)
@@ -166,7 +167,7 @@ func (d *Daemon) Run() error {
 	// syncCommit
 	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 	go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
-	go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchResponse, d.exitSignal)
+	go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
 	go doTimerTask("beacon-CheckData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
 
 	// proof manager

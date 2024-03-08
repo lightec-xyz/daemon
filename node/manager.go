@@ -76,7 +76,7 @@ func (m *manager) init() error {
 
 func (m *manager) run(requestList []ZkProofRequest) error {
 	for _, req := range requestList {
-		logger.Info("queue receive gen proof request:%v", req.reqType)
+		logger.Info("queue receive gen proof request:%v %v", req.period, req.reqType.String())
 		if req.reqType == SyncComUnitType || req.reqType == SyncComRecursiveType {
 			// sync commit proof Has higher priority
 			m.proofQueue.PushBack(req)
@@ -141,6 +141,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 			logger.Error("gen deposit proof error:%v", err)
 			return err
 		}
+		zkbProofResponse.period = request.period
 		zkbProofResponse.proof = proofResponse.Body
 		zkbProofResponse.Status = ProofSuccess
 
@@ -151,6 +152,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 			logger.Error("gen redeem proof error:%v", err)
 			return err
 		}
+		zkbProofResponse.period = request.period
 		zkbProofResponse.zkProofType = RedeemTxType
 		zkbProofResponse.proof = proofResponse.Body
 		zkbProofResponse.Status = ProofSuccess
@@ -162,6 +164,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 			logger.Error("gen sync comm genesis proof error:%v", err)
 			return err
 		}
+		zkbProofResponse.period = request.period
 		zkbProofResponse.zkProofType = SyncComGenesisType
 		zkbProofResponse.proof = proofResponse.Body
 		zkbProofResponse.Status = ProofSuccess
@@ -173,6 +176,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 			logger.Error("gen sync comm unit proof error:%v", err)
 			return err
 		}
+		zkbProofResponse.period = request.period
 		zkbProofResponse.zkProofType = SyncComUnitType
 		zkbProofResponse.proof = proofResponse.Body
 		zkbProofResponse.Status = ProofSuccess
@@ -184,6 +188,7 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 			logger.Error("gen sync comm recursive proof error:%v", err)
 			return err
 		}
+		zkbProofResponse.period = request.period
 		zkbProofResponse.zkProofType = SyncComRecursiveType
 		zkbProofResponse.proof = proofResponse.Body
 		zkbProofResponse.Status = ProofSuccess

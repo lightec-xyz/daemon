@@ -44,6 +44,14 @@ type ZkProofRequest struct {
 	preData []byte // previous request data
 }
 
+type ZkProofResponse struct {
+	zkProofType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
+	period      uint64
+	Status      ProofStatus
+	body        []byte
+	proof       []byte
+}
+
 func toDepositZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
 	var result []ZkProofRequest
 	for _, item := range list {
@@ -72,14 +80,6 @@ func toRedeemZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
 		})
 	}
 	return result, nil
-}
-
-type ZkProofResponse struct {
-	zkProofType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
-	period      uint64
-	Status      ProofStatus
-	body        []byte
-	proof       []byte
 }
 
 func (zkResp *ZkProofResponse) String() string {
@@ -162,18 +162,6 @@ func (dp *RedeemProof) String() string {
 		dp.Inputs, dp.Outputs, dp.BtcTxId, dp.Amount, dp.EthAddr, dp.Height, dp.BlockHash, dp.TxId, dp.ProofType, dp.Proof, dp.Msg, dp.Status)
 }
 
-type VerifyProof struct {
-}
-
-type GenesisProof struct {
-}
-
-type UnitProof struct {
-}
-
-type RecursiveProof struct {
-}
-
 type DownloadStatus int32
 
 const (
@@ -183,33 +171,33 @@ const (
 	Fail        DownloadStatus = 3
 )
 
+type FetchType int
+
+const (
+	GenesisUpdateType FetchType = iota + 1
+	PeriodUpdateType
+)
+
+func (ft FetchType) String() string {
+	switch ft {
+	case GenesisUpdateType:
+		return "GenesisUpdateType"
+	case PeriodUpdateType:
+		return "PeriodUpdateType"
+	default:
+		return "unknown"
+	}
+}
+
 type downloadRequest struct {
-	UpdateType ZkProofType
+	UpdateType FetchType
 	Status     DownloadStatus
 	period     uint64
 }
 
-type downloadResponse struct {
-	reqType ZkProofType
-	period  uint64
-	data    []byte
-	status  DownloadStatus
-}
-
 type FetchDataResponse struct {
-	period  uint64
-	reqType ZkProofType
-}
-
-type UnitProofRequest struct {
-	period  uint64
-	reqType ZkProofType
-}
-
-type PrepareRequest struct {
-	reqType ZkProofType
-	data    []byte
-	preData []byte
+	period     uint64
+	UpdateType FetchType
 }
 
 // ____________________

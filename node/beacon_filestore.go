@@ -98,7 +98,7 @@ func (f *FileStore) GetRecursiveProof(period uint64, value interface{}) error {
 	return f.GetObj(RecursiveDir, parseKey(period), value)
 }
 
-func (f *FileStore) GetRecursiveData(period uint64) ([]byte, error) {
+func (f *FileStore) GetRecursiveProofData(period uint64) ([]byte, error) {
 	return f.GetData(RecursiveDir, parseKey(period))
 }
 
@@ -114,7 +114,7 @@ func (f *FileStore) StoreUnitProof(period uint64, data interface{}) error {
 	return f.InsertData(UnitDir, parseKey(period), data)
 }
 
-func (f *FileStore) GetUnitData(period uint64) ([]byte, error) {
+func (f *FileStore) GetUnitProofData(period uint64) ([]byte, error) {
 	return f.GetData(UnitDir, parseKey(period))
 }
 
@@ -142,7 +142,7 @@ func (f *FileStore) GetGenesisUpdate(value interface{}) error {
 	return f.GetObj(GenesisDir, GenesisRawData, value)
 }
 
-func (f *FileStore) GetGenesisData() ([]byte, error) {
+func (f *FileStore) GetGenesisUpdateData() ([]byte, error) {
 	return f.GetData(GenesisDir, GenesisRawData)
 }
 
@@ -164,6 +164,10 @@ func (f *FileStore) CheckGenesisProof() (bool, error) {
 
 func (f *FileStore) GetGenesisProof(value interface{}) error {
 	return f.GetObj(GenesisDir, GenesisProofKey, value)
+}
+
+func (f *FileStore) GetGenesisProofData() ([]byte, error) {
+	return f.GetData(GenesisDir, GenesisProofKey)
 }
 
 func (f *FileStore) StoreLatestPeriod(period uint64) error {
@@ -216,7 +220,7 @@ func (f *FileStore) InsertData(table, key string, value interface{}) error {
 			return err
 		}
 	}
-	file, err := os.OpenFile(storeKey, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := os.Create(storeKey)
 	if err != nil {
 		logger.Error("open file error:%v", err)
 		return err

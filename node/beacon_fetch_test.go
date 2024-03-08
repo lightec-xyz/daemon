@@ -28,7 +28,7 @@ func TestBeaconFetch_Fetch(t *testing.T) {
 		for {
 			select {
 			case resp := <-fetchResp:
-				t.Logf("receive resp: %v %v \n", resp.period, resp.reqType)
+				t.Logf("receive resp: %v %v \n", resp.period, resp.UpdateType)
 			}
 		}
 	}()
