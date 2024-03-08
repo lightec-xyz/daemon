@@ -20,13 +20,25 @@ func TestClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	bootstrap, err := client.Bootstrap(latestSlot)
+	t.Log(latestSlot)
+	bootstrap, err := client.Bootstrap(latestSlot - 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(bootstrap)
 	updates, err := client.GetLightClientUpdates(latestSyncPeriod-1, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(updates)
+}
+
+func TestClient_GetLightClientUpdates(t *testing.T) {
+	client, err := NewClient(endpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updates, err := client.GetLightClientUpdates(125, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

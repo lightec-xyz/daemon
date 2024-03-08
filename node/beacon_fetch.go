@@ -124,7 +124,6 @@ func (bf *BeaconFetch) getGenesisData(period uint64) {
 	if err != nil {
 		logger.Error("get bootstrap error:%v %v", bf.genesisSyncPeriod, err)
 		// todo
-		// retry again
 		bf.GenesisUpdateRequest()
 		return
 	}
@@ -151,7 +150,6 @@ func (bf *BeaconFetch) getUpdateData(period uint64) {
 	if err != nil {
 		logger.Error("get light client updates error:%v %v", period, err)
 		// todo
-		// retry again
 		bf.NewUpdateRequest(period)
 		return
 	}

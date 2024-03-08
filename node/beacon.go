@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"sync/atomic"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type BeaconAgent struct {
 	beaconFetch       *BeaconFetch
 	stateCache        *BeaconCache
 	proofQueue        *Queue
+	currentPeriod     *atomic.Uint64
 }
 
 func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []ZkProofRequest, fetchDaaResp chan FetchDataResponse) (IBeaconAgent, error) {
@@ -27,11 +29,16 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan
 		log.Error(err.Error())
 		return nil, err
 	}
-	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconInitHeight, fetchDaaResp)
+	// todo
+	genesisPeriod := uint64(cfg.BtcInitHeight / 8192)
+
+	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, genesisPeriod, fetchDaaResp)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
 	}
+	currentPeriod := &atomic.Uint64{}
+	currentPeriod.Store(genesisPeriod)
 	beaconAgent := &BeaconAgent{
 		fileStore:         fileStore,
 		beaconClient:      beaconClient,
@@ -39,8 +46,9 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan
 		beaconFetch:       beaconFetch,
 		stateCache:        NewBeaconCache(),
 		zkProofRequest:    zkProofReq,
-		genesisSyncPeriod: cfg.BeaconInitHeight,
+		genesisSyncPeriod: genesisPeriod,
 		proofQueue:        NewQueue(),
+		currentPeriod:     currentPeriod,
 	}
 	return beaconAgent, nil
 }
@@ -96,25 +104,26 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 		log.Error(err.Error())
 		return err
 	}
+	latestSyncPeriod = latestSyncPeriod - 1
+	logger.Info("current period: %d, latest sync period: %d", currentPeriod, latestSyncPeriod)
 	if currentPeriod >= latestSyncPeriod {
 		return nil
 	}
 	for index := currentPeriod; index <= latestSyncPeriod; index++ {
-		log.Debug("beacon parse sync period: %d", index)
-		// todo
+		logger.Debug("beacon scan period: %d", index)
 		for {
 			canAddRequest := b.beaconFetch.canNewRequest()
 			if canAddRequest {
 				b.beaconFetch.NewUpdateRequest(index)
+				err := b.fileStore.StoreLatestPeriod(index)
+				if err != nil {
+					log.Error(err.Error())
+					return err
+				}
 				break
 			} else {
 				time.Sleep(10 * time.Second)
 			}
-		}
-		err := b.fileStore.StoreLatestPeriod(index)
-		if err != nil {
-			log.Error(err.Error())
-			return err
 		}
 	}
 	return nil
@@ -137,7 +146,7 @@ func (b *BeaconAgent) CheckAndNewProofRequest(period uint64, reqType ZkProofType
 		return err
 	}
 	if existsRequest {
-		logger.Info("%v %v proof request exists，skip it now", period, reqType.String())
+		logger.Warn("proof request exists，%v %v  skip it now", period, reqType.String())
 		return nil
 	}
 	data, preData, prepareDataOk, err := b.prepareRequestData(period, reqType)
@@ -146,7 +155,7 @@ func (b *BeaconAgent) CheckAndNewProofRequest(period uint64, reqType ZkProofType
 		return err
 	}
 	if !prepareDataOk {
-		logger.Info("%v %v proof request data haven`t prepared, can`t generate proof now", period, reqType.String())
+		logger.Warn("proof request data haven`t prepared now ,%v %v  can`t generate proof", period, reqType.String())
 		return nil
 	}
 	err = b.cacheRequestStatus(period, reqType)
