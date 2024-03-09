@@ -62,7 +62,7 @@ func (m *manager) init() error {
 	//	}
 	//	if !submitted {
 	//		logger.Info("add un gen proof request:%v", req.String())
-	//		m.proofQueue.PushBack(req)
+	//		m.cacheQueue.PushBack(req)
 	//	} else {
 	//		err := DeleteUnGenProof(m.store, getChainByProofType(req), req.TxHash)
 	//		if err != nil {

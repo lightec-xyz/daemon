@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"os"
+	"path/filepath"
 	"reflect"
 )
 
@@ -23,18 +24,18 @@ const (
 )
 
 type FileStore struct {
-	dataDir      string
-	periodDir    string
-	genesisDir   string
-	updateDir    string
-	unitDir      string
-	recursiveDir string
+	dataDir       string
+	periodDir     string
+	genesisDir    string
+	updateDir     string
+	unitDir       string
+	recursiveDir  string
+	genesisPeriod uint64
 }
 
 func NewFileStore(dataDir string) (*FileStore, error) {
 	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
 	periodDataDir := fmt.Sprintf("%s/%s", dataDir, PeriodDir)
-	_ = os.RemoveAll(dataDir)
 	ok, err := DirNoTExistsAndCreate(periodDataDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -311,6 +312,83 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 	default:
 		return "", fmt.Errorf("no find table: %v", table)
 	}
+}
+
+func (f *FileStore) RecoverUpdateFiles() ([]uint64, error) {
+	latestPeriod, err := f.GetLatestPeriod()
+	if err != nil {
+		return nil, err
+	}
+	if latestPeriod <= f.genesisPeriod {
+		return nil, nil
+	}
+	files, err := traverseFile(f.updateDir)
+	if err != nil {
+		return nil, err
+	}
+	var recoverFile []uint64
+	for index := f.genesisPeriod; index <= latestPeriod; index++ {
+		if _, ok := files[fmt.Sprintf("%d", index)]; !ok {
+			recoverFile = append(recoverFile, index)
+		}
+	}
+	return recoverFile, nil
+}
+
+func (f *FileStore) RecoverUnitProofFiles() ([]uint64, error) {
+	latestPeriod, err := f.GetLatestPeriod()
+	if err != nil {
+		return nil, err
+	}
+	if latestPeriod <= f.genesisPeriod {
+		return nil, nil
+	}
+	files, err := traverseFile(f.unitDir)
+	if err != nil {
+		return nil, err
+	}
+	var recoverFile []uint64
+	for index := f.genesisPeriod; index <= latestPeriod; index++ {
+		if _, ok := files[fmt.Sprintf("%d", index)]; !ok {
+			recoverFile = append(recoverFile, index)
+		}
+	}
+	return recoverFile, nil
+}
+
+func (f *FileStore) RecoverRecursiveProofFiles() ([]uint64, error) {
+	latestPeriod, err := f.GetLatestPeriod()
+	if err != nil {
+		return nil, err
+	}
+	if latestPeriod <= f.genesisPeriod {
+		return nil, nil
+	}
+	files, err := traverseFile(f.recursiveDir)
+	if err != nil {
+		return nil, err
+	}
+	var recoverFile []uint64
+	for index := f.genesisPeriod; index <= latestPeriod; index++ {
+		if _, ok := files[fmt.Sprintf("%d", index)]; !ok {
+			recoverFile = append(recoverFile, index)
+		}
+	}
+	return recoverFile, nil
+}
+
+func traverseFile(path string) (map[string]string, error) {
+	files := make(map[string]string)
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			files[info.Name()] = path
+		}
+		return nil
+	})
+	return files, err
 }
 
 func fileExists(path string) (bool, error) {

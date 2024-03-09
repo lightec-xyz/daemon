@@ -19,7 +19,7 @@ type BeaconAgent struct {
 	genesisSyncPeriod uint64
 	beaconFetch       *BeaconFetch
 	stateCache        *BeaconCache
-	proofQueue        *Queue
+	cacheQueue        *Queue
 	currentPeriod     *atomic.Uint64
 }
 
@@ -47,7 +47,7 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan
 		stateCache:        NewBeaconCache(),
 		zkProofRequest:    zkProofReq,
 		genesisSyncPeriod: genesisPeriod,
-		proofQueue:        NewQueue(),
+		cacheQueue:        NewQueue(),
 		currentPeriod:     currentPeriod,
 	}
 	return beaconAgent, nil
@@ -86,8 +86,22 @@ func (b *BeaconAgent) Init() error {
 	return err
 }
 
-func (b *BeaconAgent) initGenesis() error {
-
+func (b *BeaconAgent) CheckRecoverData() error {
+	recoverUpdateFiles, err := b.fileStore.RecoverUpdateFiles()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	recoverUnitProofFiles, err := b.fileStore.RecoverUnitProofFiles()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	recursiveProofFiles, err := b.fileStore.RecoverRecursiveProofFiles()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
 	return nil
 
 }

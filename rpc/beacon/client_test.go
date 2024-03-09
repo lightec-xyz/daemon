@@ -3,13 +3,17 @@ package beacon
 import "testing"
 
 var endpoint = "http://127.0.0.1:8970"
+var err error
+var client *Client
+
+func init() {
+	client, err = NewClient(endpoint)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func TestClient(t *testing.T) {
-	// todo more test
-	client, err := NewClient(endpoint)
-	if err != nil {
-		t.Fatal(err)
-	}
 	latestSyncPeriod, err := client.GetLatestSyncPeriod()
 	if err != nil {
 		t.Fatal(err)
@@ -33,12 +37,16 @@ func TestClient(t *testing.T) {
 	t.Log(updates)
 }
 
-func TestClient_GetLightClientUpdates(t *testing.T) {
-	client, err := NewClient(endpoint)
+func TestClient_Bootstrap(t *testing.T) {
+	bootstrap, err := client.Bootstrap(0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	updates, err := client.GetLightClientUpdates(125, 1)
+	t.Log(bootstrap)
+}
+
+func TestClient_GetLightClientUpdates(t *testing.T) {
+	updates, err := client.GetLightClientUpdates(0, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

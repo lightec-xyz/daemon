@@ -82,3 +82,11 @@ func TestFileLatestPeriod(t *testing.T) {
 	}
 	t.Log(period)
 }
+
+func TestTraverseFile(t *testing.T) {
+	files, err := traverseFile("/Users/red/lworkspace/lightec/daemon/node")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(files)
+}
