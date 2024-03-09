@@ -189,7 +189,7 @@ func (ft FetchType) String() string {
 	}
 }
 
-type downloadRequest struct {
+type FetchRequest struct {
 	UpdateType FetchType
 	Status     DownloadStatus
 	period     uint64

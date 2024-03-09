@@ -87,21 +87,21 @@ func (b *BeaconAgent) Init() error {
 }
 
 func (b *BeaconAgent) CheckRecoverData() error {
-	recoverUpdateFiles, err := b.fileStore.RecoverUpdateFiles()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	recoverUnitProofFiles, err := b.fileStore.RecoverUnitProofFiles()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	recursiveProofFiles, err := b.fileStore.RecoverRecursiveProofFiles()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
+	//recoverUpdateFiles, err := b.fileStore.RecoverUpdateFiles()
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return err
+	//}
+	//recoverUnitProofFiles, err := b.fileStore.RecoverUnitProofFiles()
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return err
+	//}
+	//recursiveProofFiles, err := b.fileStore.RecoverRecursiveProofFiles()
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return err
+	//}
 	return nil
 
 }
@@ -134,6 +134,7 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 					log.Error(err.Error())
 					return err
 				}
+				b.currentPeriod.Store(index)
 				break
 			} else {
 				time.Sleep(10 * time.Second)
@@ -144,6 +145,12 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 }
 
 func (b *BeaconAgent) CheckAndNewProofRequest(period uint64, reqType ZkProofType) error {
+	//todo
+	currentPeriod := b.currentPeriod.Load()
+	if period > currentPeriod {
+		logger.Warn("wait for new period,current: %v, reqPeriod: %v", currentPeriod, period)
+		return nil
+	}
 	logger.Debug("beacon check and new proof request: %v %v", period, reqType.String())
 	proofExists, err := b.CheckProofExists(period, reqType)
 	if err != nil {

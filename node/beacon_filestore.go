@@ -189,6 +189,10 @@ func (f *FileStore) GetLatestPeriod() (uint64, error) {
 	return period, nil
 }
 
+func (f *FileStore) Clear() error {
+	return os.RemoveAll(f.dataDir)
+}
+
 func (f *FileStore) CheckStorageKey(table, key string) (bool, error) {
 	storeKey, err := f.generateStoreKey(table, key)
 	if err != nil {

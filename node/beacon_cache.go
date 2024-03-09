@@ -7,28 +7,28 @@ const (
 )
 
 type BeaconCache struct {
-	downloadProof          *sync.Map
-	generatingGenesisProof *sync.Map
-	unitProof              *sync.Map
-	RecursiveProof         *sync.Map
+	fetchData      *sync.Map
+	genesisProof   *sync.Map
+	unitProof      *sync.Map
+	recursiveProof *sync.Map
 }
 
 func NewBeaconCache() *BeaconCache {
 	return &BeaconCache{
-		downloadProof:          new(sync.Map),
-		generatingGenesisProof: new(sync.Map),
-		unitProof:              new(sync.Map),
-		RecursiveProof:         new(sync.Map),
+		fetchData:      new(sync.Map),
+		genesisProof:   new(sync.Map),
+		unitProof:      new(sync.Map),
+		recursiveProof: new(sync.Map),
 	}
 }
 
 func (bc *BeaconCache) CheckDownload(period uint64) bool {
-	_, ok := bc.downloadProof.Load(period)
+	_, ok := bc.fetchData.Load(period)
 	return ok
 }
 
 func (bc *BeaconCache) CheckGenesis() bool {
-	_, ok := bc.generatingGenesisProof.Load(GenesisStateKey)
+	_, ok := bc.genesisProof.Load(GenesisStateKey)
 	return ok
 }
 
@@ -38,12 +38,12 @@ func (bc *BeaconCache) CheckUnit(period uint64) bool {
 }
 
 func (bc *BeaconCache) CheckRecursive(period uint64) bool {
-	_, ok := bc.RecursiveProof.Load(period)
+	_, ok := bc.recursiveProof.Load(period)
 	return ok
 }
 
 func (bc *BeaconCache) StoreGenesis() error {
-	bc.generatingGenesisProof.Store(GenesisStateKey, true)
+	bc.genesisProof.Store(GenesisStateKey, true)
 	return nil
 }
 
@@ -53,6 +53,17 @@ func (bc *BeaconCache) StoreUnit(period uint64) error {
 }
 
 func (bc *BeaconCache) StoreRecursive(period uint64) error {
-	bc.RecursiveProof.Store(period, true)
+	bc.recursiveProof.Store(period, true)
 	return nil
+}
+
+func (bc *BeaconCache) DeleteGenesis() {
+	bc.genesisProof.Delete(GenesisStateKey)
+}
+func (bc *BeaconCache) DeleteUnit(period uint64) {
+	bc.unitProof.Delete(period)
+}
+
+func (bc *BeaconCache) DeleteRecursive(period uint64) {
+	bc.recursiveProof.Delete(period)
 }
