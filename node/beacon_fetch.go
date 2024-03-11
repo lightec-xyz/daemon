@@ -93,12 +93,31 @@ func (bf *BeaconFetch) fetch() error {
 	}
 	bf.fetchQueue.Remove(element)
 	bf.currentReqNums.Add(1)
-	time.Sleep(1 * time.Second)
 	logger.Debug("get fetch request period:%v,type:%v,fetch data now", request.period, request.UpdateType.String())
 	if request.UpdateType == GenesisUpdateType {
-		go bf.getGenesisData(bf.genesisSyncPeriod)
+		go func() {
+			err := bf.getGenesisData(bf.genesisSyncPeriod)
+			if err != nil {
+				logger.Error("get genesis data error:%v", err)
+				bf.innerNewGenesisRequest(true)
+				return
+			} else {
+				bf.currentReqNums.Add(-1)
+				bf.cache.Delete(cacheKey(GenesisUpdateType, bf.genesisSyncPeriod))
+			}
+
+		}()
 	} else if request.UpdateType == PeriodUpdateType {
-		go bf.getUpdateData(request.period)
+		go func() {
+			err := bf.getUpdateData(request.period)
+			if err != nil {
+				logger.Error("get update data error:%v %v", err, request.period)
+				bf.innerNewUpdateRequest(true, request.period)
+			} else {
+				bf.currentReqNums.Add(-1)
+				bf.cache.Delete(cacheKey(PeriodUpdateType, request.period))
+			}
+		}()
 	}
 	return nil
 }
@@ -147,23 +166,17 @@ func (bf *BeaconFetch) innerNewGenesisRequest(highPriority bool) {
 	}
 }
 
-func (bf *BeaconFetch) getGenesisData(period uint64) {
-	defer func() {
-		bf.currentReqNums.Add(-1)
-		bf.cache.Delete(cacheKey(GenesisUpdateType, period))
-	}()
+func (bf *BeaconFetch) getGenesisData(period uint64) error {
 	bootStrap, err := bf.beaconClient.Bootstrap(bf.genesisSyncPeriod)
 	if err != nil {
 		logger.Error("get bootstrap error:%v %v", bf.genesisSyncPeriod, err)
-		// todo retry have higher priority
-		bf.innerNewGenesisRequest(true)
-		return
+		return err
 	}
 	err = bf.fileStore.StoreGenesisUpdate(bootStrap)
 	if err != nil {
 		// todo
 		logger.Error("store genesis update error:%v %v", bf.genesisSyncPeriod, err)
-		return
+		return err
 	}
 	updateResponse := FetchDataResponse{
 		UpdateType: GenesisUpdateType,
@@ -171,25 +184,20 @@ func (bf *BeaconFetch) getGenesisData(period uint64) {
 	}
 	logger.Debug("success get genesis update data:%v", period)
 	bf.fetchProofResponse <- updateResponse
+	return nil
 }
 
-func (bf *BeaconFetch) getUpdateData(period uint64) {
-	defer func() {
-		bf.currentReqNums.Add(-1)
-		bf.cache.Delete(cacheKey(PeriodUpdateType, period))
-	}()
+func (bf *BeaconFetch) getUpdateData(period uint64) error {
 	updates, err := bf.beaconClient.GetLightClientUpdates(period, 1)
 	if err != nil {
 		logger.Error("get light client updates error:%v %v", period, err)
-		// todo
-		bf.innerNewUpdateRequest(true, period)
-		return
+		return err
 	}
 	err = bf.fileStore.StoreUpdate(period, updates)
 	if err != nil {
 		// todo
 		logger.Error("store update error:%v %v", period, err)
-		return
+		return err
 	}
 	updateResponse := FetchDataResponse{
 		period:     period,
@@ -197,6 +205,7 @@ func (bf *BeaconFetch) getUpdateData(period uint64) {
 	}
 	logger.Debug("success get update data:%v", period)
 	bf.fetchProofResponse <- updateResponse
+	return nil
 }
 
 func (bf *BeaconFetch) Close() error {

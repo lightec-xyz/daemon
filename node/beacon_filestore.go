@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
+	"strings"
 )
 
 const (
@@ -381,6 +383,8 @@ func (f *FileStore) RecoverRecursiveProofFiles() ([]uint64, error) {
 	return recoverFile, nil
 }
 
+var numberPattern = regexp.MustCompile(`^\d+$`)
+
 func traverseFile(path string) (map[string]string, error) {
 	files := make(map[string]string)
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
@@ -388,7 +392,13 @@ func traverseFile(path string) (map[string]string, error) {
 			return err
 		}
 		if !info.IsDir() {
-			files[info.Name()] = path
+			filePath, err := getFileName(info.Name())
+			if err != nil {
+				return err
+			}
+			if numberPattern.MatchString(filePath) {
+				files[filePath] = path
+			}
 		}
 		return nil
 	})
@@ -406,6 +416,13 @@ func fileExists(path string) (bool, error) {
 	return false, fmt.Errorf("stat error: %v", err)
 }
 
+func getFileName(path string) (string, error) {
+	arrs := strings.Split(path, "/")
+	if len(arrs) == 0 {
+		return "", fmt.Errorf("get file name error")
+	}
+	return arrs[len(arrs)-1], nil
+}
 func DirNoTExistsAndCreate(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {

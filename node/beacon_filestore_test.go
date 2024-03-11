@@ -1,6 +1,10 @@
 package node
 
-import "testing"
+import (
+	"fmt"
+	"regexp"
+	"testing"
+)
 
 var fileStore *FileStore
 var err error
@@ -89,4 +93,21 @@ func TestTraverseFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(files)
+}
+
+func TestDemo001(t *testing.T) {
+	// 定义一个只匹配数字的正则表达式
+	pattern := regexp.MustCompile(`^\d+$`)
+
+	// 测试字符串
+	testStrings := []string{"09123", "abc123", "456xyz", "789_!@#"}
+
+	// 遍历测试字符串
+	for _, str := range testStrings {
+		if pattern.MatchString(str) {
+			fmt.Printf("%s 匹配\n", str)
+		} else {
+			fmt.Printf("%s 不匹配\n", str)
+		}
+	}
 }

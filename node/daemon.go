@@ -165,12 +165,12 @@ func (d *Daemon) Init() error {
 func (d *Daemon) Run() error {
 	logger.Info("start daemon")
 	// syncCommit
-	go doTimerTask("beacon-ScanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
+	go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 	go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 	go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
-	go doTimerTask("beacon-CheckData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
+	go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
 
-	// proof manager
+	// generate proof manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
 	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
 

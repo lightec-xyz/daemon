@@ -22,7 +22,7 @@ func NewBeaconCache() *BeaconCache {
 	}
 }
 
-func (bc *BeaconCache) CheckDownload(period uint64) bool {
+func (bc *BeaconCache) CheckFetchData(period uint64) bool {
 	_, ok := bc.fetchData.Load(period)
 	return ok
 }
@@ -57,6 +57,9 @@ func (bc *BeaconCache) StoreRecursive(period uint64) error {
 	return nil
 }
 
+func (bc *BeaconCache) DeleteFetchData(period uint64) {
+	bc.fetchData.Delete(period)
+}
 func (bc *BeaconCache) DeleteGenesis() {
 	bc.genesisProof.Delete(GenesisStateKey)
 }
