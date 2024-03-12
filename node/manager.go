@@ -76,7 +76,7 @@ func (m *manager) init() error {
 
 func (m *manager) run(requestList []ZkProofRequest) error {
 	for _, req := range requestList {
-		logger.Info("queue receive gen proof request:%v %v", req.period, req.reqType.String())
+		logger.Info("queue receive gen proof request:%v %v", req.reqType.String(), req.period)
 		if req.reqType == SyncComUnitType || req.reqType == SyncComRecursiveType {
 			// sync commit proof Has higher priority
 			m.proofQueue.PushBack(req)
@@ -89,7 +89,6 @@ func (m *manager) run(requestList []ZkProofRequest) error {
 
 func (m *manager) genProof() error {
 	if m.proofQueue.Len() == 0 {
-		//logger.Debug("no proof need to do,wait now ....")
 		time.Sleep(1 * time.Second)
 		return nil
 	}
@@ -111,7 +110,6 @@ func (m *manager) genProof() error {
 		time.Sleep(10 * time.Second)
 		return nil
 	}
-	// todo
 	m.proofQueue.Remove(element)
 	proofSubmitted, err := m.CheckProofStatus(request)
 	if err != nil {
@@ -119,79 +117,118 @@ func (m *manager) genProof() error {
 		return err
 	}
 	if proofSubmitted {
-		//logger.Info("proof already submitted:%v", request.String())
+		logger.Info("proof already submitted:%v", request.String())
 		return nil
 	}
-	//logger.Info("start gen proof:%v", request.String())
-	go workerGenProof(worker, request, m.syncCommitResp)
+	logger.Debug("worker %v start generate proof type: %v period: %v", worker.Id(), request.reqType.String(), request.period)
+	chanResponse := m.getChanResponse(request.reqType)
+	go func() {
+		err := m.workerGenProof(worker, request, chanResponse)
+		if err != nil {
+			logger.Error("worker %v gen proof error:%v %v %v", worker.Id(), request.reqType, request.period, err)
+			//  take fail request to queue again
+			m.proofQueue.PushBack(request)
+			logger.Info("add proof request type: %v ,period: %v to queue again", request.reqType.String(), request.period)
+			return
+		}
+	}()
 
 	return nil
 }
 
-func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProofResponse) error {
+func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProofResponse) error {
 	worker.AddReqNum()
 	defer worker.DelReqNum()
 	var zkbProofResponse ZkProofResponse
 	switch request.reqType {
 	case DepositTxType:
-		// todo
-		zkbProofResponse.zkProofType = DepositTxType
-		proofResponse, err := worker.GenDepositProof(rpc.DepositRequest{})
+		depositProofParam, ok := request.data.(DepositProofParam)
+		if !ok {
+			return fmt.Errorf("not deposit proof param")
+		}
+		depositRpcRequest := rpc.DepositRequest{
+			Version: depositProofParam.Version,
+		}
+		proofResponse, err := worker.GenDepositProof(depositRpcRequest)
 		if err != nil {
 			logger.Error("gen deposit proof error:%v", err)
 			return err
 		}
-		zkbProofResponse.period = request.period
-		zkbProofResponse.proof = proofResponse.Body
-		zkbProofResponse.Status = ProofSuccess
-
-	case RedeemTxType:
-		proofResponse, err := worker.GenRedeemProof(rpc.RedeemRequest{})
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Body)
+	case VerifyTxType:
+		verifyProofParam, ok := request.data.(VerifyProofParam)
+		if !ok {
+			return fmt.Errorf("not deposit proof param")
+		}
+		verifyRpcRequest := rpc.VerifyRequest{
+			Version: verifyProofParam.Version,
+		}
+		proofResponse, err := worker.GenVerifyProof(verifyRpcRequest)
 		if err != nil {
-			// todo
+			logger.Error("gen verify proof error:%v", err)
+			return err
+		}
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Body)
+	case RedeemTxType:
+		redeemProofParam, ok := request.data.(RedeemProofParam)
+		if !ok {
+			return fmt.Errorf("not deposit proof param")
+		}
+		redeemRpcRequest := rpc.RedeemRequest{
+			Version: redeemProofParam.Version,
+		}
+		proofResponse, err := worker.GenRedeemProof(redeemRpcRequest)
+		if err != nil {
 			logger.Error("gen redeem proof error:%v", err)
 			return err
 		}
-		zkbProofResponse.period = request.period
-		zkbProofResponse.zkProofType = RedeemTxType
-		zkbProofResponse.proof = proofResponse.Body
-		zkbProofResponse.Status = ProofSuccess
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Body)
 
 	case SyncComGenesisType:
-		proofResponse, err := worker.GenSyncCommGenesisProof(rpc.SyncCommGenesisRequest{})
+		genesisReq, ok := request.data.(GenesisProofParam)
+		if !ok {
+			logger.Error("parse sync comm genesis request error")
+			return fmt.Errorf("parse sync comm genesis request error")
+		}
+		genesisRpcRequest := rpc.SyncCommGenesisRequest{
+			Version: genesisReq.Version,
+		}
+		proofResponse, err := worker.GenSyncCommGenesisProof(genesisRpcRequest)
 		if err != nil {
-			//todo
 			logger.Error("gen sync comm genesis proof error:%v", err)
 			return err
 		}
-		zkbProofResponse.period = request.period
-		zkbProofResponse.zkProofType = SyncComGenesisType
-		zkbProofResponse.proof = proofResponse.Body
-		zkbProofResponse.Status = ProofSuccess
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Body)
 
 	case SyncComUnitType:
-		proofResponse, err := worker.GenSyncCommitUnitProof(rpc.SyncCommUnitsRequest{})
+		updateWithVersion, ok := request.data.(UnitProofParam)
+		if !ok {
+			return fmt.Errorf("parse sync comm unit request error")
+		}
+		commUnitsRequest := rpc.SyncCommUnitsRequest{
+			Version: updateWithVersion.Version,
+		}
+		proofResponse, err := worker.GenSyncCommitUnitProof(commUnitsRequest)
 		if err != nil {
-			//todo
 			logger.Error("gen sync comm unit proof error:%v", err)
 			return err
 		}
-		zkbProofResponse.period = request.period
-		zkbProofResponse.zkProofType = SyncComUnitType
-		zkbProofResponse.proof = proofResponse.Body
-		zkbProofResponse.Status = ProofSuccess
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Body)
 
 	case SyncComRecursiveType:
-		proofResponse, err := worker.GenSyncCommRecursiveProof(rpc.SyncCommRecursiveRequest{})
+		recursiveProofParam, ok := request.data.(RecursiveProofParam)
+		if !ok {
+			return fmt.Errorf("parse sync comm recursive request error")
+		}
+		recursiveRequest := rpc.SyncCommRecursiveRequest{
+			Version: recursiveProofParam.Version,
+		}
+		proofResponse, err := worker.GenSyncCommRecursiveProof(recursiveRequest)
 		if err != nil {
-			// todo
 			logger.Error("gen sync comm recursive proof error:%v", err)
 			return err
 		}
-		zkbProofResponse.period = request.period
-		zkbProofResponse.zkProofType = SyncComRecursiveType
-		zkbProofResponse.proof = proofResponse.Body
-		zkbProofResponse.Status = ProofSuccess
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Body)
 	default:
 		logger.Error("never should happen proof type:%v", request.reqType)
 		return fmt.Errorf("never should happen proof type:%v", request.reqType)
@@ -200,6 +237,20 @@ func workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProo
 	resp <- zkbProofResponse
 	return nil
 
+}
+
+func (m *manager) getChanResponse(reqType ZkProofType) chan ZkProofResponse {
+	switch reqType {
+	case DepositTxType, VerifyTxType:
+		return m.btcProofResp
+	case RedeemTxType:
+		return m.ethProofResp
+	case SyncComGenesisType, SyncComUnitType, SyncComRecursiveType:
+		return m.syncCommitResp
+	default:
+		logger.Error("never should happen proof type:%v", reqType)
+		return nil
+	}
 }
 
 func (m *manager) CheckProofStatus(request ZkProofRequest) (bool, error) {
@@ -215,6 +266,15 @@ type Queue struct {
 	list     *list.List
 	lock     sync.Mutex
 	capacity uint64
+}
+
+func NewZkProofResp(reqType ZkProofType, period uint64, body []byte) ZkProofResponse {
+	return ZkProofResponse{
+		zkProofType: reqType,
+		period:      period,
+		proof:       body,
+		Status:      ProofSuccess,
+	}
 }
 
 func NewQueue() *Queue {

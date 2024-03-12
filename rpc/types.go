@@ -37,6 +37,7 @@ type NodeInfo struct {
 //------
 
 type DepositRequest struct {
+	Version string
 }
 
 type DepositResponse struct {
@@ -44,6 +45,7 @@ type DepositResponse struct {
 }
 
 type RedeemRequest struct {
+	Version string
 }
 
 type RedeemResponse struct {
@@ -51,6 +53,7 @@ type RedeemResponse struct {
 }
 
 type VerifyRequest struct {
+	Version string
 }
 
 type VerifyResponse struct {

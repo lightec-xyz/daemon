@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"sync/atomic"
 	"time"
 )
@@ -187,7 +188,7 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 		logger.Warn("proof request exists，%v %v  skip it now", period, reqType.String())
 		return nil
 	}
-	data, preData, prepareDataOk, err := b.prepareProofRequestData(period, reqType)
+	data, prepareDataOk, err := b.prepareProofRequestData(period, reqType)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -206,7 +207,6 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 			period:  period,
 			reqType: reqType,
 			data:    data,
-			preData: preData,
 		},
 	}
 
@@ -240,32 +240,32 @@ func (b *BeaconAgent) cacheProofRequestStatus(period uint64, reqType ZkProofType
 	}
 }
 
-func (b *BeaconAgent) prepareProofRequestData(period uint64, reqType ZkProofType) (data, preData []byte, prepared bool, err error) {
+func (b *BeaconAgent) prepareProofRequestData(period uint64, reqType ZkProofType) (data interface{}, prepared bool, err error) {
 	switch reqType {
 	case SyncComGenesisType:
 		data, prepared, err = b.GetGenesisRaw()
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return data, nil, prepared, nil
+		return data, prepared, nil
 	case SyncComUnitType:
-		data, preData, prepared, err = b.GetUnitData(period)
+		data, prepared, err = b.GetUnitData(period)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return data, preData, prepared, nil
+		return data, prepared, nil
 	case SyncComRecursiveType:
-		data, preData, prepared, err = b.GetRecursiveData(period)
+		data, prepared, err = b.GetRecursiveData(period)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return data, preData, prepared, nil
+		return data, prepared, nil
 	default:
 		logger.Error(" prepare request data never should happen : %v %v", period, reqType)
-		return nil, nil, false, fmt.Errorf("never should happen : %v %v", period, reqType)
+		return nil, false, fmt.Errorf("never should happen : %v %v", period, reqType)
 	}
 }
 
@@ -309,19 +309,20 @@ func (b *BeaconAgent) FetchDataResponse(req FetchDataResponse) error {
 	return nil
 }
 
-func (b *BeaconAgent) GetGenesisRaw() ([]byte, bool, error) {
+func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 	exists, err := b.fileStore.CheckGenesisUpdate()
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
 	if exists {
-		genesisData, err := b.fileStore.GetGenesisUpdateData()
+		var genesisData structs.LightClientBootstrapResponse
+		err := b.fileStore.GetGenesisUpdate(&genesisData)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, false, err
 		}
-		return genesisData, true, nil
+		return GenesisProofParam{data: genesisData}, true, nil
 	} else {
 		logger.Warn("no find genesis update data, send new genesis request")
 		b.beaconFetch.GenesisUpdateRequest()
@@ -329,132 +330,155 @@ func (b *BeaconAgent) GetGenesisRaw() ([]byte, bool, error) {
 	}
 }
 
-func (b *BeaconAgent) GetUnitData(period uint64) ([]byte, []byte, bool, error) {
+func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 	exists, err := b.fileStore.CheckUpdate(period)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	if !exists {
 		logger.Warn("no find %v update data, send new update request", period)
 		b.beaconFetch.NewUpdateRequest(period)
-		return nil, nil, false, nil
+		return nil, false, nil
 	}
-	updateData, err := b.fileStore.GetUpdateData(period)
+
+	var unitUpdateData []structs.LightClientUpdateWithVersion
+	err = b.fileStore.GetUpdate(period, &unitUpdateData)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	if b.genesisSyncPeriod == period {
 		existsGenesisUpdate, err := b.fileStore.CheckGenesisUpdate()
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
 		if !existsGenesisUpdate {
 			logger.Warn("get unit data,no find genesis update data, send new genesis request")
 			b.beaconFetch.GenesisUpdateRequest()
-			return nil, nil, false, nil
+			return nil, false, nil
 		}
-		genesisData, err := b.fileStore.GetGenesisUpdateData()
+		var genesisData structs.LightClientBootstrapResponse
+		err = b.fileStore.GetGenesisUpdate(&genesisData)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return updateData, genesisData, true, nil
+		return UnitProofParam{
+			update:    unitUpdateData,
+			genesis:   genesisData,
+			isGenesis: true,
+		}, true, nil
 	} else {
 		prePeriod := period - 1
 		if prePeriod < b.genesisSyncPeriod {
 			logger.Error("should never happen: %v", prePeriod)
-			return nil, nil, false, nil
+			return nil, false, nil
 		}
 		preUpdateExists, err := b.fileStore.CheckUpdate(prePeriod)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
 		if !preUpdateExists {
 			logger.Warn("get unit data,no find %v update data, send new update request", prePeriod)
 			b.beaconFetch.NewUpdateRequest(prePeriod)
-			return nil, nil, false, nil
+			return nil, false, nil
 		}
-		preUpdateData, err := b.fileStore.GetUpdateData(prePeriod)
+		var perUpdateData []structs.LightClientUpdateWithVersion
+		err = b.fileStore.GetUpdate(prePeriod, &perUpdateData)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return updateData, preUpdateData, true, nil
+		return UnitProofParam{
+			update:    unitUpdateData,
+			preUpdate: perUpdateData,
+			isGenesis: false,
+		}, true, nil
 	}
 
 }
 
-func (b *BeaconAgent) GetRecursiveData(period uint64) ([]byte, []byte, bool, error) {
+func (b *BeaconAgent) GetRecursiveData(period uint64) (interface{}, bool, error) {
 	existUnitProof, err := b.fileStore.CheckUnitProof(period)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	if !existUnitProof {
 		err := b.tryProofRequest(period, SyncComUnitType)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return nil, nil, false, nil
+		return nil, false, nil
 	}
-	unitProofData, err := b.fileStore.GetUnitProofData(period)
+	var unitProof string
+	err = b.fileStore.GetUnitProof(period, &unitProof)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, nil, false, err
+		return nil, false, err
 	}
 
 	if b.genesisSyncPeriod == period {
 		existsGenesisProof, err := b.fileStore.CheckGenesisProof()
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
 		if !existsGenesisProof {
 			logger.Warn("get recursive data,no find genesis proof data, send new genesis request")
 			err := b.tryProofRequest(period, SyncComGenesisType)
 			if err != nil {
 				logger.Error(err.Error())
-				return nil, nil, false, err
+				return nil, false, err
 			}
-			return nil, nil, false, nil
+			return nil, false, nil
 		}
-		genesisProofData, err := b.fileStore.GetGenesisProofData()
+		var genesisProof string
+		err = b.fileStore.GetGenesisProof(&genesisProof)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return unitProofData, genesisProofData, true, nil
+		return RecursiveProofParam{
+			unitProof:         unitProof,
+			preRecursiveProof: genesisProof,
+			isGenesis:         true,
+		}, true, nil
 	} else {
 		prePeriod := period - 1
 		if prePeriod < b.genesisSyncPeriod {
 			logger.Error("should never happen: %v", prePeriod)
-			return nil, nil, false, nil
+			return nil, false, nil
 		}
 		existsRecursiveProof, err := b.fileStore.CheckRecursiveProof(prePeriod)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
 		if !existsRecursiveProof {
 			logger.Warn("get recursive data,no find %v proof data, send new proof request", prePeriod)
 			err := b.tryProofRequest(prePeriod, SyncComRecursiveType)
 			if err != nil {
 				logger.Error(err.Error())
-				return nil, nil, false, err
+				return nil, false, err
 			}
-			return nil, nil, false, nil
+			return nil, false, nil
 		}
-		recursiveData, err := b.fileStore.GetRecursiveProofData(prePeriod)
+		var recursiveProof string
+		err = b.fileStore.GetRecursiveProof(prePeriod, &recursiveProof)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return unitProofData, recursiveData, true, nil
+		return RecursiveProofParam{
+			unitProof:         unitProof,
+			preRecursiveProof: recursiveProof,
+			isGenesis:         false,
+		}, true, nil
 	}
 
 }

@@ -13,6 +13,7 @@ func NewLocalWorker(maxNums int) rpc.IWorker {
 	return &LocalWorker{
 		maxNums:     maxNums,
 		currentNums: 0,
+		wid:         UUID(),
 	}
 }
 
@@ -20,6 +21,11 @@ type LocalWorker struct {
 	maxNums     int
 	currentNums int
 	lock        sync.Mutex
+	wid         string
+}
+
+func (l *LocalWorker) Id() string {
+	return l.wid
 }
 
 func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
@@ -107,6 +113,11 @@ type Worker struct {
 	maxNums     int
 	currentNums int
 	lock        sync.Mutex
+	wid         string
+}
+
+func (w *Worker) Id() string {
+	return w.wid
 }
 
 func NewWorker(client rpc.IProof, parallelNums int) *Worker {
@@ -114,6 +125,7 @@ func NewWorker(client rpc.IProof, parallelNums int) *Worker {
 		client:      client,
 		maxNums:     parallelNums,
 		currentNums: 0,
+		wid:         UUID(),
 	}
 }
 

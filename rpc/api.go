@@ -27,4 +27,5 @@ type IWorker interface {
 	DelReqNum()
 	MaxNums() int
 	CurrentNums() int
+	Id() string
 }

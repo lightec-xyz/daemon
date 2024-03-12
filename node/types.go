@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
 	"sync"
 )
@@ -40,13 +41,18 @@ func (zkpr *ZkProofType) String() string {
 type ZkProofRequest struct {
 	reqType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
 	period  uint64
-	data    []byte // current request data
-	preData []byte // previous request data
+	data    interface{} // current request data
+}
+
+func (r *ZkProofRequest) String() string {
+	return fmt.Sprintf("ZkProofRequest{reqType:%v,period:%v,data:%v}", r.reqType, r.period, r.data)
+
 }
 
 type ZkProofResponse struct {
 	zkProofType ZkProofType // 0: genesis proof, 1: unit proof, 2: recursive proof
 	period      uint64
+	data        interface{}
 	Status      ProofStatus
 	body        []byte
 	proof       []byte
@@ -55,13 +61,11 @@ type ZkProofResponse struct {
 func toDepositZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
 	var result []ZkProofRequest
 	for _, item := range list {
-		body, err := json.Marshal(item)
-		if err != nil {
-			return nil, err
-		}
 		result = append(result, ZkProofRequest{
 			reqType: DepositTxType,
-			data:    body,
+			data: DepositProofParam{
+				Body: item,
+			},
 		})
 	}
 	return result, nil
@@ -70,13 +74,11 @@ func toDepositZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
 func toRedeemZkProofRequest(list []ProofRequest) ([]ZkProofRequest, error) {
 	var result []ZkProofRequest
 	for _, item := range list {
-		body, err := json.Marshal(item)
-		if err != nil {
-			return nil, err
-		}
 		result = append(result, ZkProofRequest{
 			reqType: RedeemTxType,
-			data:    body,
+			data: RedeemProofParam{
+				Body: item,
+			},
 		})
 	}
 	return result, nil
@@ -108,6 +110,41 @@ func (zkRep *ZkProofResponse) ParseRedeemProof() (RedeemProof, error) {
 		return RedeemProof{}, err
 	}
 	return redeemProof, nil
+}
+
+type DepositProofParam struct {
+	Version string
+	Body    interface{}
+}
+
+type RedeemProofParam struct {
+	Version string
+	Body    interface{}
+}
+
+type VerifyProofParam struct {
+	Version string
+	Body    interface{}
+}
+
+type GenesisProofParam struct {
+	Version string
+	data    structs.LightClientBootstrapResponse
+}
+
+type UnitProofParam struct {
+	Version   string
+	update    []structs.LightClientUpdateWithVersion // todo
+	preUpdate []structs.LightClientUpdateWithVersion
+	genesis   structs.LightClientBootstrapResponse
+	isGenesis bool
+}
+
+type RecursiveProofParam struct {
+	Version           string
+	unitProof         string
+	preRecursiveProof string
+	isGenesis         bool
 }
 
 type DepositProof struct {
