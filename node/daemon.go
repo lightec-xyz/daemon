@@ -23,7 +23,7 @@ func init() {
 
 type IAgent interface {
 	ScanBlock() error
-	Submit(resp ZkProofResponse) error
+	ProofResponse(resp ZkProofResponse) error
 	Init() error
 	Close() error
 	Name() string
@@ -170,14 +170,14 @@ func (d *Daemon) Run() error {
 	go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
 	go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
 
-	// generate proof manager
+	// generate Proof manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
 	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
 
-	//tx proof
+	//tx Proof
 	//for _, agent := range d.agents {
 	//	name := fmt.Sprintf("%s-submitProof", agent.node.Name())
-	//	go doProofResponseTask(name, agent.proofResp, agent.node.Submit, d.exitSignal)
+	//	go doProofResponseTask(name, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
 	//}
 	//scan block with tx
 	//for _, agent := range d.agents {
@@ -240,7 +240,7 @@ func NewWorkers(workers []WorkerConfig) ([]rpc.IWorker, error) {
 
 type WrapperBeacon struct {
 	node              IBeaconAgent
-	scanPeriodTime    time.Duration // get node period
+	scanPeriodTime    time.Duration // get node Period
 	checkDataTime     time.Duration
 	proofResponse     chan ZkProofResponse
 	fetchDataResponse chan FetchDataResponse

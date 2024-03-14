@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	PeriodDir    = "period"
+	PeriodDir    = "Period"
 	GenesisDir   = "genesis"
 	UpdateDir    = "update"
 	UnitDir      = "unit"
@@ -185,7 +185,7 @@ func (f *FileStore) GetLatestPeriod() (uint64, error) {
 	var period uint64
 	err := f.GetObj(PeriodDir, LatestPeriodKey, &period)
 	if err != nil {
-		logger.Error("get latest period error:%v", err)
+		logger.Error("get latest Period error:%v", err)
 		return 0, err
 	}
 	return period, nil
@@ -403,6 +403,38 @@ func traverseFile(path string) (map[string]string, error) {
 		return nil
 	})
 	return files, err
+}
+
+func WriteFile(path string, data []byte) error {
+	exists, err := fileExists(path)
+	if err != nil {
+		logger.Error("file exists error:%v", err)
+		return err
+	}
+	if exists {
+		err := os.Remove(path)
+		if err != nil {
+			logger.Error("remove file error:%v", err)
+			return err
+		}
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		logger.Error("open file error:%v", err)
+		return err
+	}
+	defer file.Close()
+	_, err = file.Write(data)
+	if err != nil {
+		logger.Error("write file error:%v", err)
+		return err
+	}
+	err = file.Sync()
+	if err != nil {
+		logger.Error("sync file error:%v", err)
+		return err
+	}
+	return nil
 }
 
 func fileExists(path string) (bool, error) {

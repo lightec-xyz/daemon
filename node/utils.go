@@ -12,7 +12,7 @@ import (
 func UUID() string {
 	newV7, err := uuid.NewV7()
 	if err != nil {
-		panic(err)
+		panic("should never happen")
 	}
 	return newV7.String()
 }
@@ -39,6 +39,43 @@ func privateKeyToEthAddr(secret string) (string, error) {
 	}
 	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
 	return address, nil
+}
+
+func depositToTxHash(txs []DepositProofParam) []string {
+	var txHashList []string
+	for _, tx := range txs {
+		txHashList = append(txHashList, tx.TxHash)
+	}
+	return txHashList
+}
+
+func redeemToTxHashList(txs []RedeemProofParam) []string {
+	var txHashList []string
+	for _, tx := range txs {
+		txHashList = append(txHashList, tx.TxHash)
+	}
+	return txHashList
+}
+func toDepositZkProofRequest(list []DepositProofParam) ([]ZkProofRequest, error) {
+	var result []ZkProofRequest
+	for _, item := range list {
+		result = append(result, ZkProofRequest{
+			reqType: DepositTxType,
+			data:    item,
+		})
+	}
+	return result, nil
+}
+
+func toRedeemZkProofRequest(list []RedeemProofParam) ([]ZkProofRequest, error) {
+	var result []ZkProofRequest
+	for _, item := range list {
+		result = append(result, ZkProofRequest{
+			reqType: RedeemTxType,
+			data:    item,
+		})
+	}
+	return result, nil
 }
 
 func NewRat() *big.Rat {

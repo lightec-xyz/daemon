@@ -30,14 +30,14 @@ func TestDb_Mock(t *testing.T) {
 	bitcoinHeight, err = ReadBitcoinHeight(db)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(100), bitcoinHeight)
-	var txes []Transaction
-	var proofs []Proof
+	var txes []DbTx
+	var proofs []DbProof
 	for i := 0; i < 100; i++ {
-		txes = append(txes, Transaction{
+		txes = append(txes, DbTx{
 			TxHash: fmt.Sprintf("%v", i),
 			Height: 100,
 		})
-		proofs = append(proofs, Proof{
+		proofs = append(proofs, DbProof{
 			TxId: fmt.Sprintf("%v", i),
 		})
 	}

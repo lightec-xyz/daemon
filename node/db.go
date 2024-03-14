@@ -26,7 +26,7 @@ func ReadInitBitcoinHeight(store store.IStore) (bool, error) {
 	return store.HasObj(btcCurHeightKey)
 }
 
-func WriteBitcoinTxIds(store store.IStore, height int64, txes []Transaction) error {
+func WriteBitcoinTxIds(store store.IStore, height int64, txes []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbBtcHeightPrefix(height, tx.TxHash), nil)
@@ -57,7 +57,7 @@ func ReadBitcoinTxIds(store store.IStore, height int64) ([]string, error) {
 	return txIds, nil
 }
 
-func WriteBitcoinTx(store store.IStore, txes []Transaction) error {
+func WriteBitcoinTx(store store.IStore, txes []DbTx) error {
 	// todo
 	batch := store.Batch()
 	for _, tx := range txes {
@@ -75,7 +75,7 @@ func WriteBitcoinTx(store store.IStore, txes []Transaction) error {
 	return nil
 }
 
-func WriteDepositDestChainHash(store store.IStore, txList []Transaction) error {
+func WriteDepositDestChainHash(store store.IStore, txList []DbTx) error {
 	// todo
 	batch := store.Batch()
 	for _, tx := range txList {
@@ -93,8 +93,8 @@ func WriteDepositDestChainHash(store store.IStore, txList []Transaction) error {
 	return nil
 }
 
-func ReadTransaction(store store.IStore, txId string) (Transaction, error) {
-	var tx Transaction
+func ReadTransaction(store store.IStore, txId string) (DbTx, error) {
+	var tx DbTx
 	err := store.GetObj(DbTxId(txId), &tx)
 	if err != nil {
 		logger.Error("get tx error:%v", err)
@@ -103,22 +103,22 @@ func ReadTransaction(store store.IStore, txId string) (Transaction, error) {
 	return tx, nil
 }
 
-func ReadProof(store store.IStore, txId string) (Proof, error) {
-	var proof Proof
+func ReadProof(store store.IStore, txId string) (DbProof, error) {
+	var proof DbProof
 	err := store.GetObj(DbProofId(txId), &proof)
 	if err != nil {
-		logger.Error("get proof tx error:%v", err)
+		logger.Error("get Proof tx error:%v", err)
 		return proof, err
 	}
 	return proof, nil
 }
 
-func WriteProof(store store.IStore, txes []Proof) error {
+func WriteProof(store store.IStore, txes []DbProof) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbProofId(tx.TxId), tx)
 		if err != nil {
-			logger.Error("put proof tx error:%v", err)
+			logger.Error("put Proof tx error:%v", err)
 			return err
 		}
 	}
@@ -130,8 +130,8 @@ func WriteProof(store store.IStore, txes []Proof) error {
 	return nil
 }
 
-func UpdateProof(store store.IStore, txId, proof string, proofType ProofType, status ProofStatus) error {
-	txProof := Proof{
+func UpdateProof(store store.IStore, txId, proof string, proofType ZkProofType, status ProofStatus) error {
+	txProof := DbProof{
 		TxId:      txId,
 		Proof:     proof,
 		Status:    status,
@@ -139,7 +139,7 @@ func UpdateProof(store store.IStore, txId, proof string, proofType ProofType, st
 	}
 	err := store.PutObj(DbProofId(txId), txProof)
 	if err != nil {
-		logger.Error("put proof tx error:%v %v", txId, err)
+		logger.Error("put Proof tx error:%v %v", txId, err)
 		return err
 	}
 	return nil
@@ -163,7 +163,7 @@ func ReadInitEthereumHeight(store store.IStore) (bool, error) {
 	return store.HasObj(ethCurHeightKey)
 }
 
-func WriteEthereumTxIds(store store.IStore, height int64, txes []Transaction) error {
+func WriteEthereumTxIds(store store.IStore, height int64, txes []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbEthHeightPrefix(height, tx.TxHash), nil)
@@ -194,7 +194,7 @@ func ReadEthereumTxIds(store store.IStore, height int64) ([]string, error) {
 	return txIds, nil
 }
 
-func WriteEthereumTx(store store.IStore, txes []Transaction) error {
+func WriteEthereumTx(store store.IStore, txes []DbTx) error {
 	// todo
 	batch := store.Batch()
 	for _, tx := range txes {
@@ -212,7 +212,7 @@ func WriteEthereumTx(store store.IStore, txes []Transaction) error {
 	return nil
 }
 
-func WriteRedeemDestChainHash(store store.IStore, txList []Transaction) error {
+func WriteRedeemDestChainHash(store store.IStore, txList []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txList {
 		err := batch.BatchPutObj(DbDestId(tx.TxHash), tx.BtcTxId)
@@ -229,80 +229,81 @@ func WriteRedeemDestChainHash(store store.IStore, txList []Transaction) error {
 	return nil
 }
 
-func WriteUnGenProof(store store.IStore, chain ChainType, txList []ProofRequest) error {
+func WriteUnGenProof(store store.IStore, chain ChainType, txList []string) error {
 	batch := store.Batch()
-	for _, tx := range txList {
-		err := batch.BatchPutObj(DbUnGenProofId(chain, tx.TxHash), nil)
+	for _, txHash := range txList {
+		err := batch.BatchPutObj(DbUnGenProofId(chain, txHash), nil)
 		if err != nil {
-			logger.Error("put ungen proof error:%v", err)
+			logger.Error("put ungen Proof error:%v", err)
 			return err
 		}
 	}
 	err := batch.BatchWriteObj()
 	if err != nil {
-		logger.Error("put ungen proof batch  error:%v", err)
+		logger.Error("put ungen Proof batch  error:%v", err)
 		return err
 	}
 	return nil
 }
 
-func ReadAllUnGenProof(store store.IStore) ([]ProofRequest, error) {
-	var txIds []string
-	var requests []ProofRequest
-	iterator := store.Iterator([]byte(UnGenProofPrefix), nil)
-	defer iterator.Release()
-	for iterator.Next() {
-		txIds = append(txIds, getTxId(string(iterator.Key())))
-	}
-	err := iterator.Error()
-	if err != nil {
-		return nil, err
-	}
-	for _, txId := range txIds {
-		id, chainType, err := parseUnGenProofId(txId)
-		if err != nil {
-			return nil, err
-		}
-		var tx Transaction
-		err = store.GetObj(DbTxId(id), &tx)
-		if err != nil {
-			logger.Error("get ungen proof error:%v", err)
-			return nil, err
-		}
-		var req ProofRequest
-		if chainType == Bitcoin {
-			req = NewDepositProofRequest(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
-		} else if chainType == Ethereum {
-			req = NewRedeemProofRequest(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
-		} else {
-			return nil, fmt.Errorf("unknown chain type:%v", chainType)
-		}
-		requests = append(requests, req)
-	}
-	return requests, nil
+func ReadAllUnGenProof(store store.IStore) ([]ZkProofRequest, error) {
+	panic(store)
+	//var txIds []string
+	//var requests []ProofRequest
+	//iterator := store.Iterator([]byte(UnGenProofPrefix), nil)
+	//defer iterator.Release()
+	//for iterator.Next() {
+	//	txIds = append(txIds, getTxId(string(iterator.Key())))
+	//}
+	//err := iterator.Error()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//for _, txId := range txIds {
+	//	id, chainType, err := parseUnGenProofId(txId)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	var tx DbTx
+	//	err = store.GetObj(DbTxId(id), &tx)
+	//	if err != nil {
+	//		logger.Error("get ungen Proof error:%v", err)
+	//		return nil, err
+	//	}
+	//	var req ProofRequest
+	//	if chainType == Bitcoin {
+	//		req = NewDepositProofRequest(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
+	//	} else if chainType == Ethereum {
+	//		req = NewRedeemProofRequest(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
+	//	} else {
+	//		return nil, fmt.Errorf("unknown chain type:%v", chainType)
+	//	}
+	//	requests = append(requests, req)
+	//}
+	//return requests, nil
 }
 
 func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) error {
 	err := store.DeleteObj(DbUnGenProofId(chainType, txId))
 	if err != nil {
-		logger.Error("delete ungen proof error:%v", err)
+		logger.Error("delete ungen Proof error:%v", err)
 		return err
 	}
 	return nil
 }
 
-func DeleteUnGenProofs(store store.IStore, chainType ChainType, txes []Transaction) error {
+func DeleteUnGenProofs(store store.IStore, chainType ChainType, txes []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchDeleteObj(DbUnGenProofId(chainType, tx.TxHash))
 		if err != nil {
-			logger.Error("delete ungen proof error:%v", err)
+			logger.Error("delete ungen Proof error:%v", err)
 			return err
 		}
 	}
 	err := batch.BatchWriteObj()
 	if err != nil {
-		logger.Error("put ungen proof batch  error:%v", err)
+		logger.Error("put ungen Proof batch  error:%v", err)
 		return err
 	}
 	return nil
@@ -358,7 +359,7 @@ func getTxId(key string) string {
 func parseUnGenProofId(key string) (string, ChainType, error) {
 	splits := strings.Split(key, "_")
 	if len(splits) != 3 {
-		return "", 0, fmt.Errorf("parse ungen proof id error: %v ", key)
+		return "", 0, fmt.Errorf("parse ungen Proof id error: %v ", key)
 	}
 	chainType, err := strconv.ParseInt(splits[1], 10, 32)
 	if err != nil {

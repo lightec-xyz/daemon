@@ -72,7 +72,7 @@ func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
 func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
 	proof, err := ReadProof(h.store, txId)
 	if err != nil {
-		logger.Error("read proof error: %v %v", txId, err)
+		logger.Error("read Proof error: %v %v", txId, err)
 		return rpc.ProofInfo{}, err
 	}
 	rpcProof := rpc.ProofInfo{

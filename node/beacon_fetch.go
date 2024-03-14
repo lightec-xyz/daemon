@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	MaxReqNums   = 2
-	MaxQueueSize = 2
+	MaxReqNums   = 10
+	MaxQueueSize = 10
 )
 
 type BeaconFetch struct {
@@ -87,13 +87,13 @@ func (bf *BeaconFetch) fetch() error {
 	element := bf.fetchQueue.Back()
 	request, ok := element.Value.(FetchRequest)
 	if !ok {
-		logger.Error("should never happen,parse proof request error")
+		logger.Error("should never happen,parse Proof request error")
 		time.Sleep(2 * time.Second)
 		return nil
 	}
 	bf.fetchQueue.Remove(element)
 	bf.currentReqNums.Add(1)
-	logger.Debug("get fetch request period:%v,type:%v,fetch data now", request.period, request.UpdateType.String())
+	logger.Debug("get fetch request Period:%v,type:%v,fetch data now", request.period, request.UpdateType.String())
 	if request.UpdateType == GenesisUpdateType {
 		go func() {
 			err := bf.getGenesisData(bf.genesisSyncPeriod)

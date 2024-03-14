@@ -16,7 +16,6 @@ type Schedule struct {
 }
 
 func NewSchedule(workers []rpc.IWorker) *Schedule {
-	// todo
 	return &Schedule{
 		Workers: workers,
 	}
@@ -47,7 +46,7 @@ func (m *Schedule) AddWorker(endpoint string, nums int) error {
 }
 
 func (m *Schedule) findBestWorker(proofType ZkProofType) (rpc.IWorker, bool, error) {
-	// todo find work by proof type
+	// todo find work by Proof type
 	var tmpWorkers []rpc.IWorker
 	for _, worker := range m.Workers {
 		if worker.CurrentNums() < worker.MaxNums() {

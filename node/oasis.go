@@ -19,7 +19,7 @@ func (o *OasisAgent) ScanBlock() error {
 	panic("implement me")
 }
 
-func (o *OasisAgent) Submit(resp ZkProofResponse) error {
+func (o *OasisAgent) ProofResponse(resp ZkProofResponse) error {
 	//TODO implement me
 	panic("implement me")
 }

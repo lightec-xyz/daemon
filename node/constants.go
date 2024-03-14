@@ -75,7 +75,7 @@ const (
 	LocalEthScanTime        = 5 * time.Second
 
 	LocalInitBitcoinHeight  = 17838
-	LocalInitBeaconHeight   = 1024256 //slot of 596751 in holesky
+	LocalInitBeaconHeight   = 0 //slot of 596751 in holesky
 	LocalInitEthereumHeight = 596751
 
 	LocalEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"

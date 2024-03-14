@@ -29,7 +29,7 @@ func (l *LocalWorker) Id() string {
 }
 
 func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
-	logger.Debug("proof info")
+	logger.Debug("Proof info")
 	time.Sleep(10 * time.Second)
 	return rpc.ProofInfo{
 		Status: 0,
@@ -39,50 +39,50 @@ func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 }
 
 func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	logger.Debug("gen deposit proof")
+	logger.Debug("gen deposit Proof")
 	time.Sleep(6 * time.Second)
 	return rpc.DepositResponse{
-		Body: []byte("deposit proof"),
+		Body: []byte("deposit Proof"),
 	}, nil
 }
 
 func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
-	logger.Debug("gen redeem proof")
+	logger.Debug("gen redeem Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.RedeemResponse{
-		Body: []byte("redeem proof"),
+		Body: []byte("redeem Proof"),
 	}, nil
 }
 
 func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	logger.Debug("verify proof")
+	logger.Debug("verify Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
-		Body: []byte("verify proof"),
+		Body: []byte("verify Proof"),
 	}, nil
 }
 
 func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
-	logger.Debug("gen genesis proof")
+	logger.Debug("gen genesis Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommGenesisResponse{
-		Body: []byte("genesis proof"),
+		Body: []byte("genesis Proof"),
 	}, nil
 }
 
 func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
-	logger.Debug("gen units proof")
+	logger.Debug("gen units Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommUnitsResponse{
-		Body: []byte("units proof"),
+		Body: []byte("units Proof"),
 	}, nil
 }
 
 func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
-	logger.Debug("gen recursive proof")
+	logger.Debug("gen recursive Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommRecursiveResponse{
-		Body: []byte("recursive proof"),
+		Body: []byte("recursive Proof"),
 	}, nil
 }
 
