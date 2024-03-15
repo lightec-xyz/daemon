@@ -41,6 +41,38 @@ func privateKeyToEthAddr(secret string) (string, error) {
 	return address, nil
 }
 
+func trimOx(hash string) string {
+	return strings.TrimPrefix(hash, "0x")
+}
+
+func txesToTxIds(txes []Transaction) []string {
+	var txHashes []string
+	for _, tx := range txes {
+		txHashes = append(txHashes, tx.TxHash)
+	}
+	return txHashes
+}
+
+func proofsToDbProofs(proofs []Proof) []DbProof {
+	var dbProofs []DbProof
+	for _, proof := range proofs {
+		dbProofs = append(dbProofs, DbProof{
+			TxHash: proof.TxHash,
+		})
+	}
+	return dbProofs
+}
+
+func txesToDbTxes(txes []Transaction) []DbTx {
+	var dbtxes []DbTx
+	for _, tx := range txes {
+		dbtxes = append(dbtxes, DbTx{
+			TxHash: tx.TxHash,
+		})
+	}
+	return dbtxes
+}
+
 func depositToTxHash(txs []DepositProofParam) []string {
 	var txHashList []string
 	for _, tx := range txs {

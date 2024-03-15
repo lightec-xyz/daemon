@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
-	"sync"
 )
 
 type ZkProofType int
@@ -173,10 +172,17 @@ func formatOut(outputs []TxOut) string {
 	return buf.String()
 }
 
-type NonceManager struct {
-	sync.Mutex
+type Transaction struct {
+	TxHash    string
+	Height    int64
+	TxType    TxType
+	ChainType ChainType
+	BtcTxId   string
 }
 
-func NewNonceManager() *NonceManager {
-	return &NonceManager{}
+type Proof struct {
+	TxHash    string      `json:"txId"`
+	ProofType ZkProofType `json:"type"`
+	Status    int         `json:"status"`
+	Proof     string      `json:"Proof"`
 }

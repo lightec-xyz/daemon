@@ -18,12 +18,12 @@ func TestDb_Mock(t *testing.T) {
 	}
 	db, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	assert.Nil(t, err)
-	before, err := ReadInitBitcoinHeight(db)
+	before, err := CheckBitcoinHeight(db)
 	assert.Nil(t, err)
 	assert.Equal(t, false, before)
 	err = WriteBitcoinHeight(db, 100)
 	assert.Nil(t, err)
-	after, err := ReadInitBitcoinHeight(db)
+	after, err := CheckBitcoinHeight(db)
 	assert.Nil(t, err)
 	assert.Equal(t, true, after)
 	var bitcoinHeight int64
@@ -38,23 +38,23 @@ func TestDb_Mock(t *testing.T) {
 			Height: 100,
 		})
 		proofs = append(proofs, DbProof{
-			TxId: fmt.Sprintf("%v", i),
+			TxHash: fmt.Sprintf("%v", i),
 		})
 	}
 	err = WriteBitcoinTxIds(db, 100, txes)
 	assert.Nil(t, err)
 	err = WriteBitcoinTx(db, txes)
 	assert.Nil(t, err)
-	err = WriteProof(db, proofs)
+	err = WriteDbProof(db, proofs)
 	assert.Nil(t, err)
 	txIds, err := ReadBitcoinTxIds(db, 100)
 	assert.Nil(t, err)
 	for _, txId := range txIds {
 		t.Log(txId)
-		tx, err := ReadTransaction(db, txId)
+		tx, err := ReadDbTx(db, txId)
 		assert.Nil(t, err)
 		t.Log(tx)
-		proof, err := ReadProof(db, txId)
+		proof, err := ReadDbProof(db, txId)
 		assert.Nil(t, err)
 		t.Log(proof)
 	}

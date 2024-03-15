@@ -55,7 +55,7 @@ func (h *Handler) Transactions(txIds []string) ([]rpc.Transaction, error) {
 }
 
 func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
-	tx, err := ReadTransaction(h.store, txHash)
+	tx, err := ReadDbTx(h.store, txHash)
 	if err != nil {
 		logger.Error("read transaction error: %v %v", txHash, err)
 		return rpc.Transaction{}, err
@@ -70,7 +70,7 @@ func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
 }
 
 func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
-	proof, err := ReadProof(h.store, txId)
+	proof, err := ReadDbProof(h.store, txId)
 	if err != nil {
 		logger.Error("read Proof error: %v %v", txId, err)
 		return rpc.ProofInfo{}, err
@@ -78,7 +78,7 @@ func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
 	rpcProof := rpc.ProofInfo{
 		Status: int(proof.Status),
 		Proof:  proof.Proof,
-		TxId:   proof.TxId,
+		TxId:   proof.TxHash,
 	}
 	return rpcProof, nil
 }

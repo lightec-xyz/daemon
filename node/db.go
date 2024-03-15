@@ -22,14 +22,14 @@ func ReadBitcoinHeight(store store.IStore) (int64, error) {
 	return height, nil
 }
 
-func ReadInitBitcoinHeight(store store.IStore) (bool, error) {
+func CheckBitcoinHeight(store store.IStore) (bool, error) {
 	return store.HasObj(btcCurHeightKey)
 }
 
-func WriteBitcoinTxIds(store store.IStore, height int64, txes []DbTx) error {
+func WriteBitcoinTxIds(store store.IStore, height int64, txIds []string) error {
 	batch := store.Batch()
-	for _, tx := range txes {
-		err := batch.BatchPutObj(DbBtcHeightPrefix(height, tx.TxHash), nil)
+	for _, hash := range txIds {
+		err := batch.BatchPutObj(DbBtcHeightPrefix(height, hash), nil)
 		if err != nil {
 			logger.Error("put bitcoin tx error:%v", err)
 			return err
@@ -58,7 +58,6 @@ func ReadBitcoinTxIds(store store.IStore, height int64) ([]string, error) {
 }
 
 func WriteBitcoinTx(store store.IStore, txes []DbTx) error {
-	// todo
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbTxId(tx.TxHash), tx)
@@ -75,25 +74,11 @@ func WriteBitcoinTx(store store.IStore, txes []DbTx) error {
 	return nil
 }
 
-func WriteDepositDestChainHash(store store.IStore, txList []DbTx) error {
-	// todo
-	batch := store.Batch()
-	for _, tx := range txList {
-		err := batch.BatchPutObj(DbDestId(tx.BtcTxId), tx.TxHash)
-		if err != nil {
-			logger.Error("put deposit dest chain error:%v", err)
-			return err
-		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put deposit dest chain batch  error:%v", err)
-		return err
-	}
-	return nil
+func WriteDestHash(store store.IStore, key, value string) error {
+	return store.PutObj(DbDestId(key), value)
 }
 
-func ReadTransaction(store store.IStore, txId string) (DbTx, error) {
+func ReadDbTx(store store.IStore, txId string) (DbTx, error) {
 	var tx DbTx
 	err := store.GetObj(DbTxId(txId), &tx)
 	if err != nil {
@@ -103,7 +88,7 @@ func ReadTransaction(store store.IStore, txId string) (DbTx, error) {
 	return tx, nil
 }
 
-func ReadProof(store store.IStore, txId string) (DbProof, error) {
+func ReadDbProof(store store.IStore, txId string) (DbProof, error) {
 	var proof DbProof
 	err := store.GetObj(DbProofId(txId), &proof)
 	if err != nil {
@@ -113,10 +98,10 @@ func ReadProof(store store.IStore, txId string) (DbProof, error) {
 	return proof, nil
 }
 
-func WriteProof(store store.IStore, txes []DbProof) error {
+func WriteDbProof(store store.IStore, txes []DbProof) error {
 	batch := store.Batch()
 	for _, tx := range txes {
-		err := batch.BatchPutObj(DbProofId(tx.TxId), tx)
+		err := batch.BatchPutObj(DbProofId(tx.TxHash), tx)
 		if err != nil {
 			logger.Error("put Proof tx error:%v", err)
 			return err
@@ -132,9 +117,9 @@ func WriteProof(store store.IStore, txes []DbProof) error {
 
 func UpdateProof(store store.IStore, txId, proof string, proofType ZkProofType, status ProofStatus) error {
 	txProof := DbProof{
-		TxId:      txId,
+		TxHash:    txId,
 		Proof:     proof,
-		Status:    status,
+		Status:    int(status),
 		ProofType: proofType,
 	}
 	err := store.PutObj(DbProofId(txId), txProof)
@@ -159,22 +144,22 @@ func ReadEthereumHeight(store store.IStore) (int64, error) {
 	return height, nil
 }
 
-func ReadInitEthereumHeight(store store.IStore) (bool, error) {
+func CheckEthereumHeight(store store.IStore) (bool, error) {
 	return store.HasObj(ethCurHeightKey)
 }
 
-func WriteEthereumTxIds(store store.IStore, height int64, txes []DbTx) error {
+func WriteEthereumTxIds(store store.IStore, height int64, txHashes []string) error {
 	batch := store.Batch()
-	for _, tx := range txes {
-		err := batch.BatchPutObj(DbEthHeightPrefix(height, tx.TxHash), nil)
+	for _, hash := range txHashes {
+		err := batch.BatchPutObj(DbEthHeightPrefix(height, hash), nil)
 		if err != nil {
-			logger.Error("put ethereum tx error:%v", err)
+			logger.Error("put ethereum hash error:%v", err)
 			return err
 		}
 	}
 	err := batch.BatchWriteObj()
 	if err != nil {
-		logger.Error("put bitcoin tx batch error:%v", err)
+		logger.Error("put bitcoin hash batch error:%v", err)
 		return err
 	}
 	return nil
@@ -195,7 +180,6 @@ func ReadEthereumTxIds(store store.IStore, height int64) ([]string, error) {
 }
 
 func WriteEthereumTx(store store.IStore, txes []DbTx) error {
-	// todo
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbTxId(tx.TxHash), tx)
@@ -207,23 +191,6 @@ func WriteEthereumTx(store store.IStore, txes []DbTx) error {
 	err := batch.BatchWriteObj()
 	if err != nil {
 		logger.Error("put bitcoin tx batch error:%v", err)
-		return err
-	}
-	return nil
-}
-
-func WriteRedeemDestChainHash(store store.IStore, txList []DbTx) error {
-	batch := store.Batch()
-	for _, tx := range txList {
-		err := batch.BatchPutObj(DbDestId(tx.TxHash), tx.BtcTxId)
-		if err != nil {
-			logger.Error("put deposit dest chain error:%v", err)
-			return err
-		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put deposit dest chain batch  error:%v", err)
 		return err
 	}
 	return nil
@@ -292,63 +259,12 @@ func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) erro
 	return nil
 }
 
-func DeleteUnGenProofs(store store.IStore, chainType ChainType, txes []DbTx) error {
-	batch := store.Batch()
-	for _, tx := range txes {
-		err := batch.BatchDeleteObj(DbUnGenProofId(chainType, tx.TxHash))
-		if err != nil {
-			logger.Error("delete ungen Proof error:%v", err)
-			return err
-		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put ungen Proof batch  error:%v", err)
-		return err
-	}
-	return nil
-}
-
 func CheckDestHash(store store.IStore, txId string) (bool, error) {
 	ok, err := store.HasObj(DbDestId(txId))
 	if err != nil {
 		return false, err
 	}
 	return ok, nil
-}
-
-func DbProofId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", ProofPrefix, trimOx(txId))
-	return pTxID
-}
-
-func DbBtcHeightPrefix(height int64, txId string) string {
-	pTxID := fmt.Sprintf("%db_%s", height, trimOx(txId))
-	return pTxID
-}
-
-func DbEthHeightPrefix(height int64, txId string) string {
-	pTxID := fmt.Sprintf("%de_%s", height, trimOx(txId))
-	return pTxID
-}
-
-func DbTxId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", TxPrefix, trimOx(txId))
-	return pTxID
-}
-
-func DbDestId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", DestChainHashPrefix, trimOx(txId))
-	return pTxID
-}
-
-func DbUnGenProofId(chain ChainType, txId string) string {
-	pTxID := fmt.Sprintf("%s%d_%s", UnGenProofPrefix, chain, trimOx(txId))
-	return pTxID
-}
-
-func trimOx(hash string) string {
-	return strings.TrimPrefix(hash, "0x")
 }
 
 func getTxId(key string) string {

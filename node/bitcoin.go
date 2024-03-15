@@ -56,7 +56,7 @@ func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore 
 
 func (b *BitcoinAgent) Init() error {
 	logger.Info("bitcoin agent init now")
-	exists, err := ReadInitBitcoinHeight(b.store)
+	exists, err := CheckBitcoinHeight(b.store)
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
 		return err
@@ -130,6 +130,12 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("bitcoin agent update redeem info error: %v %v", index, err)
 			return err
 		}
+		allTxes := append(depositTxes, redeemTxes...)
+		err = b.saveTransaction(index, allTxes)
+		if err != nil {
+			logger.Error("bitcoin agent save transaction error: %v %v", index, err)
+			return err
+		}
 		err = b.saveDepositData(index, depositTxes, proofs, proofRequests)
 		if err != nil {
 			logger.Error("bitcoin agent save data to db error: %v %v", index, err)
@@ -160,24 +166,38 @@ func (b *BitcoinAgent) ScanBlock() error {
 	return nil
 }
 
-func (b *BitcoinAgent) updateRedeemInfo(height int64, txList []DbTx) error {
-	// todo
+func (b *BitcoinAgent) updateRedeemInfo(height int64, txList []Transaction) error {
+	//todo
 	return nil
 }
 
-func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []DbTx, proofs []DbProof, requests []DepositProofParam) error {
+func (e *BitcoinAgent) saveTransaction(height int64, txes []Transaction) error {
+	err := WriteEthereumTxIds(e.store, height, txesToTxIds(txes))
+	if err != nil {
+		logger.Error("write ethereum tx ids error: %v %v", height, err)
+		return err
+	}
+	err = WriteEthereumTx(e.store, txesToDbTxes(txes))
+	if err != nil {
+		logger.Error("put redeem tx error: %v %v", height, err)
+		return err
+	}
+	return nil
+}
+
+func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []Transaction, proofs []Proof, requests []DepositProofParam) error {
 	//todo
-	err := WriteBitcoinTxIds(b.store, height, depositTxes)
+	err := WriteBitcoinTxIds(b.store, height, txesToTxIds(depositTxes))
 	if err != nil {
 		logger.Error("write btc tx ids error: %v %v", height, err)
 		return err
 	}
-	err = WriteBitcoinTx(b.store, depositTxes)
+	err = WriteBitcoinTx(b.store, txesToDbTxes(depositTxes))
 	if err != nil {
 		logger.Error("write deposit tx error: %v %v", height, err)
 		return err
 	}
-	err = WriteProof(b.store, proofs)
+	err = WriteDbProof(b.store, proofsToDbProofs(proofs))
 	if err != nil {
 		logger.Error("write Proof error: %v %v", height, err)
 		return err
@@ -190,7 +210,7 @@ func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []DbTx, proofs 
 	return nil
 }
 
-func (b *BitcoinAgent) parseBlock(height int64) ([]DbTx, []DbTx, []DepositProofParam, []DbProof, error) {
+func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, []DepositProofParam, []Proof, error) {
 	blockHash, err := b.btcClient.GetBlockHash(height)
 	if err != nil {
 		logger.Error("btcClient get block hash error: %v %v", height, err)
@@ -201,14 +221,13 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DbTx, []DbTx, []DepositProofP
 		logger.Error("btcClient get block error: %v %v", blockHash, err)
 		return nil, nil, nil, nil, err
 	}
-	var depositTxes []DbTx
-	var redeemTxes []DbTx
+	var depositTxes []Transaction
+	var redeemTxes []Transaction
 	var requests []DepositProofParam
-	var proofs []DbProof
+	var proofs []Proof
 	for _, tx := range blockWithTx.Tx {
 		redeemTx, isRedeem := b.isRedeemTx(tx)
 		if isRedeem {
-			logger.Info("bitcoin agent find redeem tx: %v,inputs:%v ,outputs:%v", tx.Txid, formatUtxo(redeemTx.Inputs), formatOut(redeemTx.Outputs))
 			redeemTxes = append(redeemTxes, redeemTx)
 			continue
 		}
@@ -218,17 +237,16 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DbTx, []DbTx, []DepositProofP
 			return nil, nil, nil, nil, err
 		}
 		if isDeposit {
-			logger.Info("bitcoin agent find  deposit tx: %v, ethAddr:%v,amount:%v,utxo:%v", tx.Txid, depositTx.EthAddr, depositTx.Amount, formatUtxo(depositTx.Utxo))
 			submitted, err := b.ethClient.CheckDepositProof(depositTx.TxHash)
 			if err != nil {
 				logger.Error("check deposit Proof error: %v %v", tx.Txid, err)
 				return nil, nil, nil, nil, err
 			}
-			var depositTxProof DbProof
+			var depositTxProof Proof
 			if submitted {
 				depositTxProof = NewDepositTxProof(tx.Txid, ProofSuccess)
 			} else {
-				requests = append(requests, NewDepositProofRequest(depositTx.TxHash, depositTx.EthAddr, depositTx.Amount, depositTx.Utxo))
+				requests = append(requests, NewDepositProofRequest(depositTx.TxHash))
 				depositTxProof = NewDepositTxProof(tx.Txid, ProofDefault)
 			}
 			proofs = append(proofs, depositTxProof)
@@ -240,31 +258,31 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]DbTx, []DbTx, []DepositProofP
 
 func (b *BitcoinAgent) ProofResponse(response ZkProofResponse) error {
 
-	//logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp.String())
-	//err = b.updateDepositProof(resp.TxId, resp.Proof, resp.Status)
+	//logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp.FilterLogs())
+	//err = b.updateDepositProof(resp.TxHash, resp.Proof, resp.Status)
 	//if err != nil {
-	//	logger.Error("update Proof error: %v %v", resp.TxId, err)
+	//	logger.Error("update Proof error: %v %v", resp.TxHash, err)
 	//	return err
 	//}
-	//exists, err := CheckDepositDestHash(b.store, b.ethClient, resp.TxId)
+	//exists, err := CheckDepositDestHash(b.store, b.ethClient, resp.TxHash)
 	//if err != nil {
-	//	logger.Error("check btc tx error: %v %v", resp.TxId, err)
+	//	logger.Error("check btc tx error: %v %v", resp.TxHash, err)
 	//	return err
 	//}
 	//if exists {
-	//	err := DeleteUnGenProof(b.store, Bitcoin, resp.TxId)
+	//	err := DeleteUnGenProof(b.store, Bitcoin, resp.TxHash)
 	//	if err != nil {
-	//		logger.Error("delete ungen Proof error: %v %v", resp.TxId, err)
+	//		logger.Error("delete ungen Proof error: %v %v", resp.TxHash, err)
 	//	}
-	//	logger.Warn("deposit btc tx submitted: %v", resp.TxId)
+	//	logger.Warn("deposit btc tx submitted: %v", resp.TxHash)
 	//	return nil
 	//}
 	//if resp.Status == ProofSuccess {
-	//	err = DeleteUnGenProof(b.store, Bitcoin, resp.TxId)
+	//	err = DeleteUnGenProof(b.store, Bitcoin, resp.TxHash)
 	//	if err != nil {
-	//		logger.Error("delete ungen Proof error: %v %v", resp.TxId, err)
+	//		logger.Error("delete ungen Proof error: %v %v", resp.TxHash, err)
 	//	}
-	//	logger.Warn("deposit btc tx submitted: %v", resp.TxId)
+	//	logger.Warn("deposit btc tx submitted: %v", resp.TxHash)
 	//	if b.autoSubmit {
 	//		txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.EthAddr, resp.Amount)
 	//		if err != nil {
@@ -276,12 +294,12 @@ func (b *BitcoinAgent) ProofResponse(response ZkProofResponse) error {
 	//	}
 	//} else {
 	//	//todo retry ?
-	//	logger.Warn("Proof generate fail status: %v %v", resp.TxId, resp.Status)
+	//	logger.Warn("Proof generate fail status: %v %v", resp.TxHash, resp.Status)
 	//}
 	return nil
 }
 
-func (b *BitcoinAgent) updateContractUtxoChange(utxoList []DbTx) error {
+func (b *BitcoinAgent) updateContractUtxoChange(utxoList []Transaction) error {
 	// todo
 	var txIds []string
 	for _, tx := range utxoList {
@@ -354,7 +372,7 @@ func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof, receiverAddr string, amou
 	return txHash, nil
 }
 
-func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (DbTx, bool) {
+func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
 	// todo more check
 	var inputs []Utxo
 	isRedeemTx := false
@@ -372,38 +390,42 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (DbTx, bool) {
 		scriptHex, err := hex.DecodeString(out.ScriptPubKey.Hex)
 		if err != nil {
 			logger.Error("decode hex error:%v %v", tx.Txid, err)
-			return DbTx{}, false
+			return Transaction{}, false
 		}
 		outputs = append(outputs, TxOut{
 			Value:    BtcToSat(out.Value),
 			PkScript: scriptHex,
 		})
 	}
+	if isRedeemTx {
+		logger.Info("bitcoin agent find redeem tx: %v,inputs:%v ,outputs:%v", tx.Txid, formatUtxo(inputs), formatOut(outputs))
+	}
 	redeemBtcTx := NewRedeemBtcTx(tx.Txid, inputs, outputs)
 	return redeemBtcTx, isRedeemTx
 }
 
-func (b *BitcoinAgent) isDepositTx(tx types.Tx) (DbTx, bool, error) {
+func (b *BitcoinAgent) isDepositTx(tx types.Tx) (Transaction, bool, error) {
 	// todo more rule
 	txOuts := tx.Vout
 	if len(txOuts) < 2 {
-		return DbTx{}, false, nil
+		return Transaction{}, false, nil
 	}
 	if txOuts[1].ScriptPubKey.Address != b.operatorAddr {
-		return DbTx{}, false, nil
+		return Transaction{}, false, nil
 	}
-	if txOuts[1].Value <= b.minDepositValue {
+	amount := txOuts[1].Value
+	if amount <= b.minDepositValue {
 		logger.Warn("deposit tx less than min value: %v %v", b.minDepositValue, tx.Txid)
-		return DbTx{}, false, nil
+		return Transaction{}, false, nil
 	}
 	if !(txOuts[0].ScriptPubKey.Type == "nulldata" && strings.HasPrefix(txOuts[0].ScriptPubKey.Hex, "6a")) {
 		logger.Warn("find deposit tx but check rule fail: %v", tx.Txid)
-		return DbTx{}, false, nil
+		return Transaction{}, false, nil
 	}
 	ethAddr, err := getEthAddrFromScript(txOuts[0].ScriptPubKey.Hex)
 	if err != nil {
 		logger.Error("get eth addr from script error:%v %v", txOuts[0].ScriptPubKey.Hex, err)
-		return DbTx{}, false, err
+		return Transaction{}, false, err
 	}
 
 	utxoList := []Utxo{
@@ -412,7 +434,8 @@ func (b *BitcoinAgent) isDepositTx(tx types.Tx) (DbTx, bool, error) {
 			Index: 1,
 		},
 	}
-	depositTx := NewDepositBtcTx(tx.Txid, ethAddr, utxoList, BtcToSat(txOuts[1].Value))
+	logger.Info("bitcoin agent find  deposit tx: %v, ethAddr:%v,amount:%v,utxo:%v", tx.Txid, ethAddr, amount, formatUtxo(utxoList))
+	depositTx := NewDepositBtcTx(tx.Txid, ethAddr, utxoList, BtcToSat(amount))
 	return depositTx, true, nil
 }
 
@@ -467,36 +490,31 @@ func getEthAddrFromScript(script string) (string, error) {
 	return script[4:], nil
 }
 
-func NewDepositProofRequest(txId, ethAddr string, amount int64, utxo []Utxo) DepositProofParam {
+func NewDepositProofRequest(txId string) DepositProofParam {
 	return DepositProofParam{
 		TxHash: txId,
 	}
 }
 
-func NewDepositTxProof(txId string, status ProofStatus) DbProof {
-	return DbProof{
-		TxId:      txId,
+func NewDepositTxProof(txId string, status ProofStatus) Proof {
+	return Proof{
+		TxHash:    txId,
 		ProofType: DepositTxType,
-		Status:    status,
+		Status:    int(status),
 	}
 }
 
-func NewDepositBtcTx(txId, ethAddr string, utxo []Utxo, amount int64) DbTx {
-	return DbTx{
+func NewDepositBtcTx(txId, ethAddr string, utxo []Utxo, amount int64) Transaction {
+	return Transaction{
 		TxHash:    txId,
-		EthAddr:   ethAddr,
-		Utxo:      utxo,
-		Amount:    amount,
 		TxType:    DepositTx,
 		ChainType: Bitcoin,
 	}
 }
 
-func NewRedeemBtcTx(txId string, inputs []Utxo, outputs []TxOut) DbTx {
-	return DbTx{
+func NewRedeemBtcTx(txId string, inputs []Utxo, outputs []TxOut) Transaction {
+	return Transaction{
 		TxHash:    txId,
-		Inputs:    inputs,
-		Outputs:   outputs,
 		TxType:    RedeemTx,
 		ChainType: Bitcoin,
 	}

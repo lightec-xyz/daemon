@@ -61,7 +61,7 @@ func (m *manager) init() error {
 	//		return err
 	//	}
 	//	if !submitted {
-	//		logger.Info("add un gen Proof request:%v", req.String())
+	//		logger.Info("add un gen Proof request:%v", req.FilterLogs())
 	//		m.cacheQueue.PushBack(req)
 	//	} else {
 	//		err := DeleteUnGenProof(m.store, getChainByProofType(req), req.TxHash)

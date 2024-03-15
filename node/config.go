@@ -55,6 +55,12 @@ type EthAddrFilter struct {
 	LogTopicRedeemAddr  string
 }
 
+func (f *EthAddrFilter) FilterLogs() (logFilters []string, topicFilters []string) {
+	logFilters = []string{f.LogDepositAddr, f.LogRedeemAddr}
+	topicFilters = []string{f.LogTopicDepositAddr, f.LogTopicRedeemAddr}
+	return logFilters, topicFilters
+}
+
 func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string) (NodeConfig, error) {
 	var config NodeConfig
 	if network == "" {
