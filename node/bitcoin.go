@@ -22,6 +22,7 @@ type BitcoinAgent struct {
 	blockTime            time.Duration
 	proofRequest         chan<- []ZkProofRequest
 	checkProofHeightNums int64
+	taskManager          *TaskManager
 	whiteList            map[string]bool // todo
 	operatorAddr         string
 	submitTxEthAddr      string

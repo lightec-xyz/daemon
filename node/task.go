@@ -6,50 +6,72 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"math/big"
 	"sync"
 	"time"
 )
 
 type TaskManager struct {
-	nonce     uint64
-	ethClient *ethereum.Client
-	address   string
-	lock      sync.Mutex
-	exit      chan struct{}
-	queue     *sync.Map
-	keyStore  *KeyStore
-	timeout   time.Duration
+	ethNonce    uint64
+	oasisNonce  uint64
+	ethClient   *ethereum.Client
+	btcClient   *bitcoin.Client
+	oasisClient *oasis.Client
+	address     string
+	lock        sync.Mutex
+	exit        chan struct{}
+	queue       *sync.Map
+	keyStore    *KeyStore
+	timeout     time.Duration
 }
 
-func NewTaskManager(address, privateKey string, ethClient ethereum.Client) (*TaskManager, error) {
-	nonce, err := ethClient.GetNonce(address)
+func NewTaskManager(address, privateKey string, ethClient *ethereum.Client, btcClient *bitcoin.Client, oasisClient *oasis.Client) (*TaskManager, error) {
+	ethNonce, err := ethClient.GetNonce(address)
 	if err != nil {
-		logger.Error("get nonce error:%v", err)
+		logger.Error("get ethNonce error:%v", err)
 		return nil, err
 	}
 	return &TaskManager{
-		queue:     new(sync.Map),
-		nonce:     nonce,
-		address:   address,
-		ethClient: &ethClient,
-		keyStore:  NewKeyStore(privateKey),
-		exit:      make(chan struct{}, 1),
-		timeout:   5 * time.Minute,
+		queue:       new(sync.Map),
+		ethNonce:    ethNonce,
+		oasisNonce:  0,
+		address:     address,
+		ethClient:   ethClient,
+		btcClient:   btcClient,
+		oasisClient: oasisClient,
+		keyStore:    NewKeyStore(privateKey),
+		exit:        make(chan struct{}, 1),
+		timeout:     5 * time.Minute,
 	}, nil
 }
 
-func (t *TaskManager) GetNewNonce() (uint64, error) {
+func (t *TaskManager) GetEthNewNonce() (uint64, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	chainNonce, err := t.ethClient.GetNonce(t.address)
 	if err != nil {
-		logger.Error("get nonce error:%v", err)
+		logger.Error("get ethNonce error:%v", err)
 		return 0, err
 	}
-	if t.nonce >= chainNonce {
-		return t.nonce + 1, nil
+	if t.ethNonce >= chainNonce {
+		return t.ethNonce + 1, nil
+	}
+	return chainNonce, nil
+}
+
+func (t *TaskManager) GetOasisNewNonce() (uint64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	chainNonce, err := t.ethClient.GetNonce(t.address)
+	if err != nil {
+		logger.Error("get ethNonce error:%v", err)
+		return 0, err
+	}
+	if t.ethNonce >= chainNonce {
+		return t.ethNonce + 1, nil
 	}
 	return chainNonce, nil
 }
@@ -58,33 +80,27 @@ func (t *TaskManager) execute() error {
 	t.queue.Range(func(key, value interface{}) bool {
 		task, ok := value.(*Task)
 		if !ok {
-			logger.Error("never should happen task type: %v", value)
+			logger.Error("never should happen innerTask type: %v", value)
 			return false
 		}
-		switch task.Status {
-		case Default:
-			err := t.SendTask(task)
+		switch task.Type {
+		case DepositTask:
+			err := t.submitEthTx(task)
 			if err != nil {
 				logger.Error(err.Error())
 			}
-		case Pending:
-			// too long pending tx,retry again
-			currentTime := time.Now()
-			if currentTime.Sub(task.StartTime) >= t.timeout {
-				err := t.SendTask(task, true)
-				if err != nil {
-					logger.Error(err.Error())
-				}
+		case VerifyTask:
+			err := t.submitEthTx(task)
+			if err != nil {
+				logger.Error(err.Error())
 			}
-		case Success:
-			t.RemoveTask(task)
-		case Failed:
-			err := t.SendTask(task)
+		case RedeemTask:
+			err := t.SubmitDFinityTx(task)
 			if err != nil {
 				logger.Error(err.Error())
 			}
 		default:
-			logger.Error("never should happen task status: %v", task.Status)
+			logger.Error("never should happen network: %v", task)
 			return false
 		}
 		return true
@@ -93,28 +109,66 @@ func (t *TaskManager) execute() error {
 	return nil
 }
 
-func (t *TaskManager) Submit() error {
-	task := &Task{}
-	err := t.SendTask(task)
+func (t *TaskManager) DepositRequest() error {
+	nonce, err := t.GetEthNewNonce()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	t.AddTask(task)
+	task := NewDepositTask(nonce)
+	err = t.submitEthTx(task)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
 	return nil
 }
 
-func (t *TaskManager) AddTask(task *Task) {
-	t.queue.Store(task.Id, task)
+func (t *TaskManager) VerifyRequest() error {
+	nonce, err := t.GetEthNewNonce()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	task := NewVerifyTask(nonce)
+	err = t.submitEthTx(task)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	return nil
 }
 
-func (t *TaskManager) SendTask(task *Task, highPriority ...bool) error {
+func (t *TaskManager) SubmitOasisTx(task *Task, highPriority ...bool) error {
+	panic(t)
+}
+
+func (t *TaskManager) submitEthTx(task *Task, highPriority ...bool) error {
 	highPrio := false
 	if len(highPriority) > 0 {
 		highPrio = highPriority[0]
 	}
-	if task.TxHash != "" {
-		transaction, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(task.TxHash))
+	if len(task.tasks) != 1 {
+		return fmt.Errorf("never should happen innerTask length: %v", len(task.tasks))
+	}
+	depositTask := task.tasks[0]
+	switch depositTask.Status {
+	case Default:
+	case Pending:
+		currentTime := time.Now()
+		if currentTime.Sub(depositTask.StartTime) <= t.timeout {
+			return nil
+		} else {
+			highPrio = true
+		}
+	case Success:
+	case Failed:
+	default:
+		return fmt.Errorf("never should happen innerTask status: %v", depositTask.Status)
+	}
+
+	if depositTask.TxHash != "" {
+		transaction, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(depositTask.TxHash))
 		if err != nil {
 			logger.Error(err.Error())
 			return err
@@ -132,23 +186,30 @@ func (t *TaskManager) SendTask(task *Task, highPriority ...bool) error {
 	if highPrio {
 		gasPrice = big.NewInt(0).Add(gasPrice, big.NewInt(2))
 	}
+	// todo submit tx
 	switch task.Type {
 	case DepositTask:
-
-	case RedeemTask:
 
 	case VerifyTask:
 
 	default:
-		logger.Error("never should happen task type: %v", task.Type)
-		return fmt.Errorf("never should happen task type: %v", task.Type)
+		logger.Error("never should happen network: %v", task)
+		return fmt.Errorf("never should happen network: %v", task)
 	}
+	depositTask.Status = Pending
 	return nil
+}
 
+func (t *TaskManager) SubmitDFinityTx(task *Task) error {
+	panic(task)
 }
 
 func (t *TaskManager) RemoveTask(task *Task) {
 	t.queue.Delete(task.Id)
+}
+
+func (t *TaskManager) addTask(task *Task) {
+	t.queue.Store(task.Id, task)
 }
 
 func (t *TaskManager) Execute() {
@@ -157,7 +218,7 @@ func (t *TaskManager) Execute() {
 	for {
 		select {
 		case <-t.exit:
-			logger.Info("task manager goroutine exit now ...")
+			logger.Info("innerTask manager goroutine exit now ...")
 			return
 		case <-ticker.C:
 			err := t.execute()
@@ -173,23 +234,59 @@ func (t *TaskManager) Exit() {
 }
 
 type Task struct {
-	Nonce     uint64
+	Id    string
+	Type  TaskType
+	tasks []*innerTask
+	data  []string
+}
+
+func NewDepositTask(nonce uint64) *Task {
+	return &Task{
+		Type: DepositTask,
+		tasks: []*innerTask{
+			{
+				Id:     UUID(),
+				Nonce:  nonce,
+				Status: Default,
+			},
+		},
+	}
+}
+
+func NewVerifyTask(nonce uint64) *Task {
+	return &Task{
+		Type: VerifyTask,
+		tasks: []*innerTask{
+			{
+				Id:     UUID(),
+				Nonce:  nonce,
+				Status: Default,
+			},
+		},
+	}
+}
+
+func NewRedeemTask() *Task {
+	return &Task{
+		Type: RedeemTask,
+		tasks: []*innerTask{
+			{
+				Id:     UUID(),
+				Nonce:  0,
+				Status: Default,
+			},
+		},
+	}
+}
+
+type innerTask struct {
 	Id        string
+	Nonce     uint64
 	TxHash    string
 	StartTime time.Time
 	EndTime   time.Time
 	Status    TaskStatus
-	Type      TaskType
-}
-
-func NewTask(nonce uint64) (*Task, error) {
-	return &Task{
-		Nonce:     nonce,
-		Id:        UUID(),
-		StartTime: time.Now(),
-		EndTime:   time.Now(),
-		Status:    Default,
-	}, nil
+	Network   Network
 }
 
 type TaskType int
@@ -207,4 +304,12 @@ const (
 	Success
 	Failed
 	Pending
+)
+
+type Network int
+
+const (
+	EthereumChain Network = iota + 1
+	OasisChain
+	DFinityChain
 )

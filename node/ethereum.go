@@ -22,6 +22,7 @@ type EthereumAgent struct {
 	store            store.IStore
 	memoryStore      store.IStore
 	blockTime        time.Duration
+	taskManager      *TaskManager
 	whiteList        map[string]bool
 	proofRequest     chan []ZkProofRequest
 	exitSign         chan struct{}
