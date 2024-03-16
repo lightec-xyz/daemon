@@ -147,7 +147,7 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("ethereum save transaction error: %v %v", index, err)
 			return err
 		}
-		err = e.saveRedeemData(index, redeemTxes, proofs, requests)
+		err = e.saveRedeemData(redeemTxes, proofs, requests)
 		if err != nil {
 			logger.Error("ethereum save data error: %v %v", index, err)
 			return err
@@ -246,29 +246,29 @@ func (e *EthereumAgent) saveTransaction(height int64, txes []Transaction) error 
 	return nil
 }
 
-func (e *EthereumAgent) saveRedeemData(height int64, redeemTxes []Transaction, proofs []Proof, requests []RedeemProofParam) error {
+func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, proofs []Proof, requests []RedeemProofParam) error {
 
 	err := WriteDbProof(e.store, proofsToDbProofs(proofs))
 	if err != nil {
-		logger.Error("put eth current height error:%v %v", height, err)
+		logger.Error("put eth current height error:%v", err)
 		return err
 	}
 	for _, tx := range redeemTxes {
 		err := WriteDestHash(e.store, tx.BtcTxId, tx.TxHash)
 		if err != nil {
-			logger.Error("batch write error: %v %v", height, err)
+			logger.Error("batch write error: %v", err)
 			return err
 		}
 		err = WriteDestHash(e.store, tx.TxHash, tx.BtcTxId)
 		if err != nil {
-			logger.Error("batch write error: %v %v", height, err)
+			logger.Error("batch write error: %v", err)
 			return err
 		}
 	}
 	// cache need to generate redeem proof
 	err = WriteUnGenProof(e.store, Ethereum, redeemToTxHashList(requests))
 	if err != nil {
-		logger.Error("write ungen Proof error: %v %v", height, err)
+		logger.Error("write ungen Proof error: %v", err)
 		return err
 	}
 	return nil

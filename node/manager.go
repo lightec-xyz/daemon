@@ -1,14 +1,12 @@
 package node
 
 import (
-	"container/list"
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"sync"
 	"time"
 )
 
@@ -262,12 +260,6 @@ func (m *manager) Close() {
 
 }
 
-type Queue struct {
-	list     *list.List
-	lock     sync.Mutex
-	capacity uint64
-}
-
 func NewZkProofResp(reqType ZkProofType, period uint64, body []byte) ZkProofResponse {
 	return ZkProofResponse{
 		ZkProofType: reqType,
@@ -275,64 +267,4 @@ func NewZkProofResp(reqType ZkProofType, period uint64, body []byte) ZkProofResp
 		Proof:       body,
 		Status:      ProofSuccess,
 	}
-}
-
-func NewQueue() *Queue {
-	return &Queue{
-		list: list.New(),
-		lock: sync.Mutex{},
-	}
-}
-
-func NewQueueWithCapacity(capacity uint64) *Queue {
-	return &Queue{
-		list:     list.New(),
-		lock:     sync.Mutex{},
-		capacity: capacity,
-	}
-}
-
-func (sl *Queue) CanPush() bool {
-	if sl.capacity == 0 {
-		return true
-	}
-	sl.lock.Lock()
-	defer sl.lock.Unlock()
-	return sl.list.Len() < int(sl.capacity)
-}
-
-func (sl *Queue) PushBack(value interface{}) {
-	sl.lock.Lock()
-	defer sl.lock.Unlock()
-	sl.list.PushBack(value)
-}
-
-func (sl *Queue) PushFront(value interface{}) {
-	sl.lock.Lock()
-	defer sl.lock.Unlock()
-	sl.list.PushFront(value)
-}
-
-func (sl *Queue) Front() *list.Element {
-	sl.lock.Lock()
-	defer sl.lock.Unlock()
-	return sl.list.Front()
-
-}
-func (sl *Queue) Back() *list.Element {
-	sl.lock.Lock()
-	defer sl.lock.Unlock()
-	return sl.list.Back()
-
-}
-
-func (sl *Queue) Len() int {
-	sl.lock.Lock()
-	defer sl.lock.Unlock()
-	return sl.list.Len()
-}
-func (sl *Queue) Remove(e *list.Element) {
-	sl.lock.Lock()
-	defer sl.lock.Unlock()
-	sl.list.Remove(e)
 }

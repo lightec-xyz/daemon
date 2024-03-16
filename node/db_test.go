@@ -41,7 +41,6 @@ func TestDb_Mock(t *testing.T) {
 			TxHash: fmt.Sprintf("%v", i),
 		})
 	}
-	err = WriteBitcoinTxIds(db, 100, txes)
 	assert.Nil(t, err)
 	err = WriteBitcoinTx(db, txes)
 	assert.Nil(t, err)

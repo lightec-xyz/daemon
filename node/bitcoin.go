@@ -136,7 +136,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("bitcoin agent save transaction error: %v %v", index, err)
 			return err
 		}
-		err = b.saveDepositData(index, depositTxes, proofs, proofRequests)
+		err = b.saveDepositData(proofs, proofRequests)
 		if err != nil {
 			logger.Error("bitcoin agent save data to db error: %v %v", index, err)
 			return err
@@ -185,26 +185,15 @@ func (e *BitcoinAgent) saveTransaction(height int64, txes []Transaction) error {
 	return nil
 }
 
-func (b *BitcoinAgent) saveDepositData(height int64, depositTxes []Transaction, proofs []Proof, requests []DepositProofParam) error {
-	//todo
-	err := WriteBitcoinTxIds(b.store, height, txesToTxIds(depositTxes))
+func (b *BitcoinAgent) saveDepositData(proofs []Proof, requests []DepositProofParam) error {
+	err := WriteDbProof(b.store, proofsToDbProofs(proofs))
 	if err != nil {
-		logger.Error("write btc tx ids error: %v %v", height, err)
-		return err
-	}
-	err = WriteBitcoinTx(b.store, txesToDbTxes(depositTxes))
-	if err != nil {
-		logger.Error("write deposit tx error: %v %v", height, err)
-		return err
-	}
-	err = WriteDbProof(b.store, proofsToDbProofs(proofs))
-	if err != nil {
-		logger.Error("write Proof error: %v %v", height, err)
+		logger.Error("write Proof error: %v", err)
 		return err
 	}
 	err = WriteUnGenProof(b.store, Bitcoin, depositToTxHash(requests))
 	if err != nil {
-		logger.Error("write ungen Proof error: %v %v", height, err)
+		logger.Error("write ungen Proof error:%v", err)
 		return err
 	}
 	return nil
