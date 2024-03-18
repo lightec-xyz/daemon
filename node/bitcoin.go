@@ -156,7 +156,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		if len(redeemTxes) > 0 {
 			// todo
 			if b.autoSubmit {
-				err = b.updateContractUtxoChange(redeemTxes)
+				_, err = b.taskManager.UpdateUtxoRequest(txesToTxIds(redeemTxes), "")
 				if err != nil {
 					logger.Error("update utxo error: %v %v", index, err)
 					return err
@@ -221,7 +221,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			redeemTxes = append(redeemTxes, redeemTx)
 			continue
 		}
-		depositTx, isDeposit, err := b.isDepositTx(tx)
+		depositTx, isDeposit, err := parseDepositTx(tx, b.operatorAddr, b.minDepositValue)
 		if err != nil {
 			logger.Error("check deposit tx error: %v %v", tx.Txid, err)
 			return nil, nil, nil, nil, err
@@ -246,46 +246,23 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 	return depositTxes, redeemTxes, requests, proofs, nil
 }
 
-func (b *BitcoinAgent) ProofResponse(response ZkProofResponse) error {
-
-	//logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp.FilterLogs())
-	//err = b.updateDepositProof(resp.TxHash, resp.Proof, resp.Status)
-	//if err != nil {
-	//	logger.Error("update Proof error: %v %v", resp.TxHash, err)
-	//	return err
-	//}
-	//exists, err := CheckDepositDestHash(b.store, b.ethClient, resp.TxHash)
-	//if err != nil {
-	//	logger.Error("check btc tx error: %v %v", resp.TxHash, err)
-	//	return err
-	//}
-	//if exists {
-	//	err := DeleteUnGenProof(b.store, Bitcoin, resp.TxHash)
-	//	if err != nil {
-	//		logger.Error("delete ungen Proof error: %v %v", resp.TxHash, err)
-	//	}
-	//	logger.Warn("deposit btc tx submitted: %v", resp.TxHash)
-	//	return nil
-	//}
-	//if resp.Status == ProofSuccess {
-	//	err = DeleteUnGenProof(b.store, Bitcoin, resp.TxHash)
-	//	if err != nil {
-	//		logger.Error("delete ungen Proof error: %v %v", resp.TxHash, err)
-	//	}
-	//	logger.Warn("deposit btc tx submitted: %v", resp.TxHash)
-	//	if b.autoSubmit {
-	//		txHash, err := b.MintZKBtcTx(resp.Utxos, resp.Proof, resp.EthAddr, resp.Amount)
-	//		if err != nil {
-	//			//todo add queue or cli retry ?
-	//			logger.Error("mint btc tx error:%v", err)
-	//			return err
-	//		}
-	//		logger.Info("success mint zkbtc tx: %v", txHash)
-	//	}
-	//} else {
-	//	//todo retry ?
-	//	logger.Warn("Proof generate fail status: %v %v", resp.TxHash, resp.Status)
-	//}
+func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
+	logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp)
+	proofId := resp.txHash
+	err := b.updateDepositProof(proofId, resp.Proof, resp.Status)
+	if err != nil {
+		logger.Error("update Proof error: %v %v", proofId, err)
+		return err
+	}
+	// todo
+	if b.autoSubmit {
+		txHash, err := b.taskManager.MintZkBtcRequest(proofId, resp.Proof)
+		if err != nil {
+			logger.Error("mint btc tx error:%v", err)
+			return err
+		}
+		logger.Info("success mint zkbtc tx: %v", txHash)
+	}
 	return nil
 }
 
@@ -394,41 +371,6 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
 	return redeemBtcTx, isRedeemTx
 }
 
-func (b *BitcoinAgent) isDepositTx(tx types.Tx) (Transaction, bool, error) {
-	// todo more rule
-	txOuts := tx.Vout
-	if len(txOuts) < 2 {
-		return Transaction{}, false, nil
-	}
-	if txOuts[1].ScriptPubKey.Address != b.operatorAddr {
-		return Transaction{}, false, nil
-	}
-	amount := txOuts[1].Value
-	if amount <= b.minDepositValue {
-		logger.Warn("deposit tx less than min value: %v %v", b.minDepositValue, tx.Txid)
-		return Transaction{}, false, nil
-	}
-	if !(txOuts[0].ScriptPubKey.Type == "nulldata" && strings.HasPrefix(txOuts[0].ScriptPubKey.Hex, "6a")) {
-		logger.Warn("find deposit tx but check rule fail: %v", tx.Txid)
-		return Transaction{}, false, nil
-	}
-	ethAddr, err := getEthAddrFromScript(txOuts[0].ScriptPubKey.Hex)
-	if err != nil {
-		logger.Error("get eth addr from script error:%v %v", txOuts[0].ScriptPubKey.Hex, err)
-		return Transaction{}, false, err
-	}
-
-	utxoList := []Utxo{
-		{
-			TxId:  tx.Txid,
-			Index: 1,
-		},
-	}
-	logger.Info("bitcoin agent find  deposit tx: %v, ethAddr:%v,amount:%v,utxo:%v", tx.Txid, ethAddr, amount, formatUtxo(utxoList))
-	depositTx := NewDepositBtcTx(tx.Txid, ethAddr, utxoList, BtcToSat(amount))
-	return depositTx, true, nil
-}
-
 func (b *BitcoinAgent) updateDepositProof(txId, proof string, status ProofStatus) error {
 	logger.Debug("update DepositTx  Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(b.store, txId, proof, DepositTxType, status)
@@ -444,7 +386,7 @@ func (b *BitcoinAgent) Close() error {
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
-	return "Bitcoin WrapperAgent"
+	return "Bitcoin Agent"
 }
 
 func CheckDepositDestHash(store store.IStore, ethClient *ethereum.Client, txId string) (bool, error) {
@@ -462,6 +404,40 @@ func CheckDepositDestHash(store store.IStore, ethClient *ethereum.Client, txId s
 		return false, err
 	}
 	return submitted, nil
+}
+
+func parseDepositTx(tx types.Tx, operatorAddr string, minDepositValue float64) (Transaction, bool, error) {
+	// todo more rule
+	txOuts := tx.Vout
+	if len(txOuts) < 2 {
+		return Transaction{}, false, nil
+	}
+	if txOuts[1].ScriptPubKey.Address != operatorAddr {
+		return Transaction{}, false, nil
+	}
+	amount := txOuts[1].Value
+	if amount <= minDepositValue {
+		logger.Warn("deposit tx less than min value: %v %v", operatorAddr, tx.Txid)
+		return Transaction{}, false, nil
+	}
+	if !(txOuts[0].ScriptPubKey.Type == "nulldata" && strings.HasPrefix(txOuts[0].ScriptPubKey.Hex, "6a")) {
+		logger.Warn("find deposit tx but check rule fail: %v", tx.Txid)
+		return Transaction{}, false, nil
+	}
+	ethAddr, err := getEthAddrFromScript(txOuts[0].ScriptPubKey.Hex)
+	if err != nil {
+		logger.Error("get eth addr from script error:%v %v", txOuts[0].ScriptPubKey.Hex, err)
+		return Transaction{}, false, err
+	}
+	utxoList := []Utxo{
+		{
+			TxId:  tx.Txid,
+			Index: 1,
+		},
+	}
+	logger.Info("bitcoin agent find  deposit tx: %v, ethAddr:%v,amount:%v,utxo:%v", tx.Txid, ethAddr, amount, formatUtxo(utxoList))
+	depositTx := NewDepositBtcTx(tx.Txid, ethAddr, utxoList, BtcToSat(amount))
+	return depositTx, true, nil
 }
 
 func getEthAddrFromScript(script string) (string, error) {
@@ -499,6 +475,9 @@ func NewDepositBtcTx(txId, ethAddr string, utxo []Utxo, amount int64) Transactio
 		TxHash:    txId,
 		TxType:    DepositTx,
 		ChainType: Bitcoin,
+		EthAddr:   ethAddr,
+		Utxo:      utxo,
+		Amount:    amount,
 	}
 }
 

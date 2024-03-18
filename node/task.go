@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	btcTypes "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"math/big"
@@ -85,17 +86,17 @@ func (t *TaskManager) execute() error {
 		}
 		switch task.Type {
 		case DepositTask:
-			err := t.submitEthTx(task)
+			_, err := t.submitDepositTx(task)
 			if err != nil {
 				logger.Error(err.Error())
 			}
-		case VerifyTask:
-			err := t.submitEthTx(task)
+		case UpdateTask:
+			_, err := t.submitUpdateTx(task)
 			if err != nil {
 				logger.Error(err.Error())
 			}
 		case RedeemTask:
-			err := t.SubmitDFinityTx(task)
+			_, err := t.submitOasisTx(task)
 			if err != nil {
 				logger.Error(err.Error())
 			}
@@ -109,98 +110,242 @@ func (t *TaskManager) execute() error {
 	return nil
 }
 
-func (t *TaskManager) DepositRequest() error {
+func (t *TaskManager) MintZkBtcRequest(proofId, proof string) (string, error) {
+	// todo
+	btcTx, err := t.btcClient.GetTransaction(proofId)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	param, err := parseBtcTx(btcTx)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	param.Proof = proof
 	nonce, err := t.GetEthNewNonce()
 	if err != nil {
 		logger.Error(err.Error())
-		return err
+		return "", err
 	}
-	task := NewDepositTask(nonce)
-	err = t.submitEthTx(task)
+	task := NewDepositTask(nonce, param)
+	t.addTask(task)
+	txHash, err := t.submitDepositTx(task)
 	if err != nil {
 		logger.Error(err.Error())
-		return err
+		return "", err
 	}
-	return nil
+	return txHash, nil
 }
 
-func (t *TaskManager) VerifyRequest() error {
+func (t *TaskManager) UpdateUtxoRequest(txIds []string, proof string) (string, error) {
+	// todo
 	nonce, err := t.GetEthNewNonce()
 	if err != nil {
 		logger.Error(err.Error())
-		return err
+		return "", err
 	}
-	task := NewVerifyTask(nonce)
-	err = t.submitEthTx(task)
+	param := UpdateParam{
+		Proof: proof,
+		TxIds: txIds,
+	}
+	task := NewUpdateTask(nonce, param)
+	t.addTask(task)
+	txHash, err := t.submitUpdateTx(task)
 	if err != nil {
 		logger.Error(err.Error())
-		return err
+		return "", err
 	}
-	return nil
+	return txHash, nil
 }
 
-func (t *TaskManager) SubmitOasisTx(task *Task, highPriority ...bool) error {
-	panic(t)
+func (t *TaskManager) RedeemBtcRequest(proof string) (string, error) {
+	var innerTasks []*innerTask
+	for index := 0; index < 3; index++ {
+		newNonce, err := t.GetOasisNewNonce()
+		if err != nil {
+			logger.Error(err.Error())
+			return "", err
+		}
+		task := NewRedeemInnerTask(newNonce, proof)
+		innerTasks = append(innerTasks, task)
+	}
+	task := &Task{
+		Id:    UUID(),
+		Type:  RedeemTask,
+		tasks: innerTasks,
+	}
+	t.addTask(task)
+	txHash, err := t.submitOasisTx(task)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	return txHash, nil
 }
 
-func (t *TaskManager) submitEthTx(task *Task, highPriority ...bool) error {
+func (t *TaskManager) submitOasisTx(oasisTask *Task) (string, error) {
+	//todo
+	if oasisTask.Type != RedeemTask {
+		return "", fmt.Errorf("never should happen network: %v", oasisTask)
+	}
+	for _, task := range oasisTask.tasks {
+		if task.TxHash != "" {
+			_, err := t.doOasisTx(task)
+			if err != nil {
+				logger.Error(err.Error())
+				return "", err
+			}
+		}
+	}
+	return "", nil
+
+}
+
+func (t *TaskManager) submitUpdateTx(ethTask *Task, highPriority ...bool) (string, error) {
 	highPrio := false
 	if len(highPriority) > 0 {
 		highPrio = highPriority[0]
 	}
-	if len(task.tasks) != 1 {
-		return fmt.Errorf("never should happen innerTask length: %v", len(task.tasks))
+	if len(ethTask.tasks) != 1 {
+		return "", fmt.Errorf("never should happen innerTask length: %v", len(ethTask.tasks))
 	}
-	depositTask := task.tasks[0]
-	switch depositTask.Status {
-	case Default:
-	case Pending:
-		currentTime := time.Now()
-		if currentTime.Sub(depositTask.StartTime) <= t.timeout {
-			return nil
-		} else {
-			highPrio = true
-		}
-	case Success:
-	case Failed:
-	default:
-		return fmt.Errorf("never should happen innerTask status: %v", depositTask.Status)
-	}
-
-	if depositTask.TxHash != "" {
-		transaction, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(depositTask.TxHash))
+	task := ethTask.tasks[0]
+	if task.TxHash != "" {
+		transaction, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(task.TxHash))
 		if err != nil {
 			logger.Error(err.Error())
-			return err
+			return "", err
 		}
 		if transaction.Status == types.ReceiptStatusSuccessful {
-			t.RemoveTask(task)
-			return nil
+			t.RemoveTask(ethTask)
+			return "", nil
+		}
+	}
+	// todo only focus on pending
+	if task.Status == Pending {
+		currentTime := time.Now()
+		if currentTime.Sub(task.StartTime) < t.timeout {
+			return "", nil
 		}
 	}
 	gasPrice, err := t.ethClient.GetGasPrice()
 	if err != nil {
 		logger.Error(err.Error())
-		return err
+		return "", err
+	}
+	chainId, err := t.ethClient.GetChainId()
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
 	}
 	if highPrio {
 		gasPrice = big.NewInt(0).Add(gasPrice, big.NewInt(2))
 	}
-	// todo submit tx
-	switch task.Type {
-	case DepositTask:
-
-	case VerifyTask:
-
-	default:
-		logger.Error("never should happen network: %v", task)
-		return fmt.Errorf("never should happen network: %v", task)
+	param, ok := task.data.(UpdateParam)
+	if !ok {
+		logger.Error("never should happen innerTask type: %v", task)
+		return "", fmt.Errorf("never should happen innerTask type: %v", task)
 	}
-	depositTask.Status = Pending
-	return nil
+	txHash, err := t.ethClient.UpdateUtxoChange(t.keyStore.GetPrivateKey(), param.TxIds,
+		task.Nonce, 0, chainId, gasPrice, []byte(param.Proof))
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	logger.Info("submit deposit tx: %v", txHash)
+	task.Status = Pending
+	task.StartTime = time.Now()
+	return txHash, nil
+
 }
 
-func (t *TaskManager) SubmitDFinityTx(task *Task) error {
+func (t *TaskManager) submitDepositTx(ethTask *Task, highPriority ...bool) (string, error) {
+	highPrio := false
+	if len(highPriority) > 0 {
+		highPrio = highPriority[0]
+	}
+	if len(ethTask.tasks) != 1 {
+		return "", fmt.Errorf("never should happen innerTask length: %v", len(ethTask.tasks))
+	}
+	task := ethTask.tasks[0]
+	if task.TxHash != "" {
+		transaction, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(task.TxHash))
+		if err != nil {
+			logger.Error(err.Error())
+			return "", err
+		}
+		if transaction.Status == types.ReceiptStatusSuccessful {
+			t.RemoveTask(ethTask)
+			return "", nil
+		}
+	}
+	// todo only focus on pending
+	if task.Status == Pending {
+		currentTime := time.Now()
+		if currentTime.Sub(task.StartTime) < t.timeout {
+			return "", nil
+		}
+	}
+	gasPrice, err := t.ethClient.GetGasPrice()
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	chainId, err := t.ethClient.GetChainId()
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	if highPrio {
+		gasPrice = big.NewInt(0).Add(gasPrice, big.NewInt(2))
+	}
+	param, ok := task.data.(DepositParam)
+	if !ok {
+		logger.Error("never should happen innerTask type: %v", task)
+		return "", fmt.Errorf("never should happen innerTask type: %v", task)
+	}
+	txHash, err := t.ethClient.Deposit(t.keyStore.GetPrivateKey(), param.TxId, param.EthAddr, param.TxIndex,
+		task.Nonce, 0, chainId, gasPrice, big.NewInt(param.Amount), []byte(param.Proof))
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	task.Status = Pending
+	task.StartTime = time.Now()
+	logger.Info("submit deposit tx: %v", txHash)
+	return txHash, nil
+}
+
+func (t *TaskManager) doOasisTx(task *innerTask) (string, error) {
+	// todo
+	param, ok := task.data.(RedeemParam)
+	if !ok {
+		logger.Error("never should happen innerTask type: %v", task)
+		return "", fmt.Errorf("never should happen innerTask type: %v", task)
+	}
+
+	if task.TxHash != "" {
+
+	}
+	txHash, err := t.oasisClient.Redeem(param.Proof)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	logger.Info("submit redeem tx: %v", txHash)
+	return "", nil
+}
+
+func (t *TaskManager) deposit(nonce uint64, gasPrice *big.Int) (string, error) {
+	panic(t)
+}
+
+func (t *TaskManager) verify(nonce uint64, gasPrice *big.Int) (string, error) {
+	panic(t)
+}
+
+func (t *TaskManager) SubmitDfinityTx(task *Task) error {
 	panic(task)
 }
 
@@ -237,46 +382,6 @@ type Task struct {
 	Id    string
 	Type  TaskType
 	tasks []*innerTask
-	data  []string
-}
-
-func NewDepositTask(nonce uint64) *Task {
-	return &Task{
-		Type: DepositTask,
-		tasks: []*innerTask{
-			{
-				Id:     UUID(),
-				Nonce:  nonce,
-				Status: Default,
-			},
-		},
-	}
-}
-
-func NewVerifyTask(nonce uint64) *Task {
-	return &Task{
-		Type: VerifyTask,
-		tasks: []*innerTask{
-			{
-				Id:     UUID(),
-				Nonce:  nonce,
-				Status: Default,
-			},
-		},
-	}
-}
-
-func NewRedeemTask() *Task {
-	return &Task{
-		Type: RedeemTask,
-		tasks: []*innerTask{
-			{
-				Id:     UUID(),
-				Nonce:  0,
-				Status: Default,
-			},
-		},
-	}
 }
 
 type innerTask struct {
@@ -287,13 +392,31 @@ type innerTask struct {
 	EndTime   time.Time
 	Status    TaskStatus
 	Network   Network
+	data      interface{}
+}
+
+type DepositParam struct {
+	EthAddr string
+	TxId    string
+	TxIndex uint32
+	Amount  int64
+	Proof   string
+}
+
+type UpdateParam struct {
+	Proof string
+	TxIds []string
+}
+
+type RedeemParam struct {
+	Proof string
 }
 
 type TaskType int
 
 const (
 	DepositTask TaskType = iota + 1
-	VerifyTask
+	UpdateTask
 	RedeemTask
 )
 
@@ -311,5 +434,50 @@ type Network int
 const (
 	EthereumChain Network = iota + 1
 	OasisChain
-	DFinityChain
+	DfinityChain
 )
+
+func parseBtcTx(tx btcTypes.RawTransaction) (DepositParam, error) {
+	panic(tx)
+}
+
+func NewDepositTask(nonce uint64, data interface{}) *Task {
+	return &Task{
+		Type: DepositTask,
+		tasks: []*innerTask{
+			{
+				Id:      UUID(),
+				Nonce:   nonce,
+				Status:  Default,
+				data:    data,
+				Network: EthereumChain,
+			},
+		},
+	}
+}
+
+func NewUpdateTask(nonce uint64, data interface{}) *Task {
+	return &Task{
+		Type: UpdateTask,
+		tasks: []*innerTask{
+			{
+				Id:      UUID(),
+				Nonce:   nonce,
+				Status:  Default,
+				data:    data,
+				Network: EthereumChain,
+			},
+		},
+	}
+}
+
+func NewRedeemInnerTask(nonce uint64, data interface{}) *innerTask {
+	return &innerTask{
+		Id:      UUID(),
+		Nonce:   nonce,
+		Status:  Default,
+		data:    data,
+		Network: OasisChain,
+	}
+
+}

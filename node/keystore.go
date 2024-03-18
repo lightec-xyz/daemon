@@ -1,6 +1,7 @@
 package node
 
 // todo
+
 type KeyStore struct {
 	privateKey string
 }

@@ -38,9 +38,10 @@ func (zkpr *ZkProofType) String() string {
 }
 
 type ZkProofRequest struct {
-	reqType ZkProofType // 0: genesis Proof, 1: unit Proof, 2: recursive Proof
-	data    interface{} // current request data
+	reqType ZkProofType
+	data    interface{}
 	period  uint64
+	txHash  string
 }
 
 func (r *ZkProofRequest) String() string {
@@ -51,8 +52,9 @@ func (r *ZkProofRequest) String() string {
 type ZkProofResponse struct {
 	ZkProofType ZkProofType // 0: genesis Proof, 1: unit Proof, 2: recursive Proof
 	Status      ProofStatus
-	Proof       []byte
+	Proof       string
 	Period      uint64
+	txHash      string
 }
 
 func (zkResp *ZkProofResponse) String() string {
@@ -177,7 +179,14 @@ type Transaction struct {
 	Height    int64
 	TxType    TxType
 	ChainType ChainType
-	BtcTxId   string
+
+	// bitcoin
+	EthAddr string
+	Amount  int64
+	Utxo    []Utxo
+
+	// ethereum
+	BtcTxId string
 }
 
 type Proof struct {

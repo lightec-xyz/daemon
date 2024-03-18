@@ -26,23 +26,6 @@ func CheckBitcoinHeight(store store.IStore) (bool, error) {
 	return store.HasObj(btcCurHeightKey)
 }
 
-func WriteBitcoinTxIds(store store.IStore, height int64, txIds []string) error {
-	batch := store.Batch()
-	for _, hash := range txIds {
-		err := batch.BatchPutObj(DbBtcHeightPrefix(height, hash), nil)
-		if err != nil {
-			logger.Error("put bitcoin tx error:%v", err)
-			return err
-		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put bitcoin tx batch error:%v", err)
-		return err
-	}
-	return nil
-}
-
 func ReadBitcoinTxIds(store store.IStore, height int64) ([]string, error) {
 	var txIds []string
 	iterator := store.Iterator([]byte(DbBtcHeightPrefix(height, "")), nil)
