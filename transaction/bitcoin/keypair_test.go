@@ -12,9 +12,9 @@ func TestGenerateKeyPair(t *testing.T) {
 }
 
 func TestMultiAddress(t *testing.T) {
-	pubk1, _ := hex.DecodeString("03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050")
-	pubk2, _ := hex.DecodeString("03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22")
-	pubk3, _ := hex.DecodeString("03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0")
+	pubk1, _ := hex.DecodeString("03359e6936f7cbbb66ac1f55a20feb56b5e3b47f09d51d8a29a8c5bb9c5676e110")
+	pubk2, _ := hex.DecodeString("02126061adec61c6147cd7c2934f91e4a3dfb8ffe5b42fe21f7cb718c24a739dea")
+	pubk3, _ := hex.DecodeString("0235b40615b1565ed06ca7e6017c4c0f62e7115fe3c887b1d7a28acdf294041cc2")
 	var pubBytesList [][]byte
 	pubBytesList = append(pubBytesList, pubk1)
 	pubBytesList = append(pubBytesList, pubk2)
@@ -23,12 +23,22 @@ func TestMultiAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("regtestMultiAddress: %v\n", address)
+	t.Logf("regtestMultiAddress: %v\n", address)
+	addrScript, err := GenPayToAddrScript(address, RegTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("regtestMultiAddressScript: %v\n", addrScript)
 	address, err = MultiScriptAddress(2, TestNet, pubBytesList)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("testnetMultiAddress: %v\n", address)
+	addrScript, err = GenPayToAddrScript(address, TestNet)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("testnetMultiAddress: %v\n", address)
+	t.Logf("testnetMultiAddressScript: %v\n", addrScript)
 }
 
 func TestGenerateKey(t *testing.T) {

@@ -54,7 +54,7 @@ type ZkProofResponse struct {
 	Status      ProofStatus
 	Proof       string
 	Period      uint64
-	txHash      string
+	TxHash      string
 }
 
 func (zkResp *ZkProofResponse) String() string {

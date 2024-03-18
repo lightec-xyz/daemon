@@ -328,7 +328,7 @@ func (t *TaskManager) doOasisTx(task *innerTask) (string, error) {
 	if task.TxHash != "" {
 
 	}
-	txHash, err := t.oasisClient.Redeem(param.Proof)
+	txHash, err := t.oasisClient.SignBtcTx(param.RawTx, param.ReceiptRaw, param.Proof)
 	if err != nil {
 		logger.Error(err.Error())
 		return "", err
@@ -409,7 +409,9 @@ type UpdateParam struct {
 }
 
 type RedeemParam struct {
-	Proof string
+	Proof      string
+	RawTx      string
+	ReceiptRaw string
 }
 
 type TaskType int

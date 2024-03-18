@@ -168,45 +168,21 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *EthereumAgent) ProofResponse(response ZkProofResponse) error {
-
-	//logger.Info("receive redeem Proof resp: %v", resp.FilterLogs())
-	//err = e.updateRedeemProof(resp.TxHash, resp.Proof, resp.Status)
-	//if err != nil {
-	//	logger.Error("update Proof error:%v", err)
-	//	return err
-	//}
-	//exists, err := e.btcClient.CheckTx(resp.BtcTxId)
-	//if err != nil {
-	//	// todo ?
-	//	logger.Error("check btc tx error: %v %v", resp.BtcTxId, err)
-	//	return err
-	//}
-	//if exists {
-	//	err := e.DeleteUnGenProof(resp.TxHash)
-	//	if err != nil {
-	//		logger.Error("delete ungen Proof error: %v %v", resp.TxHash, err)
-	//	}
-	//	logger.Warn("redeem btc tx submitted: %v", resp.BtcTxId)
-	//	return nil
-	//}
-	//if resp.Status == ProofSuccess {
-	//	err = e.DeleteUnGenProof(resp.TxHash)
-	//	if err != nil {
-	//		logger.Error("delete ungen Proof error: %v %v", resp.TxHash, err)
-	//	}
-	//	txHash, err := e.RedeemBtcTx(resp)
-	//	if err != nil {
-	//		// todo add queue or cli retry
-	//		logger.Error("redeem btc tx error:%v", err)
-	//		return err
-	//	}
-	//	logger.Info("success redeem btc tx:%v", txHash)
-	//
-	//} else {
-	//	// todo
-	//	logger.Warn("Proof generate failed :%v %v", resp.TxHash, resp.Status)
-	//}
+func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
+	logger.Info("receive proof response: %v", resp.TxHash)
+	err := e.updateRedeemProof(resp.TxHash, resp.Proof, resp.Status)
+	if err != nil {
+		logger.Error("update Proof error:%v", err)
+		return err
+	}
+	// todo
+	if e.autoSubmit {
+		_, err := e.taskManager.RedeemBtcRequest(resp.TxHash)
+		if err != nil {
+			logger.Error("submit redeem request error:%v", err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -410,7 +386,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 		}
 		txHash := log.TxHash.String()
 		if strings.TrimPrefix(transaction.TxHash().String(), "0x") != strings.TrimPrefix(btcTxId, "0x") {
-			logger.Error("never should happen btc tx not match error: txHash:%v, logBtcTxId:%v,decodeTxHash:%v", txHash, btcTxId, transaction.TxHash().String())
+			logger.Error("never should happen btc tx not match error: TxHash:%v, logBtcTxId:%v,decodeTxHash:%v", txHash, btcTxId, transaction.TxHash().String())
 			return redeemTx, false, fmt.Errorf("tx hash not match:%v", txHash)
 		}
 		logger.Info("ethereum agent find redeem zkbtc  ethTxHash:%v,btcTxId:%v,input:%v,output:%v",
@@ -497,13 +473,13 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 //	return "", err
 //}
 //logger.Info("redeem btc tx hash: %v", builder.TxHash())
-//txHash, err := e.btcClient.Sendrawtransaction(hex.EncodeToString(txBytes))
+//TxHash, err := e.btcClient.Sendrawtransaction(hex.EncodeToString(txBytes))
 //if err != nil {
 //	logger.Error("send btc tx error:%v", err)
 //	return "", err
 //}
-//logger.Info("send redeem btc tx: %v", txHash)
-//return txHash, nil
+//logger.Info("send redeem btc tx: %v", TxHash)
+//return TxHash, nil
 //}
 
 func (e *EthereumAgent) updateRedeemProof(txId, proof string, status ProofStatus) error {

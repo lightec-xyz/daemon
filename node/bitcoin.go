@@ -248,7 +248,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 
 func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp)
-	proofId := resp.txHash
+	proofId := resp.TxHash
 	err := b.updateDepositProof(proofId, resp.Proof, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", proofId, err)
