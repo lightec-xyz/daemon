@@ -138,6 +138,27 @@ func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, erro
 	return nil
 }
 
+func (mb *MultiTransactionBuilder) SignFromRemote(signFn func() ([][]byte, [][]byte, [][]byte, error)) error {
+	// todo  check and confirm
+	signatures1, signatures2, signatures3, err := signFn()
+	if err != nil {
+		return err
+	}
+	inputLength := len(signatures1)
+	for index := 0; index < inputLength; index++ {
+		var sigs [][]byte
+		sigs = append(sigs, append(signatures1[index], byte(txscript.SigHashAll)))
+		sigs = append(sigs, append(signatures2[index], byte(txscript.SigHashAll)))
+		sigs = append(sigs, append(signatures3[index], byte(txscript.SigHashAll)))
+		witnessScript, err := MergeMultiSignatures(mb.nRequired, mb.multiSigScript, sigs)
+		if err != nil {
+			return err
+		}
+		mb.msgTx.TxIn[index].Witness = witnessScript
+	}
+	return nil
+}
+
 func (mb *MultiTransactionBuilder) Build() ([]byte, error) {
 	err := validateMsgTx(mb.msgTx, mb.txInPkScripts, mb.txInValues)
 	if err != nil {

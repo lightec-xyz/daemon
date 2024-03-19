@@ -33,5 +33,23 @@ func TestClient_PublicKey(t *testing.T) {
 }
 
 func TestClient_SignBtcTx(t *testing.T) {
-
+	txRaw, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	receiptRaw, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	proofData, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sig1, sig2, sig3, err := client.SignBtcTx(txRaw, receiptRaw, proofData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(sig1)
+	t.Log(sig2)
+	t.Log(sig3)
 }

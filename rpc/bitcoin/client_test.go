@@ -5,12 +5,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"math/big"
 	"strconv"
@@ -135,16 +135,40 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	}
 	hash := builder.TxHash()
 	t.Logf("before: %v \n", hash)
-	err = builder.Sign(func(hash []byte) ([][]byte, error) {
-		var sigs [][]byte
-		for _, privateKey := range privateKeys {
-			sig := ecdsa.Sign(privateKey, hash)
-			sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
-			sigs = append(sigs, sigWithType)
+
+	err := builder.SignFromRemote(func() ([][]byte, [][]byte, [][]byte, error) {
+		client, err := oasis.NewClient("https://testnet.sapphire.oasis.io",
+			[]string{
+				"0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc",
+				"0x5ee2C3FABED0780abB5905fCD6DEbf1C3C42C729",
+				"0x7e0d35F36a1103Fe0Ad91911b2798Cb24A6beC7f",
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
 		}
-		t.Logf("signature: %x\n", sigs)
-		return sigs, nil
+		txRaw, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
+		if err != nil {
+			t.Fatal(err)
+		}
+		receiptRaw, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
+		if err != nil {
+			t.Fatal(err)
+		}
+		proofData, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
+		return client.SignBtcTx(txRaw, receiptRaw, proofData)
 	})
+
+	//err = builder.Sign(func(hash []byte) ([][]byte, error) {
+	//	var sigs [][]byte
+	//	for _, privateKey := range privateKeys {
+	//		sig := ecdsa.Sign(privateKey, hash)
+	//		sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
+	//		sigs = append(sigs, sigWithType)
+	//	}
+	//	t.Logf("signature: %x\n", sigs)
+	//	return sigs, nil
+	//})
 	if err != nil {
 		t.Fatal(err)
 	}

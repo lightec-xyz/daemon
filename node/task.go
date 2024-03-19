@@ -319,21 +319,21 @@ func (t *TaskManager) submitDepositTx(ethTask *Task, highPriority ...bool) (stri
 
 func (t *TaskManager) doOasisTx(task *innerTask) (string, error) {
 	// todo
-	param, ok := task.data.(RedeemParam)
-	if !ok {
-		logger.Error("never should happen innerTask type: %v", task)
-		return "", fmt.Errorf("never should happen innerTask type: %v", task)
-	}
-
-	if task.TxHash != "" {
-
-	}
-	txHash, err := t.oasisClient.SignBtcTx(param.RawTx, param.ReceiptRaw, param.Proof)
-	if err != nil {
-		logger.Error(err.Error())
-		return "", err
-	}
-	logger.Info("submit redeem tx: %v", txHash)
+	//param, ok := task.data.(RedeemParam)
+	//if !ok {
+	//	logger.Error("never should happen innerTask type: %v", task)
+	//	return "", fmt.Errorf("never should happen innerTask type: %v", task)
+	//}
+	//
+	//if task.TxHash != "" {
+	//
+	//}
+	//txHash, err := t.oasisClient.SignBtcTx(param.RawTx, param.ReceiptRaw, param.Proof)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return "", err
+	//}
+	//logger.Info("submit redeem tx: %v", txHash)
 	return "", nil
 }
 
