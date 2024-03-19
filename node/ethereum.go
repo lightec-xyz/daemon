@@ -391,23 +391,11 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 	if strings.ToLower(log.Address.Hex()) == e.logAddrFilter.LogRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.logAddrFilter.LogTopicRedeemAddr {
 		btcTxId := strings.ToLower(log.Topics[1].Hex())
 
-		// if len(log.Data) <= 64 {
-		// 	return redeemTx, false, nil
-		// }
-		// dataLength := log.Data[32:64]
-		// l, err := strconv.ParseInt(fmt.Sprintf("%x", dataLength), 16, 32)
-		// if err != nil {
-		// 	logger.Error("parse data length error:%v", err)
-		// 	return redeemTx, false, err
-		// }
-		// txData := log.Data[64 : 64+l]
-
-		txData, sigHashs, err := decodeRedeemLog(log.Data)
+		txData, _, err := decodeRedeemLog(log.Data)
 		if err != nil {
 			logger.Error("decode redeem log error:%v", err)
 			return redeemTx, false, err
 		}
-		fmt.Printf("\nsigHashs:\n%x\n", sigHashs)
 
 		transaction := btctx.NewTransaction()
 		err = transaction.Deserialize(bytes.NewReader(txData))
