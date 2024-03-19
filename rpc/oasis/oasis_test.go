@@ -1,16 +1,20 @@
 package oasis
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+)
 
 var err error
 var client *Client
 
 func init() {
-	client, err = NewClient("https://testnet.sapphire.oasis.dev/",
+	client, err = NewClient("https://testnet.sapphire.oasis.io",
 		[]string{
-			"0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc",
-			"0x5ee2C3FABED0780abB5905fCD6DEbf1C3C42C729",
-			"0x7e0d35F36a1103Fe0Ad91911b2798Cb24A6beC7f",
+			"0xA3D5838913497AD0fcdE036F128a446289EBaD03",
+			"0x907e95F678e4D746D5b532B33D6dC17705a71aB6",
+			"0x8DDa72eE36AB9c91e92298823D3C0d4D73894081",
 		},
 	)
 	if err != nil {
@@ -24,6 +28,6 @@ func TestClient_PublicKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, item := range publicKey {
-		t.Logf("%x\n", item)
+		t.Logf("%v\n", hexutil.Encode(item))
 	}
 }
