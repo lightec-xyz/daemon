@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
@@ -684,7 +685,7 @@ func extractWitnessV0ScriptHash(script []byte) []byte {
 	return nil
 }
 
-// calcWitnessSignatureHashRaw 从btcd 拷贝而来，增加了对pwsh的支持
+// calcWitnessSignatureHashRaw 从btcd 拷贝而来，增加了对p2wsh的支持
 func calcWitnessSignatureHashRaw(subScript []byte, sigHashes *txscript.TxSigHashes,
 	hashType txscript.SigHashType, tx *wire.MsgTx, idx int, amt int64, origScript []byte) ([]byte, error) {
 
@@ -804,6 +805,7 @@ func checkScriptParses(scriptVersion uint16, script []byte) error {
 	return tokenizer.Err()
 }
 
+// calcWitnessSignatureHashRaw 从btcd 拷贝而来，增加了对p2wsh的支持
 func CalcWitnessSigHash(txInLockingScript []byte, sigHashes *txscript.TxSigHashes, hType txscript.SigHashType,
 	tx *wire.MsgTx, idx int, amt int64, txInOriginalScript []byte) ([]byte, error) {
 
