@@ -10,7 +10,7 @@ var err error
 var client *Client
 
 func init() {
-	client, err = NewClient("https://testnet.sapphire.oasis.dev/",
+	client, err = NewClient("https://testnet.sapphire.oasis.io",
 		[]string{
 			"0xA3D5838913497AD0fcdE036F128a446289EBaD03",
 			"0x907e95F678e4D746D5b532B33D6dC17705a71aB6",
