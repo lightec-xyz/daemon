@@ -8,9 +8,9 @@ var client *Client
 func init() {
 	client, err = NewClient("https://testnet.sapphire.oasis.dev/",
 		[]string{
-			"0x8Cf463B54C5481E772841870E01c8c8d2671e66f",
-			"0xB806e81B33FDD9b457aE88DEEA25258C688Ee470",
-			"0x5ADDC1A7E0bd5b05Bb1fd454a57D494Cfb62443F",
+			"0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc",
+			"0x5ee2C3FABED0780abB5905fCD6DEbf1C3C42C729",
+			"0x7e0d35F36a1103Fe0Ad91911b2798Cb24A6beC7f",
 		},
 	)
 	if err != nil {
