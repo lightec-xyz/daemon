@@ -42,7 +42,7 @@ func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 	logger.Debug("gen deposit Proof")
 	time.Sleep(6 * time.Second)
 	return rpc.DepositResponse{
-		Proof: []byte("deposit Proof"),
+		Proof: "deposit Proof",
 	}, nil
 }
 
@@ -50,7 +50,7 @@ func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse,
 	logger.Debug("gen redeem Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.RedeemResponse{
-		Proof: []byte("redeem Proof"),
+		Proof: "redeem Proof",
 	}, nil
 }
 
@@ -58,7 +58,7 @@ func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 	logger.Debug("verify Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
-		Proof: []byte("verify Proof"),
+		Proof: "verify Proof",
 	}, nil
 }
 
@@ -66,7 +66,7 @@ func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 	logger.Debug("gen genesis Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommGenesisResponse{
-		Body: []byte("genesis Proof"),
+		Proof: "genesis Proof",
 	}, nil
 }
 
@@ -74,7 +74,7 @@ func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 	logger.Debug("gen units Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommUnitsResponse{
-		Body: []byte("units Proof"),
+		Proof: "units Proof",
 	}, nil
 }
 
@@ -82,7 +82,7 @@ func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 	logger.Debug("gen recursive Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommRecursiveResponse{
-		Body: []byte("recursive Proof"),
+		Proof: "recursive Proof",
 	}, nil
 }
 
