@@ -1,10 +1,11 @@
 package node
 
 import (
-	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
 	"sync"
 	"time"
+
+	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 )
 
 var _ rpc.IWorker = (*LocalWorker)(nil)

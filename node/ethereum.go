@@ -4,16 +4,19 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type EthereumAgent struct {
@@ -340,6 +343,39 @@ func (e *EthereumAgent) isDepositTx(log types.Log) (Transaction, bool, error) {
 		return Transaction{}, false, nil
 	}
 
+}
+
+func decodeRedeemLog(logData []byte) (btcRawTx []byte, sigHashs [][32]byte, err error) {
+	t1, err := abi.NewType("bytes", "", nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	t2, err := abi.NewType("bytes32[]", "", nil)
+	if err != nil {
+		log.Fatal(err)
+		return nil, nil, err
+	}
+
+	arguments := abi.Arguments{
+		abi.Argument{Type: t1},
+		abi.Argument{Type: t2},
+	}
+	decoded, err := arguments.UnpackValues(logData)
+	if err != nil {
+		log.Fatal(err)
+		return nil, nil, err
+	}
+
+	btcRawTx, ok := decoded[0].([]byte)
+	if !ok {
+		return nil, nil, err
+	}
+	sigHashs, ok = decoded[1].([][32]byte)
+	if !ok {
+		return nil, nil, err
+	}
+
+	return btcRawTx, sigHashs, nil
 }
 
 func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
