@@ -8,7 +8,7 @@ import (
 )
 
 type Client struct {
-	zkBridgeVerifyCall1 *zkbridge_verify.ZkbridgeVerify
+	zkBridgeVerifyCall1 *zkbridge_verify.ZkbridgeVerify // todo
 	zkBridgeVerifyCall2 *zkbridge_verify.ZkbridgeVerify
 	zkBridgeVerifyCall3 *zkbridge_verify.ZkbridgeVerify
 }
@@ -56,6 +56,6 @@ func (c *Client) PublicKey() ([][]byte, error) {
 }
 
 func (c *Client) SignBtcTx(rawTx, receiptTx, proof string) (string, error) {
-	// todo
+	panic(c)
 	return "", nil
 }

@@ -41,7 +41,7 @@ type DepositRequest struct {
 }
 
 type DepositResponse struct {
-	Body []byte
+	Proof string
 }
 
 type RedeemRequest struct {
@@ -49,7 +49,7 @@ type RedeemRequest struct {
 }
 
 type RedeemResponse struct {
-	Body []byte
+	Proof string
 }
 
 type VerifyRequest struct {
@@ -57,7 +57,7 @@ type VerifyRequest struct {
 }
 
 type VerifyResponse struct {
-	Body []byte
+	Proof string
 }
 
 type SyncCommGenesisRequest struct {
@@ -68,7 +68,6 @@ type SyncCommGenesisRequest struct {
 }
 
 type SyncCommGenesisResponse struct {
-	Body      []byte
 	Version   string                           `json:"version"`
 	Period    uint64                           `json:"period"`
 	ProofType SyncCommitteeProofType           `json:"proofType"`
@@ -86,7 +85,6 @@ type SyncCommUnitsRequest struct {
 }
 
 type SyncCommUnitsResponse struct {
-	Body      []byte
 	Version   string                           `json:"version"`
 	Period    uint64                           `json:"period"`
 	ProofType SyncCommitteeProofType           `json:"proofType"`
@@ -101,7 +99,6 @@ type SyncCommRecursiveRequest struct {
 }
 
 type SyncCommRecursiveResponse struct {
-	Body      []byte
 	Version   string                           `json:"version"`
 	Period    uint64                           `json:"period"`
 	ProofType SyncCommitteeProofType           `json:"proofType"`

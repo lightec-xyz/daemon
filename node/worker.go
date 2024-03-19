@@ -42,7 +42,7 @@ func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 	logger.Debug("gen deposit Proof")
 	time.Sleep(6 * time.Second)
 	return rpc.DepositResponse{
-		Body: []byte("deposit Proof"),
+		Proof: []byte("deposit Proof"),
 	}, nil
 }
 
@@ -50,7 +50,7 @@ func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse,
 	logger.Debug("gen redeem Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.RedeemResponse{
-		Body: []byte("redeem Proof"),
+		Proof: []byte("redeem Proof"),
 	}, nil
 }
 
@@ -58,7 +58,7 @@ func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 	logger.Debug("verify Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
-		Body: []byte("verify Proof"),
+		Proof: []byte("verify Proof"),
 	}, nil
 }
 
