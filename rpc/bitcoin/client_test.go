@@ -142,6 +142,7 @@ func TestMultiTransactionBuilder(t *testing.T) {
 			sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
 			sigs = append(sigs, sigWithType)
 		}
+		t.Logf("signature: %x\n", sigs)
 		return sigs, nil
 	})
 	if err != nil {

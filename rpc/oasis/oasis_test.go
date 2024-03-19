@@ -31,3 +31,7 @@ func TestClient_PublicKey(t *testing.T) {
 		t.Logf("%v\n", hexutil.Encode(item))
 	}
 }
+
+func TestClient_SignBtcTx(t *testing.T) {
+
+}

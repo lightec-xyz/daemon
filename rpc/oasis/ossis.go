@@ -5,12 +5,14 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	zkbridge_verify "github.com/lightec-xyz/daemon/rpc/oasis/contract"
+	"time"
 )
 
 type Client struct {
 	zkBridgeVerifyCall1 *zkbridge_verify.ZkbridgeVerify // todo
 	zkBridgeVerifyCall2 *zkbridge_verify.ZkbridgeVerify
 	zkBridgeVerifyCall3 *zkbridge_verify.ZkbridgeVerify
+	timout              time.Duration
 }
 
 func NewClient(url string, address []string) (*Client, error) {
@@ -36,6 +38,7 @@ func NewClient(url string, address []string) (*Client, error) {
 		zkBridgeVerifyCall1: zkBridgeVerifyCall1,
 		zkBridgeVerifyCall2: zkBridgeVerifyCall2,
 		zkBridgeVerifyCall3: zkBridgeVerifyCall3,
+		timout:              60 * time.Second,
 	}, nil
 }
 
@@ -55,7 +58,11 @@ func (c *Client) PublicKey() ([][]byte, error) {
 	return [][]byte{publicKey1, publicKey2, publicKey3}, nil
 }
 
-func (c *Client) SignBtcTx(rawTx, receiptTx, proof string) (string, error) {
-	panic(c)
-	return "", nil
+func (c *Client) SignBtcTx(rawTx, receiptTx, proof []byte) ([][]byte, error) {
+	signature, err := c.zkBridgeVerifyCall1.SignBtcTx(nil, rawTx, receiptTx, proof)
+	if err != nil {
+		return nil, err
+	}
+	
+	return signature, nil
 }
