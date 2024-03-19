@@ -1,6 +1,10 @@
 package oasis
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+)
 
 var err error
 var client *Client
@@ -24,6 +28,6 @@ func TestClient_PublicKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, item := range publicKey {
-		t.Logf("%x\n", item)
+		t.Logf("%v\n", hexutil.Encode(item))
 	}
 }
