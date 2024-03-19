@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"testing"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
@@ -13,7 +15,6 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCreateDepositTx_1(t *testing.T) {
@@ -133,9 +134,14 @@ func TestCreateRedeemTx_1(t *testing.T) {
 	}
 
 	multiSigScript, _ := txscript.MultiSigScript(addrPubKeys, 2)
+	fmt.Printf("multiSigScript: %v\n", hex.EncodeToString(multiSigScript))
 
 	scriptHash := sha256.Sum256(multiSigScript)
 	from, _ := btcutil.NewAddressWitnessScriptHash(scriptHash[:], params)
+	fmt.Printf("from addr: %v\n", from.EncodeAddress())
+
+	sc, _ := txscript.PayToAddrScript(from)
+	fmt.Printf("script: %v\n", hex.EncodeToString(sc))
 
 	to, _ := btcutil.DecodeAddress("bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5", params)
 

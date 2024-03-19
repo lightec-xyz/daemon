@@ -4,12 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type IKeyPair interface {
@@ -165,6 +167,6 @@ func GenPayToAddrScript(address string, network NetWork) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	hexLockScript := hex.EncodeToString(txOutScript)
+	hexLockScript := hexutil.Encode(txOutScript)
 	return hexLockScript, nil
 }

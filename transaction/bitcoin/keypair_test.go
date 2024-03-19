@@ -1,10 +1,14 @@
 package bitcoin
 
 import (
-	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"testing"
+
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestGenerateKeyPair(t *testing.T) {
@@ -12,33 +16,53 @@ func TestGenerateKeyPair(t *testing.T) {
 }
 
 func TestMultiAddress(t *testing.T) {
-	pubk1, _ := hex.DecodeString("02600eb007626c38bfa11aae6e8271a25ec2f272d21960be0cabbfe8b18768fa95")
-	pubk2, _ := hex.DecodeString("032bdb4a665e7b8f03d4b4dc33424fe4e3272ec6c15b2af84bf3b8887fc24a0026")
-	pubk3, _ := hex.DecodeString("0296808ee7ab89c9982c9ade0e7a41afd350c9ade7d653af3880336f60d36a3f2e")
+	pubk1, _ := hexutil.Decode("0x0377e958f7a5636e92375dce8fa9d35ed4397b1d25eaa76bdc4c2f0b49ec0e0efe")
+	pubk2, _ := hexutil.Decode("0x028b4f7f78afe170a8c3896997cd3780a9367c6d653772687bce54bb28f35a28af")
+	pubk3, _ := hexutil.Decode("0x02765e2e1e204f6b0894b193e2a80768f8e0fd8f2c5a751e38b5955b1df7d00a13")
+
 	var pubBytesList [][]byte
 	pubBytesList = append(pubBytesList, pubk1)
 	pubBytesList = append(pubBytesList, pubk2)
 	pubBytesList = append(pubBytesList, pubk3)
+
+	var addrPubKeys []*btcutil.AddressPubKey
+	for _, pubKey := range pubBytesList {
+		addressPubKey, err := btcutil.NewAddressPubKey(pubKey, &chaincfg.TestNet3Params)
+		if err != nil {
+			t.Fatal(err)
+		}
+		addrPubKeys = append(addrPubKeys, addressPubKey)
+	}
+
+	multiSigScript, err := txscript.MultiSigScript(addrPubKeys, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("testnet MultiSig Script: %v\n", hexutil.Encode(multiSigScript))
+
 	address, err := MultiScriptAddress(2, RegTest, pubBytesList)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("regtestMultiAddress: %v\n", address)
+	t.Logf("regtest MultiSig Address: %v\n", address)
+
 	addrScript, err := GenPayToAddrScript(address, RegTest)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("regtestMultiAddressScript: %v\n", addrScript)
+	t.Logf("regtest MultiSig Lock Script: %v\n", addrScript)
+
 	address, err = MultiScriptAddress(2, TestNet, pubBytesList)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("testnet MultiSig Address: %v\n", address)
+
 	addrScript, err = GenPayToAddrScript(address, TestNet)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("testnetMultiAddress: %v\n", address)
-	t.Logf("testnetMultiAddressScript: %v\n", addrScript)
+	t.Logf("testnet MultiSig Lock Script: %v\n", addrScript)
 }
 
 func TestGenerateKey(t *testing.T) {
