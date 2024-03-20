@@ -180,7 +180,7 @@ func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
 	}
 	// todo
 	if e.autoSubmit {
-		_, err := e.taskManager.RedeemBtcRequest(resp.TxHash)
+		_, err := e.taskManager.RedeemBtcRequest(resp.TxHash, nil, nil, nil)
 		if err != nil {
 			logger.Error("submit redeem request error:%v", err)
 			return err
@@ -386,17 +386,14 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 	if len(log.Topics) != 2 {
 		return redeemTx, false, nil
 	}
-
 	//todo more check
 	if strings.ToLower(log.Address.Hex()) == e.logAddrFilter.LogRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.logAddrFilter.LogTopicRedeemAddr {
 		btcTxId := strings.ToLower(log.Topics[1].Hex())
-
 		txData, _, err := decodeRedeemLog(log.Data)
 		if err != nil {
 			logger.Error("decode redeem log error:%v", err)
 			return redeemTx, false, err
 		}
-
 		transaction := btctx.NewTransaction()
 		err = transaction.Deserialize(bytes.NewReader(txData))
 		if err != nil {

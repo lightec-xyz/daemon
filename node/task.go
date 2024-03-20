@@ -10,6 +10,7 @@ import (
 	btcTypes "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
+	btcTx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"math/big"
 	"sync"
 	"time"
@@ -159,24 +160,28 @@ func (t *TaskManager) UpdateUtxoRequest(txIds []string, proof string) (string, e
 	return txHash, nil
 }
 
-func (t *TaskManager) RedeemBtcRequest(proof string) (string, error) {
-	var innerTasks []*innerTask
-	for index := 0; index < 3; index++ {
-		newNonce, err := t.GetOasisNewNonce()
-		if err != nil {
-			logger.Error(err.Error())
-			return "", err
-		}
-		task := NewRedeemInnerTask(newNonce, proof)
-		innerTasks = append(innerTasks, task)
+func (t *TaskManager) RedeemBtcRequest(txHash string, txRaw, receiptRaw, proof []byte) (string, error) {
+	// todo
+	newNonce, err := t.GetOasisNewNonce()
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
 	}
-	task := &Task{
-		Id:    UUID(),
-		Type:  RedeemTask,
-		tasks: innerTasks,
+	rawTx, err := t.getRedeemTxData(txHash)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
 	}
+	param := RedeemParam{
+		TxHash:     txHash,
+		RawTx:      txRaw,
+		ReceiptRaw: receiptRaw,
+		Proof:      proof,
+		TxData:     rawTx,
+	}
+	task := NewRedeemTask(newNonce, param)
 	t.addTask(task)
-	txHash, err := t.submitOasisTx(task)
+	txHash, err = t.submitOasisTx(task)
 	if err != nil {
 		logger.Error(err.Error())
 		return "", err
@@ -189,14 +194,35 @@ func (t *TaskManager) submitOasisTx(oasisTask *Task) (string, error) {
 	if oasisTask.Type != RedeemTask {
 		return "", fmt.Errorf("never should happen network: %v", oasisTask)
 	}
-	for _, task := range oasisTask.tasks {
-		if task.TxHash != "" {
-			_, err := t.doOasisTx(task)
-			if err != nil {
-				logger.Error(err.Error())
-				return "", err
-			}
-		}
+	if len(oasisTask.tasks) != 1 {
+		return "", fmt.Errorf("never should happen innerTask length: %v", len(oasisTask.tasks))
+	}
+	param, ok := oasisTask.tasks[0].data.(RedeemParam)
+	if !ok {
+		return "", fmt.Errorf("never should happen innerTask type: %v", param)
+	}
+	signatures, err := t.oasisClient.SignBtcTx(param.RawTx, param.ReceiptRaw, param.Proof)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	builder := btcTx.NewMultiTransactionBuilder()
+	err = builder.Deserialize(param.TxData)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	err = builder.MergeSignature(signatures)
+	rawBitcoinTx, err := builder.Build()
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
+	}
+	signedTx := fmt.Sprintf("%x", rawBitcoinTx)
+	_, err = t.btcClient.Sendrawtransaction(signedTx)
+	if err != nil {
+		logger.Error(err.Error())
+		return "", err
 	}
 	return "", nil
 
@@ -261,6 +287,7 @@ func (t *TaskManager) submitUpdateTx(ethTask *Task, highPriority ...bool) (strin
 }
 
 func (t *TaskManager) submitDepositTx(ethTask *Task, highPriority ...bool) (string, error) {
+	// todo
 	highPrio := false
 	if len(highPriority) > 0 {
 		highPrio = highPriority[0]
@@ -317,36 +344,29 @@ func (t *TaskManager) submitDepositTx(ethTask *Task, highPriority ...bool) (stri
 	return txHash, nil
 }
 
-func (t *TaskManager) doOasisTx(task *innerTask) (string, error) {
+func (t *TaskManager) getRedeemTxData(txHash string) ([]byte, error) {
 	// todo
-	//param, ok := task.data.(RedeemParam)
-	//if !ok {
-	//	logger.Error("never should happen innerTask type: %v", task)
-	//	return "", fmt.Errorf("never should happen innerTask type: %v", task)
-	//}
-	//
-	//if task.TxHash != "" {
-	//
-	//}
-	//txHash, err := t.oasisClient.SignBtcTx(param.RawTx, param.ReceiptRaw, param.Proof)
-	//if err != nil {
-	//	logger.Error(err.Error())
-	//	return "", err
-	//}
-	//logger.Info("submit redeem tx: %v", txHash)
-	return "", nil
-}
+	receipt, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(txHash))
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	var data []byte
+	for _, log := range receipt.Logs {
+		if !log.Removed {
+			if log.Address.Hex() == "" && log.Topics[0].Hex() == "" {
+				data = log.Data
+				break
+			}
+		}
+	}
+	rawTx, _, err := decodeRedeemLog(data)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	return rawTx, nil
 
-func (t *TaskManager) deposit(nonce uint64, gasPrice *big.Int) (string, error) {
-	panic(t)
-}
-
-func (t *TaskManager) verify(nonce uint64, gasPrice *big.Int) (string, error) {
-	panic(t)
-}
-
-func (t *TaskManager) SubmitDfinityTx(task *Task) error {
-	panic(task)
 }
 
 func (t *TaskManager) RemoveTask(task *Task) {
@@ -409,9 +429,11 @@ type UpdateParam struct {
 }
 
 type RedeemParam struct {
-	Proof      string
-	RawTx      string
-	ReceiptRaw string
+	TxHash     string
+	Proof      []byte
+	RawTx      []byte
+	ReceiptRaw []byte
+	TxData     []byte
 }
 
 type TaskType int
@@ -473,13 +495,19 @@ func NewUpdateTask(nonce uint64, data interface{}) *Task {
 	}
 }
 
-func NewRedeemInnerTask(nonce uint64, data interface{}) *innerTask {
-	return &innerTask{
-		Id:      UUID(),
-		Nonce:   nonce,
-		Status:  Default,
-		data:    data,
-		Network: OasisChain,
+func NewRedeemTask(nonce uint64, data interface{}) *Task {
+	return &Task{
+		Id:   UUID(),
+		Type: RedeemTask,
+		tasks: []*innerTask{
+			{
+				Id:      UUID(),
+				Nonce:   nonce,
+				Status:  Default,
+				data:    data,
+				Network: OasisChain,
+			},
+		},
 	}
 
 }
