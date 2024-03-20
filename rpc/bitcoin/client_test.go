@@ -85,23 +85,18 @@ func TestMultiTransactionBuildTxData(t *testing.T) {
 
 	txInputs := []bitcoin.TxIn{
 		{
-			Hash:     "9d433edd947173ddfab529ee405d9f06babf1c84fdedfa14d4fea35ba233340b",
-			VOut:     1,
-			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
-			Amount:   99750,
+			Hash:     "18784446a522d2fee49f0210a50b205bd28c38cb7258960f8ca8d5a4abb15e0c",
+			VOut:     0,
+			PkScript: "002048a1517b26310d506aaea591260202cbd7329c8366a619fc6f272e903f53642f",
+			Amount:   100000000,
 		},
 	}
 
-	pk1, _ := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
-	pk2, _ := hex.DecodeString("0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58")
+	pk1, _ := hex.DecodeString("0014c2406ceff5524e6dedd35f9e6b378fbb1b72a1d4")
 	txOutputs := []bitcoin.TxOut{
 		{
 			PayScript: pk1,
-			Amount:    1000,
-		},
-		{
-			PayScript: pk2,
-			Amount:    98450,
+			Amount:    1000000,
 		},
 	}
 
@@ -122,7 +117,7 @@ func TestMultiTransactionBuildTxData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	txData, err := builder.Build()
+	txData, err := builder.Serialize()
 	if err != nil {
 		t.Fatal(err)
 	}

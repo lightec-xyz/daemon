@@ -163,6 +163,15 @@ func (mb *MultiTransactionBuilder) Deserialize(txData []byte) error {
 	return mb.msgTx.Deserialize(bytes.NewReader(txData))
 }
 
+func (mb *MultiTransactionBuilder) Serialize() ([]byte, error) {
+	var buf bytes.Buffer
+	err := mb.msgTx.Serialize(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 func (mb *MultiTransactionBuilder) Build() ([]byte, error) {
 	err := validateMsgTx(mb.msgTx, mb.txInPkScripts, mb.txInValues)
 	if err != nil {
