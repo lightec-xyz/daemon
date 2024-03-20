@@ -44,7 +44,7 @@ func TestClient_GetPendingNonce(t *testing.T) {
 }
 
 func TestClient_GetEstimateGasLimit(t *testing.T) {
-	gasLimit, err := client.GetEstimateGaslimit(
+	gasLimit, err := client.GetEstimateGasLimit(
 		"0x771815eFD58e8D6e66773DB0bc002899c00d5b0c",
 		"0xbdfb7b89e9c77fe647ac1628416773c143ca4b51",
 		"c937229bbd89dadb76e6f7285220e765c6e195b553cf0df6cd3e7505077df970",

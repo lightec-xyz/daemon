@@ -70,9 +70,9 @@ func TestClient_GetBlockTx(t *testing.T) {
 
 func TestMultiTransactionBuildTxData(t *testing.T) {
 	publicKeys := []string{
-		"0x03359e6936f7cbbb66ac1f55a20feb56b5e3b47f09d51d8a29a8c5bb9c5676e110",
-		"0x02126061adec61c6147cd7c2934f91e4a3dfb8ffe5b42fe21f7cb718c24a739dea",
-		"0x0235b40615b1565ed06ca7e6017c4c0f62e7115fe3c887b1d7a28acdf294041cc2",
+		"0x0377e958f7a5636e92375dce8fa9d35ed4397b1d25eaa76bdc4c2f0b49ec0e0efe",
+		"0x028b4f7f78afe170a8c3896997cd3780a9367c6d653772687bce54bb28f35a28af",
+		"0x02765e2e1e204f6b0894b193e2a80768f8e0fd8f2c5a751e38b5955b1df7d00a13",
 	}
 	var pubKeys [][]byte
 	for _, pub := range publicKeys {
@@ -85,18 +85,17 @@ func TestMultiTransactionBuildTxData(t *testing.T) {
 
 	txInputs := []bitcoin.TxIn{
 		{
-			Hash:     "18784446a522d2fee49f0210a50b205bd28c38cb7258960f8ca8d5a4abb15e0c",
+			Hash:     "6b9efd78750765f65e8733ef7a5869c4ca8c68ef35e1a8177a638e54786faa3f",
 			VOut:     0,
-			PkScript: "002048a1517b26310d506aaea591260202cbd7329c8366a619fc6f272e903f53642f",
-			Amount:   100000000,
+			PkScript: "0020d3eaa044dbfccbbf98d192a35d456694991bb037d3c4915e4aedf26d0f12dcd2",
+			Amount:   20000,
 		},
 	}
 
-	pk1, _ := hex.DecodeString("0014c2406ceff5524e6dedd35f9e6b378fbb1b72a1d4")
 	txOutputs := []bitcoin.TxOut{
 		{
-			PayScript: pk1,
-			Amount:    1000000,
+			Address: "tb1qvn2x35f0vy543q4slrmrce943c40qk8y0snkj7",
+			Amount:  19000,
 		},
 	}
 
@@ -113,7 +112,7 @@ func TestMultiTransactionBuildTxData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = builder.AddTxOutScript(txOutputs)
+	err = builder.AddTxOut(txOutputs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +125,7 @@ func TestMultiTransactionBuildTxData(t *testing.T) {
 }
 
 func TestMultiTransactionSignFromOasis(t *testing.T) {
-	txRaw, err := hexutil.Decode("")
+	txRaw, err := hexutil.Decode("0x02000000013faa6f78548e637a17a8e135ef688ccac469587aef33875ef665077578fd9e6b0000000000ffffffff02802e00000000000016001408145420b1e7f4dd1716be0ae336a6151e72bc01221c000000000000220020d3eaa044dbfccbbf98d192a35d456694991bb037d3c4915e4aedf26d0f12dcd200000000")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,9 +146,11 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 		t.Fatal(err)
 	}
 	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", contractAddrs)
-	err = transaction.SignFromRemote(func() ([][]byte, [][]byte, [][]byte, error) {
-		return oasisClient.SignBtcTx(txRaw, receiptRaw, proodData)
-	})
+	signatures, err := oasisClient.SignBtcTx(txRaw, receiptRaw, proodData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = transaction.MergeSignature(signatures)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,30 +235,6 @@ func TestMultiTransactionBuilder(t *testing.T) {
 	}
 	hash := builder.TxHash()
 	t.Logf("before: %v \n", hash)
-
-	err := builder.SignFromRemote(func() ([][]byte, [][]byte, [][]byte, error) {
-		client, err := oasis.NewClient("https://testnet.sapphire.oasis.io",
-			[]string{
-				"0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc",
-				"0x5ee2C3FABED0780abB5905fCD6DEbf1C3C42C729",
-				"0x7e0d35F36a1103Fe0Ad91911b2798Cb24A6beC7f",
-			},
-		)
-		if err != nil {
-			t.Fatal(err)
-		}
-		txRaw, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
-		if err != nil {
-			t.Fatal(err)
-		}
-		receiptRaw, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
-		if err != nil {
-			t.Fatal(err)
-		}
-		proofData, err := hexutil.Decode("0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc")
-		return client.SignBtcTx(txRaw, receiptRaw, proofData)
-	})
-
 	//err = builder.Sign(func(hash []byte) ([][]byte, error) {
 	//	var sigs [][]byte
 	//	for _, privateKey := range privateKeys {

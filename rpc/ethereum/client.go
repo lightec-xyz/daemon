@@ -114,7 +114,7 @@ func (c *Client) GetPendingNonce(addr string) (uint64, error) {
 	return nonce, nil
 }
 
-func (c *Client) GetEstimateGaslimit(from, to, txId string, index uint32, amount *big.Int, proofData []byte) (uint64, error) {
+func (c *Client) GetEstimateGasLimit(from, to, txId string, index uint32, amount *big.Int, proofData []byte) (uint64, error) {
 	//todo
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()

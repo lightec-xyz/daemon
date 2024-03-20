@@ -59,19 +59,11 @@ func (c *Client) PublicKey() ([][]byte, error) {
 	return [][]byte{publicKey1, publicKey2, publicKey3}, nil
 }
 
-func (c *Client) SignBtcTx(rawTx, receiptTx, proof []byte) ([][]byte, [][]byte, [][]byte, error) {
+func (c *Client) SignBtcTx(rawTx, receiptTx, proof []byte) ([][]byte, error) {
 	// todo
 	signature1, err := c.zkBridgeVerifyCall1.SignBtcTx(nil, rawTx, receiptTx, proof)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	signature2, err := c.zkBridgeVerifyCall2.SignBtcTx(nil, rawTx, receiptTx, proof)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	signature3, err := c.zkBridgeVerifyCall3.SignBtcTx(nil, rawTx, receiptTx, proof)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return signature1, signature2, signature3, nil
+	return signature1, nil
 }
