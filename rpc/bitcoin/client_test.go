@@ -68,6 +68,48 @@ func TestClient_GetBlockTx(t *testing.T) {
 	fmt.Println(blockWithTx)
 }
 
+func TestMultiTransactionSignFromOasis(t *testing.T) {
+	txRaw, err := hexutil.Decode("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	receiptRaw, err := hexutil.Decode("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractAddrs := []string{"0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc",
+		"0x5ee2C3FABED0780abB5905fCD6DEbf1C3C42C729",
+		"0x7e0d35F36a1103Fe0Ad91911b2798Cb24A6beC7f"}
+	proodData, err := hexutil.Decode("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	transaction := bitcoin.NewMultiTransactionBuilder()
+	err = transaction.Deserialize(txRaw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", contractAddrs)
+	err = transaction.SignFromRemote(func() ([][]byte, [][]byte, [][]byte, error) {
+		return oasisClient.SignBtcTx(txRaw, receiptRaw, proodData)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := transaction.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	hexTxData := fmt.Sprintf("%x", tx)
+	t.Logf("tx:%x\n", hexTxData)
+	txHash, err := client.Sendrawtransaction(hexTxData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(txHash)
+
+}
+
 func TestMultiTransactionBuilder(t *testing.T) {
 	secrerts := []string{
 		"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",

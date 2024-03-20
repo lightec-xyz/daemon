@@ -159,6 +159,10 @@ func (mb *MultiTransactionBuilder) SignFromRemote(signFn func() ([][]byte, [][]b
 	return nil
 }
 
+func (mb *MultiTransactionBuilder) Deserialize(txData []byte) error {
+	return mb.msgTx.Deserialize(bytes.NewReader(txData))
+}
+
 func (mb *MultiTransactionBuilder) Build() ([]byte, error) {
 	err := validateMsgTx(mb.msgTx, mb.txInPkScripts, mb.txInValues)
 	if err != nil {
