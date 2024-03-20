@@ -2,12 +2,14 @@ package node
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"time"
 )
 
 type manager struct {
@@ -260,7 +262,7 @@ func (m *manager) Close() {
 
 }
 
-func NewZkProofResp(reqType ZkProofType, period uint64, proof string) ZkProofResponse {
+func NewZkProofResp(reqType ZkProofType, period uint64, proof common.ZkProof) ZkProofResponse {
 	return ZkProofResponse{
 		ZkProofType: reqType,
 		Period:      period,

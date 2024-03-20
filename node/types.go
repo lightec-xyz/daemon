@@ -3,8 +3,10 @@ package node
 import (
 	"bytes"
 	"fmt"
-	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
+
+	"github.com/lightec-xyz/daemon/common"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
 type ZkProofType int
@@ -46,13 +48,12 @@ type ZkProofRequest struct {
 
 func (r *ZkProofRequest) String() string {
 	return fmt.Sprintf("ZkProofRequest{reqType:%v,Period:%v,data:%v}", r.reqType, r.period, r.data)
-
 }
 
 type ZkProofResponse struct {
 	ZkProofType ZkProofType // 0: genesis Proof, 1: unit Proof, 2: recursive Proof
 	Status      ProofStatus
-	Proof       string
+	Proof       common.ZkProof
 	Period      uint64
 	TxHash      string
 }

@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 )
@@ -43,7 +44,7 @@ func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 	logger.Debug("gen deposit Proof")
 	time.Sleep(6 * time.Second)
 	return rpc.DepositResponse{
-		Proof: "deposit Proof",
+		Proof: common.ZkProof([]byte("deposit Proof")),
 	}, nil
 }
 
@@ -51,7 +52,7 @@ func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse,
 	logger.Debug("gen redeem Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.RedeemResponse{
-		Proof: "redeem Proof",
+		Proof: common.ZkProof([]byte("redeem Proof")),
 	}, nil
 }
 
@@ -59,7 +60,7 @@ func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 	logger.Debug("verify Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
-		Proof: "verify Proof",
+		Proof: common.ZkProof([]byte("verify Proof")),
 	}, nil
 }
 
@@ -67,7 +68,7 @@ func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 	logger.Debug("gen genesis Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommGenesisResponse{
-		Proof: "genesis Proof",
+		Proof: common.ZkProof([]byte("genesis Proof")),
 	}, nil
 }
 
@@ -75,7 +76,7 @@ func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 	logger.Debug("gen units Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommUnitsResponse{
-		Proof: "units Proof",
+		Proof: common.ZkProof([]byte("units Proof")),
 	}, nil
 }
 
@@ -83,7 +84,7 @@ func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 	logger.Debug("gen recursive Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommRecursiveResponse{
-		Proof: "recursive Proof",
+		Proof: common.ZkProof([]byte("recursive proof")),
 	}, nil
 }
 

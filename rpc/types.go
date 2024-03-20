@@ -1,6 +1,9 @@
 package rpc
 
-import "github.com/prysmaticlabs/prysm/v5/api/server/structs"
+import (
+	"github.com/lightec-xyz/daemon/common"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
+)
 
 type Transaction struct {
 	TxHash   string
@@ -41,7 +44,7 @@ type DepositRequest struct {
 }
 
 type DepositResponse struct {
-	Proof string
+	Proof common.ZkProof
 }
 
 type RedeemRequest struct {
@@ -49,7 +52,7 @@ type RedeemRequest struct {
 }
 
 type RedeemResponse struct {
-	Proof string
+	Proof common.ZkProof
 }
 
 type VerifyRequest struct {
@@ -57,7 +60,7 @@ type VerifyRequest struct {
 }
 
 type VerifyResponse struct {
-	Proof string
+	Proof common.ZkProof
 }
 
 type SyncCommGenesisRequest struct {
@@ -72,7 +75,7 @@ type SyncCommGenesisResponse struct {
 	Period    uint64                           `json:"period"`
 	ProofType SyncCommitteeProofType           `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     string
+	Proof     common.ZkProof
 }
 
 type SyncCommUnitsRequest struct {
@@ -89,7 +92,7 @@ type SyncCommUnitsResponse struct {
 	Period    uint64                           `json:"period"`
 	ProofType SyncCommitteeProofType           `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     string
+	Proof     common.ZkProof
 }
 
 type SyncCommRecursiveRequest struct {
@@ -103,7 +106,7 @@ type SyncCommRecursiveResponse struct {
 	Period    uint64                           `json:"period"`
 	ProofType SyncCommitteeProofType           `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     string
+	Proof     common.ZkProof
 }
 
 type ProofInfo struct {

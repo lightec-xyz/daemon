@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
@@ -512,7 +513,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 //return TxHash, nil
 //}
 
-func (e *EthereumAgent) updateRedeemProof(txId, proof string, status ProofStatus) error {
+func (e *EthereumAgent) updateRedeemProof(txId, proof common.ZkProof, status ProofStatus) error {
 	logger.Debug("update Redeem Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(e.store, txId, proof, RedeemTxType, status)
 	if err != nil {

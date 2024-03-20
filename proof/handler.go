@@ -2,12 +2,14 @@ package proof
 
 import (
 	"encoding/json"
-	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
-	"github.com/lightec-xyz/daemon/store"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/store"
 )
 
 var _ rpc.IProof = (*Handler)(nil)
@@ -30,7 +32,7 @@ func (h *Handler) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, 
 	logger.Debug("gen deposit proof")
 	time.Sleep(10 * time.Second)
 	return rpc.DepositResponse{
-		Proof: "deposit proof",
+		Proof: common.ZkProof([]byte("deposit proof")),
 	}, nil
 }
 
@@ -38,7 +40,7 @@ func (h *Handler) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, err
 	logger.Debug("gen redeem proof")
 	time.Sleep(10 * time.Second)
 	return rpc.RedeemResponse{
-		Proof: "redeem proof",
+		Proof: common.ZkProof([]byte("redeem proof")),
 	}, nil
 }
 
@@ -46,7 +48,7 @@ func (h *Handler) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, err
 	logger.Debug("gen verify proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
-		Proof: "verify proof",
+		Proof: common.ZkProof([]byte("verify proof")),
 	}, nil
 }
 
@@ -54,7 +56,7 @@ func (h *Handler) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.S
 	logger.Debug("gen sync comm genesis proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommGenesisResponse{
-		Proof: "genesis proof",
+		Proof: common.ZkProof([]byte("genesis proof")),
 	}, nil
 }
 
@@ -62,7 +64,7 @@ func (h *Handler) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.Sync
 	logger.Debug("gen sync comm units proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommUnitsResponse{
-		Proof: "units proof",
+		Proof: common.ZkProof([]byte("units proof")),
 	}, nil
 }
 
@@ -70,7 +72,7 @@ func (h *Handler) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (r
 	logger.Debug("gen sync comm recursive proof")
 	time.Sleep(10 * time.Second)
 	return rpc.SyncCommRecursiveResponse{
-		Proof: "recursive proof",
+		Proof: common.ZkProof([]byte("recursive proof")),
 	}, nil
 }
 
