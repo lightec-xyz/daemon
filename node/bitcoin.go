@@ -3,15 +3,17 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
+	"math/big"
+	"strings"
+	"time"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"math/big"
-	"strings"
-	"time"
 )
 
 type BitcoinAgent struct {
@@ -371,7 +373,7 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
 	return redeemBtcTx, isRedeemTx
 }
 
-func (b *BitcoinAgent) updateDepositProof(txId, proof string, status ProofStatus) error {
+func (b *BitcoinAgent) updateDepositProof(txId string, proof common.ZkProof, status ProofStatus) error {
 	logger.Debug("update DepositTx  Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(b.store, txId, proof, DepositTxType, status)
 	if err != nil {
@@ -449,7 +451,7 @@ func getEthAddrFromScript(script string) (string, error) {
 	if !strings.HasPrefix(script, "6a") {
 		return "", fmt.Errorf("script is not start with 6a")
 	}
-	isHexAddress := common.IsHexAddress(script[4:])
+	isHexAddress := ethcommon.IsHexAddress(script[4:])
 	if !isHexAddress {
 		return "", fmt.Errorf("script is not hex address")
 	}

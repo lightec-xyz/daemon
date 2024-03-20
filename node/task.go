@@ -7,13 +7,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	btcTypes "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
+	btcTx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 )
 
 type TaskManager struct {
@@ -111,7 +113,7 @@ func (t *TaskManager) execute() error {
 	return nil
 }
 
-func (t *TaskManager) MintZkBtcRequest(proofId string, proof string) (string, error) {
+func (t *TaskManager) MintZkBtcRequest(proofId string, proof common.ZkProof) (string, error) {
 	// todo
 	btcTx, err := t.btcClient.GetTransaction(proofId)
 	if err != nil {
@@ -238,7 +240,7 @@ func (t *TaskManager) submitUpdateTx(ethTask *Task, highPriority ...bool) (strin
 	}
 	task := ethTask.tasks[0]
 	if task.TxHash != "" {
-		transaction, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(task.TxHash))
+		transaction, err := t.ethClient.TransactionReceipt(context.Background(), ethcommon.HexToHash(task.TxHash))
 		if err != nil {
 			logger.Error(err.Error())
 			return "", err
@@ -297,7 +299,7 @@ func (t *TaskManager) submitDepositTx(ethTask *Task, highPriority ...bool) (stri
 	}
 	task := ethTask.tasks[0]
 	if task.TxHash != "" {
-		transaction, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(task.TxHash))
+		transaction, err := t.ethClient.TransactionReceipt(context.Background(), ethcommon.HexToHash(task.TxHash))
 		if err != nil {
 			logger.Error(err.Error())
 			return "", err
@@ -333,7 +335,7 @@ func (t *TaskManager) submitDepositTx(ethTask *Task, highPriority ...bool) (stri
 		return "", fmt.Errorf("never should happen innerTask type: %v", task)
 	}
 	txHash, err := t.ethClient.Deposit(t.keyStore.GetPrivateKey(), param.TxId, param.EthAddr, param.TxIndex,
-		task.Nonce, 0, chainId, gasPrice, big.NewInt(param.Amount), []byte(param.Proof))
+		task.Nonce, 0, chainId, gasPrice, big.NewInt(param.Amount), param.Proof)
 	if err != nil {
 		logger.Error(err.Error())
 		return "", err
@@ -346,7 +348,7 @@ func (t *TaskManager) submitDepositTx(ethTask *Task, highPriority ...bool) (stri
 
 func (t *TaskManager) getRedeemTxData(txHash string) ([]byte, error) {
 	// todo
-	receipt, err := t.ethClient.TransactionReceipt(context.Background(), common.HexToHash(txHash))
+	receipt, err := t.ethClient.TransactionReceipt(context.Background(), ethcommon.HexToHash(txHash))
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -420,7 +422,7 @@ type DepositParam struct {
 	TxId    string
 	TxIndex uint32
 	Amount  int64
-	Proof   string
+	Proof   common.ZkProof
 }
 
 type UpdateParam struct {

@@ -35,7 +35,7 @@ func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	time.Sleep(10 * time.Second)
 	return rpc.ProofInfo{
 		Status: 0,
-		Proof:  "",
+		Proof:  common.ZkProof([]byte("")),
 		TxId:   proofId,
 	}, nil
 }

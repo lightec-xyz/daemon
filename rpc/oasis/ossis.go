@@ -1,11 +1,12 @@
 package oasis
 
 import (
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	zkbridge_verify "github.com/lightec-xyz/daemon/rpc/oasis/contract"
-	"time"
 )
 
 type Client struct {

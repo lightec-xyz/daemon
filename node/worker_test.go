@@ -1,8 +1,9 @@
 package node
 
 import (
-	"github.com/lightec-xyz/daemon/rpc"
 	"testing"
+
+	"github.com/lightec-xyz/daemon/rpc"
 )
 
 func TestLocalWorker_GenProof(t *testing.T) {

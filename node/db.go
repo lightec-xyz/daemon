@@ -2,10 +2,12 @@ package node
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/store"
 	"strconv"
 	"strings"
+
+	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/store"
 )
 
 func WriteBitcoinHeight(store store.IStore, height int64) error {
@@ -98,7 +100,7 @@ func WriteDbProof(store store.IStore, txes []DbProof) error {
 	return nil
 }
 
-func UpdateProof(store store.IStore, txId, proof string, proofType ZkProofType, status ProofStatus) error {
+func UpdateProof(store store.IStore, txId string, proof common.ZkProof, proofType ZkProofType, status ProofStatus) error {
 	txProof := DbProof{
 		TxHash:    txId,
 		Proof:     proof,

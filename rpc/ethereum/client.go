@@ -2,19 +2,21 @@ package ethereum
 
 import (
 	"context"
+	"math/big"
+	"strings"
+	"time"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/transaction/ethereum/zkbridge"
 	"github.com/onrik/ethrpc"
-	"math/big"
-	"strings"
-	"time"
 )
 
 // todo
@@ -33,11 +35,11 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 	}
 	ethRPC := ethrpc.New(endpoint)
 	client := ethclient.NewClient(rpcDial)
-	zkBridgeCall, err := zkbridge.NewZkbridge(common.HexToAddress(zkBridgeAddr), client)
+	zkBridgeCall, err := zkbridge.NewZkbridge(ethcommon.HexToAddress(zkBridgeAddr), client)
 	if err != nil {
 		return nil, err
 	}
-	zkBtcCall, err := zkbridge.NewZkbtc(common.HexToAddress(zkBtcAddr), client)
+	zkBtcCall, err := zkbridge.NewZkbtc(ethcommon.HexToAddress(zkBtcAddr), client)
 	if err != nil {
 		return nil, err
 	}
@@ -58,16 +60,16 @@ func (c *Client) CheckDepositProof(txId string) (bool, error) {
 func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]types.Log, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
-	blockHash := common.HexToHash(hash)
-	var addresses []common.Address
+	blockHash := ethcommon.HexToHash(hash)
+	var addresses []ethcommon.Address
 	for _, addr := range addrList {
-		address := common.HexToAddress(addr)
+		address := ethcommon.HexToAddress(addr)
 		addresses = append(addresses, address)
 	}
-	var topics [][]common.Hash
-	var matchTopic []common.Hash
+	var topics [][]ethcommon.Hash
+	var matchTopic []ethcommon.Hash
 	for _, topic := range topicList {
-		topicHash := common.HexToHash(topic)
+		topicHash := ethcommon.HexToHash(topic)
 		matchTopic = append(matchTopic, topicHash)
 	}
 	topics = append(topics, matchTopic)
@@ -97,7 +99,7 @@ func (c *Client) GetBlock(height int64) (*types.Block, error) {
 func (c *Client) GetNonce(addr string) (uint64, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
-	nonce, err := c.NonceAt(ctx, common.HexToAddress(addr), nil)
+	nonce, err := c.NonceAt(ctx, ethcommon.HexToAddress(addr), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -107,7 +109,7 @@ func (c *Client) GetNonce(addr string) (uint64, error) {
 func (c *Client) GetPendingNonce(addr string) (uint64, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
-	nonce, err := c.PendingNonceAt(ctx, common.HexToAddress(addr))
+	nonce, err := c.PendingNonceAt(ctx, ethcommon.HexToAddress(addr))
 	if err != nil {
 		return 0, err
 	}
@@ -123,14 +125,14 @@ func (c *Client) GetEstimateGasLimit(from, to, txId string, index uint32, amount
 		return 0, err
 	}
 	fixedTxId := [32]byte{}
-	copy(fixedTxId[:], common.FromHex(txId))
+	copy(fixedTxId[:], ethcommon.FromHex(txId))
 	txData, err := zkBridgeAbi.Pack("deposit", fixedTxId, index, amount, proofData)
 	if err != nil {
 		return 0, err
 	}
-	toAddress := common.HexToAddress(to)
+	toAddress := ethcommon.HexToAddress(to)
 	gas, err := c.EstimateGas(ctx, ethereum.CallMsg{
-		From:      common.HexToAddress(from),
+		From:      ethcommon.HexToAddress(from),
 		To:        &toAddress,
 		Gas:       0,
 		Value:     big.NewInt(0),
@@ -164,7 +166,7 @@ func (c *Client) GetChainId() (*big.Int, error) {
 }
 
 func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
-	balance, err := c.zkBtcCall.BalanceOf(nil, common.HexToAddress(addr))
+	balance, err := c.zkBtcCall.BalanceOf(nil, ethcommon.HexToAddress(addr))
 	if err != nil {
 		return nil, err
 	}
@@ -172,8 +174,8 @@ func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
 }
 
 func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
-	nonce, gasLimit uint64, chainID, gasPrice, amount *big.Int, proof []byte) (string, error) {
-	address := common.HexToAddress(receiveAddr)
+	nonce, gasLimit uint64, chainID, gasPrice, amount *big.Int, proof common.ZkProof) (string, error) {
+	address := ethcommon.HexToAddress(receiveAddr)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
@@ -190,8 +192,8 @@ func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
 	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
 	fixedTxId := [32]byte{}
-	copy(fixedTxId[:], common.FromHex(txId))
-	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, address, proof)
+	copy(fixedTxId[:], ethcommon.FromHex(txId))
+	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, address, proof[:])
 	if err != nil {
 		return "", err
 	}
@@ -227,7 +229,7 @@ func TxIdsToFixedIds(txIds []string) [][32]byte {
 	fixedTxIds := make([][32]byte, 0)
 	for _, txId := range txIds {
 		fixedTxId := [32]byte{}
-		copy(fixedTxId[:], common.FromHex(txId))
+		copy(fixedTxId[:], ethcommon.FromHex(txId))
 		fixedTxIds = append(fixedTxIds, fixedTxId)
 	}
 	return fixedTxIds
