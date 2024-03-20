@@ -68,6 +68,68 @@ func TestClient_GetBlockTx(t *testing.T) {
 	fmt.Println(blockWithTx)
 }
 
+func TestMultiTransactionBuildTxData(t *testing.T) {
+	publicKeys := []string{
+		"0x03359e6936f7cbbb66ac1f55a20feb56b5e3b47f09d51d8a29a8c5bb9c5676e110",
+		"0x02126061adec61c6147cd7c2934f91e4a3dfb8ffe5b42fe21f7cb718c24a739dea",
+		"0x0235b40615b1565ed06ca7e6017c4c0f62e7115fe3c887b1d7a28acdf294041cc2",
+	}
+	var pubKeys [][]byte
+	for _, pub := range publicKeys {
+		pubKey, err := hexutil.Decode(pub)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pubKeys = append(pubKeys, pubKey)
+	}
+
+	txInputs := []bitcoin.TxIn{
+		{
+			Hash:     "9d433edd947173ddfab529ee405d9f06babf1c84fdedfa14d4fea35ba233340b",
+			VOut:     1,
+			PkScript: "0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58",
+			Amount:   99750,
+		},
+	}
+
+	pk1, _ := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
+	pk2, _ := hex.DecodeString("0020efd9eeb78068445762a9e2e335d6ab826aaecff9cb7da24a39fc4686d468fb58")
+	txOutputs := []bitcoin.TxOut{
+		{
+			PayScript: pk1,
+			Amount:    1000,
+		},
+		{
+			PayScript: pk2,
+			Amount:    98450,
+		},
+	}
+
+	builder := bitcoin.NewMultiTransactionBuilder()
+	err = builder.NetParams(bitcoin.RegTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = builder.AddMultiPublicKey(pubKeys, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = builder.AddTxIn(txInputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = builder.AddTxOutScript(txOutputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txData, err := builder.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("txData: %x \n", txData)
+
+}
+
 func TestMultiTransactionSignFromOasis(t *testing.T) {
 	txRaw, err := hexutil.Decode("")
 	if err != nil {
