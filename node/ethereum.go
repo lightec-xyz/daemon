@@ -172,6 +172,18 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
+func getRawTxAndReceipt(tx *types.Transaction, receipt *types.Receipt) (rawTx, rawReceipt []byte) {
+	buf := new(bytes.Buffer)
+	types.Transactions{tx}.EncodeIndex(0, buf)
+	rawTx = buf.Bytes()
+
+	buf.Reset()
+	types.Receipts{receipt}.EncodeIndex(0, buf)
+	rawReceipt = buf.Bytes()
+
+	return
+}
+
 func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
 	logger.Info("receive proof response: %v", resp.TxHash)
 	err := e.updateRedeemProof(resp.TxHash, resp.Proof, resp.Status)
@@ -513,7 +525,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 //return TxHash, nil
 //}
 
-func (e *EthereumAgent) updateRedeemProof(txId, proof common.ZkProof, status ProofStatus) error {
+func (e *EthereumAgent) updateRedeemProof(txId string, proof common.ZkProof, status ProofStatus) error {
 	logger.Debug("update Redeem Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(e.store, txId, proof, RedeemTxType, status)
 	if err != nil {
