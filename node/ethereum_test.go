@@ -11,13 +11,16 @@ import (
 )
 
 func Test_decodeRedeemLog(t *testing.T) {
-	// https://holesky.etherscan.io/tx/0x578b6beae157c2ebc22331f68314e68cb727f90eca0bdb1252bb083e4a1b1a83#eventlog
-	dataStr := "02000000013faa6f78548e637a17a8e135ef688ccac469587aef33875ef665077578fd9e6b0000000000ffffffff01384a00000000000016001464d468d12f61295882b0f8f63c64b58e2af058e400000000"
+	// https://holesky.etherscan.io/tx/0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001#eventlog
+	hash := common.HexToHash("0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001")
 
-	dataBytes, err := hexutil.Decode(dataStr)
+	ec, err := ethclient.Dial("https://1rpc.io/holesky")
 	require.NoError(t, err)
 
-	btcRawTx, sigHashs, err := decodeRedeemLog(dataBytes)
+	receipt, err := ec.TransactionReceipt(context.Background(), hash)
+	require.NoError(t, err)
+
+	btcRawTx, sigHashs, err := decodeRedeemLog(receipt.Logs[3].Data)
 	require.NoError(t, err)
 
 	t.Logf("btcRawTx: %v", hexutil.Encode(btcRawTx))
@@ -25,8 +28,8 @@ func Test_decodeRedeemLog(t *testing.T) {
 }
 
 func Test_getRawTxAndReceipt(t *testing.T) {
-	// https://holesky.etherscan.io/tx/0x578b6beae157c2ebc22331f68314e68cb727f90eca0bdb1252bb083e4a1b1a83
-	hash := common.HexToHash("0x578b6beae157c2ebc22331f68314e68cb727f90eca0bdb1252bb083e4a1b1a83")
+	// https://holesky.etherscan.io/tx/0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001
+	hash := common.HexToHash("0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001")
 
 	ec, err := ethclient.Dial("https://1rpc.io/holesky")
 	require.NoError(t, err)
