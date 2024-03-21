@@ -6,17 +6,19 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/lightec-xyz/daemon/logger"
-	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"log"
 	"math/big"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
+	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 )
 
 var err error
@@ -158,7 +160,7 @@ func TestRedeemTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	from := common.HexToAddress(fromAddr)
+	from := ethcommon.HexToAddress(fromAddr)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	gasLimit := 500000
@@ -188,8 +190,8 @@ func TestDepositeTransaction(t *testing.T) {
 	//ethAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
 	index := uint32(1)
 	amount := big.NewInt(12390000000)
-	proofBytes := []byte("test proof")
-	from := common.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
+	proof := common.ZkProof([]byte("test proof"))
+	from := ethcommon.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	gasLimit := 500000
@@ -207,7 +209,7 @@ func TestDepositeTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 	txHash, err := client.Deposit(privateKey, txId, "", index,
-		nonce, uint64(gasLimit), chainID, gasPrice, amount, proofBytes)
+		nonce, uint64(gasLimit), chainID, gasPrice, amount, proof)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +221,7 @@ func TestUpdateUtxoChange(t *testing.T) {
 	txId := "0xd32b0bc770512f49884b1e0e409c2010989c6fc7d76e4e495544a5cdb6cd9f49"
 	//ethAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
 	proofBytes := []byte("test proof")
-	from := common.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
+	from := ethcommon.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	gasLimit := 500000

@@ -4,16 +4,18 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
+	"math/big"
+	"strings"
+	"time"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	btcrpc "github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
-	"math/big"
-	"strings"
-	"time"
 )
 
 type Mock struct {
@@ -117,7 +119,7 @@ func (m *Mock) DepositBtcToEth(txId, receiverAddr string, index uint32, amount *
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(3))
 	gasLimit := uint64(500000)
 	ethTxHash, err := m.ethClient.Deposit(m.cfg.EthPrivateKey, txId, receiverAddr, index, nonce, gasLimit, chainID, gasPrice,
-		amount, []byte("test proof"))
+		amount, common.ZkProof([]byte("test proof")))
 	if err != nil {
 		logger.Error(" deposit eth error:%v", err)
 		return err
@@ -149,7 +151,7 @@ func (m *Mock) RedeemTx(amount int64) error {
 		logger.Error("decode redeem lock script error:%v", err)
 		return err
 	}
-	from := common.HexToAddress(fromAddr)
+	from := ethcommon.HexToAddress(fromAddr)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	gasLimit := 500000

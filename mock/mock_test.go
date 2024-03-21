@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/lightec-xyz/daemon/logger"
 	"math/big"
 	"testing"
+
+	"github.com/lightec-xyz/daemon/logger"
 )
 
 var err error
