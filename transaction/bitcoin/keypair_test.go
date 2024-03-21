@@ -16,9 +16,9 @@ func TestGenerateKeyPair(t *testing.T) {
 }
 
 func TestMultiAddress(t *testing.T) {
-	pubk1, _ := hexutil.Decode("0x0377e958f7a5636e92375dce8fa9d35ed4397b1d25eaa76bdc4c2f0b49ec0e0efe")
-	pubk2, _ := hexutil.Decode("0x028b4f7f78afe170a8c3896997cd3780a9367c6d653772687bce54bb28f35a28af")
-	pubk3, _ := hexutil.Decode("0x02765e2e1e204f6b0894b193e2a80768f8e0fd8f2c5a751e38b5955b1df7d00a13")
+	pubk1, _ := hexutil.Decode("0x03930b4b1bbe4b98128262f1ca2ac431f726b8390962eb581a6056601093663702")
+	pubk2, _ := hexutil.Decode("0x03c9745bde1ed2f977704638c4bbe34ba764347d78340641341e2f9c1602bfecfc")
+	pubk3, _ := hexutil.Decode("0x031908d0ff51de51205b102e28430b2e81d5d5a36758b43cdc9cf497230983e8e8")
 
 	var pubBytesList [][]byte
 	pubBytesList = append(pubBytesList, pubk1)
@@ -63,6 +63,14 @@ func TestMultiAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("testnet MultiSig Lock Script: %v\n", addrScript)
+}
+
+func TestGenPayToAddrScript(t *testing.T) {
+	lock, err := GenPayToAddrScript("tb1qvn2x35f0vy543q4slrmrce943c40qk8y0snkj7", TestNet)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(lock)
 }
 
 func TestGenerateKey(t *testing.T) {

@@ -31,7 +31,7 @@ var (
 
 // ZkbridgeVerifyMetaData contains all meta data concerning the ZkbridgeVerify contract.
 var ZkbridgeVerifyMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"addOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isOperator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"removeOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"signer_public_key\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"verifierAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"updateVerifierAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"txRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"receiptRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"signBtcTx\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"addOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isOperator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"removeOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"signerAddresses\",\"outputs\":[{\"internalType\":\"contractBTCKeypair\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"verifierAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"updateVerifierAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"bytes32ToBytes\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPublicKeys\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"txRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"receiptRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"signBtcTx\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // ZkbridgeVerifyABI is the input ABI used to generate the binding from.
@@ -180,6 +180,68 @@ func (_ZkbridgeVerify *ZkbridgeVerifyTransactorRaw) Transact(opts *bind.Transact
 	return _ZkbridgeVerify.Contract.contract.Transact(opts, method, params...)
 }
 
+// Bytes32ToBytes is a free data retrieval call binding the contract method 0x4c0999c7.
+//
+// Solidity: function bytes32ToBytes(bytes32 _data) pure returns(bytes)
+func (_ZkbridgeVerify *ZkbridgeVerifyCaller) Bytes32ToBytes(opts *bind.CallOpts, _data [32]byte) ([]byte, error) {
+	var out []interface{}
+	err := _ZkbridgeVerify.contract.Call(opts, &out, "bytes32ToBytes", _data)
+
+	if err != nil {
+		return *new([]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]byte)).(*[]byte)
+
+	return out0, err
+
+}
+
+// Bytes32ToBytes is a free data retrieval call binding the contract method 0x4c0999c7.
+//
+// Solidity: function bytes32ToBytes(bytes32 _data) pure returns(bytes)
+func (_ZkbridgeVerify *ZkbridgeVerifySession) Bytes32ToBytes(_data [32]byte) ([]byte, error) {
+	return _ZkbridgeVerify.Contract.Bytes32ToBytes(&_ZkbridgeVerify.CallOpts, _data)
+}
+
+// Bytes32ToBytes is a free data retrieval call binding the contract method 0x4c0999c7.
+//
+// Solidity: function bytes32ToBytes(bytes32 _data) pure returns(bytes)
+func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) Bytes32ToBytes(_data [32]byte) ([]byte, error) {
+	return _ZkbridgeVerify.Contract.Bytes32ToBytes(&_ZkbridgeVerify.CallOpts, _data)
+}
+
+// GetPublicKeys is a free data retrieval call binding the contract method 0x15285fed.
+//
+// Solidity: function getPublicKeys() view returns(bytes[])
+func (_ZkbridgeVerify *ZkbridgeVerifyCaller) GetPublicKeys(opts *bind.CallOpts) ([][]byte, error) {
+	var out []interface{}
+	err := _ZkbridgeVerify.contract.Call(opts, &out, "getPublicKeys")
+
+	if err != nil {
+		return *new([][]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([][]byte)).(*[][]byte)
+
+	return out0, err
+
+}
+
+// GetPublicKeys is a free data retrieval call binding the contract method 0x15285fed.
+//
+// Solidity: function getPublicKeys() view returns(bytes[])
+func (_ZkbridgeVerify *ZkbridgeVerifySession) GetPublicKeys() ([][]byte, error) {
+	return _ZkbridgeVerify.Contract.GetPublicKeys(&_ZkbridgeVerify.CallOpts)
+}
+
+// GetPublicKeys is a free data retrieval call binding the contract method 0x15285fed.
+//
+// Solidity: function getPublicKeys() view returns(bytes[])
+func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) GetPublicKeys() ([][]byte, error) {
+	return _ZkbridgeVerify.Contract.GetPublicKeys(&_ZkbridgeVerify.CallOpts)
+}
+
 // IsOperator is a free data retrieval call binding the contract method 0x6d70f7ae.
 //
 // Solidity: function isOperator(address addr) view returns(bool)
@@ -273,35 +335,35 @@ func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) SignBtcTx(txRaw []byte, rece
 	return _ZkbridgeVerify.Contract.SignBtcTx(&_ZkbridgeVerify.CallOpts, txRaw, receiptRaw, proofData)
 }
 
-// SignerPublicKey is a free data retrieval call binding the contract method 0xc093278a.
+// SignerAddresses is a free data retrieval call binding the contract method 0xb72217d6.
 //
-// Solidity: function signer_public_key() view returns(bytes)
-func (_ZkbridgeVerify *ZkbridgeVerifyCaller) SignerPublicKey(opts *bind.CallOpts) ([]byte, error) {
+// Solidity: function signerAddresses(uint256 ) view returns(address)
+func (_ZkbridgeVerify *ZkbridgeVerifyCaller) SignerAddresses(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
 	var out []interface{}
-	err := _ZkbridgeVerify.contract.Call(opts, &out, "signer_public_key")
+	err := _ZkbridgeVerify.contract.Call(opts, &out, "signerAddresses", arg0)
 
 	if err != nil {
-		return *new([]byte), err
+		return *new(common.Address), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([]byte)).(*[]byte)
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
 
 }
 
-// SignerPublicKey is a free data retrieval call binding the contract method 0xc093278a.
+// SignerAddresses is a free data retrieval call binding the contract method 0xb72217d6.
 //
-// Solidity: function signer_public_key() view returns(bytes)
-func (_ZkbridgeVerify *ZkbridgeVerifySession) SignerPublicKey() ([]byte, error) {
-	return _ZkbridgeVerify.Contract.SignerPublicKey(&_ZkbridgeVerify.CallOpts)
+// Solidity: function signerAddresses(uint256 ) view returns(address)
+func (_ZkbridgeVerify *ZkbridgeVerifySession) SignerAddresses(arg0 *big.Int) (common.Address, error) {
+	return _ZkbridgeVerify.Contract.SignerAddresses(&_ZkbridgeVerify.CallOpts, arg0)
 }
 
-// SignerPublicKey is a free data retrieval call binding the contract method 0xc093278a.
+// SignerAddresses is a free data retrieval call binding the contract method 0xb72217d6.
 //
-// Solidity: function signer_public_key() view returns(bytes)
-func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) SignerPublicKey() ([]byte, error) {
-	return _ZkbridgeVerify.Contract.SignerPublicKey(&_ZkbridgeVerify.CallOpts)
+// Solidity: function signerAddresses(uint256 ) view returns(address)
+func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) SignerAddresses(arg0 *big.Int) (common.Address, error) {
+	return _ZkbridgeVerify.Contract.SignerAddresses(&_ZkbridgeVerify.CallOpts, arg0)
 }
 
 // VerifierAddress is a free data retrieval call binding the contract method 0x18bdffbb.
