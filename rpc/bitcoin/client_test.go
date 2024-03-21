@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+	"testing"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -12,17 +16,15 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/transaction/bitcoin"
-	"math/big"
-	"strconv"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 var client *Client
 var err error
 
 func init() {
-	//url := "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02"
-	url := "http://127.0.0.1:8332"
+	url := "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02"
+	// url := "http://127.0.0.1:8332"
 	user := "lightec"
 	pwd := "abcd1234"
 	network := "regtest"
@@ -125,17 +127,15 @@ func TestMultiTransactionBuildTxData(t *testing.T) {
 }
 
 func TestMultiTransactionSignFromOasis(t *testing.T) {
-	txRaw, err := hexutil.Decode("0x02000000013faa6f78548e637a17a8e135ef688ccac469587aef33875ef665077578fd9e6b0000000000ffffffff02802e00000000000016001408145420b1e7f4dd1716be0ae336a6151e72bc01221c000000000000220020d3eaa044dbfccbbf98d192a35d456694991bb037d3c4915e4aedf26d0f12dcd200000000")
-	if err != nil {
-		t.Fatal(err)
-	}
+	// https://holesky.etherscan.io/tx/0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001
+	txRaw, err := hexutil.Decode("0x0200000001b095e7df80a9e758ae67fa9c7d9b8c5464dc41249fffe9b164d4be56b404dfcc0000000000ffffffff02802e00000000000016001464d468d12f61295882b0f8f63c64b58e2af058e4401d0000000000002200207c907704071d036924b69db3b98b683cc405384828b55b1b3d25ffd8d04381bf00000000")
+	require.NoError(t, err)
+
 	receiptRaw, err := hexutil.Decode("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	contractAddrs := []string{"0xBb8b61bD363221281A105b6a37ad4CF7DDf24BAc",
-		"0x5ee2C3FABED0780abB5905fCD6DEbf1C3C42C729",
-		"0x7e0d35F36a1103Fe0Ad91911b2798Cb24A6beC7f"}
+	contractAddrs := "0xd53859C586D0593343842e75E358d5f9E1ca26CE"
 	proodData, err := hexutil.Decode("")
 	if err != nil {
 		t.Fatal(err)
@@ -146,6 +146,9 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 		t.Fatal(err)
 	}
 	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", contractAddrs)
+	if err != nil {
+		t.Fatal(err)
+	}
 	signatures, err := oasisClient.SignBtcTx(txRaw, receiptRaw, proodData)
 	if err != nil {
 		t.Fatal(err)
