@@ -30,14 +30,22 @@ type MultiTransactionBuilder struct {
 }
 
 func NewMultiTransactionBuilder() *MultiTransactionBuilder {
+	return NewMultiTxBuilder(&chaincfg.MainNetParams)
+}
+
+func NewMultiTxBuilder(netParams *chaincfg.Params) *MultiTransactionBuilder {
 	return &MultiTransactionBuilder{
 		msgTx:            wire.NewMsgTx(TxVersion),
 		txInPkScripts:    make([][]byte, 0),
 		txInValues:       make([]btcutil.Amount, 0),
 		multiScriptsList: make([][]byte, 0),
 		multiSigScript:   make([]byte, 0),
-		netParams:        &chaincfg.MainNetParams,
+		netParams:        netParams,
 	}
+}
+
+func NewTestnetMultiTxBuilder() *MultiTransactionBuilder {
+	return NewMultiTxBuilder(&chaincfg.TestNet3Params)
 }
 
 func (mb *MultiTransactionBuilder) NetParams(network NetWork) error {
@@ -46,6 +54,12 @@ func (mb *MultiTransactionBuilder) NetParams(network NetWork) error {
 		return err
 	}
 	mb.netParams = params
+	return nil
+}
+
+func (mb *MultiTransactionBuilder) AddMultiScript(multiSigScript []byte, nRequired int) error {
+	mb.nRequired = nRequired
+	mb.multiSigScript = multiSigScript
 	return nil
 }
 
@@ -62,9 +76,7 @@ func (mb *MultiTransactionBuilder) AddMultiPublicKey(publicList [][]byte, nRequi
 	if err != nil {
 		return err
 	}
-	mb.nRequired = nRequired
-	mb.multiSigScript = multiSigScript
-	return nil
+	return mb.AddMultiScript(multiSigScript, nRequired)
 }
 
 func (mb *MultiTransactionBuilder) AddTxIn(inputs []TxIn) error {
@@ -170,12 +182,7 @@ func (mb *MultiTransactionBuilder) Build() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	var buf bytes.Buffer
-	err = mb.msgTx.Serialize(&buf)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return mb.Serialize()
 }
 
 type TxIn struct {

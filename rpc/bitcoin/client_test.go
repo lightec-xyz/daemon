@@ -126,6 +126,32 @@ func TestMultiTransactionBuildTxData(t *testing.T) {
 
 }
 
+func Test_MergeAndSendTx(t *testing.T) {
+	// https://holesky.etherscan.io/tx/0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001
+	txRaw, err := hexutil.Decode("0x0200000001b095e7df80a9e758ae67fa9c7d9b8c5464dc41249fffe9b164d4be56b404dfcc0000000000ffffffff02802e00000000000016001464d468d12f61295882b0f8f63c64b58e2af058e4401d0000000000002200207c907704071d036924b69db3b98b683cc405384828b55b1b3d25ffd8d04381bf00000000")
+	require.NoError(t, err)
+
+	transaction := bitcoin.NewTestnetMultiTxBuilder()
+	err = transaction.Deserialize(txRaw)
+	require.NoError(t, err)
+
+	multiSigScript, err := hexutil.Decode("0x522103930b4b1bbe4b98128262f1ca2ac431f726b8390962eb581a60566010936637022103c9745bde1ed2f977704638c4bbe34ba764347d78340641341e2f9c1602bfecfc21031908d0ff51de51205b102e28430b2e81d5d5a36758b43cdc9cf497230983e8e853ae")
+	require.NoError(t, err)
+	transaction.AddMultiScript(multiSigScript, 2)
+
+	// todo
+
+	tx, err := transaction.Serialize()
+	require.NoError(t, err)
+
+	txHex := hex.EncodeToString(tx)
+	t.Logf("tx:%x\n", txHex)
+
+	txHash, err := client.Sendrawtransaction(txHex)
+	require.NoError(t, err)
+	t.Log(txHash)
+}
+
 func TestMultiTransactionSignFromOasis(t *testing.T) {
 	// https://holesky.etherscan.io/tx/0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001
 	txRaw, err := hexutil.Decode("0x0200000001b095e7df80a9e758ae67fa9c7d9b8c5464dc41249fffe9b164d4be56b404dfcc0000000000ffffffff02802e00000000000016001464d468d12f61295882b0f8f63c64b58e2af058e4401d0000000000002200207c907704071d036924b69db3b98b683cc405384828b55b1b3d25ffd8d04381bf00000000")
