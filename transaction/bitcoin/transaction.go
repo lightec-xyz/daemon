@@ -27,6 +27,7 @@ type MultiTransactionBuilder struct {
 	multiSigScript   []byte
 	netParams        *chaincfg.Params
 	nRequired        int
+	nTotal           int
 }
 
 func NewMultiTransactionBuilder() *MultiTransactionBuilder {
@@ -57,9 +58,15 @@ func (mb *MultiTransactionBuilder) NetParams(network NetWork) error {
 	return nil
 }
 
-func (mb *MultiTransactionBuilder) AddMultiScript(multiSigScript []byte, nRequired int) error {
-	mb.nRequired = nRequired
+func (mb *MultiTransactionBuilder) AddMultiScript(multiSigScript []byte, nRequired, nTotal int) error {
+	if nRequired > nTotal {
+		return errors.New("the number of required signatures is too much")
+	}
+
 	mb.multiSigScript = multiSigScript
+	mb.nRequired = nRequired
+	mb.nTotal = nTotal
+
 	return nil
 }
 
@@ -76,7 +83,7 @@ func (mb *MultiTransactionBuilder) AddMultiPublicKey(publicList [][]byte, nRequi
 	if err != nil {
 		return err
 	}
-	return mb.AddMultiScript(multiSigScript, nRequired)
+	return mb.AddMultiScript(multiSigScript, nRequired, len(publicKeys))
 }
 
 func (mb *MultiTransactionBuilder) AddTxIn(inputs []TxIn) error {
@@ -151,19 +158,22 @@ func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, erro
 }
 
 func (mb *MultiTransactionBuilder) MergeSignature(signatures [][][]byte) error {
-	nKey := len(signatures)
+	if len(signatures) != mb.nRequired {
+		return fmt.Errorf("the number of signatures is too much or too little")
+	}
+
 	nTxin := len(mb.msgTx.TxIn)
-	nNil := nKey - mb.nRequired
+	nNil := mb.nTotal - mb.nRequired
 
 	for i := 0; i < nTxin; i++ {
-		witnessElements := make(wire.TxWitness, 0, nKey+1)
+		witnessElements := make(wire.TxWitness, 0, mb.nTotal+1)
 
-		for j := 0; j < nKey; j++ {
-			if j < nNil {
-				witnessElements = append(witnessElements, nil)
-			} else {
-				witnessElements = append(witnessElements, signatures[j][i])
-			}
+		for j := 0; j < nNil; j++ {
+			witnessElements = append(witnessElements, nil)
+		}
+
+		for j := 0; j < mb.nRequired; j++ {
+			witnessElements = append(witnessElements, signatures[j][i])
 		}
 
 		witnessElements = append(witnessElements, mb.multiSigScript)

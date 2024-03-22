@@ -137,7 +137,7 @@ func Test_MergeAndSendTx(t *testing.T) {
 
 	multiSigScript, err := hexutil.Decode("0x522103930b4b1bbe4b98128262f1ca2ac431f726b8390962eb581a60566010936637022103c9745bde1ed2f977704638c4bbe34ba764347d78340641341e2f9c1602bfecfc21031908d0ff51de51205b102e28430b2e81d5d5a36758b43cdc9cf497230983e8e853ae")
 	require.NoError(t, err)
-	transaction.AddMultiScript(multiSigScript, 2)
+	transaction.AddMultiScript(multiSigScript, 2, 3)
 
 	const nKey = 3
 	const nTxin = 1
@@ -155,7 +155,7 @@ func Test_MergeAndSendTx(t *testing.T) {
 	sigs[2][0], err = hex.DecodeString("3045022100c35f6795a89d4639d89f335fcd70e87ad0d64e3b8110f7fc3fe27f77f4f7f97502205bb7ecbb742e61c5193fb304a417e9b0c195eabfa2ff14c8688f90c83829595e01")
 	require.NoError(t, err)
 
-	err = transaction.MergeSignature(sigs)
+	err = transaction.MergeSignature(sigs[1:])
 	require.NoError(t, err)
 
 	tx, err := transaction.Serialize()
