@@ -150,17 +150,27 @@ func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, erro
 	return nil
 }
 
-func (mb *MultiTransactionBuilder) MergeSignature(signatures [][]byte) error {
-	// todo  check and confirm
-	for index := 0; index < len(signatures); index++ {
-		var sigs [][]byte
-		sigs = append(sigs, append(signatures[index], byte(txscript.SigHashAll)))
-		witnessScript, err := MergeMultiSignatures(mb.nRequired, mb.multiSigScript, sigs)
-		if err != nil {
-			return err
+func (mb *MultiTransactionBuilder) MergeSignature(signatures [][][]byte) error {
+	nKey := len(signatures)
+	nTxin := len(mb.msgTx.TxIn)
+	nNil := nKey - mb.nRequired
+
+	for i := 0; i < nTxin; i++ {
+		witnessElements := make(wire.TxWitness, 0, nKey+1)
+
+		for j := 0; j < nKey; j++ {
+			if j < nNil {
+				witnessElements = append(witnessElements, nil)
+			} else {
+				witnessElements = append(witnessElements, signatures[j][i])
+			}
 		}
-		mb.msgTx.TxIn[index].Witness = witnessScript
+
+		witnessElements = append(witnessElements, mb.multiSigScript)
+
+		mb.msgTx.TxIn[i].Witness = witnessElements
 	}
+
 	return nil
 }
 

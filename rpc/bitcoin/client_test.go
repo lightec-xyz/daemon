@@ -139,20 +139,41 @@ func Test_MergeAndSendTx(t *testing.T) {
 	require.NoError(t, err)
 	transaction.AddMultiScript(multiSigScript, 2)
 
-	// todo
+	const nKey = 3
+	const nTxin = 1
+	sigs := make([][][]byte, nKey)
+	for i := 0; i < nKey; i++ {
+		sigs[i] = make([][]byte, nTxin)
+	}
+
+	sigs[0][0], err = hex.DecodeString("30450221009f293e400073c2eafccfe6869d2b3a5bca8991f9dab9169ea71b4ddef0b92f770220200d4c1c616fe25323082855954b72d2f5f750f829c37e27b57c4a9b265ed24b01")
+	require.NoError(t, err)
+
+	sigs[1][0], err = hex.DecodeString("3045022100d24fd371d6e2cfc8d5c0f83877a15accae81402b1cf576a00efb1f9dcfdbb72102201974c8a21f53a9194a591140ece5130bade30e9422f648e3f2451494788e3aef01")
+	require.NoError(t, err)
+
+	sigs[2][0], err = hex.DecodeString("3045022100c35f6795a89d4639d89f335fcd70e87ad0d64e3b8110f7fc3fe27f77f4f7f97502205bb7ecbb742e61c5193fb304a417e9b0c195eabfa2ff14c8688f90c83829595e01")
+	require.NoError(t, err)
+
+	err = transaction.MergeSignature(sigs)
+	require.NoError(t, err)
 
 	tx, err := transaction.Serialize()
 	require.NoError(t, err)
 
 	txHex := hex.EncodeToString(tx)
-	t.Logf("tx:%x\n", txHex)
+	fmt.Printf("tx: %v\n", txHex)
+
+	hash := transaction.TxHash()
+	fmt.Printf("hash: %v\n", hash)
 
 	txHash, err := client.Sendrawtransaction(txHex)
 	require.NoError(t, err)
-	t.Log(txHash)
+	fmt.Println(txHash)
 }
 
 func TestMultiTransactionSignFromOasis(t *testing.T) {
+	// todo
 	// https://holesky.etherscan.io/tx/0x3db1bb46352898a1ff0349274d0dcc7c8e78020ab2268c2bfa0863ab0e9de001
 	txRaw, err := hexutil.Decode("0x0200000001b095e7df80a9e758ae67fa9c7d9b8c5464dc41249fffe9b164d4be56b404dfcc0000000000ffffffff02802e00000000000016001464d468d12f61295882b0f8f63c64b58e2af058e4401d0000000000002200207c907704071d036924b69db3b98b683cc405384828b55b1b3d25ffd8d04381bf00000000")
 	require.NoError(t, err)
