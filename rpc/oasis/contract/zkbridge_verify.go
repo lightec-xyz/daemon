@@ -31,7 +31,7 @@ var (
 
 // ZkbridgeVerifyMetaData contains all meta data concerning the ZkbridgeVerify contract.
 var ZkbridgeVerifyMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"addOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isOperator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"removeOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"signerAddresses\",\"outputs\":[{\"internalType\":\"contractBTCKeypair\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"verifierAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"updateVerifierAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"bytes32ToBytes\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPublicKeys\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"txRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"receiptRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"signBtcTx\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"count\",\"type\":\"uint8\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"addOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isOperator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_new\",\"type\":\"address\"}],\"name\":\"removeOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"signerAddresses\",\"outputs\":[{\"internalType\":\"contractBTCKeypair\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"verifierAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"addKeypairOperator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractBTCKeypair[]\",\"name\":\"pairs\",\"type\":\"address[]\"}],\"name\":\"updateKeypairs\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"updateVerifierAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_data\",\"type\":\"bytes32\"}],\"name\":\"bytes32ToBytes\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPublicKeys\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"txRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"receiptRaw\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"signBtcTx\",\"outputs\":[{\"internalType\":\"bytes[][]\",\"name\":\"\",\"type\":\"bytes[][]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // ZkbridgeVerifyABI is the input ABI used to generate the binding from.
@@ -306,16 +306,16 @@ func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) Owner() (common.Address, err
 
 // SignBtcTx is a free data retrieval call binding the contract method 0xe43d4471.
 //
-// Solidity: function signBtcTx(bytes txRaw, bytes receiptRaw, bytes proofData) view returns(bytes[])
-func (_ZkbridgeVerify *ZkbridgeVerifyCaller) SignBtcTx(opts *bind.CallOpts, txRaw []byte, receiptRaw []byte, proofData []byte) ([][]byte, error) {
+// Solidity: function signBtcTx(bytes txRaw, bytes receiptRaw, bytes proofData) view returns(bytes[][])
+func (_ZkbridgeVerify *ZkbridgeVerifyCaller) SignBtcTx(opts *bind.CallOpts, txRaw []byte, receiptRaw []byte, proofData []byte) ([][][]byte, error) {
 	var out []interface{}
 	err := _ZkbridgeVerify.contract.Call(opts, &out, "signBtcTx", txRaw, receiptRaw, proofData)
 
 	if err != nil {
-		return *new([][]byte), err
+		return *new([][][]byte), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([][]byte)).(*[][]byte)
+	out0 := *abi.ConvertType(out[0], new([][][]byte)).(*[][][]byte)
 
 	return out0, err
 
@@ -323,15 +323,15 @@ func (_ZkbridgeVerify *ZkbridgeVerifyCaller) SignBtcTx(opts *bind.CallOpts, txRa
 
 // SignBtcTx is a free data retrieval call binding the contract method 0xe43d4471.
 //
-// Solidity: function signBtcTx(bytes txRaw, bytes receiptRaw, bytes proofData) view returns(bytes[])
-func (_ZkbridgeVerify *ZkbridgeVerifySession) SignBtcTx(txRaw []byte, receiptRaw []byte, proofData []byte) ([][]byte, error) {
+// Solidity: function signBtcTx(bytes txRaw, bytes receiptRaw, bytes proofData) view returns(bytes[][])
+func (_ZkbridgeVerify *ZkbridgeVerifySession) SignBtcTx(txRaw []byte, receiptRaw []byte, proofData []byte) ([][][]byte, error) {
 	return _ZkbridgeVerify.Contract.SignBtcTx(&_ZkbridgeVerify.CallOpts, txRaw, receiptRaw, proofData)
 }
 
 // SignBtcTx is a free data retrieval call binding the contract method 0xe43d4471.
 //
-// Solidity: function signBtcTx(bytes txRaw, bytes receiptRaw, bytes proofData) view returns(bytes[])
-func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) SignBtcTx(txRaw []byte, receiptRaw []byte, proofData []byte) ([][]byte, error) {
+// Solidity: function signBtcTx(bytes txRaw, bytes receiptRaw, bytes proofData) view returns(bytes[][])
+func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) SignBtcTx(txRaw []byte, receiptRaw []byte, proofData []byte) ([][][]byte, error) {
 	return _ZkbridgeVerify.Contract.SignBtcTx(&_ZkbridgeVerify.CallOpts, txRaw, receiptRaw, proofData)
 }
 
@@ -395,6 +395,27 @@ func (_ZkbridgeVerify *ZkbridgeVerifySession) VerifierAddress() (common.Address,
 // Solidity: function verifierAddress() view returns(address)
 func (_ZkbridgeVerify *ZkbridgeVerifyCallerSession) VerifierAddress() (common.Address, error) {
 	return _ZkbridgeVerify.Contract.VerifierAddress(&_ZkbridgeVerify.CallOpts)
+}
+
+// AddKeypairOperator is a paid mutator transaction binding the contract method 0x9793079f.
+//
+// Solidity: function addKeypairOperator(address operator) returns()
+func (_ZkbridgeVerify *ZkbridgeVerifyTransactor) AddKeypairOperator(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error) {
+	return _ZkbridgeVerify.contract.Transact(opts, "addKeypairOperator", operator)
+}
+
+// AddKeypairOperator is a paid mutator transaction binding the contract method 0x9793079f.
+//
+// Solidity: function addKeypairOperator(address operator) returns()
+func (_ZkbridgeVerify *ZkbridgeVerifySession) AddKeypairOperator(operator common.Address) (*types.Transaction, error) {
+	return _ZkbridgeVerify.Contract.AddKeypairOperator(&_ZkbridgeVerify.TransactOpts, operator)
+}
+
+// AddKeypairOperator is a paid mutator transaction binding the contract method 0x9793079f.
+//
+// Solidity: function addKeypairOperator(address operator) returns()
+func (_ZkbridgeVerify *ZkbridgeVerifyTransactorSession) AddKeypairOperator(operator common.Address) (*types.Transaction, error) {
+	return _ZkbridgeVerify.Contract.AddKeypairOperator(&_ZkbridgeVerify.TransactOpts, operator)
 }
 
 // AddOperator is a paid mutator transaction binding the contract method 0x9870d7fe.
@@ -479,6 +500,27 @@ func (_ZkbridgeVerify *ZkbridgeVerifySession) TransferOwnership(newOwner common.
 // Solidity: function transferOwnership(address newOwner) returns()
 func (_ZkbridgeVerify *ZkbridgeVerifyTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _ZkbridgeVerify.Contract.TransferOwnership(&_ZkbridgeVerify.TransactOpts, newOwner)
+}
+
+// UpdateKeypairs is a paid mutator transaction binding the contract method 0xc897c995.
+//
+// Solidity: function updateKeypairs(address[] pairs) returns()
+func (_ZkbridgeVerify *ZkbridgeVerifyTransactor) UpdateKeypairs(opts *bind.TransactOpts, pairs []common.Address) (*types.Transaction, error) {
+	return _ZkbridgeVerify.contract.Transact(opts, "updateKeypairs", pairs)
+}
+
+// UpdateKeypairs is a paid mutator transaction binding the contract method 0xc897c995.
+//
+// Solidity: function updateKeypairs(address[] pairs) returns()
+func (_ZkbridgeVerify *ZkbridgeVerifySession) UpdateKeypairs(pairs []common.Address) (*types.Transaction, error) {
+	return _ZkbridgeVerify.Contract.UpdateKeypairs(&_ZkbridgeVerify.TransactOpts, pairs)
+}
+
+// UpdateKeypairs is a paid mutator transaction binding the contract method 0xc897c995.
+//
+// Solidity: function updateKeypairs(address[] pairs) returns()
+func (_ZkbridgeVerify *ZkbridgeVerifyTransactorSession) UpdateKeypairs(pairs []common.Address) (*types.Transaction, error) {
+	return _ZkbridgeVerify.Contract.UpdateKeypairs(&_ZkbridgeVerify.TransactOpts, pairs)
 }
 
 // UpdateVerifierAddress is a paid mutator transaction binding the contract method 0x736f1618.

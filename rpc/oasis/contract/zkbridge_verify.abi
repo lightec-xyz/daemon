@@ -1,6 +1,12 @@
- [
+  [
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "count",
+          "type": "uint8"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "constructor"
     },
@@ -137,6 +143,32 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "operator",
+          "type": "address"
+        }
+      ],
+      "name": "addKeypairOperator",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract BTCKeypair[]",
+          "name": "pairs",
+          "type": "address[]"
+        }
+      ],
+      "name": "updateKeypairs",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "addr",
           "type": "address"
         }
@@ -199,9 +231,9 @@
       "name": "signBtcTx",
       "outputs": [
         {
-          "internalType": "bytes[]",
+          "internalType": "bytes[][]",
           "name": "",
-          "type": "bytes[]"
+          "type": "bytes[][]"
         }
       ],
       "stateMutability": "view",
