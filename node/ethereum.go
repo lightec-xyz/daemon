@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -170,18 +168,6 @@ func (e *EthereumAgent) ScanBlock() error {
 		e.proofRequest <- zkProofRequests
 	}
 	return nil
-}
-
-func getRawTxAndReceipt(tx *types.Transaction, receipt *types.Receipt) (rawTx, rawReceipt []byte) {
-	buf := new(bytes.Buffer)
-	types.Transactions{tx}.EncodeIndex(0, buf)
-	rawTx = buf.Bytes()
-
-	buf.Reset()
-	types.Receipts{receipt}.EncodeIndex(0, buf)
-	rawReceipt = buf.Bytes()
-
-	return
 }
 
 func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
@@ -358,39 +344,6 @@ func (e *EthereumAgent) isDepositTx(log types.Log) (Transaction, bool, error) {
 
 }
 
-func decodeRedeemLog(logData []byte) (btcRawTx []byte, sigHashs [][32]byte, err error) {
-	t1, err := abi.NewType("bytes", "", nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	t2, err := abi.NewType("bytes32[]", "", nil)
-	if err != nil {
-		log.Fatal(err)
-		return nil, nil, err
-	}
-
-	arguments := abi.Arguments{
-		abi.Argument{Type: t1},
-		abi.Argument{Type: t2},
-	}
-	decoded, err := arguments.UnpackValues(logData)
-	if err != nil {
-		log.Fatal(err)
-		return nil, nil, err
-	}
-
-	btcRawTx, ok := decoded[0].([]byte)
-	if !ok {
-		return nil, nil, err
-	}
-	sigHashs, ok = decoded[1].([][32]byte)
-	if !ok {
-		return nil, nil, err
-	}
-
-	return btcRawTx, sigHashs, nil
-}
-
 func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 	redeemTx := Transaction{}
 	if log.Removed {
@@ -402,7 +355,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 	//todo more check
 	if strings.ToLower(log.Address.Hex()) == e.logAddrFilter.LogRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.logAddrFilter.LogTopicRedeemAddr {
 		btcTxId := strings.ToLower(log.Topics[1].Hex())
-		txData, _, err := decodeRedeemLog(log.Data)
+		txData, _, err := ethereum.DecodeRedeemLog(log.Data)
 		if err != nil {
 			logger.Error("decode redeem log error:%v", err)
 			return redeemTx, false, err

@@ -362,7 +362,7 @@ func (t *TaskManager) getRedeemTxData(txHash string) ([]byte, error) {
 			}
 		}
 	}
-	rawTx, _, err := decodeRedeemLog(data)
+	rawTx, _, err := ethereum.DecodeRedeemLog(data)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

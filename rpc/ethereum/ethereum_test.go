@@ -1,4 +1,4 @@
-package node
+package ethereum
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func Test_decodeRedeemLog(t *testing.T) {
 	receipt, err := ec.TransactionReceipt(context.Background(), hash)
 	require.NoError(t, err)
 
-	btcRawTx, sigHashs, err := decodeRedeemLog(receipt.Logs[3].Data)
+	btcRawTx, sigHashs, err := DecodeRedeemLog(receipt.Logs[3].Data)
 	require.NoError(t, err)
 
 	t.Logf("btcRawTx: %v", hexutil.Encode(btcRawTx))
@@ -40,7 +40,7 @@ func Test_getRawTxAndReceipt(t *testing.T) {
 	receipt, err := ec.TransactionReceipt(context.Background(), hash)
 	require.NoError(t, err)
 
-	rawTx, rawReceipt := getRawTxAndReceipt(tx, receipt)
+	rawTx, rawReceipt := GetRawTxAndReceipt(tx, receipt)
 	t.Logf("rawTx: %v", hexutil.Encode(rawTx))
 	t.Logf("rawReceipt: %v", hexutil.Encode(rawReceipt))
 }
