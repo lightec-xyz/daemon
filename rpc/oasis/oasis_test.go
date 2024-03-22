@@ -11,7 +11,7 @@ var client *Client
 
 func init() {
 	client, err = NewClient("https://testnet.sapphire.oasis.io",
-		"0xd53859C586D0593343842e75E358d5f9E1ca26CE",
+		"0x70Ed4383e144f55331bdbEE3De83069A0e2CA5ac",
 	)
 	if err != nil {
 		panic(err)

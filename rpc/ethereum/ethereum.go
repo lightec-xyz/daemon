@@ -42,13 +42,13 @@ func DecodeRedeemLog(logData []byte) (btcRawTx []byte, sigHashs [][32]byte, err 
 }
 
 func GetRawTxAndReceipt(tx *types.Transaction, receipt *types.Receipt) (rawTx, rawReceipt []byte) {
-	buf := new(bytes.Buffer)
-	types.Transactions{tx}.EncodeIndex(0, buf)
-	rawTx = buf.Bytes()
+	buf1 := new(bytes.Buffer)
+	types.Transactions{tx}.EncodeIndex(0, buf1)
+	rawTx = buf1.Bytes()
 
-	buf.Reset()
-	types.Receipts{receipt}.EncodeIndex(0, buf)
-	rawReceipt = buf.Bytes()
+	buf2 := new(bytes.Buffer)
+	types.Receipts{receipt}.EncodeIndex(0, buf2)
+	rawReceipt = buf2.Bytes()
 
 	return
 }

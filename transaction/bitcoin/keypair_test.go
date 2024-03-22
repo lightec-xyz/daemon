@@ -16,9 +16,9 @@ func TestGenerateKeyPair(t *testing.T) {
 }
 
 func TestMultiAddress(t *testing.T) {
-	pubk1, _ := hexutil.Decode("0x03930b4b1bbe4b98128262f1ca2ac431f726b8390962eb581a6056601093663702")
-	pubk2, _ := hexutil.Decode("0x03c9745bde1ed2f977704638c4bbe34ba764347d78340641341e2f9c1602bfecfc")
-	pubk3, _ := hexutil.Decode("0x031908d0ff51de51205b102e28430b2e81d5d5a36758b43cdc9cf497230983e8e8")
+	pubk1, _ := hexutil.Decode("0x0363f549d250342df02ee8b51ad6c9148dabc587c6569761ab58aa68488bd2e2c5")
+	pubk2, _ := hexutil.Decode("0x031cbb294f9955d80f65d9499feaeb5cb29d44c070adddd75cd48a40791d39b971")
+	pubk3, _ := hexutil.Decode("0x035c54e8287a7f7ba31886249fc89f295a4cb74cebf0d925f1eafe87f22fba57f9")
 
 	var pubBytesList [][]byte
 	pubBytesList = append(pubBytesList, pubk1)
