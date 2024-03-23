@@ -60,6 +60,14 @@ func TestClient_GetEstimateGasLimit(t *testing.T) {
 	t.Log(gasLimit)
 }
 
+func TestClient_ZkbtcBalance(t *testing.T) {
+	balance, err := client.GetZkBtcBalance("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(balance)
+}
+
 func TestClient_TestEth(t *testing.T) {
 	numb := big.NewInt(451228)
 	// result, err := client.HeaderByNumber(context.Background(), numb)
@@ -142,6 +150,13 @@ func TestRedeemTx(t *testing.T) {
 	minerFee := big.NewInt(300)
 
 	fromAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
+	balance, err := client.GetZkBtcBalance(fromAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if balance.Cmp(big.NewInt(10000)) < 0 {
+		t.Fatal("not enough balance")
+	}
 
 	redeemLockScript, err := hex.DecodeString("0014d7fae4fbdc8bf6c86a08c7177c5d06683754ea71")
 	if err != nil {

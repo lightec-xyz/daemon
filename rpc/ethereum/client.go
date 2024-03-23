@@ -21,6 +21,7 @@ import (
 type Client struct {
 	*ethclient.Client
 	zkBridgeCall *zkbridge.Zkbridge
+	zkBtcCall    *zkbridge.Zkbtc
 	timeout      time.Duration
 }
 
@@ -35,9 +36,15 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 		return nil, err
 	}
 
+	zkBtcCall, err := zkbridge.NewZkbtc(ethcommon.HexToAddress(zkBtcAddr), client)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
 		Client:       client,
 		zkBridgeCall: zkBridgeCall,
+		zkBtcCall:    zkBtcCall,
 		timeout:      15 * time.Second,
 	}, nil
 }
@@ -153,6 +160,14 @@ func (c *Client) GetChainId() (*big.Int, error) {
 		return nil, err
 	}
 	return chainId, nil
+}
+
+func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
+	balance, err := c.zkBtcCall.BalanceOf(nil, ethcommon.HexToAddress(addr))
+	if err != nil {
+		return nil, err
+	}
+	return balance, nil
 }
 
 func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
