@@ -184,7 +184,11 @@ func Test_GetMultiSigScriptRelatedsFromOasis(t *testing.T) {
 
 	publicKeys, err := oasisClient.PublicKey()
 	require.NoError(t, err)
-	fmt.Printf("publicKeys: %x\n", publicKeys)
+
+	fmt.Println("publicKeys: ")
+	for _, publicKey := range publicKeys {
+		fmt.Printf("    %v\n", hexutil.Encode(publicKey))
+	}
 
 	multiSigScript, walletAddr, lockScript, err :=
 		bitcoin.GetMultiSigScriptRelateds(2, &chaincfg.TestNet3Params, publicKeys)
