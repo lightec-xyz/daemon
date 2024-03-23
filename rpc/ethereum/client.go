@@ -255,3 +255,11 @@ func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice
 	}
 	return transaction.Hash().Hex(), nil
 }
+
+func (c *Client) GetMultiSigScript() ([]byte, error) {
+	multiSigScript, err := c.zkBridgeCall.MultiSigScript(nil)
+	if err != nil {
+		return nil, err
+	}
+	return multiSigScript, nil
+}
