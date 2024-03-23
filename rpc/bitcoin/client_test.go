@@ -11,6 +11,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/ethereum/go-ethereum/common"
@@ -176,12 +177,30 @@ func Test_MergeAndSendTx(t *testing.T) {
 	fmt.Println(txHash)
 }
 
+func Test_GetMultiSigScriptRelatedsFromOasis(t *testing.T) {
+	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
+	require.NoError(t, err)
+
+	publicKeys, err := oasisClient.PublicKey()
+	require.NoError(t, err)
+	fmt.Printf("publicKeys: %x\n", publicKeys)
+
+	multiSigScript, walletAddr, lockScript, err :=
+		bitcoin.GetMultiSigScriptRelateds(2, &chaincfg.TestNet3Params, publicKeys)
+	require.NoError(t, err)
+
+	fmt.Printf("MultiSig Script: %v\n", hexutil.Encode(multiSigScript))
+	fmt.Printf("Wallet Address: %v\n", walletAddr.EncodeAddress())
+	fmt.Printf("Lock Script: %v\n", hexutil.Encode(lockScript))
+}
+
 func TestMultiTransactionSignFromOasis(t *testing.T) {
 	// https://holesky.etherscan.io/tx/0xe88fa618634a210f2b2a5c32393d75c44474057a77fc2062288c078b005a4a12
 	ethTxHash := common.HexToHash("0x48262094098497cbbe7246487601c141d0427aae294505b0a949419f649c699b")
 
-	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", "0x4f413972ab2d4e53714a479db1519ce0e89ea30c",
-		"0xbf3041e37be70a58920a6fd776662b50323021c9")
+	zkBridgeAddr, zkBtcAddr := "0x4f413972ab2d4e53714a479db1519ce0e89ea30c", "0xbf3041e37be70a58920a6fd776662b50323021c9"
+	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
 	require.NoError(t, err)
 
 	ethTx, _, err := ec.TransactionByHash(context.Background(), ethTxHash)

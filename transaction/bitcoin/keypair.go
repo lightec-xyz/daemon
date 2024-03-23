@@ -139,6 +139,37 @@ func MultiScriptAddress(required int, network NetWork, publicKeyList [][]byte) (
 	return wshAddr.EncodeAddress(), nil
 }
 
+func GetMultiSigScriptRelateds(required int, net *chaincfg.Params, pubBytesList [][]byte) (
+	multiSigScript []byte, addr btcutil.Address, lockScript []byte, err error) {
+
+	var addrPubKeys []*btcutil.AddressPubKey
+	for _, pubKey := range pubBytesList {
+		addressPubKey, err := btcutil.NewAddressPubKey(pubKey, net)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		addrPubKeys = append(addrPubKeys, addressPubKey)
+	}
+
+	multiSigScript, err = txscript.MultiSigScript(addrPubKeys, required)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	scriptHash := sha256.Sum256(multiSigScript)
+	addr, err = btcutil.NewAddressWitnessScriptHash(scriptHash[:], net)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	lockScript, err = txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return multiSigScript, addr, lockScript, nil
+}
+
 func getNetworkParams(network NetWork) (*chaincfg.Params, error) {
 	var netParams *chaincfg.Params
 	switch network {
