@@ -17,7 +17,6 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.5.0
 	github.com/lightec-xyz/reLight v0.0.0-00010101000000-000000000000
-	github.com/onrik/ethrpc v1.2.0
 	github.com/prysmaticlabs/prysm/v5 v5.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
@@ -61,7 +60,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lightec-xyz/chainark v0.0.0-20240314091508-a3c5dbaf7031 // indirect
+	github.com/lightec-xyz/chainark v0.0.0-20240322011206-dbf976346370 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
