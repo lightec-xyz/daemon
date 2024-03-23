@@ -13,42 +13,32 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/transaction/ethereum/zkbridge"
-	"github.com/onrik/ethrpc"
 )
 
 // todo
 type Client struct {
 	*ethclient.Client
-	*ethrpc.EthRPC
 	zkBridgeCall *zkbridge.Zkbridge
-	zkBtcCall    *zkbridge.Zkbtc
 	timeout      time.Duration
 }
 
 func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error) {
-	rpcDial, err := rpc.Dial(endpoint)
+	client, err := ethclient.Dial(endpoint)
 	if err != nil {
 		return nil, err
 	}
-	ethRPC := ethrpc.New(endpoint)
-	client := ethclient.NewClient(rpcDial)
+
 	zkBridgeCall, err := zkbridge.NewZkbridge(ethcommon.HexToAddress(zkBridgeAddr), client)
 	if err != nil {
 		return nil, err
 	}
-	zkBtcCall, err := zkbridge.NewZkbtc(ethcommon.HexToAddress(zkBtcAddr), client)
-	if err != nil {
-		return nil, err
-	}
+
 	return &Client{
 		Client:       client,
-		EthRPC:       ethRPC,
 		zkBridgeCall: zkBridgeCall,
 		timeout:      15 * time.Second,
-		zkBtcCall:    zkBtcCall,
 	}, nil
 }
 
@@ -163,14 +153,6 @@ func (c *Client) GetChainId() (*big.Int, error) {
 		return nil, err
 	}
 	return chainId, nil
-}
-
-func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
-	balance, err := c.zkBtcCall.BalanceOf(nil, ethcommon.HexToAddress(addr))
-	if err != nil {
-		return nil, err
-	}
-	return balance, nil
 }
 
 func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,

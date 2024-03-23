@@ -2,6 +2,7 @@ package node
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -121,7 +122,7 @@ func (e *EthereumAgent) ScanBlock() error {
 	if ethHeight < e.initStartHeight {
 		ethHeight = e.initStartHeight
 	}
-	blockNumber, err := e.ethClient.EthBlockNumber()
+	blockNumber, err := e.ethClient.BlockNumber(context.Background())
 	if err != nil {
 		logger.Error("get eth block number error:%v", err)
 		return err
