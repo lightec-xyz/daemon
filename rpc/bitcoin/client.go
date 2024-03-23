@@ -5,11 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/ybbus/jsonrpc"
-	"net/http"
-	"time"
 )
 
 type Client struct {
@@ -86,7 +87,7 @@ func (client *Client) Call(method string, result interface{}, args ...interface{
 			}
 		}
 		buff.WriteString("]\n")
-		fmt.Printf(buff.String())
+		fmt.Println(buff.String())
 	}
 	response, err := client.rpcClient.Call(method, args...)
 	if err != nil {

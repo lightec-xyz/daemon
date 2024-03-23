@@ -2,8 +2,9 @@ package bitcoin
 
 import (
 	"fmt"
-	"github.com/btcsuite/btcd/btcutil/base58"
 	"testing"
+
+	"github.com/btcsuite/btcd/btcutil/base58"
 )
 
 func TestClient_GetaddressInfo(t *testing.T) {
@@ -21,7 +22,7 @@ func TestClient_DumpPrivteKey(t *testing.T) {
 		panic(err)
 	}
 	t.Log(privkey)
-	t.Log(fmt.Sprintf("%x", base58.Decode(privkey)))
+	t.Logf(fmt.Sprintf("%x", base58.Decode(privkey)))
 }
 
 func TestGetrawChangeAddress(t *testing.T) {
