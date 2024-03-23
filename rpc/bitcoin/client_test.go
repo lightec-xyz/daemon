@@ -17,9 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
-	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/transaction/bitcoin"
+	"github.com/lightec-xyz/daemon/transaction/ethereum"
 	"github.com/stretchr/testify/require"
 )
 

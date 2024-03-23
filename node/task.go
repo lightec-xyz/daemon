@@ -13,15 +13,16 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	btcTypes "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
-	"github.com/lightec-xyz/daemon/rpc/ethereum"
+	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	btcTx "github.com/lightec-xyz/daemon/transaction/bitcoin"
+	"github.com/lightec-xyz/daemon/transaction/ethereum"
 )
 
 type TaskManager struct {
 	ethNonce    uint64
 	oasisNonce  uint64
-	ethClient   *ethereum.Client
+	ethClient   *ethrpc.Client
 	btcClient   *bitcoin.Client
 	oasisClient *oasis.Client
 	address     string
@@ -32,7 +33,7 @@ type TaskManager struct {
 	timeout     time.Duration
 }
 
-func NewTaskManager(address, privateKey string, ethClient *ethereum.Client, btcClient *bitcoin.Client, oasisClient *oasis.Client) (*TaskManager, error) {
+func NewTaskManager(address, privateKey string, ethClient *ethrpc.Client, btcClient *bitcoin.Client, oasisClient *oasis.Client) (*TaskManager, error) {
 	ethNonce, err := ethClient.GetNonce(address)
 	if err != nil {
 		logger.Error("get ethNonce error:%v", err)

@@ -13,14 +13,15 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
-	"github.com/lightec-xyz/daemon/rpc/ethereum"
+	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
+	"github.com/lightec-xyz/daemon/transaction/ethereum"
 )
 
 type EthereumAgent struct {
 	btcClient        *bitcoin.Client
-	ethClient        *ethereum.Client
+	ethClient        *ethrpc.Client
 	store            store.IStore
 	memoryStore      store.IStore
 	blockTime        time.Duration
@@ -38,7 +39,7 @@ type EthereumAgent struct {
 	submitQueue      *Queue
 }
 
-func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
+func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethrpc.Client,
 	proofRequest chan []ZkProofRequest) (IAgent, error) {
 	// todo
 	var privateKeys []*btcec.PrivateKey
