@@ -25,7 +25,7 @@ var unitCmd = &cobra.Command{
 			ParamFile:  paramFile,
 		}
 		wrapTime(func() {
-			err := unit.GenerateProof(&optUnit)
+			err := unit.Prove(&optUnit)
 			if err != nil {
 				panic(err)
 			}

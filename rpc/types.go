@@ -64,22 +64,30 @@ type VerifyResponse struct {
 }
 
 type SyncCommGenesisRequest struct {
-	Version                    string `json:"version"`
-	AttestedHeader             structs.BeaconBlockHeader
-	CurrentSyncCommittee       structs.SyncCommittee
-	CurrentSyncCommitteeBranch []string
+	Period        uint64 `json:"period"`
+	Version       string `json:"version"`
+	FirstProof    []byte
+	FirstWitness  []byte
+	SecondProof   []byte
+	SecondWitness []byte
+	GenesisID     []byte
+	FirstID       []byte
+	SecondID      []byte
+	RecursiveFp   []byte
 }
 
 type SyncCommGenesisResponse struct {
 	Version   string                           `json:"version"`
 	Period    uint64                           `json:"period"`
-	ProofType SyncCommitteeProofType           `json:"proofType"`
+	ProofType common.ZkProofType               `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     common.ZkProof
+	Proof     []byte
+	Witness   []byte
 }
 
 type SyncCommUnitsRequest struct {
 	Version                 string `json:"version"`
+	Period                  uint64
 	AttestedHeader          structs.BeaconBlockHeader
 	CurrentSyncCommittee    structs.SyncCommittee
 	SyncAggregate           structs.SyncAggregate
@@ -90,23 +98,33 @@ type SyncCommUnitsRequest struct {
 type SyncCommUnitsResponse struct {
 	Version   string                           `json:"version"`
 	Period    uint64                           `json:"period"`
-	ProofType SyncCommitteeProofType           `json:"proofType"`
+	ProofType common.ZkProofType               `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     common.ZkProof
+	Proof     []byte                           `json:"proof"`
+	Witness   []byte                           `json:"witness"`
 }
 
 type SyncCommRecursiveRequest struct {
-	Version          string `json:"version"`
-	PreProofGOrPoofR string `json:"preProofGOrPoofR"`
-	ProofU           string `json:"proofU"`
+	Period        uint64
+	Version       string
+	Choice        string `json:"choice"`
+	FirstProof    []byte
+	FirstWitness  []byte
+	SecondProof   []byte
+	SecondWitness []byte
+	BeginId       []byte
+	RelayId       []byte
+	EndId         []byte
+	RecursiveFp   []byte
 }
 
 type SyncCommRecursiveResponse struct {
 	Version   string                           `json:"version"`
 	Period    uint64                           `json:"period"`
-	ProofType SyncCommitteeProofType           `json:"proofType"`
+	ProofType common.ZkProofType               `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     common.ZkProof
+	Proof     []byte
+	Witness   []byte
 }
 
 type ProofInfo struct {

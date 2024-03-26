@@ -40,12 +40,13 @@ type IBeaconAgent interface {
 }
 
 type Daemon struct {
-	agents      []*WrapperAgent
-	beaconAgent *WrapperBeacon
-	server      *rpc.Server
-	nodeConfig  NodeConfig
-	exitSignal  chan os.Signal
-	manager     *WrapperManger
+	agents        []*WrapperAgent
+	beaconAgent   *WrapperBeacon
+	server        *rpc.Server
+	nodeConfig    NodeConfig
+	exitSignal    chan os.Signal
+	manager       *WrapperManger
+	onlyRecursive bool // true ,Only enable the function of generating recursive proofs
 }
 
 func NewDaemon(cfg NodeConfig) (*Daemon, error) {
@@ -114,7 +115,12 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
-		workers = append(workers, NewLocalWorker(1))
+		localWorker, err := NewLocalWorker("", "", 1)
+		if err != nil {
+			logger.Error("new local worker error:%v", err)
+			return nil, err
+		}
+		workers = append(workers, localWorker)
 	}
 	schedule := NewSchedule(workers)
 	manager, err := NewManager(cfg, btcProofResp, ethProofResp, syncCommitResp, storeDb, memoryStore, schedule)
@@ -142,13 +148,16 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 }
 
 func (d *Daemon) Init() error {
-	//todo
-	//for _, agent := range d.agents {
-	//	if err := agent.node.Init(); err != nil {
-	//		logger.Error("%v:init agent error %v", agent.node.Name(), err)
-	//		return err
-	//	}
-	//}
+
+	if !d.onlyRecursive {
+		// true ,skip init node agent
+		for _, agent := range d.agents {
+			if err := agent.node.Init(); err != nil {
+				logger.Error("%v:init agent error %v", agent.node.Name(), err)
+				return err
+			}
+		}
+	}
 	err := d.manager.manager.init()
 	if err != nil {
 		logger.Error("manager init error %v", err)
@@ -174,16 +183,20 @@ func (d *Daemon) Run() error {
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
 	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
 
-	//tx Proof
-	//for _, agent := range d.agents {
-	//	name := fmt.Sprintf("%s-submitProof", agent.node.Name())
-	//	go doProofResponseTask(name, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
-	//}
-	//scan block with tx
-	//for _, agent := range d.agents {
-	//	name := fmt.Sprintf("%s-scanBlock", agent.node.Name())
-	//	go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
-	//}
+	if !d.onlyRecursive {
+		// true skip this step
+		//tx Proof
+		for _, agent := range d.agents {
+			name := fmt.Sprintf("%s-submitProof", agent.node.Name())
+			go doProofResponseTask(name, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
+		}
+		//scan block with tx
+		for _, agent := range d.agents {
+			name := fmt.Sprintf("%s-scanBlock", agent.node.Name())
+			go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+		}
+	}
+
 	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
 	for {
 		msg := <-d.exitSignal
@@ -202,17 +215,19 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
-	for _, agent := range d.agents {
-		if err := agent.node.Close(); err != nil {
-			logger.Error("%v:close agent error %v", agent.node.Name(), err)
+	if !d.onlyRecursive {
+		for _, agent := range d.agents {
+			if err := agent.node.Close(); err != nil {
+				logger.Error("%v:close agent error %v", agent.node.Name(), err)
+			}
+		}
+		err := d.server.Shutdown()
+		if err != nil {
+			logger.Error("rpc server shutdown error:%v", err)
 		}
 	}
 	d.manager.manager.Close()
-	err := d.server.Shutdown()
-	if err != nil {
-		logger.Error("rpc server shutdown error:%v", err)
-	}
-	err = d.beaconAgent.node.Close()
+	err := d.beaconAgent.node.Close()
 	if err != nil {
 		logger.Error("node agent close error:%v", err)
 	}

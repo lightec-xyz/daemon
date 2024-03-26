@@ -15,6 +15,7 @@ type NodeConfig struct {
 	Rpcbind           string `json:"rpcbind"`
 	RpcPort           string `json:"rpcport"`
 	EnableLocalWorker bool   `json:"enableLocalWorker"`
+	OnlyRecursive     bool   `json:"onlyRecursive"`
 
 	BtcUrl            string           `json:"btcUrl"`
 	BtcUser           string           `json:"btcUser"`
@@ -310,6 +311,7 @@ type MultiAddressInfo struct {
 type WorkerConfig struct {
 	MaxNums int    `json:"maxNums"`
 	Url     string `json:"url"`
+	DataDir string `json:"dataDir"`
 }
 
 func TestnetDaemonConfig() NodeConfig {
