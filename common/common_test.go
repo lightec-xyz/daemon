@@ -1,6 +1,8 @@
 package common
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestUuid(t *testing.T) {
 	uuid, err := Uuid()

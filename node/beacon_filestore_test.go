@@ -45,14 +45,6 @@ func TestFileStoreGenesis(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = fileStore.StoreUnitProof(1, "unit")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = fileStore.StoreRecursiveProof(1, "recursive")
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestFileLatestPeriod(t *testing.T) {

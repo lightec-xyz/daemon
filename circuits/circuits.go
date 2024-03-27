@@ -46,6 +46,26 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	}, nil
 }
 
+func (c *Circuit) Load() error {
+	// todo
+	err := c.genesis.Load()
+	if err != nil {
+		logger.Error("genesis load error:%v", err)
+		return err
+	}
+	err = c.unit.Load()
+	if err != nil {
+		logger.Error("unit load error:%v", err)
+		return err
+	}
+	err = c.recursive.Load()
+	if err != nil {
+		logger.Error("recursive load error:%v", err)
+		return err
+	}
+	return nil
+}
+
 func (c *Circuit) UnitProve(update *utils.LightClientUpdateInfo) (*common.Proof, error) {
 	proof, err := c.unit.Prove(update)
 	if err != nil {
@@ -114,6 +134,10 @@ func WriteProof(proofFile string, proof native_plonk.Proof) error {
 
 func WriteWitness(witnessFile string, witness witness.Witness) error {
 	return utils.WriteWintess(witnessFile, witness)
+}
+
+func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
+	return unit.SyncCommitRoot(update)
 }
 
 func ParseProof(proof []byte) (native_plonk.Proof, error) {

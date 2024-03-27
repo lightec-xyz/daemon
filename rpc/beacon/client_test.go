@@ -2,7 +2,8 @@ package beacon
 
 import "testing"
 
-var endpoint = "http://127.0.0.1:8970"
+// var endpoint = "http://127.0.0.1:8970"
+var endpoint = "http://37.120.151.183:8970"
 var err error
 var client *Client
 

@@ -1,8 +1,10 @@
 package common
 
+// todo
+
 const ZkProofLength = 928
 
-type ZkProof [ZkProofLength]byte
+type ZkProof []byte
 
 type ZkProofType int
 
@@ -32,4 +34,8 @@ func (zkpr *ZkProofType) String() string {
 	default:
 		return ""
 	}
+}
+
+type CircuitsFP struct {
+	RecursiveFp []byte
 }

@@ -51,9 +51,10 @@ func (r *ZkProofRequest) String() string {
 }
 
 type ZkProofResponse struct {
-	ZkProofType ZkProofType // 0: genesis Proof, 1: unit Proof, 2: recursive Proof
+	ZkProofType ZkProofType
 	Status      ProofStatus
 	Proof       common.ZkProof
+	Witness     []byte
 	Period      uint64
 	TxHash      string
 }
@@ -80,8 +81,15 @@ type VerifyProofParam struct {
 }
 
 type GenesisProofParam struct {
-	Version string
-	data    structs.LightClientBootstrapResponse
+	Version       string
+	FirstProof    []byte
+	SecondProof   []byte
+	FirstWitness  []byte
+	SecondWitness []byte
+	GenesisId     []byte
+	FirstId       []byte
+	SecondId      []byte
+	RecursiveFp   []byte
 }
 
 type UnitProofParam struct {
@@ -94,14 +102,19 @@ type UnitProofParam struct {
 	NextSyncCommittee       *structs.SyncCommittee     `json:"next_sync_committee,omitempty"`        //next_sync_committee in finalized_header.state_root
 	NextSyncCommitteeBranch []string                   `json:"next_sync_committee_branch,omitempty"` //next_sync_committee branch in finalized_header.state_root
 	SignatureSlot           string                     `json:"signature_slot"`
-	isGenesis               bool
 }
 
 type RecursiveProofParam struct {
-	Version           string
-	unitProof         string
-	preRecursiveProof string
-	isGenesis         bool
+	Version       string
+	Choice        string `json:"choice"`
+	FirstProof    []byte
+	FirstWitness  []byte
+	SecondProof   []byte
+	SecondWitness []byte
+	BeginId       []byte
+	RelayId       []byte
+	EndId         []byte
+	RecursiveFp   []byte
 }
 
 type FetchType int

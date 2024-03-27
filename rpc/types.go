@@ -88,10 +88,10 @@ type SyncCommGenesisResponse struct {
 type SyncCommUnitsRequest struct {
 	Version                 string `json:"version"`
 	Period                  uint64
-	AttestedHeader          structs.BeaconBlockHeader
-	CurrentSyncCommittee    structs.SyncCommittee
-	SyncAggregate           structs.SyncAggregate
-	NextSyncCommittee       structs.SyncCommittee
+	AttestedHeader          *structs.BeaconBlockHeader
+	CurrentSyncCommittee    *structs.SyncCommittee
+	SyncAggregate           *structs.SyncAggregate
+	NextSyncCommittee       *structs.SyncCommittee
 	NextSyncCommitteeBranch []string
 }
 

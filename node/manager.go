@@ -144,7 +144,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen deposit Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof)
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 	case VerifyTxType:
 		verifyProofParam, ok := request.data.(VerifyProofParam)
 		if !ok {
@@ -158,7 +158,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen verify Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof)
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 	case RedeemTxType:
 		redeemProofParam, ok := request.data.(RedeemProofParam)
 		if !ok {
@@ -172,7 +172,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen redeem Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof)
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 
 	case SyncComGenesisType:
 		genesisReq, ok := request.data.(GenesisProofParam)
@@ -181,44 +181,67 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			return fmt.Errorf("parse sync comm genesis request error")
 		}
 		genesisRpcRequest := rpc.SyncCommGenesisRequest{
-			Version: genesisReq.Version,
+			Version:       genesisReq.Version,
+			FirstProof:    genesisReq.FirstProof,
+			FirstWitness:  genesisReq.FirstWitness,
+			SecondProof:   genesisReq.SecondProof,
+			SecondWitness: genesisReq.SecondWitness,
+			GenesisID:     genesisReq.GenesisId,
+			FirstID:       genesisReq.FirstId,
+			SecondID:      genesisReq.SecondId,
+			RecursiveFp:   genesisReq.RecursiveFp,
 		}
 		proofResponse, err := worker.GenSyncCommGenesisProof(genesisRpcRequest)
 		if err != nil {
 			logger.Error("gen sync comm genesis Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof)
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComUnitType:
-		updateWithVersion, ok := request.data.(UnitProofParam)
+		unitParam, ok := request.data.(UnitProofParam)
 		if !ok {
 			return fmt.Errorf("parse sync comm unit request error")
 		}
 		commUnitsRequest := rpc.SyncCommUnitsRequest{
-			Version: updateWithVersion.Version,
+			Version:                 unitParam.Version,
+			Period:                  request.period,
+			AttestedHeader:          unitParam.AttestedHeader,
+			CurrentSyncCommittee:    unitParam.CurrentSyncCommittee,
+			SyncAggregate:           unitParam.SyncAggregate,
+			NextSyncCommittee:       unitParam.NextSyncCommittee,
+			NextSyncCommitteeBranch: unitParam.NextSyncCommitteeBranch,
 		}
 		proofResponse, err := worker.GenSyncCommitUnitProof(commUnitsRequest)
 		if err != nil {
 			logger.Error("gen sync comm unit Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof)
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComRecursiveType:
-		recursiveProofParam, ok := request.data.(RecursiveProofParam)
+		recursiveParam, ok := request.data.(RecursiveProofParam)
 		if !ok {
 			return fmt.Errorf("parse sync comm recursive request error")
 		}
 		recursiveRequest := rpc.SyncCommRecursiveRequest{
-			Version: recursiveProofParam.Version,
+			Version:       recursiveParam.Version,
+			Choice:        recursiveParam.Choice,
+			FirstProof:    recursiveParam.FirstProof,
+			FirstWitness:  recursiveParam.FirstWitness,
+			SecondProof:   recursiveParam.SecondProof,
+			SecondWitness: recursiveParam.SecondWitness,
+			BeginId:       recursiveParam.BeginId,
+			RelayId:       recursiveParam.RelayId,
+			EndId:         recursiveParam.EndId,
+			RecursiveFp:   recursiveParam.RecursiveFp,
 		}
 		proofResponse, err := worker.GenSyncCommRecursiveProof(recursiveRequest)
 		if err != nil {
 			logger.Error("gen sync comm recursive Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof)
+		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
 	default:
 		logger.Error("never should happen Proof type:%v", request.reqType)
 		return fmt.Errorf("never should happen Proof type:%v", request.reqType)
@@ -252,11 +275,12 @@ func (m *manager) Close() {
 
 }
 
-func NewZkProofResp(reqType ZkProofType, period uint64, proof common.ZkProof) ZkProofResponse {
+func NewZkProofResp(reqType ZkProofType, period uint64, proof common.ZkProof, witness []byte) ZkProofResponse {
 	return ZkProofResponse{
 		ZkProofType: reqType,
 		Period:      period,
 		Proof:       proof,
+		Witness:     witness,
 		Status:      ProofSuccess,
 	}
 }

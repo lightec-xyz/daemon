@@ -27,7 +27,7 @@ type NodeConfig struct {
 	BtcWhiteList      []string         `json:"btcWhiteList"`
 	BtcInitHeight     int64            `json:"btcInitHeight"`
 	MultiAddressInfo  MultiAddressInfo `json:"multiAddressInfo"`
-	GenesisSyncPeriod uint64           `json:"genesisSyncPeriod"`
+	GenesisSyncPeriod uint64           `json:"genesisPeriod"`
 	AutoSubmit        bool             `json:"autoSubmit"`
 
 	//Beacon config

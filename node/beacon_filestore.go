@@ -3,13 +3,23 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/reLight/circuits/utils"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 )
+
+// store filestore protocol
+
+type StoreProof struct {
+	Period  uint64
+	Proof   []byte `json:"proof"`
+	Witness []byte `json:"witness"`
+}
 
 const (
 	LatestPeriodKey = "latest"
@@ -93,12 +103,22 @@ func NewFileStore(dataDir string) (*FileStore, error) {
 	}, nil
 }
 
-func (f *FileStore) StoreRecursiveProof(period uint64, data interface{}) error {
-	return f.InsertData(RecursiveDir, parseKey(period), data)
+func (f *FileStore) StoreRecursiveProof(period uint64, proof []byte, witness []byte) error {
+	return f.InsertData(RecursiveDir, parseKey(period), StoreProof{
+		Proof:   proof,
+		Witness: witness,
+	})
 }
 
-func (f *FileStore) GetRecursiveProof(period uint64, value interface{}) error {
-	return f.GetObj(RecursiveDir, parseKey(period), value)
+func (f *FileStore) GetRecursiveProof(period uint64, value interface{}) (bool, error) {
+	exists, err := f.CheckRecursiveProof(period)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(RecursiveDir, parseKey(period), value)
 }
 
 func (f *FileStore) GetRecursiveProofData(period uint64) ([]byte, error) {
@@ -113,16 +133,26 @@ func (f *FileStore) CheckUnitProof(period uint64) (bool, error) {
 	return f.CheckStorageKey(UnitDir, parseKey(period))
 }
 
-func (f *FileStore) StoreUnitProof(period uint64, data interface{}) error {
-	return f.InsertData(UnitDir, parseKey(period), data)
+func (f *FileStore) StoreUnitProof(period uint64, proof, witness []byte) error {
+	return f.InsertData(UnitDir, parseKey(period), StoreProof{
+		Proof:   proof,
+		Witness: witness,
+	})
 }
 
 func (f *FileStore) GetUnitProofData(period uint64) ([]byte, error) {
 	return f.GetData(UnitDir, parseKey(period))
 }
 
-func (f *FileStore) GetUnitProof(period uint64, value interface{}) error {
-	return f.GetObj(UnitDir, parseKey(period), value)
+func (f *FileStore) GetUnitProof(period uint64, data interface{}) (bool, error) {
+	exists, err := f.CheckUnitProof(period)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(UnitDir, parseKey(period), data)
 }
 
 func (f *FileStore) StoreUpdate(period uint64, data interface{}) error {
@@ -137,12 +167,26 @@ func (f *FileStore) CheckUpdate(period uint64) (bool, error) {
 	return f.CheckStorageKey(UpdateDir, parseKey(period))
 }
 
-func (f *FileStore) GetUpdate(period uint64, value interface{}) error {
-	return f.GetObj(UpdateDir, parseKey(period), value)
+func (f *FileStore) GetUpdate(period uint64, value interface{}) (bool, error) {
+	exists, err := f.CheckUpdate(period)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(UpdateDir, parseKey(period), value)
 }
 
-func (f *FileStore) GetGenesisUpdate(value interface{}) error {
-	return f.GetObj(GenesisDir, GenesisRawData, value)
+func (f *FileStore) GetGenesisUpdate(value interface{}) (bool, error) {
+	exists, err := f.CheckGenesisUpdate()
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(GenesisDir, GenesisRawData, value)
 }
 
 func (f *FileStore) GetGenesisUpdateData() ([]byte, error) {
@@ -157,16 +201,23 @@ func (f *FileStore) CheckGenesisUpdate() (bool, error) {
 	return f.CheckStorageKey(GenesisDir, GenesisRawData)
 }
 
-func (f *FileStore) StoreGenesisProof(data interface{}) error {
-	return f.InsertData(GenesisDir, GenesisProofKey, data)
+func (f *FileStore) StoreGenesisProof(proof []byte, witness []byte) error {
+	return f.InsertData(GenesisDir, GenesisProofKey, StoreProof{Proof: proof, Witness: witness})
 }
 
 func (f *FileStore) CheckGenesisProof() (bool, error) {
 	return f.CheckStorageKey(GenesisDir, GenesisProofKey)
 }
 
-func (f *FileStore) GetGenesisProof(value interface{}) error {
-	return f.GetObj(GenesisDir, GenesisProofKey, value)
+func (f *FileStore) GetGenesisProof(value interface{}) (bool, error) {
+	exists, err := f.CheckGenesisProof()
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(GenesisDir, GenesisProofKey, value)
 }
 
 func (f *FileStore) GetGenesisProofData() ([]byte, error) {
@@ -181,14 +232,46 @@ func (f *FileStore) CheckLatestPeriod() (bool, error) {
 	return f.CheckStorageKey(PeriodDir, LatestPeriodKey)
 }
 
-func (f *FileStore) GetLatestPeriod() (uint64, error) {
+func (f *FileStore) GetLatestPeriod() (uint64, bool, error) {
+	exists, err := f.CheckLatestPeriod()
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
 	var period uint64
-	err := f.GetObj(PeriodDir, LatestPeriodKey, &period)
+	err = f.GetObj(PeriodDir, LatestPeriodKey, &period)
 	if err != nil {
 		logger.Error("get latest Period error:%v", err)
-		return 0, err
+		return 0, false, err
 	}
-	return period, nil
+	return period, true, nil
+}
+
+func (f *FileStore) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
+	exists, err := f.CheckUpdate(period)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	data, err := f.GetUpdateData(period)
+	if err != nil {
+		return nil, false, err
+	}
+	// todo
+	var update utils.LightClientUpdateInfo
+	err = json.Unmarshal(data, &update)
+	if err != nil {
+		return nil, false, err
+	}
+	syncCommitRoot, err := circuits.SyncCommitRoot(&update)
+	if err != nil {
+		return nil, false, err
+	}
+	return syncCommitRoot, true, nil
 }
 
 func (f *FileStore) Clear() error {
@@ -321,9 +404,12 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 }
 
 func (f *FileStore) RecoverUpdateFiles() ([]uint64, error) {
-	latestPeriod, err := f.GetLatestPeriod()
+	latestPeriod, ok, err := f.GetLatestPeriod()
 	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("get latest period error")
 	}
 	if latestPeriod <= f.genesisPeriod {
 		return nil, nil
@@ -342,10 +428,14 @@ func (f *FileStore) RecoverUpdateFiles() ([]uint64, error) {
 }
 
 func (f *FileStore) RecoverUnitProofFiles() ([]uint64, error) {
-	latestPeriod, err := f.GetLatestPeriod()
+	latestPeriod, ok, err := f.GetLatestPeriod()
 	if err != nil {
 		return nil, err
 	}
+	if !ok {
+		return nil, fmt.Errorf("get latest period error")
+	}
+
 	if latestPeriod <= f.genesisPeriod {
 		return nil, nil
 	}
@@ -363,9 +453,12 @@ func (f *FileStore) RecoverUnitProofFiles() ([]uint64, error) {
 }
 
 func (f *FileStore) RecoverRecursiveProofFiles() ([]uint64, error) {
-	latestPeriod, err := f.GetLatestPeriod()
+	latestPeriod, ok, err := f.GetLatestPeriod()
 	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("get latest period error")
 	}
 	if latestPeriod <= f.genesisPeriod {
 		return nil, nil

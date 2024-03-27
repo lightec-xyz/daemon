@@ -193,7 +193,11 @@ func (bf *BeaconFetch) getUpdateData(period uint64) error {
 		logger.Error("get light client updates error:%v %v", period, err)
 		return err
 	}
-	err = bf.fileStore.StoreUpdate(period, updates)
+	if len(updates) != 1 {
+		logger.Error("get light client updates error:%v %v", period, err)
+		return nil
+	}
+	err = bf.fileStore.StoreUpdate(period, updates[0])
 	if err != nil {
 		// todo
 		logger.Error("store update error:%v %v", period, err)
