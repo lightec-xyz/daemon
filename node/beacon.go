@@ -314,7 +314,40 @@ func (b *BeaconAgent) FetchDataResponse(req FetchDataResponse) error {
 }
 
 func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
-	// todo
+	genesisId, ok, err := b.fileStore.GetSyncCommitRootID(b.genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v update no find,start new request", b.genesisPeriod)
+		b.beaconFetch.NewUpdateRequest(b.genesisPeriod)
+		return nil, false, nil
+	}
+
+	nextPeriod := b.genesisPeriod + 1
+	firstId, ok, err := b.fileStore.GetSyncCommitRootID(nextPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v update no find,start new request", nextPeriod)
+		b.beaconFetch.NewUpdateRequest(nextPeriod)
+		return nil, false, nil
+	}
+	secondPeriod := nextPeriod + 1
+	secondId, ok, err := b.fileStore.GetSyncCommitRootID(secondPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v update no find,start new request", secondPeriod)
+		b.beaconFetch.NewUpdateRequest(secondPeriod)
+		return nil, false, nil
+	}
+
 	var firstProof StoreProof
 	exists, err := b.fileStore.GetUnitProof(b.genesisPeriod, &firstProof)
 	if err != nil {
@@ -322,14 +355,14 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("first proof not exists: %v", b.genesisPeriod)
+		logger.Warn("get genesis data,first proof not exists: %v period", b.genesisPeriod)
 		err := b.tryProofRequest(b.genesisPeriod, SyncComUnitType)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, false, err
 		}
 	}
-	nextPeriod := b.genesisPeriod + 1
+
 	var secondProof StoreProof
 	exists, err = b.fileStore.GetUnitProof(nextPeriod, &secondProof)
 	if err != nil {
@@ -338,43 +371,12 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 	}
 
 	if !exists {
-		logger.Warn("second proof not exists: %v", nextPeriod)
+		logger.Warn("get genesis data,second proof not exists: %v period", nextPeriod)
 		err := b.tryProofRequest(nextPeriod, SyncComUnitType)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, false, err
 		}
-		return nil, false, nil
-	}
-	genesisId, ok, err := b.fileStore.GetSyncCommitRootID(b.genesisPeriod)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !ok {
-		logger.Warn("get %c update no find,start new request", b.genesisPeriod)
-		b.beaconFetch.NewUpdateRequest(b.genesisPeriod)
-		return nil, false, nil
-	}
-
-	firstId, ok, err := b.fileStore.GetSyncCommitRootID(nextPeriod)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !ok {
-		logger.Warn("get %c update no find,start new request", b.genesisPeriod)
-		b.beaconFetch.NewUpdateRequest(nextPeriod)
-		return nil, false, nil
-	}
-	secondId, ok, err := b.fileStore.GetSyncCommitRootID(b.genesisPeriod + 2)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !ok {
-		logger.Warn("get %c update no find,start new request", b.genesisPeriod)
-		b.beaconFetch.NewUpdateRequest(nextPeriod)
 		return nil, false, nil
 	}
 
@@ -400,7 +402,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v update data, send new update request", period)
+		logger.Warn("no find %v period update data, send new update request", period)
 		b.beaconFetch.NewUpdateRequest(period)
 		return nil, false, nil
 	}
@@ -412,7 +414,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 			return nil, false, err
 		}
 		if !genesisExists {
-			logger.Warn("get unit data,no find genesis update data, send new genesis request")
+			logger.Warn("no find genesis update data, send new update request")
 			b.beaconFetch.GenesisUpdateRequest()
 			return nil, false, nil
 		}
@@ -439,7 +441,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 			return nil, false, err
 		}
 		if !preUpdateExists {
-			logger.Warn("get unit data,no find %v update data, send new update request", prePeriod)
+			logger.Warn("get unit data,no find %v period update data, send new update request", prePeriod)
 			b.beaconFetch.NewUpdateRequest(prePeriod)
 			return nil, false, nil
 		}
@@ -468,13 +470,14 @@ func (b *BeaconAgent) GetRecursiveData(period uint64) (interface{}, bool, error)
 }
 
 func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error) {
+	//todo
 	genesisId, ok, err := b.fileStore.GetSyncCommitRootID(b.genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %c update no find,start new request", b.genesisPeriod)
+		logger.Warn("get %v period update no find,start new request", b.genesisPeriod)
 		b.beaconFetch.NewUpdateRequest(b.genesisPeriod)
 		return nil, false, nil
 	}
@@ -484,46 +487,29 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %c update no find,start new request", period)
+		logger.Warn("get %v period update no find,start new request", period)
 		b.beaconFetch.NewUpdateRequest(period)
 		return nil, false, nil
 	}
-	nextPeriod := period + 1
-	endId, ok, err := b.fileStore.GetSyncCommitRootID(nextPeriod)
+	endPeriod := period + 1
+	endId, ok, err := b.fileStore.GetSyncCommitRootID(endPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %c update no find,start new request", nextPeriod)
-		b.beaconFetch.NewUpdateRequest(nextPeriod)
-		return nil, false, nil
-	}
-
-	var firstProof StoreProof
-	prePeriod := period - 1
-	exists, err := b.fileStore.GetRecursiveProof(prePeriod, &firstProof)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !exists {
-		logger.Warn("no find %v proof data, send new proof request", prePeriod)
-		err := b.tryProofRequest(prePeriod, SyncComRecursiveType)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
+		logger.Warn("get %v update no find,start new request", endPeriod)
+		b.beaconFetch.NewUpdateRequest(endPeriod)
 		return nil, false, nil
 	}
 	var secondProof StoreProof
-	exists, err = b.fileStore.GetUnitProof(period, &secondProof)
+	exists, err := b.fileStore.GetUnitProof(period, &secondProof)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v proof data, send new proof request", period)
+		logger.Warn("no find %v unit proof data, send new proof request", period)
 		err := b.tryProofRequest(period, SyncComUnitType)
 		if err != nil {
 			logger.Error(err.Error())
@@ -531,6 +517,24 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 		}
 		return nil, false, nil
 	}
+
+	var firstProof StoreProof
+	prePeriod := period - 1
+	exists, err = b.fileStore.GetRecursiveProof(prePeriod, &firstProof)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find %v period recursive data, send new proof request", prePeriod)
+		err := b.tryProofRequest(prePeriod, SyncComRecursiveType)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		return nil, false, nil
+	}
+
 	return RecursiveProofParam{
 		Choice:        "recursive",
 		FirstProof:    firstProof.Proof,
@@ -545,53 +549,26 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 }
 
 func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool, error) {
-	var fistProof StoreProof
-	firstExists, err := b.fileStore.GetGenesisProof(&fistProof)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !firstExists {
-		err := b.tryProofRequest(period, SyncComGenesisType)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
-		return nil, false, nil
-	}
-	secondPeriod := b.genesisPeriod + 2
-	var secondProof StoreProof
-	secondExists, err := b.fileStore.GetUnitProof(secondPeriod, &secondProof)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !secondExists {
-		err := b.tryProofRequest(secondPeriod, SyncComUnitType)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
-		return nil, false, nil
-	}
+	// todo
 	genesisId, ok, err := b.fileStore.GetSyncCommitRootID(b.genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v update no find , send new update request", b.genesisPeriod)
+		logger.Warn("get %v period update no find , send new update request", b.genesisPeriod)
 		b.beaconFetch.NewUpdateRequest(b.genesisPeriod)
 		return nil, false, nil
 	}
-	relayId, ok, err := b.fileStore.GetSyncCommitRootID(secondPeriod)
+	relayPeriod := b.genesisPeriod + 2
+	relayId, ok, err := b.fileStore.GetSyncCommitRootID(relayPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v update no find , send new update request")
-		b.beaconFetch.NewUpdateRequest(secondPeriod)
+		logger.Warn("get %v  period update no find , send new update request", relayPeriod)
+		b.beaconFetch.NewUpdateRequest(relayPeriod)
 		return nil, false, nil
 	}
 	endPeriod := b.genesisPeriod + 3
@@ -601,10 +578,42 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v update no find , send new update request")
+		logger.Warn("get %v period update no find , send new update request", endPeriod)
 		b.beaconFetch.NewUpdateRequest(endPeriod)
 		return nil, false, nil
 	}
+
+	var fistProof StoreProof
+	firstExists, err := b.fileStore.GetGenesisProof(&fistProof)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !firstExists {
+		logger.Warn("no find genesis proof ,start new proof request")
+		err := b.tryProofRequest(period, SyncComGenesisType)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		return nil, false, nil
+	}
+	var secondProof StoreProof
+	secondExists, err := b.fileStore.GetUnitProof(relayPeriod, &secondProof)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !secondExists {
+		logger.Warn("no find %v period unit proof , send new proof request", relayPeriod)
+		err := b.tryProofRequest(relayPeriod, SyncComUnitType)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		return nil, false, nil
+	}
+
 	return RecursiveProofParam{
 		Choice:        "genesis",
 		FirstProof:    fistProof.Proof,
@@ -614,6 +623,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		BeginId:       genesisId,
 		RelayId:       relayId,
 		EndId:         endId,
+		RecursiveFp:   b.circuitsFp.RecursiveFp,
 	}, true, nil
 
 }

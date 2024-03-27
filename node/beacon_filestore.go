@@ -16,7 +16,7 @@ import (
 // store filestore protocol
 
 type StoreProof struct {
-	Period  uint64
+	Period  uint64 `json:"period"`
 	Proof   []byte `json:"proof"`
 	Witness []byte `json:"witness"`
 }
