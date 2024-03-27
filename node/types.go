@@ -14,7 +14,7 @@ type ZkProofType int
 const (
 	DepositTxType ZkProofType = iota + 1
 	RedeemTxType
-	VerifyTxType
+	VerifyTxType // 找零
 	SyncComGenesisType
 	SyncComUnitType
 	SyncComRecursiveType
