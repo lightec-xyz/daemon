@@ -86,7 +86,7 @@ func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 	proof, err := l.circuit.GenesisProve(req.FirstProof, req.FirstWitness, req.SecondProof, req.SecondWitness,
 		req.GenesisID, req.FirstID, req.SecondID, req.RecursiveFp)
 	if err != nil {
-		logger.Error("unit prove error", err)
+		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommGenesisResponse{}, err
 	}
 	logger.Debug("complete %v genesis prove", req.Period)
@@ -104,15 +104,15 @@ func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 	var update utils.LightClientUpdateInfo
 	err := deepCopy(req, &update)
 	if err != nil {
-		logger.Error("deep copy error", err)
+		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
 	proof, err := l.circuit.UnitProve(&update)
 	if err != nil {
-		logger.Error("unit prove error", err)
+		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	logger.Debug("complete %v unit prove", req.Period)
+	logger.Debug("complete  unit prove %v", req.Period)
 	return rpc.SyncCommUnitsResponse{
 		Version:   req.Version,
 		Period:    req.Period,
@@ -128,16 +128,16 @@ func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 	var update utils.LightClientUpdateInfo
 	err := deepCopy(req, &update)
 	if err != nil {
-		logger.Error("deep copy error", err)
+		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommRecursiveResponse{}, err
 	}
 	proof, err := l.circuit.RecursiveProve(req.Choice, req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
 		req.BeginId, req.RelayId, req.EndId, req.RecursiveFp)
 	if err != nil {
-		logger.Error("recursive prove error", err)
+		logger.Error("recursive prove error %v", err)
 		return rpc.SyncCommRecursiveResponse{}, err
 	}
-	logger.Debug("complete %v recursive prove", req.Period)
+	logger.Debug("complete %v recursive prove ", req.Period)
 	return rpc.SyncCommRecursiveResponse{
 		Version:   req.Version,
 		Period:    req.Period,

@@ -24,17 +24,7 @@ type manager struct {
 	syncCommitResp chan ZkProofResponse
 }
 
-func NewManager(cfg NodeConfig, btcProofResp, ethProofResp, syncCommitteeProofResp chan ZkProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {
-	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcNetwork)
-	if err != nil {
-		logger.Error("new bitcoin rpc client error:%v", err)
-		return nil, err
-	}
-	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
-	if err != nil {
-		logger.Error("new ethereum rpc client error:%v", err)
-		return nil, err
-	}
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan ZkProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {
 	return &manager{
 		proofQueue:     NewQueue(),
 		schedule:       schedule,

@@ -40,6 +40,23 @@ func TestTestnetDaemon(t *testing.T) {
 	}
 }
 
+func TestLightDaemon(t *testing.T) {
+	dataDir := "/Users/red/lworkspace/lightec/daemon/node/test"
+	cfg, err := NewLightDaemonConfig(true, dataDir, "testnet",
+		"127.0.0.1", "9780", "http://127.0.0.1:8970")
+	if err != nil {
+		t.Fatal(err)
+	}
+	daemon, err := NewRecursiveLightDaemon(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = daemon.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestConfig(t *testing.T) {
 	config := LocalDevDaemonConfig()
 	data, _ := json.Marshal(config)

@@ -123,7 +123,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		workers = append(workers, localWorker)
 	}
 	schedule := NewSchedule(workers)
-	manager, err := NewManager(cfg, btcProofResp, ethProofResp, syncCommitResp, storeDb, memoryStore, schedule)
+	manager, err := NewManager(btcClient, ethClient, btcProofResp, ethProofResp, syncCommitResp, storeDb, memoryStore, schedule)
 	if err != nil {
 		logger.Error("new manager error: %v", err)
 		return nil, err
