@@ -173,6 +173,9 @@ func (d *Daemon) Init() error {
 
 func (d *Daemon) Run() error {
 	logger.Info("start daemon")
+	// rpc server
+	go d.server.Run()
+
 	// syncCommit
 	go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 	go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
@@ -221,13 +224,13 @@ func (d *Daemon) Close() error {
 				logger.Error("%v:close agent error %v", agent.node.Name(), err)
 			}
 		}
-		err := d.server.Shutdown()
-		if err != nil {
-			logger.Error("rpc server shutdown error:%v", err)
-		}
+	}
+	err := d.server.Shutdown()
+	if err != nil {
+		logger.Error("rpc server shutdown error:%v", err)
 	}
 	d.manager.manager.Close()
-	err := d.beaconAgent.node.Close()
+	err = d.beaconAgent.node.Close()
 	if err != nil {
 		logger.Error("node agent close error:%v", err)
 	}

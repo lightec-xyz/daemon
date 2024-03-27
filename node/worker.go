@@ -94,7 +94,7 @@ func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 		Version:   req.Version,
 		Period:    req.Period,
 		ProofType: common.SyncComGenesisType,
-		Proof:     circuits.ProofToBytes(proof.Proof),
+		Proof:     common.ZkProof(circuits.ProofToBytes(proof.Proof)),
 		Witness:   circuits.WitnessToBytes(proof.Wit),
 	}, nil
 }
@@ -117,7 +117,7 @@ func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 		Version:   req.Version,
 		Period:    req.Period,
 		ProofType: common.SyncComUnitType,
-		Proof:     circuits.ProofToBytes(proof.Proof),
+		Proof:     common.ZkProof(circuits.ProofToBytes(proof.Proof)),
 		Witness:   circuits.WitnessToBytes(proof.Wit),
 	}, nil
 
@@ -142,7 +142,7 @@ func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 		Version:   req.Version,
 		Period:    req.Period,
 		ProofType: common.SyncComRecursiveType,
-		Proof:     circuits.ProofToBytes(proof.Proof),
+		Proof:     common.ZkProof(circuits.ProofToBytes(proof.Proof)),
 		Witness:   circuits.WitnessToBytes(proof.Wit),
 	}, nil
 }

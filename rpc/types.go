@@ -81,7 +81,7 @@ type SyncCommGenesisResponse struct {
 	Period    uint64                           `json:"period"`
 	ProofType common.ZkProofType               `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     []byte
+	Proof     common.ZkProof
 	Witness   []byte
 }
 
@@ -100,7 +100,7 @@ type SyncCommUnitsResponse struct {
 	Period    uint64                           `json:"period"`
 	ProofType common.ZkProofType               `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     []byte                           `json:"proof"`
+	Proof     common.ZkProof                   `json:"proof"`
 	Witness   []byte                           `json:"witness"`
 }
 
@@ -123,7 +123,7 @@ type SyncCommRecursiveResponse struct {
 	Period    uint64                           `json:"period"`
 	ProofType common.ZkProofType               `json:"proofType"`
 	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     []byte
+	Proof     common.ZkProof
 	Witness   []byte
 }
 

@@ -112,6 +112,39 @@ func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind
 
 }
 
+func NewLightDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, beaconUrl string) (NodeConfig, error) {
+	if network == "" {
+		network = LightecMainnet
+	}
+	if dataDir == "" {
+		current, err := user.Current()
+		if err != nil {
+			logger.Error("get current user error: %v", err)
+			return NodeConfig{}, err
+		}
+		dataDir = fmt.Sprintf("%v/.daemon", current.HomeDir)
+		logger.Info("datadir: %v", dataDir)
+	}
+	if rpcbind == "" {
+		rpcbind = "127.0.0.1"
+	}
+	if rpcport == "" {
+		rpcport = "9780"
+	}
+	if beaconUrl == "" {
+		return NodeConfig{}, fmt.Errorf("beaconUrl is empty")
+	}
+	return NodeConfig{
+		EnableLocalWorker: enableLocalWorker,
+		DataDir:           dataDir,
+		Network:           network,
+		Rpcbind:           rpcbind,
+		RpcPort:           rpcport,
+		BeaconUrl:         beaconUrl,
+	}, nil
+
+}
+
 func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string, beaconConfig *beaconconfig.BeaconChainConfig) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(BtcMultiSigPublic1)
 	if err != nil {

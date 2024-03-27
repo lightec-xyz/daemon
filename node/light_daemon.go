@@ -53,9 +53,18 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error("new manager error: %v", err)
 		return nil, err
 	}
+	exitSignal := make(chan os.Signal, 1)
+
+	rpcHandler := NewHandler(storeDb, memoryStore, schedule, exitSignal)
+	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
 	daemon := &Daemon{
 		nodeConfig:  cfg,
-		exitSignal:  make(chan os.Signal, 1),
+		server:      server,
+		exitSignal:  exitSignal,
 		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
 		manager:     NewWrapperManger(manager, proofRequest),
 	}
