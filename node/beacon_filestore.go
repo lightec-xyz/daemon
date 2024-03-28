@@ -3,9 +3,7 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/reLight/circuits/utils"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -16,7 +14,7 @@ import (
 // store filestore protocol
 
 type StoreProof struct {
-	Period  uint64 `json:"period"`
+	Period  uint64
 	Proof   []byte `json:"proof"`
 	Witness []byte `json:"witness"`
 }
@@ -105,6 +103,7 @@ func NewFileStore(dataDir string) (*FileStore, error) {
 
 func (f *FileStore) StoreRecursiveProof(period uint64, proof []byte, witness []byte) error {
 	return f.InsertData(RecursiveDir, parseKey(period), StoreProof{
+		Period:  period,
 		Proof:   proof,
 		Witness: witness,
 	})
@@ -135,6 +134,7 @@ func (f *FileStore) CheckUnitProof(period uint64) (bool, error) {
 
 func (f *FileStore) StoreUnitProof(period uint64, proof, witness []byte) error {
 	return f.InsertData(UnitDir, parseKey(period), StoreProof{
+		Period:  period,
 		Proof:   proof,
 		Witness: witness,
 	})
@@ -202,7 +202,7 @@ func (f *FileStore) CheckGenesisUpdate() (bool, error) {
 }
 
 func (f *FileStore) StoreGenesisProof(proof []byte, witness []byte) error {
-	return f.InsertData(GenesisDir, GenesisProofKey, StoreProof{Proof: proof, Witness: witness})
+	return f.InsertData(GenesisDir, GenesisProofKey, StoreProof{Period: f.genesisPeriod, Proof: proof, Witness: witness})
 }
 
 func (f *FileStore) CheckGenesisProof() (bool, error) {
@@ -247,31 +247,6 @@ func (f *FileStore) GetLatestPeriod() (uint64, bool, error) {
 		return 0, false, err
 	}
 	return period, true, nil
-}
-
-func (f *FileStore) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
-	exists, err := f.CheckUpdate(period)
-	if err != nil {
-		return nil, false, err
-	}
-	if !exists {
-		return nil, false, nil
-	}
-	data, err := f.GetUpdateData(period)
-	if err != nil {
-		return nil, false, err
-	}
-	// todo
-	var update utils.LightClientUpdateInfo
-	err = json.Unmarshal(data, &update)
-	if err != nil {
-		return nil, false, err
-	}
-	syncCommitRoot, err := circuits.SyncCommitRoot(&update)
-	if err != nil {
-		return nil, false, err
-	}
-	return syncCommitRoot, true, nil
 }
 
 func (f *FileStore) Clear() error {

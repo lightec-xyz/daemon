@@ -132,7 +132,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 	var zkbProofResponse ZkProofResponse
 	switch request.reqType {
 	case DepositTxType:
-		depositProofParam, ok := request.data.(DepositProofParam)
+		depositProofParam, ok := request.data.(*DepositProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
@@ -146,7 +146,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		}
 		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 	case VerifyTxType:
-		verifyProofParam, ok := request.data.(VerifyProofParam)
+		verifyProofParam, ok := request.data.(*VerifyProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
@@ -160,7 +160,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		}
 		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 	case RedeemTxType:
-		redeemProofParam, ok := request.data.(RedeemProofParam)
+		redeemProofParam, ok := request.data.(*RedeemProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
@@ -175,7 +175,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 
 	case SyncComGenesisType:
-		genesisReq, ok := request.data.(GenesisProofParam)
+		genesisReq, ok := request.data.(*GenesisProofParam)
 		if !ok {
 			logger.Error("parse sync comm genesis request error")
 			return fmt.Errorf("parse sync comm genesis request error")
@@ -199,7 +199,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComUnitType:
-		unitParam, ok := request.data.(UnitProofParam)
+		unitParam, ok := request.data.(*UnitProofParam)
 		if !ok {
 			return fmt.Errorf("parse sync comm unit request error")
 		}
@@ -220,7 +220,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComRecursiveType:
-		recursiveParam, ok := request.data.(RecursiveProofParam)
+		recursiveParam, ok := request.data.(*RecursiveProofParam)
 		if !ok {
 			return fmt.Errorf("parse sync comm recursive request error")
 		}

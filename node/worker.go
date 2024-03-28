@@ -43,11 +43,11 @@ type LocalWorker struct {
 	fileStore   *FileStore
 }
 
-func (l *LocalWorker) Id() string {
-	return l.wid
+func (w *LocalWorker) Id() string {
+	return w.wid
 }
 
-func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
+func (w *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	logger.Debug("Proof info")
 	time.Sleep(10 * time.Second)
 	return rpc.ProofInfo{
@@ -57,7 +57,7 @@ func (l *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	}, nil
 }
 
-func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
+func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
 	logger.Debug("gen deposit Proof")
 	time.Sleep(6 * time.Second)
 	return rpc.DepositResponse{
@@ -65,7 +65,7 @@ func (l *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 	}, nil
 }
 
-func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+func (w *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
 	logger.Debug("gen redeem Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.RedeemResponse{
@@ -73,7 +73,7 @@ func (l *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse,
 	}, nil
 }
 
-func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
+func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
 	logger.Debug("verify Proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
@@ -81,10 +81,10 @@ func (l *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 	}, nil
 }
 
-func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
+func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
 	logger.Debug("gen genesis Proof")
-	proof, err := l.circuit.GenesisProve(req.FirstProof, req.FirstWitness, req.SecondProof, req.SecondWitness,
-		req.GenesisID, req.FirstID, req.SecondID, req.RecursiveFp)
+	proof, err := w.circuit.GenesisProve(req.FirstProof, req.FirstWitness, req.SecondProof, req.SecondWitness,
+		req.GenesisID, req.FirstID, req.SecondID)
 	if err != nil {
 		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommGenesisResponse{}, err
@@ -99,7 +99,7 @@ func (l *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 	}, nil
 }
 
-func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
+func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
 	logger.Debug("gen units Proof")
 	var update utils.LightClientUpdateInfo
 	err := deepCopy(req, &update)
@@ -107,7 +107,7 @@ func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	proof, err := l.circuit.UnitProve(&update)
+	proof, err := w.circuit.UnitProve(&update)
 	if err != nil {
 		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
@@ -123,7 +123,7 @@ func (l *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 
 }
 
-func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
+func (w *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
 	logger.Debug("gen recursive Proof")
 	var update utils.LightClientUpdateInfo
 	err := deepCopy(req, &update)
@@ -131,8 +131,8 @@ func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommRecursiveResponse{}, err
 	}
-	proof, err := l.circuit.RecursiveProve(req.Choice, req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
-		req.BeginId, req.RelayId, req.EndId, req.RecursiveFp)
+	proof, err := w.circuit.RecursiveProve(req.Choice, req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
+		req.BeginId, req.RelayId, req.EndId)
 	if err != nil {
 		logger.Error("recursive prove error %v", err)
 		return rpc.SyncCommRecursiveResponse{}, err
@@ -147,24 +147,24 @@ func (l *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 	}, nil
 }
 
-func (l *LocalWorker) MaxNums() int {
-	return l.maxNums
+func (w *LocalWorker) MaxNums() int {
+	return w.maxNums
 }
 
-func (l *LocalWorker) CurrentNums() int {
-	return l.currentNums
+func (w *LocalWorker) CurrentNums() int {
+	return w.currentNums
 }
 
-func (l *LocalWorker) AddReqNum() {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-	l.currentNums--
+func (w *LocalWorker) AddReqNum() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.currentNums--
 }
 
-func (l *LocalWorker) DelReqNum() {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-	l.currentNums++
+func (w *LocalWorker) DelReqNum() {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	w.currentNums++
 }
 
 var _ rpc.IWorker = (*Worker)(nil)

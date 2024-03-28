@@ -14,7 +14,7 @@ var recursiveCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		cfg, err := node.NewLightDaemonConfig(true, datadir, "testnet", rpcbind,
+		cfg, err := node.NewLightLocalDaemonConfig(true, datadir, "testnet", rpcbind,
 			rpcport, beaconUrl)
 		if err != nil {
 			panic(err)

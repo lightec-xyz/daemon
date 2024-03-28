@@ -2,8 +2,8 @@ package circuits
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc"
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
@@ -13,6 +13,7 @@ import (
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
 	"github.com/lightec-xyz/reLight/circuits/utils"
+	"time"
 )
 
 type Circuit struct {
@@ -20,33 +21,27 @@ type Circuit struct {
 	recursive *recursive.Recursive
 	genesis   *genesis.Genesis
 	Cfg       *CircuitConfig
+	debug     bool
 }
 
 func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
-	outerFpBytes, err := hex.DecodeString(cfg.OuterFp)
-	if err != nil {
-		return nil, err
-	}
-	unitFpBytes, err := hex.DecodeString(cfg.UnitFp)
-	if err != nil {
-		return nil, err
-	}
-	genesisFpBytes, err := hex.DecodeString(cfg.GenesisFp)
-	if err != nil {
-		return nil, err
-	}
-	unitConfig := unit.NewUnitConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir, outerFpBytes)
-	genesisConfig := genesis.NewGenesisConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir, unitFpBytes)
-	recursiveConfig := recursive.NewRecursiveConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir, unitFpBytes, genesisFpBytes)
+	unitConfig := unit.NewUnitConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
+	genesisConfig := genesis.NewGenesisConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
+	recursiveConfig := recursive.NewRecursiveConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	return &Circuit{
-		unit:      unit.NewUnit(&unitConfig),
+		unit:      unit.NewUnit(unitConfig),
 		recursive: recursive.NewRecursive(recursiveConfig),
 		genesis:   genesis.NewGenesis(genesisConfig),
 		Cfg:       cfg,
+		debug:     true, // todo
 	}, nil
 }
 
 func (c *Circuit) Load() error {
+	if c.debug {
+		logger.Warn("current zk circuit is debug mode,skip load")
+		return nil
+	}
 	// todo
 	err := c.genesis.Load()
 	if err != nil {
@@ -67,6 +62,11 @@ func (c *Circuit) Load() error {
 }
 
 func (c *Circuit) UnitProve(update *utils.LightClientUpdateInfo) (*common.Proof, error) {
+	if c.debug {
+		logger.Warn("current zk circuit unit prove is debug mode,skip prove")
+		return debugProof()
+	}
+
 	proof, err := c.unit.Prove(update)
 	if err != nil {
 		logger.Error("unit prove error:%v", err)
@@ -76,7 +76,11 @@ func (c *Circuit) UnitProve(update *utils.LightClientUpdateInfo) (*common.Proof,
 }
 
 func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness []byte,
-	beginId, relayId, endId, recursiveFp []byte) (*common.Proof, error) {
+	beginId, relayId, endId []byte) (*common.Proof, error) {
+	if c.debug {
+		logger.Warn("current zk circuit recursive prove is debug mode,skip prove")
+		return debugProof()
+	}
 	if !(choice == "genesis" || choice == "recursive") {
 		return nil, fmt.Errorf("invalid choice: %s", choice)
 	}
@@ -100,11 +104,15 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	return c.recursive.Prove(choice, firstPr, secondPr, firstWit, secondWit, beginId, relayId, endId, recursiveFp)
+	return c.recursive.Prove(choice, firstPr, secondPr, firstWit, secondWit, beginId, relayId, endId)
 }
 
 func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,
-	genesisId, firstId, secondId, recursiveFp []byte) (*common.Proof, error) {
+	genesisId, firstId, secondId []byte) (*common.Proof, error) {
+	if c.debug {
+		logger.Warn("current zk circuit genesis prove is debug mode,skip prove")
+		return debugProof()
+	}
 	firstPf, err := ParseProof(firstProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
@@ -125,7 +133,7 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	return c.genesis.Prove(firstPf, secondPf, firstWit, secondWit, genesisId, firstId, secondId, recursiveFp)
+	return c.genesis.Prove(firstPf, secondPf, firstWit, secondWit, genesisId, firstId, secondId)
 }
 
 func WriteProof(proofFile string, proof native_plonk.Proof) error {
@@ -137,7 +145,7 @@ func WriteWitness(witnessFile string, witness witness.Witness) error {
 }
 
 func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
-	return unit.SyncCommitRoot(update)
+	return utils.SyncCommitRoot(update)
 }
 
 func ParseProof(proof []byte) (native_plonk.Proof, error) {
@@ -161,13 +169,24 @@ func ParseWitness(body []byte) (witness.Witness, error) {
 }
 
 type CircuitConfig struct {
-	DataDir   string
-	SrsDir    string
-	SubDir    string
-	OuterFp   string
-	UnitFp    string
-	RecFp     string
-	GenesisFp string
+	DataDir string
+	SrsDir  string
+	SubDir  string
+	Debug   bool
+}
+
+func debugProof() (*common.Proof, error) {
+	// todo
+	time.Sleep(15 * time.Second)
+	field := ecc.BN254.ScalarField()
+	w, err := witness.New(field)
+	if err != nil {
+		return nil, err
+	}
+	return &common.Proof{
+		Proof: &plonk_bn254.Proof{},
+		Wit:   w,
+	}, nil
 }
 
 func ProofToBytes(proof native_plonk.Proof) []byte {

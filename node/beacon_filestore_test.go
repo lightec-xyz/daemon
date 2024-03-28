@@ -25,8 +25,11 @@ func TestFileStoreGenesis(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(checkLatestPeriod)
-	period, err := fileStore.GetLatestPeriod()
+	period, ok, err := fileStore.GetLatestPeriod()
 	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
 		t.Fatal(err)
 	}
 	t.Log(period)
@@ -63,20 +66,7 @@ func TestFileLatestPeriod(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(existsPeriod)
-	period, err := fileStore.GetLatestPeriod()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(period)
-	err = fileStore.StoreLatestPeriod(123)
-	if err != nil {
-		t.Fatal(err)
-	}
-	period, err = fileStore.GetLatestPeriod()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(period)
+
 }
 
 func TestTraverseFile(t *testing.T) {

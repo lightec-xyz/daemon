@@ -112,7 +112,7 @@ func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind
 
 }
 
-func NewLightDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, beaconUrl string) (NodeConfig, error) {
+func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, beaconUrl string) (NodeConfig, error) {
 	if network == "" {
 		network = LightecMainnet
 	}
@@ -141,6 +141,7 @@ func NewLightDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpc
 		Rpcbind:           rpcbind,
 		RpcPort:           rpcport,
 		BeaconUrl:         beaconUrl,
+		BeaconInitHeight:  146,
 	}, nil
 
 }
