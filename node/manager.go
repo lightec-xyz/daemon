@@ -67,12 +67,7 @@ func (m *manager) init() error {
 func (m *manager) run(requestList []ZkProofRequest) error {
 	for _, req := range requestList {
 		logger.Info("queue receive gen Proof request:%v %v", req.reqType.String(), req.period)
-		if req.reqType == SyncComUnitType || req.reqType == SyncComRecursiveType {
-			// sync commit Proof Has higher priority
-			m.proofQueue.PushBack(req)
-		} else {
-			m.proofQueue.PushFront(req)
-		}
+		m.proofQueue.PushFront(req)
 	}
 	return nil
 }

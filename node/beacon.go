@@ -223,6 +223,7 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 			data:    data,
 		},
 	}
+	logger.Info("success send Proof request: %v %v", period, reqType.String())
 
 	return nil
 }
@@ -557,13 +558,14 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 }
 
 func (b *BeaconAgent) GetRecursiveData(period uint64) (interface{}, bool, error) {
-	if period == b.genesisPeriod+1 {
+	if period == b.genesisPeriod+2 {
 		// todo should  start from  (genesis+1) period
 		return b.getRecursiveGenesisData(period)
-	} else {
+	} else if period > b.genesisPeriod+2 {
 		// todo should start from (genesis+2) period
 		return b.getRecursiveData(period)
 	}
+	return nil, false, nil
 
 }
 
