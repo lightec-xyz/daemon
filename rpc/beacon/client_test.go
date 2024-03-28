@@ -39,7 +39,7 @@ func TestClient(t *testing.T) {
 }
 
 func TestClient_Bootstrap(t *testing.T) {
-	bootstrap, err := client.Bootstrap(0)
+	bootstrap, err := client.Bootstrap(153 * 8192)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestClient_Bootstrap(t *testing.T) {
 }
 
 func TestClient_GetLightClientUpdates(t *testing.T) {
-	updates, err := client.GetLightClientUpdates(0, 1)
+	updates, err := client.GetLightClientUpdates(153, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

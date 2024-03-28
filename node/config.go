@@ -31,7 +31,7 @@ type NodeConfig struct {
 	AutoSubmit        bool             `json:"autoSubmit"`
 
 	//Beacon config
-	BeaconInitHeight uint64                          `json:"beaconInitHeight"`
+	BeaconSlotHeight uint64                          `json:"beaconSlotHeight"`
 	BeaconUrl        string                          `json:"beaconUrl"`
 	BeaconConfig     *beaconconfig.BeaconChainConfig `json:"beaconConfig"`
 
@@ -141,7 +141,7 @@ func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind
 		Rpcbind:           rpcbind,
 		RpcPort:           rpcport,
 		BeaconUrl:         beaconUrl,
-		BeaconInitHeight:  153,
+		BeaconSlotHeight:  1253376,
 	}, nil
 
 }
@@ -187,7 +187,7 @@ func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcb
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
 		BtcInitHeight:    InitBitcoinHeight,
-		BeaconInitHeight: InitBeaconHeight,
+		BeaconSlotHeight: InitBeaconHeight,
 		BeaconUrl:        beaconUrl,
 		BeaconConfig:     beaconConfig,
 		EthInitHeight:    InitEthereumHeight,
@@ -253,7 +253,7 @@ func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind
 		AutoSubmit:    autoSubmit,
 
 		//BeaconConfig
-		BeaconInitHeight: TestnetInitBeaconHeight,
+		BeaconSlotHeight: TestnetInitBeaconHeight,
 		BeaconUrl:        beaconUrl,
 		BeaconConfig:     beaconConfig,
 
@@ -316,7 +316,7 @@ func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbin
 		},
 		BtcInitHeight:    LocalInitBitcoinHeight,
 		AutoSubmit:       autoSubmit,
-		BeaconInitHeight: LocalInitBeaconHeight,
+		BeaconSlotHeight: LocalInitBeaconHeight,
 		BeaconUrl:        beaconUrl,
 		BeaconConfig:     beaconConfig,
 		EthInitHeight:    LocalInitEthereumHeight,

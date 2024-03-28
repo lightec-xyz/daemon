@@ -33,11 +33,11 @@ func TestFileStoreGenesis(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(period)
-	err = fileStore.StoreGenesisUpdate("update")
+	err = fileStore.StoreBootstrap("update")
 	if err != nil {
 		t.Fatal(err)
 	}
-	genesisUpdate, err := fileStore.CheckGenesisUpdate()
+	genesisUpdate, err := fileStore.CheckBootstrap()
 	if err != nil {
 		t.Fatal(err)
 	}

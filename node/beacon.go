@@ -35,8 +35,8 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan
 		return nil, err
 	}
 	// todo
-	genesisPeriod := uint64(cfg.BeaconInitHeight)
-	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, genesisPeriod, fetchDataResp)
+	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
+	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconSlotHeight, fetchDataResp)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
@@ -66,25 +66,30 @@ func (b *BeaconAgent) Init() error {
 		return err
 	}
 	if !exists {
+		logger.Warn("no find latest period, store %v period to db", b.genesisPeriod)
 		err := b.fileStore.StoreLatestPeriod(b.genesisPeriod)
 		if err != nil {
 			logger.Error("store latest Period error: %v", err)
 			return err
 		}
 	}
-	existsGenesisProof, err := b.fileStore.CheckGenesisProof()
+	genesisBootStrapExists, err := b.fileStore.CheckBootstrap()
 	if err != nil {
-		logger.Error("check genesis Proof error: %v", err)
+		logger.Error("check genesis Update error: %v", err)
 		return err
 	}
-	if existsGenesisProof {
-		log.Info("genesis Proof exists")
-		return nil
+	if !genesisBootStrapExists {
+		logger.Warn("no find genesis update, send request genesis update")
+		b.beaconFetch.BootStrapRequest()
 	}
-	err = b.tryProofRequest(b.genesisPeriod, SyncComGenesisType)
+	genesisUpdate, err := b.fileStore.CheckUpdate(b.genesisPeriod)
 	if err != nil {
-		logger.Error("check genesis Proof error: %v", err)
-		return nil
+		logger.Error("check update error: %v", err)
+		return err
+	}
+	if !genesisUpdate {
+		logger.Warn("no find %v first period update, send request update", b.genesisPeriod)
+		b.beaconFetch.NewUpdateRequest(b.genesisPeriod)
 	}
 	// todo check data
 	return err
@@ -361,14 +366,14 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 	}
 	if b.genesisPeriod == period {
 		var genesisData structs.LightClientBootstrapResponse
-		genesisExists, err := b.fileStore.GetGenesisUpdate(&genesisData)
+		genesisExists, err := b.fileStore.GetBootstrap(&genesisData)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, false, err
 		}
 		if !genesisExists {
 			logger.Warn("no find genesis update data, send new update request")
-			b.beaconFetch.GenesisUpdateRequest()
+			b.beaconFetch.BootStrapRequest()
 			return nil, false, nil
 		}
 		// todo
@@ -506,14 +511,14 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 	}
 	if b.genesisPeriod == period {
 		var genesisData structs.LightClientBootstrapResponse
-		genesisExists, err := b.fileStore.GetGenesisUpdate(&genesisData)
+		genesisExists, err := b.fileStore.GetBootstrap(&genesisData)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, false, err
 		}
 		if !genesisExists {
 			logger.Warn("no find genesis update data, send new update request")
-			b.beaconFetch.GenesisUpdateRequest()
+			b.beaconFetch.BootStrapRequest()
 			return nil, false, nil
 		}
 		return &UnitProofParam{

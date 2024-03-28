@@ -33,7 +33,7 @@ func TestBeaconFetch_Fetch(t *testing.T) {
 		}
 	}()
 	go func() {
-		beaconFetch.GenesisUpdateRequest()
+		beaconFetch.BootStrapRequest()
 		for {
 			if beaconFetch.canNewRequest() {
 				beaconFetch.NewUpdateRequest(genesisPeriod)

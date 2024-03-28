@@ -22,12 +22,13 @@ type BeaconFetch struct {
 	exit               chan struct{}
 	fetchProofResponse chan FetchDataResponse
 	genesisSyncPeriod  uint64
+	genesisSlot        uint64
 	fetchQueue         *Queue
 	cache              *sync.Map
 	lock               *sync.Mutex
 }
 
-func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (*BeaconFetch, error) {
+func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, genesisSlot uint64, fetchDataResp chan FetchDataResponse) (*BeaconFetch, error) {
 	maxReqNums := &atomic.Int64{}
 	maxReqNums.Store(0)
 	return &BeaconFetch{
@@ -36,7 +37,8 @@ func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, genesisPeriod u
 		fileStore:          fileStore,
 		exit:               make(chan struct{}, 1),
 		fetchProofResponse: fetchDataResp,
-		genesisSyncPeriod:  genesisPeriod,
+		genesisSyncPeriod:  genesisSlot / 8192,
+		genesisSlot:        genesisSlot,
 		fetchQueue:         NewQueueWithCapacity(MaxQueueSize),
 		cache:              new(sync.Map),
 		lock:               new(sync.Mutex),
@@ -62,7 +64,7 @@ func (bf *BeaconFetch) NewUpdateRequest(period uint64) {
 
 }
 
-func (bf *BeaconFetch) GenesisUpdateRequest() {
+func (bf *BeaconFetch) BootStrapRequest() {
 	bf.lock.Lock()
 	defer bf.lock.Unlock()
 	logger.Debug("add  genesis request to queue: %v", bf.genesisSyncPeriod)
@@ -96,7 +98,7 @@ func (bf *BeaconFetch) fetch() error {
 	logger.Debug("get fetch request Period:%v,type:%v,fetch data now", request.period, request.UpdateType.String())
 	if request.UpdateType == GenesisUpdateType {
 		go func() {
-			err := bf.getGenesisData(bf.genesisSyncPeriod)
+			err := bf.getBootStrap()
 			if err != nil {
 				logger.Error("get genesis data error:%v", err)
 				bf.innerNewGenesisRequest(true)
@@ -166,13 +168,14 @@ func (bf *BeaconFetch) innerNewGenesisRequest(highPriority bool) {
 	}
 }
 
-func (bf *BeaconFetch) getGenesisData(period uint64) error {
-	bootStrap, err := bf.beaconClient.Bootstrap(bf.genesisSyncPeriod)
+func (bf *BeaconFetch) getBootStrap() error {
+	// todo
+	bootStrap, err := bf.beaconClient.Bootstrap(bf.genesisSlot)
 	if err != nil {
 		logger.Error("get bootstrap error:%v %v", bf.genesisSyncPeriod, err)
 		return err
 	}
-	err = bf.fileStore.StoreGenesisUpdate(bootStrap)
+	err = bf.fileStore.StoreBootstrap(bootStrap)
 	if err != nil {
 		// todo
 		logger.Error("store genesis update error:%v %v", bf.genesisSyncPeriod, err)
@@ -180,9 +183,9 @@ func (bf *BeaconFetch) getGenesisData(period uint64) error {
 	}
 	updateResponse := FetchDataResponse{
 		UpdateType: GenesisUpdateType,
-		period:     period,
+		period:     bf.genesisSlot / 8192,
 	}
-	logger.Debug("success get genesis update data:%v", period)
+	logger.Debug("success get genesis update data:%v", bf.genesisSlot/8192)
 	bf.fetchProofResponse <- updateResponse
 	return nil
 }

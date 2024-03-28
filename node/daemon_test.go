@@ -85,7 +85,7 @@ func TestParseUnitUpdateData(t *testing.T) {
 	//	var unitPram UnitProofParam
 	//	if index == 0 {
 	//		var genesisData structs.LightClientBootstrapResponse
-	//		err = fileStore.GetGenesisUpdate(&genesisData)
+	//		err = fileStore.GetBootstrap(&genesisData)
 	//		if err != nil {
 	//			t.Fatal(err)
 	//		}

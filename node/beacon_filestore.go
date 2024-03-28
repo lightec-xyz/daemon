@@ -178,8 +178,8 @@ func (f *FileStore) GetUpdate(period uint64, value interface{}) (bool, error) {
 	return true, f.GetObj(UpdateDir, parseKey(period), value)
 }
 
-func (f *FileStore) GetGenesisUpdate(value interface{}) (bool, error) {
-	exists, err := f.CheckGenesisUpdate()
+func (f *FileStore) GetBootstrap(value interface{}) (bool, error) {
+	exists, err := f.CheckBootstrap()
 	if err != nil {
 		return false, err
 	}
@@ -189,15 +189,15 @@ func (f *FileStore) GetGenesisUpdate(value interface{}) (bool, error) {
 	return true, f.GetObj(GenesisDir, GenesisRawData, value)
 }
 
-func (f *FileStore) GetGenesisUpdateData() ([]byte, error) {
+func (f *FileStore) GetBootstrapData() ([]byte, error) {
 	return f.GetData(GenesisDir, GenesisRawData)
 }
 
-func (f *FileStore) StoreGenesisUpdate(data interface{}) error {
+func (f *FileStore) StoreBootstrap(data interface{}) error {
 	return f.InsertData(GenesisDir, GenesisRawData, data)
 }
 
-func (f *FileStore) CheckGenesisUpdate() (bool, error) {
+func (f *FileStore) CheckBootstrap() (bool, error) {
 	return f.CheckStorageKey(GenesisDir, GenesisRawData)
 }
 
