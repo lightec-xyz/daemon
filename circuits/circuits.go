@@ -66,7 +66,6 @@ func (c *Circuit) UnitProve(update *utils.LightClientUpdateInfo) (*common.Proof,
 		logger.Warn("current zk circuit unit prove is debug mode,skip prove")
 		return debugProof()
 	}
-
 	proof, err := c.unit.Prove(update)
 	if err != nil {
 		logger.Error("unit prove error:%v", err)
@@ -77,6 +76,8 @@ func (c *Circuit) UnitProve(update *utils.LightClientUpdateInfo) (*common.Proof,
 
 func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness []byte,
 	beginId, relayId, endId []byte) (*common.Proof, error) {
+	logger.Debug("recursive prove request data choice:%v firstProof:%x secondProof:%x firstWitness:%x secondWitness:%x,beginId:%x relayId:%x endId:%x",
+		choice, firstProof, secondProof, firstWitness, secondWitness, beginId, relayId, endId)
 	if c.debug {
 		logger.Warn("current zk circuit recursive prove is debug mode,skip prove")
 		return debugProof()
@@ -109,6 +110,8 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 
 func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,
 	genesisId, firstId, secondId []byte) (*common.Proof, error) {
+	logger.Debug("genesis prove request data firstProof:%x secondProof:%x firstWitness:%x secondWitness:%x,genesisId:%x firstId:%x secondId:%x",
+		firstProof, secondProof, firstWitness, secondWitness, genesisId, firstId, secondId)
 	if c.debug {
 		logger.Warn("current zk circuit genesis prove is debug mode,skip prove")
 		return debugProof()

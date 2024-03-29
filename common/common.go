@@ -1,6 +1,9 @@
 package common
 
-import "github.com/google/uuid"
+import (
+	"encoding/json"
+	"github.com/google/uuid"
+)
 
 func Uuid() (string, error) {
 	newV7, err := uuid.NewV7()
@@ -8,4 +11,13 @@ func Uuid() (string, error) {
 		return "", err
 	}
 	return newV7.String(), nil
+}
+
+func objToJson(obj interface{}) string {
+	ojbBytes, err := json.Marshal(obj)
+	if err != nil {
+		return "error obj to josn"
+	}
+	return string(ojbBytes)
+
 }

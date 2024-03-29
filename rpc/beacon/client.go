@@ -27,7 +27,7 @@ func NewClient(rawurl string) (*Client, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        10,
-			IdleConnTimeout:     15 * time.Minute,
+			IdleConnTimeout:     2 * time.Hour,
 			DisableKeepAlives:   false,
 			MaxIdleConnsPerHost: 10,
 		},
@@ -35,7 +35,7 @@ func NewClient(rawurl string) (*Client, error) {
 	return &Client{
 		ctx:        context.Background(),
 		endpoint:   rawurl,
-		timeout:    15 * time.Minute,
+		timeout:    2 * time.Hour,
 		debug:      false,
 		httpClient: client,
 	}, nil
