@@ -206,6 +206,9 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			SyncAggregate:           unitParam.SyncAggregate,
 			NextSyncCommittee:       unitParam.NextSyncCommittee,
 			NextSyncCommitteeBranch: unitParam.NextSyncCommitteeBranch,
+			FinalizedHeader:         unitParam.FinalizedHeader,
+			FinalityBranch:          unitParam.FinalityBranch,
+			SignatureSlot:           unitParam.SignatureSlot,
 		}
 		proofResponse, err := worker.GenSyncCommitUnitProof(commUnitsRequest)
 		if err != nil {

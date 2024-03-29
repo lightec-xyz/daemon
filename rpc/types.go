@@ -86,13 +86,16 @@ type SyncCommGenesisResponse struct {
 }
 
 type SyncCommUnitsRequest struct {
-	Version                 string `json:"version"`
-	Period                  uint64
-	AttestedHeader          *structs.BeaconBlockHeader
-	CurrentSyncCommittee    *structs.SyncCommittee
-	SyncAggregate           *structs.SyncAggregate
-	NextSyncCommittee       *structs.SyncCommittee
-	NextSyncCommitteeBranch []string
+	Version                 string                     `json:"version"`
+	Period                  uint64                     `json:"period"`
+	AttestedHeader          *structs.BeaconBlockHeader `json:"attested_header"`
+	CurrentSyncCommittee    *structs.SyncCommittee     `json:"current_sync_committee"`
+	SyncAggregate           *structs.SyncAggregate     `json:"sync_aggregate"`
+	NextSyncCommittee       *structs.SyncCommittee     `json:"next_sync_committee"`
+	NextSyncCommitteeBranch []string                   `json:"next_sync_committee_branch"`
+	FinalizedHeader         *structs.BeaconBlockHeader `json:"finalized_header,omitempty"`
+	FinalityBranch          []string                   `json:"finality_branch,omitempty"`
+	SignatureSlot           string                     `json:"signature_slot"`
 }
 
 type SyncCommUnitsResponse struct {

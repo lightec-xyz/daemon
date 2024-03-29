@@ -61,6 +61,21 @@ func (c *Circuit) Load() error {
 	return nil
 }
 
+func (c *Circuit) VerifyProve() (*common.Proof, error) {
+	panic(c)
+	return nil, nil
+}
+
+func (c *Circuit) RedeemProve() (*common.Proof, error) {
+	panic(c)
+	return nil, nil
+}
+
+func (c *Circuit) DepositProve() (*common.Proof, error) {
+	panic(c)
+	return nil, nil
+}
+
 func (c *Circuit) UnitProve(update *utils.LightClientUpdateInfo) (*common.Proof, error) {
 	if c.debug {
 		logger.Warn("current zk circuit unit prove is debug mode,skip prove")

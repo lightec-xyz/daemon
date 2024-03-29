@@ -176,7 +176,7 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 		return err
 	}
 	if !prepareDataOk {
-		logger.Warn("Proof request data haven`t prepared now ,%v %v  can`t generate Proof", period, reqType.String())
+		//logger.Warn("Proof request data haven`t prepared now ,%v %v  can`t generate Proof", period, reqType.String())
 		return nil
 	}
 	err = b.cacheProofRequestStatus(period, reqType)
@@ -311,33 +311,38 @@ func (b *BeaconAgent) CheckData() error {
 		logger.Error(err.Error())
 		return err
 	}
-	for _, index := range unitProofIndexes {
-		if b.stateCache.CheckUnit(index) {
-			continue
-		}
-		logger.Warn("need unit proof: %v", index)
-		err := b.tryProofRequest(index, SyncComUnitType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	}
 	genRecProofIndexes, err := b.fileStore.NeedGenRecProofIndexes()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	for _, index := range genRecProofIndexes {
-		if b.stateCache.CheckRecursive(index) {
-			continue
+	// todo,
+	if len(genRecProofIndexes) >= len(unitProofIndexes) {
+		for _, index := range genRecProofIndexes {
+			if b.stateCache.CheckRecursive(index) {
+				continue
+			}
+			logger.Warn("need recursive proof: %v", index)
+			err := b.tryProofRequest(index, SyncComRecursiveType)
+			if err != nil {
+				logger.Error(err.Error())
+				return err
+			}
 		}
-		logger.Warn("need recursive proof: %v", index)
-		err := b.tryProofRequest(index, SyncComRecursiveType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
+	} else {
+		for _, index := range unitProofIndexes {
+			if b.stateCache.CheckUnit(index) {
+				continue
+			}
+			logger.Warn("need unit proof: %v", index)
+			err := b.tryProofRequest(index, SyncComUnitType)
+			if err != nil {
+				logger.Error(err.Error())
+				return err
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -485,6 +490,7 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 			logger.Error(err.Error())
 			return nil, false, err
 		}
+		return nil, false, nil
 	}
 
 	var secondProof StoreProof
