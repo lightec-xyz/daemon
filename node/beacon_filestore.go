@@ -43,7 +43,7 @@ type FileStore struct {
 	genesisPeriod uint64
 }
 
-func NewFileStore(dataDir string) (*FileStore, error) {
+func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
 	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
 	// todo
 	periodDataDir := fmt.Sprintf("%s/%s", dataDir, PeriodDir)
@@ -93,12 +93,13 @@ func NewFileStore(dataDir string) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "recursive", err)
 	}
 	return &FileStore{
-		dataDir:      dataDir,
-		periodDir:    periodDataDir,
-		updateDir:    updateDataDir,
-		genesisDir:   genesisDir,
-		unitDir:      unitDir,
-		recursiveDir: recursiveDir,
+		dataDir:       dataDir,
+		periodDir:     periodDataDir,
+		updateDir:     updateDataDir,
+		genesisDir:    genesisDir,
+		unitDir:       unitDir,
+		recursiveDir:  recursiveDir,
+		genesisPeriod: genesisPeriod,
 	}, nil
 }
 

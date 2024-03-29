@@ -10,7 +10,7 @@ var fileStore *FileStore
 var err error
 
 func init() {
-	fileStore, err = NewFileStore("test")
+	fileStore, err = NewFileStore("test", 100)
 	if err != nil {
 		panic(err)
 	}

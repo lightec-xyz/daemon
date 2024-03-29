@@ -29,13 +29,13 @@ type BeaconAgent struct {
 }
 
 func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []ZkProofRequest, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
-	fileStore, err := NewFileStore(cfg.DataDir)
+	// todo
+	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
+	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
 	}
-	// todo
-	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
 	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconSlotHeight, fetchDataResp)
 	if err != nil {
 		log.Error(err.Error())
@@ -319,6 +319,9 @@ func (b *BeaconAgent) CheckData() error {
 	// todo,
 	if len(genRecProofIndexes) >= len(unitProofIndexes) {
 		for _, index := range genRecProofIndexes {
+			if index <= b.genesisPeriod+1 {
+				continue
+			}
 			if b.stateCache.CheckRecursive(index) {
 				continue
 			}
@@ -331,6 +334,9 @@ func (b *BeaconAgent) CheckData() error {
 		}
 	} else {
 		for _, index := range unitProofIndexes {
+			if index < b.genesisPeriod {
+				continue
+			}
 			if b.stateCache.CheckUnit(index) {
 				continue
 			}

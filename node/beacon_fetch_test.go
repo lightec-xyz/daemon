@@ -12,7 +12,7 @@ func TestBeaconFetch_Fetch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fileStore, err := NewFileStore("test")
+	fileStore, err := NewFileStore("test", genesisPeriod)
 	if err != nil {
 		t.Fatal(err)
 	}
