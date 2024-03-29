@@ -141,7 +141,7 @@ func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind
 		Rpcbind:           rpcbind,
 		RpcPort:           rpcport,
 		BeaconUrl:         beaconUrl,
-		BeaconSlotHeight:  1253376,
+		BeaconSlotHeight:  8192, //1253376
 	}, nil
 
 }

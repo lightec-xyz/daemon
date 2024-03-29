@@ -95,43 +95,6 @@ func (b *BeaconAgent) Init() error {
 	return err
 }
 
-func (b *BeaconAgent) CheckRecoverData() error {
-	recoverUpdateFiles, err := b.fileStore.RecoverUpdateFiles()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	recoverUnitProofFiles, err := b.fileStore.RecoverUnitProofFiles()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	recursiveProofFiles, err := b.fileStore.RecoverRecursiveProofFiles()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	for _, updatePeriod := range recoverUpdateFiles {
-		b.beaconFetch.NewUpdateRequest(updatePeriod)
-	}
-	for _, unitPeriod := range recoverUnitProofFiles {
-		err := b.tryProofRequest(unitPeriod, SyncComUnitType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	}
-	for _, recursivePeriod := range recursiveProofFiles {
-		err := b.tryProofRequest(recursivePeriod, SyncComRecursiveType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	}
-	return nil
-
-}
-
 func (b *BeaconAgent) ScanSyncPeriod() error {
 	logger.Debug("beacon scan sync Period")
 	currentPeriod, ok, err := b.fileStore.GetLatestPeriod()
@@ -317,6 +280,64 @@ func (b *BeaconAgent) CheckProofExists(period uint64, reqType ZkProofType) (bool
 }
 
 func (b *BeaconAgent) CheckData() error {
+	genesisProofExists, err := b.fileStore.CheckGenesisProof()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	if !genesisProofExists {
+		logger.Warn("no find genesis proof, send request genesis proof")
+		genesisPeriod := b.genesisPeriod + 1
+		err := b.tryProofRequest(genesisPeriod, SyncComGenesisType)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+	}
+	fetchIndexes, err := b.fileStore.NeedUpdateIndexes()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	for _, index := range fetchIndexes {
+		if b.stateCache.CheckFetchData(index) {
+			continue
+		}
+		logger.Warn("need fetch data: %v", index)
+		b.beaconFetch.NewUpdateRequest(index)
+	}
+	unitProofIndexes, err := b.fileStore.NeedGenUnitProofIndexes()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	for _, index := range unitProofIndexes {
+		if b.stateCache.CheckUnit(index) {
+			continue
+		}
+		logger.Warn("need unit proof: %v", index)
+		err := b.tryProofRequest(index, SyncComUnitType)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+	}
+	genRecProofIndexes, err := b.fileStore.NeedGenRecProofIndexes()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	for _, index := range genRecProofIndexes {
+		if b.stateCache.CheckRecursive(index) {
+			continue
+		}
+		logger.Warn("need recursive proof: %v", index)
+		err := b.tryProofRequest(index, SyncComRecursiveType)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+	}
 	return nil
 }
 
@@ -734,16 +755,9 @@ func (b *BeaconAgent) ProofResponse(resp ZkProofResponse) error {
 	b.deleteCacheProofReqStatus(resp.ZkProofType, resp.Period)
 	switch resp.ZkProofType {
 	case SyncComGenesisType:
-		// next  recursive Proof
 		err := b.fileStore.StoreGenesisProof(resp.Proof, resp.Witness)
 		if err != nil {
 			log.Error(err.Error())
-			return err
-		}
-		nextPeriod := currentPeriod + 1
-		err = b.tryProofRequest(nextPeriod, SyncComRecursiveType)
-		if err != nil {
-			logger.Error(err.Error())
 			return err
 		}
 	case SyncComUnitType:
@@ -752,29 +766,10 @@ func (b *BeaconAgent) ProofResponse(resp ZkProofResponse) error {
 			log.Error(err.Error())
 			return err
 		}
-		if currentPeriod == b.genesisPeriod+1 {
-			err := b.tryProofRequest(currentPeriod, SyncComGenesisType)
-			if err != nil {
-				logger.Error(err.Error())
-				return err
-			}
-		}
-		err = b.tryProofRequest(currentPeriod, SyncComRecursiveType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
 	case SyncComRecursiveType:
-		// next recursive Proof
 		err := b.fileStore.StoreRecursiveProof(currentPeriod, resp.Proof, resp.Witness)
 		if err != nil {
 			log.Error(err.Error())
-			return err
-		}
-		nextPeriod := currentPeriod + 1
-		err = b.tryProofRequest(nextPeriod, SyncComRecursiveType)
-		if err != nil {
-			logger.Error(err.Error())
 			return err
 		}
 	default:

@@ -70,7 +70,7 @@ func TestFileLatestPeriod(t *testing.T) {
 }
 
 func TestTraverseFile(t *testing.T) {
-	files, err := traverseFile("/Users/red/lworkspace/lightec/daemon/node")
+	files, err := traverseFile("//Users/red/lworkspace/lightec/daemon/node/test/proofData/update")
 	if err != nil {
 		t.Fatal(err)
 	}

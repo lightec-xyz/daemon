@@ -14,7 +14,7 @@ import (
 // store filestore protocol
 
 type StoreProof struct {
-	Period  uint64
+	Period  uint64 `json:"period"`
 	Proof   []byte `json:"proof"`
 	Witness []byte `json:"witness"`
 }
@@ -26,7 +26,7 @@ const (
 )
 
 const (
-	PeriodDir    = "Period"
+	PeriodDir    = "period"
 	GenesisDir   = "genesis"
 	UpdateDir    = "update"
 	UnitDir      = "unit"
@@ -45,8 +45,9 @@ type FileStore struct {
 
 func NewFileStore(dataDir string) (*FileStore, error) {
 	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
+	// todo
 	periodDataDir := fmt.Sprintf("%s/%s", dataDir, PeriodDir)
-	ok, err := DirNoTExistsAndCreate(periodDataDir)
+	ok, err := dirNotExistsAndCreate(periodDataDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
 		return nil, err
@@ -56,7 +57,7 @@ func NewFileStore(dataDir string) (*FileStore, error) {
 	}
 
 	updateDataDir := fmt.Sprintf("%s/%s", dataDir, UpdateDir)
-	ok, err = DirNoTExistsAndCreate(updateDataDir)
+	ok, err = dirNotExistsAndCreate(updateDataDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
 		return nil, err
@@ -65,7 +66,7 @@ func NewFileStore(dataDir string) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error: %v %v", "update", err)
 	}
 	genesisDir := fmt.Sprintf("%s/%s", dataDir, GenesisDir)
-	ok, err = DirNoTExistsAndCreate(genesisDir)
+	ok, err = dirNotExistsAndCreate(genesisDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
 		return nil, err
@@ -74,7 +75,7 @@ func NewFileStore(dataDir string) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "genesis", err)
 	}
 	unitDir := fmt.Sprintf("%s/%s", dataDir, UnitDir)
-	ok, err = DirNoTExistsAndCreate(unitDir)
+	ok, err = dirNotExistsAndCreate(unitDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
 		return nil, err
@@ -83,7 +84,7 @@ func NewFileStore(dataDir string) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "unit", err)
 	}
 	recursiveDir := fmt.Sprintf("%s/%s", dataDir, RecursiveDir)
-	ok, err = DirNoTExistsAndCreate(recursiveDir)
+	ok, err = dirNotExistsAndCreate(recursiveDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
 		return nil, err
@@ -378,7 +379,7 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 	}
 }
 
-func (f *FileStore) RecoverUpdateFiles() ([]uint64, error) {
+func (f *FileStore) NeedUpdateIndexes() ([]uint64, error) {
 	latestPeriod, ok, err := f.GetLatestPeriod()
 	if err != nil {
 		return nil, err
@@ -402,7 +403,7 @@ func (f *FileStore) RecoverUpdateFiles() ([]uint64, error) {
 	return recoverFile, nil
 }
 
-func (f *FileStore) RecoverUnitProofFiles() ([]uint64, error) {
+func (f *FileStore) NeedGenUnitProofIndexes() ([]uint64, error) {
 	latestPeriod, ok, err := f.GetLatestPeriod()
 	if err != nil {
 		return nil, err
@@ -427,7 +428,7 @@ func (f *FileStore) RecoverUnitProofFiles() ([]uint64, error) {
 	return recoverFile, nil
 }
 
-func (f *FileStore) RecoverRecursiveProofFiles() ([]uint64, error) {
+func (f *FileStore) NeedGenRecProofIndexes() ([]uint64, error) {
 	latestPeriod, ok, err := f.GetLatestPeriod()
 	if err != nil {
 		return nil, err
@@ -523,7 +524,7 @@ func getFileName(path string) (string, error) {
 	}
 	return arrs[len(arrs)-1], nil
 }
-func DirNoTExistsAndCreate(path string) (bool, error) {
+func dirNotExistsAndCreate(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		err := os.MkdirAll(path, os.ModePerm)
