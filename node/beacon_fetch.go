@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	MaxReqNums   = 1
-	MaxQueueSize = 1
+	MaxReqNums   = 10
+	MaxQueueSize = 10
 )
 
 type BeaconFetch struct {
@@ -60,6 +60,14 @@ func (bf *BeaconFetch) NewUpdateRequest(period uint64) {
 		return
 	}
 	bf.cache.Store(fetchCacheKey, struct{}{})
+	exists, err := bf.fileStore.CheckUpdate(period)
+	if err != nil {
+		logger.Error("check update error:%v", err)
+		return
+	}
+	if exists {
+		return
+	}
 	bf.innerNewUpdateRequest(false, period)
 
 }
@@ -72,7 +80,16 @@ func (bf *BeaconFetch) BootStrapRequest() {
 	if _, exists := bf.cache.Load(fetchCacheKey); exists {
 		return
 	}
+	// todo
 	bf.cache.Store(fetchCacheKey, struct{}{})
+	exists, err := bf.fileStore.CheckBootstrap()
+	if err != nil {
+		logger.Error("check genesis error:%v", err)
+		return
+	}
+	if exists {
+		return
+	}
 	bf.innerNewGenesisRequest(false)
 }
 
