@@ -177,6 +177,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		}
 		genesisRpcRequest := rpc.SyncCommGenesisRequest{
 			Version:       genesisReq.Version,
+			Period:        request.period,
 			FirstProof:    genesisReq.FirstProof,
 			FirstWitness:  genesisReq.FirstWitness,
 			SecondProof:   genesisReq.SecondProof,
@@ -224,6 +225,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		}
 		recursiveRequest := rpc.SyncCommRecursiveRequest{
 			Version:       recursiveParam.Version,
+			Period:        request.period,
 			Choice:        recursiveParam.Choice,
 			FirstProof:    recursiveParam.FirstProof,
 			FirstWitness:  recursiveParam.FirstWitness,

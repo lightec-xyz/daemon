@@ -13,8 +13,12 @@ import (
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
 	"github.com/lightec-xyz/reLight/circuits/utils"
+	"os"
+	"strconv"
 	"time"
 )
+
+const ZkDebugEnv = "ZkDebug"
 
 type Circuit struct {
 	unit      *unit.Unit
@@ -28,12 +32,21 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	unitConfig := unit.NewUnitConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	genesisConfig := genesis.NewGenesisConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	recursiveConfig := recursive.NewRecursiveConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
+	var zkDebug bool
+	var err error
+	zkDebugEnv := os.Getenv(ZkDebugEnv)
+	if zkDebugEnv != "" {
+		zkDebug, err = strconv.ParseBool(zkDebugEnv)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &Circuit{
 		unit:      unit.NewUnit(unitConfig),
 		recursive: recursive.NewRecursive(recursiveConfig),
 		genesis:   genesis.NewGenesis(genesisConfig),
 		Cfg:       cfg,
-		debug:     true, // todo
+		debug:     zkDebug, // todo
 	}, nil
 }
 

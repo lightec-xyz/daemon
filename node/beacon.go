@@ -138,11 +138,6 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 
 // todo maybe use for  to replace recursive
 func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error {
-	currentPeriod := b.currentPeriod.Load()
-	if period > currentPeriod {
-		logger.Warn("wait for new Period,current: %v, reqPeriod: %v", currentPeriod, period)
-		return nil
-	}
 	ok, err := b.checkRequest(period, reqType)
 	if err != nil {
 		logger.Error(err.Error())
@@ -311,44 +306,41 @@ func (b *BeaconAgent) CheckData() error {
 		logger.Error(err.Error())
 		return err
 	}
+	// todo
+
+	for _, index := range unitProofIndexes {
+		if index < b.genesisPeriod {
+			continue
+		}
+		if b.stateCache.CheckUnit(index) {
+			continue
+		}
+		logger.Warn("need unit proof: %v", index)
+		err := b.tryProofRequest(index, SyncComUnitType)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+	}
 	genRecProofIndexes, err := b.fileStore.NeedGenRecProofIndexes()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	// todo,
-	if len(genRecProofIndexes) >= len(unitProofIndexes) {
-		for _, index := range genRecProofIndexes {
-			if index <= b.genesisPeriod+1 {
-				continue
-			}
-			if b.stateCache.CheckRecursive(index) {
-				continue
-			}
-			logger.Warn("need recursive proof: %v", index)
-			err := b.tryProofRequest(index, SyncComRecursiveType)
-			if err != nil {
-				logger.Error(err.Error())
-				return err
-			}
+	for _, index := range genRecProofIndexes {
+		if index <= b.genesisPeriod+1 {
+			continue
 		}
-	} else {
-		for _, index := range unitProofIndexes {
-			if index < b.genesisPeriod {
-				continue
-			}
-			if b.stateCache.CheckUnit(index) {
-				continue
-			}
-			logger.Warn("need unit proof: %v", index)
-			err := b.tryProofRequest(index, SyncComUnitType)
-			if err != nil {
-				logger.Error(err.Error())
-				return err
-			}
+		if b.stateCache.CheckRecursive(index) {
+			continue
+		}
+		logger.Warn("need recursive proof: %v", index)
+		err := b.tryProofRequest(index, SyncComRecursiveType)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
 		}
 	}
-
 	return nil
 }
 
