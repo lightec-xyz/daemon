@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
@@ -25,7 +26,8 @@ var err error
 var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
-var endpoint = "https://rpc.holesky.ethpandaops.io"
+// var endpoint = "https://1rpc.io/holesky"
+var endpoint = "http://127.0.0.1:8970"
 var zkBridgeAddr = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"
 var zkBtcAddr = "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083"
 
@@ -35,6 +37,22 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_Number(t *testing.T) {
+	number, err := client.BlockNumber(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(number)
+}
+
+func TestClient_GetLogs2(t *testing.T) {
+	logs, err := client.GetLogs("", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(logs)
 }
 
 func TestClient_GetPendingNonce(t *testing.T) {
@@ -69,13 +87,30 @@ func TestClient_ZkbtcBalance(t *testing.T) {
 }
 
 func TestClient_TestEth(t *testing.T) {
-	numb := big.NewInt(451228)
+	numb := big.NewInt(1245780)
 	// result, err := client.HeaderByNumber(context.Background(), numb)
 	result, err := client.BlockByNumber(context.Background(), numb)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(result)
+	marshal, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(marshal))
+}
+
+func TestClient_BlockNumber(t *testing.T) {
+	result, err := client.GetBlock(607368)
+	if err != nil {
+		t.Fatal(err)
+	}
+	marshal, err := json.Marshal(result.Transactions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(marshal))
+
 }
 
 func TestClient_GetLogs(t *testing.T) {

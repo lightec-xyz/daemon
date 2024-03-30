@@ -2,31 +2,31 @@ package bitcoin
 
 import "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 
-func (client *Client) Getaddressinfo(address string) (types.AddressInfo, error) {
+func (c *Client) Getaddressinfo(address string) (types.AddressInfo, error) {
 	var result types.AddressInfo
-	err := client.Call(GETADDRESSINFO, &result, address)
+	err := c.call(GETADDRESSINFO, &result, address)
 	if err != nil {
 		return result, err
 	}
 	return result, err
 }
 
-func (client *Client) DumpPrivkey(address string) (string, error) {
+func (c *Client) DumpPrivkey(address string) (string, error) {
 	var result string
-	err := client.Call(DUMPPRIVKEY, &result, address)
+	err := c.call(DUMPPRIVKEY, &result, address)
 	if err != nil {
 		return "", err
 	}
 	return result, err
 }
 
-func (client *Client) GetRawChangeAddress(param ...AddrType) (string, error) {
+func (c *Client) GetRawChangeAddress(param ...AddrType) (string, error) {
 	var result string
 	addrType := BECH32
 	if len(param) != 0 {
 		addrType = param[0]
 	}
-	err := client.Call(GETRAWCHANGEADDRESS, &result, addrType)
+	err := c.call(GETRAWCHANGEADDRESS, &result, addrType)
 	if err != nil {
 		return "", err
 	}

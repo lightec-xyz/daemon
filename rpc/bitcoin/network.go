@@ -2,9 +2,9 @@ package bitcoin
 
 import "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 
-func (client *Client) GetNetworkInfo() (types.NetworkInfo, error) {
+func (c *Client) GetNetworkInfo() (types.NetworkInfo, error) {
 	var result types.NetworkInfo
-	err := client.Call(GETNETWORKINFO, &result)
+	err := c.call(GETNETWORKINFO, &result)
 	if err != nil {
 		return result, err
 	}

@@ -141,7 +141,7 @@ func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind
 		Rpcbind:           rpcbind,
 		RpcPort:           rpcport,
 		BeaconUrl:         beaconUrl,
-		BeaconSlotHeight:  1253376, //1253376, 8192
+		BeaconSlotHeight:  0, //1253376, 8192
 	}, nil
 
 }
@@ -383,11 +383,11 @@ func LocalDevDaemonConfig() NodeConfig {
 		"local",
 		"127.0.0.1",
 		"9870",
-		"http://127.0.0.1:8332",
+		"http://127.0.0.1:8970",
 		"lightec",
 		"abcd1234",
 		"http://127.0.0.1:8970",
-		"https://go.getblock.io/0d372517498b419a97613e2bbf882a30",
+		"http://127.0.0.1:8970",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
 	if err != nil {

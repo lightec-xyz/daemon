@@ -42,7 +42,7 @@ func TestTestnetDaemon(t *testing.T) {
 func TestLightDaemon(t *testing.T) {
 	dataDir := "/Users/red/lworkspace/lightec/daemon/node/test"
 	cfg, err := NewLightLocalDaemonConfig(true, dataDir, "testnet",
-		"127.0.0.1", "9780", "http://37.120.151.183:8970")
+		"127.0.0.1", "9780", "http://127.0.0.1:8970")
 	if err != nil {
 		t.Fatal(err)
 	}

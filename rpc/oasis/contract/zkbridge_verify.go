@@ -64,7 +64,7 @@ type ZkbridgeVerifyFilterer struct {
 // with pre-set call and transact options.
 type ZkbridgeVerifySession struct {
 	Contract     *ZkbridgeVerify   // Generic contract binding to set the session for
-	CallOpts     bind.CallOpts     // Call options to use throughout this session
+	CallOpts     bind.CallOpts     // call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
@@ -72,7 +72,7 @@ type ZkbridgeVerifySession struct {
 // with pre-set call options.
 type ZkbridgeVerifyCallerSession struct {
 	Contract *ZkbridgeVerifyCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts         // Call options to use throughout this session
+	CallOpts bind.CallOpts         // call options to use throughout this session
 }
 
 // ZkbridgeVerifyTransactorSession is an auto generated write-only Go binding around an Ethereum contract,

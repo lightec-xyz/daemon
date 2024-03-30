@@ -5,49 +5,51 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
-	"github.com/ybbus/jsonrpc"
 )
 
 type Client struct {
-	rpcClient jsonrpc.RPCClient
-	debug     bool
+	client *http.Client
+	debug  bool
+	url    string
+	token  string // todo
 }
 
-func (client *Client) GetBlockHeader(hash string) (*types.BlockHeader, error) {
+func (c *Client) GetBlockHeader(hash string) (*types.BlockHeader, error) {
 	var header = &types.BlockHeader{}
-	err := client.Call(GETBLOCKHEADER, &header, hash)
+	err := c.call(GETBLOCKHEADER, NewParams(hash), &header)
 	if err != nil {
 		return nil, err
 	}
 	return header, err
 }
 
-func (client *Client) GetBlockHash(blockCount int64) (string, error) {
+func (c *Client) GetBlockHash(blockCount int64) (string, error) {
 	var hash string
-	err := client.Call(GETBLOCKHASH, &hash, blockCount)
+	err := c.call(GETBLOCKHASH, NewParams(blockCount), &hash)
 	if err != nil {
 		return "", err
 	}
 	return hash, err
 }
 
-func (client *Client) GetBlockCount() (int64, error) {
+func (c *Client) GetBlockCount() (int64, error) {
 	var count int64
-	err := client.Call(GETBLOCKCOUNT, &count)
+	err := c.call(GETBLOCKCOUNT, nil, &count)
 	if err != nil {
 		return 0, err
 	}
 	return count, err
 }
 
-func (client *Client) GetBlock(hash string) (*types.Block, error) {
+func (c *Client) GetBlock(hash string) (*types.Block, error) {
 	res := &types.Block{}
-	err := client.Call(GETBLOCK, res, &hash, 3)
+	err := c.call(GETBLOCK, NewParams(hash, 3), res)
 	if err != nil {
 		logger.Error("getblock error:%s", err.Error())
 	}
@@ -61,47 +63,76 @@ func basicAuth(username, password string) string {
 }
 
 func NewClient(url, user, pwd, network string) (*Client, error) {
-	opts := &jsonrpc.RPCClientOpts{
-		HTTPClient:    http.DefaultClient,
-		CustomHeaders: make(map[string]string),
-	}
-	opts.CustomHeaders["Authorization"] = "Basic " + basicAuth(user, pwd)
-	opts.CustomHeaders["Connection"] = "close"
-	opts.HTTPClient.Timeout = 2 * time.Minute
-	return &Client{rpcClient: jsonrpc.NewClientWithOpts(url, opts), debug: false}, nil
+	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: false}, nil
 }
 
-func (client *Client) Call(method string, result interface{}, args ...interface{}) error {
-	//todo
-
-	if client.debug {
-		var buff bytes.Buffer
-		buff.WriteString(fmt.Sprintf("jsonrpc req  : %s [", method))
-		//buff.WriteString(fmt.Sprintf("\tresult: %v", reflect.TypeOf(result)))
-		for i, arg := range args {
-			data, _ := json.Marshal(arg)
-			if i == len(args)-1 {
-				buff.WriteString(fmt.Sprintf("%v", string(data)))
-			} else {
-				buff.WriteString(fmt.Sprintf("%v,", string(data)))
-			}
-		}
-		buff.WriteString("]\n")
-		fmt.Println(buff.String())
+func (c *Client) newRequest(method string, param Params) (*http.Request, error) {
+	jsonRpc := JsonReq{
+		Jsonrpc: "2.0",
+		Method:  method,
+		Params:  param,
+		ID:      time.Now().UnixNano(),
 	}
-	response, err := client.rpcClient.Call(method, args...)
+	reqData, err := json.Marshal(jsonRpc)
+	if err != nil {
+		return nil, err
+	}
+	request, err := http.NewRequest(http.MethodPost, c.url, bytes.NewReader(reqData))
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Authorization", fmt.Sprintf("Basic %s", c.token))
+	return request, nil
+}
+
+func (c *Client) call(method string, param Params, result interface{}) error {
+	request, err := c.newRequest(method, param)
 	if err != nil {
 		return err
 	}
-	if response.Error != nil {
-		return fmt.Errorf("rpc error : %d %s %v", response.Error.Code, response.Error.Message, response.Error.Data)
+	response, err := c.client.Do(request)
+	if err != nil {
+		return err
 	}
-	if client.debug {
-		var buff bytes.Buffer
-		responseData, _ := json.Marshal(response)
-		buff.WriteString(fmt.Sprintf("jsonrpc response: %s", method))
-		buff.WriteString(fmt.Sprintf("\tresult: %s\n", responseData))
-		fmt.Println(buff.String())
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("status code error: %d %s", response.StatusCode, response.Status)
 	}
-	return response.GetObject(result)
+	data, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	var resp JsonResp
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(resp.Result, result)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type JsonResp struct {
+	Result json.RawMessage `json:"result"`
+	Error  interface{}     `json:"error"`
+	ID     int64           `json:"id"`
+}
+
+type JsonReq struct {
+	Jsonrpc string        `json:"jsonrpc"`
+	Method  string        `json:"method"`
+	Params  []interface{} `json:"params"`
+	ID      int64         `json:"id"`
+}
+
+type Params []interface{}
+
+func NewParams(value ...interface{}) Params {
+	return Params{value}
+}
+
+func (p *Params) AddValue(value interface{}) {
+	*p = append(*p, value)
 }

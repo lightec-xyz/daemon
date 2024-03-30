@@ -5,9 +5,9 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 )
 
-func (client *Client) Scantxoutset(address string) (types.ScanUtxoSet, error) {
+func (c *Client) Scantxoutset(address string) (types.ScanUtxoSet, error) {
 	var result types.ScanUtxoSet
-	err := client.Call(SCANTXOUTSET, &result, "start", []string{fmt.Sprintf("addr(%v)", address)})
+	err := c.call(SCANTXOUTSET, &result, "start", []string{fmt.Sprintf("addr(%v)", address)})
 	if err != nil {
 		return result, err
 	}
