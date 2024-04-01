@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
@@ -41,7 +42,11 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
 		// todo
-		localWorker, err := NewLocalWorker(fmt.Sprintf("%s/setup", cfg.DataDir), cfg.DataDir, 1)
+		zkParamDir := os.Getenv(common.ZkParameterDir)
+		if zkParamDir == "" {
+			zkParamDir = fmt.Sprintf("%s/setup", cfg.DataDir)
+		}
+		localWorker, err := NewLocalWorker(zkParamDir, cfg.DataDir, 1)
 		if err != nil {
 			logger.Error("new local worker error:%v", err)
 			return nil, err

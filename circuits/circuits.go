@@ -7,6 +7,7 @@ import (
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
+	dCom "github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
@@ -17,8 +18,6 @@ import (
 	"strconv"
 	"time"
 )
-
-const ZkDebugEnv = "ZkDebug"
 
 type Circuit struct {
 	unit      *unit.Unit
@@ -34,7 +33,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	recursiveConfig := recursive.NewRecursiveConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	var zkDebug bool
 	var err error
-	zkDebugEnv := os.Getenv(ZkDebugEnv)
+	zkDebugEnv := os.Getenv(dCom.ZkDebugEnv)
 	if zkDebugEnv != "" {
 		zkDebug, err = strconv.ParseBool(zkDebugEnv)
 		if err != nil {
