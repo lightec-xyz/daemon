@@ -81,7 +81,7 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 }
 
 func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
-	//logger.Debug("start gen genesis prove %v period, %v", req.Period, objToJson(req))
+	logger.Debug("start gen genesis prove %v period", req.Period)
 	proof, err := w.circuit.GenesisProve(req.FirstProof, req.FirstWitness, req.SecondProof, req.SecondWitness,
 		req.GenesisID, req.FirstID, req.SecondID)
 	if err != nil {
@@ -100,13 +100,13 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 
 func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
 	// todo
+	logger.Debug("unit prove request: %v period", req.Period)
 	var update utils.LightClientUpdateInfo
 	err := deepCopy(req, &update)
 	if err != nil {
 		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	//logger.Debug("unit prove request: %v period, %v", req.Period, objToJson(update))
 	proof, err := w.circuit.UnitProve(&update)
 	if err != nil {
 		logger.Error("unit prove error %v", err)
@@ -124,7 +124,7 @@ func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 }
 
 func (w *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
-	//logger.Debug("recursive prove request %v period, %v", req.Period, objToJson(req))
+	logger.Debug("recursive prove request %v period", req.Period)
 	proof, err := w.circuit.RecursiveProve(req.Choice, req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
 		req.BeginId, req.RelayId, req.EndId)
 	if err != nil {
