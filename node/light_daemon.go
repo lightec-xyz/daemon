@@ -40,7 +40,8 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
-		localWorker, err := NewLocalWorker("", "", 1)
+		// todo
+		localWorker, err := NewLocalWorker(fmt.Sprintf("%s/setup", cfg.DataDir), cfg.DataDir, 1)
 		if err != nil {
 			logger.Error("new local worker error:%v", err)
 			return nil, err
