@@ -146,6 +146,8 @@ func (w *LocalWorker) MaxNums() int {
 }
 
 func (w *LocalWorker) CurrentNums() int {
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	return w.currentNums
 }
 

@@ -45,7 +45,7 @@ func (m *Schedule) AddWorker(endpoint string, nums int) error {
 	return nil
 }
 
-func (m *Schedule) findBestWorker(proofType ZkProofType) (rpc.IWorker, bool, error) {
+func (m *Schedule) findBestWorker(work func(worker rpc.IWorker) error) (rpc.IWorker, bool, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	// todo find work by Proof type
@@ -62,6 +62,10 @@ func (m *Schedule) findBestWorker(proofType ZkProofType) (rpc.IWorker, bool, err
 		return tmpWorkers[i].CurrentNums() < tmpWorkers[j].CurrentNums()
 	})
 	bestWork := tmpWorkers[0]
+	err := work(bestWork)
+	if err != nil {
+		return nil, false, err
+	}
 	return bestWork, true, nil
 
 }

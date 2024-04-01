@@ -84,7 +84,32 @@ func (m *manager) genProof() error {
 		time.Sleep(1 * time.Second)
 		return nil
 	}
-	worker, find, err := m.schedule.findBestWorker(request.reqType)
+	proofSubmitted, err := m.CheckProofStatus(request)
+	if err != nil {
+		logger.Error("check Proof error:%v", err)
+		return err
+	}
+	if proofSubmitted {
+		logger.Info("Proof already submitted:%v", request.String())
+		return nil
+	}
+	chanResponse := m.getChanResponse(request.reqType)
+	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
+		m.proofQueue.Remove(element)
+		worker.AddReqNum()
+		logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), request.reqType.String(), request.period)
+		go func() {
+			err := m.workerGenProof(worker, request, chanResponse)
+			if err != nil {
+				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), request.reqType, request.period, err)
+				//  take fail request to queue again
+				m.proofQueue.PushBack(request)
+				logger.Info("add Proof request type: %v ,Period: %v to queue again", request.reqType.String(), request.period)
+				return
+			}
+		}()
+		return nil
+	})
 	if err != nil {
 		logger.Error("find best worker error:%v", err)
 		time.Sleep(1 * time.Second)
@@ -95,34 +120,10 @@ func (m *manager) genProof() error {
 		time.Sleep(10 * time.Second)
 		return nil
 	}
-	m.proofQueue.Remove(element)
-	proofSubmitted, err := m.CheckProofStatus(request)
-	if err != nil {
-		logger.Error("check Proof error:%v", err)
-		return err
-	}
-	if proofSubmitted {
-		logger.Info("Proof already submitted:%v", request.String())
-		return nil
-	}
-	logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), request.reqType.String(), request.period)
-	chanResponse := m.getChanResponse(request.reqType)
-	go func() {
-		err := m.workerGenProof(worker, request, chanResponse)
-		if err != nil {
-			logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), request.reqType, request.period, err)
-			//  take fail request to queue again
-			m.proofQueue.PushBack(request)
-			logger.Info("add Proof request type: %v ,Period: %v to queue again", request.reqType.String(), request.period)
-			return
-		}
-	}()
-
 	return nil
 }
 
 func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProofResponse) error {
-	worker.AddReqNum()
 	defer worker.DelReqNum()
 	var zkbProofResponse ZkProofResponse
 	switch request.reqType {
