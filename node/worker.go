@@ -16,6 +16,15 @@ import (
 
 var _ rpc.IWorker = (*LocalWorker)(nil)
 
+type LocalWorker struct {
+	circuit     *circuits.Circuit
+	dataDir     string
+	maxNums     int
+	currentNums int
+	lock        sync.Mutex
+	wid         string
+}
+
 func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) {
 	config := circuits.CircuitConfig{
 		DataDir: setupDir,
@@ -31,15 +40,6 @@ func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) 
 		wid:         UUID(),
 		circuit:     circuit,
 	}, nil
-}
-
-type LocalWorker struct {
-	circuit     *circuits.Circuit
-	dataDir     string
-	maxNums     int
-	currentNums int
-	lock        sync.Mutex
-	wid         string
 }
 
 func (w *LocalWorker) Id() string {
@@ -107,7 +107,7 @@ func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	proof, err := w.circuit.UnitProve(&update)
+	proof, err := w.circuit.UnitProve(req.Period, &update)
 	if err != nil {
 		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err

@@ -88,12 +88,14 @@ func (c *Circuit) DepositProve() (*common.Proof, error) {
 	return nil, nil
 }
 
-func (c *Circuit) UnitProve(update *utils.LightClientUpdateInfo) (*common.Proof, error) {
+func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
 	if c.debug {
 		logger.Warn("current zk circuit unit prove is debug mode,skip prove")
 		return debugProof()
 	}
-	proof, err := c.unit.Prove(update)
+	// todo
+	proof, err := unitProve(c.Cfg.DataDir, c.Cfg.SrsDir, fmt.Sprintf("sc%d", period), update)
+	//proof, err := c.unit.Prove(update)
 	if err != nil {
 		logger.Error("unit prove error:%v", err)
 		return nil, err
@@ -186,6 +188,66 @@ func ParseProof(proof []byte) (native_plonk.Proof, error) {
 		return nil, err
 	}
 	return &bn254Proof, nil
+}
+
+func unitProve(dataDir, srsDir, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
+	{
+
+		innerCfg := unit.NewInnerConfig(dataDir, "", subDir)
+		inner := unit.NewInner(&innerCfg)
+		err := inner.Load()
+		if err != nil {
+			return nil, err
+		}
+		assignments, err := inner.GetCircuitAssignments(update)
+		if err != nil {
+			return nil, err
+		}
+		for index, assignment := range assignments {
+			proof, err := inner.Prove(assignment)
+			if err != nil {
+				return nil, err
+			}
+			err = inner.Save(index, proof)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	{
+		outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
+		outer := unit.NewOuter(&outerCfg)
+		err := outer.Load()
+		if err != nil {
+			return nil, err
+		}
+		proofs, err := outer.Prove(update)
+		if err != nil {
+			return nil, err
+		}
+		err = outer.Save(proofs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	{
+		unitCfg := unit.NewUnitConfig(dataDir, "", subDir)
+		unit := unit.NewUnit(unitCfg)
+		err := unit.Load()
+		if err != nil {
+			return nil, err
+		}
+		proofs, err := unit.Prove(update)
+		if err != nil {
+			return nil, err
+		}
+		if err != nil {
+			return nil, err
+		}
+		return proofs, nil
+	}
+
 }
 
 func ParseWitness(body []byte) (witness.Witness, error) {

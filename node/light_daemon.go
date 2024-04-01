@@ -46,7 +46,8 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		if zkParamDir == "" {
 			zkParamDir = fmt.Sprintf("%s/setup", cfg.DataDir)
 		}
-		localWorker, err := NewLocalWorker(zkParamDir, cfg.DataDir, 1)
+		localWorkerDir := fmt.Sprintf("%s/localWork", cfg.DataDir)
+		localWorker, err := NewLocalWorker(zkParamDir, localWorkerDir, 1)
 		if err != nil {
 			logger.Error("new local worker error:%v", err)
 			return nil, err
