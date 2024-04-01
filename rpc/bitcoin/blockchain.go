@@ -7,7 +7,7 @@ import (
 
 func (c *Client) Scantxoutset(address string) (types.ScanUtxoSet, error) {
 	var result types.ScanUtxoSet
-	err := c.call(SCANTXOUTSET, &result, "start", []string{fmt.Sprintf("addr(%v)", address)})
+	err := c.call(SCANTXOUTSET, NewParams("start", []string{fmt.Sprintf("addr(%v)", address)}), &result)
 	if err != nil {
 		return result, err
 	}

@@ -4,7 +4,7 @@ import "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 
 func (c *Client) GetNetworkInfo() (types.NetworkInfo, error) {
 	var result types.NetworkInfo
-	err := c.call(GETNETWORKINFO, &result)
+	err := c.call(GETNETWORKINFO, nil, &result)
 	if err != nil {
 		return result, err
 	}

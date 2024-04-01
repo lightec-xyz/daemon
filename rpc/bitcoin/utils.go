@@ -10,7 +10,7 @@ func (c *Client) Createmultisig(nRequired int, keys ...string) (types.CreateMult
 	if nRequired > len(keys) {
 		return result, fmt.Errorf("nRequired mustl less than keys len")
 	}
-	err := c.call(CREATEMULTISIG, &result, nRequired, keys)
+	err := c.call(CREATEMULTISIG, NewParams(nRequired, keys), &result)
 	if err != nil {
 		return result, err
 	}

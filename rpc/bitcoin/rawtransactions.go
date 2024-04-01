@@ -8,7 +8,7 @@ import (
 
 func (c *Client) Createrawtransaction(inputs []types.TxIn, outputs []types.TxOut) (string, error) {
 	var result string
-	err := c.call(CREATERAWTRANSACTION, &result, inputs, outputParseParam(outputs))
+	err := c.call(CREATERAWTRANSACTION, NewParams(inputs, outputParseParam(outputs)), &result)
 	if err != nil {
 		return "", err
 	}
@@ -17,7 +17,7 @@ func (c *Client) Createrawtransaction(inputs []types.TxIn, outputs []types.TxOut
 
 func (c *Client) Signrawtransactionwithkey(hexDaa string, privateKeys []string, inputs []types.TxIn) (types.SignTawTransaction, error) {
 	var result types.SignTawTransaction
-	err := c.call(SIGNRAWTRANSACTIONWITHKEY, &result, hexDaa, privateKeys, inputs)
+	err := c.call(SIGNRAWTRANSACTIONWITHKEY, NewParams(hexDaa, privateKeys, inputs), &result)
 	if err != nil {
 		return result, err
 	}
@@ -26,7 +26,7 @@ func (c *Client) Signrawtransactionwithkey(hexDaa string, privateKeys []string, 
 
 func (c *Client) Sendrawtransaction(hexData string) (string, error) {
 	var result string
-	err := c.call(SENDRAWTRANSACTION, &result, hexData)
+	err := c.call(SENDRAWTRANSACTION, NewParams(hexData), &result)
 	if err != nil {
 		return result, err
 	}
@@ -37,7 +37,7 @@ func (c *Client) CheckTx(txHash string) (bool, error) {
 	//todo
 	txId := strings.TrimPrefix(txHash, "0x")
 	var result types.RawTransaction
-	err := c.call(GETTRANSACTION, &result, txId, true)
+	err := c.call(GETTRANSACTION, NewParams(txId, true), &result)
 	if err != nil {
 		return false, nil
 	}
@@ -46,7 +46,7 @@ func (c *Client) CheckTx(txHash string) (bool, error) {
 
 func (c *Client) GetRawTransaction(txHash string) (types.RawTransaction, error) {
 	var result types.RawTransaction
-	err := c.call(GETRAWTRANSACTION, &result, txHash, true)
+	err := c.call(GETRAWTRANSACTION, NewParams(txHash, true), &result)
 	if err != nil {
 		return result, err
 	}
@@ -55,7 +55,7 @@ func (c *Client) GetRawTransaction(txHash string) (types.RawTransaction, error) 
 
 func (c *Client) GetTransaction(txHash string) (types.RawTransaction, error) {
 	var result types.RawTransaction
-	err := c.call(GETTRANSACTION, &result, txHash, true)
+	err := c.call(GETTRANSACTION, NewParams(txHash, true), &result)
 	if err != nil {
 		return result, err
 	}
