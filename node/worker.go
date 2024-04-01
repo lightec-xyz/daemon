@@ -154,13 +154,13 @@ func (w *LocalWorker) CurrentNums() int {
 func (w *LocalWorker) AddReqNum() {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	w.currentNums--
+	w.currentNums = w.currentNums + 1
 }
 
 func (w *LocalWorker) DelReqNum() {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	w.currentNums++
+	w.currentNums = w.currentNums - 1
 }
 
 var _ rpc.IWorker = (*Worker)(nil)
