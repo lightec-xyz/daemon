@@ -43,5 +43,6 @@ var recursiveCmd = &cobra.Command{
 
 func init() {
 	recursiveCmd.Flags().String("beaconUrl", "", "rpc beaconUrl")
+	recursiveCmd.Flags().Uint64("initSlot", 1253376, "init slot height")
 	rootCmd.AddCommand(recursiveCmd)
 }
