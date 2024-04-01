@@ -112,7 +112,7 @@ func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind
 
 }
 
-func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, beaconUrl string) (NodeConfig, error) {
+func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, beaconUrl string, initSlot uint64) (NodeConfig, error) {
 	if network == "" {
 		network = LightecMainnet
 	}
@@ -131,6 +131,9 @@ func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind
 	if rpcport == "" {
 		rpcport = "9780"
 	}
+	if initSlot == 0 {
+		initSlot = 8192 //1253376, 8192
+	}
 	if beaconUrl == "" {
 		return NodeConfig{}, fmt.Errorf("beaconUrl is empty")
 	}
@@ -141,7 +144,7 @@ func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind
 		Rpcbind:           rpcbind,
 		RpcPort:           rpcport,
 		BeaconUrl:         beaconUrl,
-		BeaconSlotHeight:  0, //1253376, 8192
+		BeaconSlotHeight:  initSlot,
 	}, nil
 
 }
