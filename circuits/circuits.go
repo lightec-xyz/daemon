@@ -15,7 +15,6 @@ import (
 	"github.com/lightec-xyz/reLight/circuits/unit"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"os"
-	"runtime"
 	"strconv"
 	"time"
 )
@@ -97,7 +96,9 @@ func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) 
 	// todo
 	logger.Warn("really do unit prove now: %v", period)
 	//proof, err := unitProve(c.Cfg.DataDir, c.Cfg.SrsDir, fmt.Sprintf("sc%d", period), update)
-	proof, err := c.unit.Prove(update)
+	//proof, err := c.unit.Prove(update)
+	subDir := fmt.Sprintf("sc%d", period)
+	proof, err := innerUnitProv(c.Cfg.DataDir, subDir, update)
 	if err != nil {
 		logger.Error("unit prove error:%v", err)
 		return nil, err
@@ -197,19 +198,23 @@ func unitProve(dataDir, srsDir, subDir string, update *utils.LightClientUpdateIn
 	if err != nil {
 		return nil, err
 	}
-	runtime.GC()
-	time.Sleep(4 * time.Second)
 	err = outerProve(dataDir, subDir, update)
 	if err != nil {
 		return nil, err
 	}
 
-	err = outerProve(dataDir, subDir, update)
-	runtime.GC()
-	time.Sleep(4 * time.Second)
+	proof, err := innerUnitProv(dataDir, subDir, update)
+	if err != nil {
+		return nil, err
+	}
+	return proof, nil
+
+}
+
+func innerUnitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
 	unitCfg := unit.NewUnitConfig(dataDir, "", subDir)
 	unit := unit.NewUnit(unitCfg)
-	err = unit.Load()
+	err := unit.Load()
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +226,6 @@ func unitProve(dataDir, srsDir, subDir string, update *utils.LightClientUpdateIn
 		return nil, err
 	}
 	return proofs, nil
-
 }
 
 func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
