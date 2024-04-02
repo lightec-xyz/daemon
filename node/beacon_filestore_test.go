@@ -1,8 +1,11 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
-	"regexp"
+	"github.com/lightec-xyz/reLight/circuits/utils"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
+	"os"
 	"testing"
 )
 
@@ -78,18 +81,72 @@ func TestTraverseFile(t *testing.T) {
 }
 
 func TestDemo001(t *testing.T) {
-	// 定义一个只匹配数字的正则表达式
-	pattern := regexp.MustCompile(`^\d+$`)
 
-	// 测试字符串
-	testStrings := []string{"09123", "abc123", "456xyz", "789_!@#"}
-
-	// 遍历测试字符串
-	for _, str := range testStrings {
-		if pattern.MatchString(str) {
-			fmt.Printf("%s 匹配\n", str)
-		} else {
-			fmt.Printf("%s 不匹配\n", str)
+	for index := uint64(0); index < 162; index++ {
+		var update structs.LightClientUpdateWithVersion
+		exists, err := fileStore.GetUpdate(index, &update)
+		if err != nil {
+			t.Fatal(err)
 		}
+		if !exists {
+			t.Fatal(err)
+		}
+		var reUpdate utils.LightClientUpdateInfo
+		err = deepCopy(update.Data, &reUpdate)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if index == 0 {
+			var bootstrap structs.LightClientBootstrapResponse
+			exists, err := fileStore.GetBootstrap(&bootstrap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !exists {
+				t.Fatal(err)
+			}
+			var genesisCommittee utils.SyncCommittee
+			err = deepCopy(bootstrap.Data.CurrentSyncCommittee, &genesisCommittee)
+			if err != nil {
+				t.Fatal(err)
+			}
+			reUpdate.CurrentSyncCommittee = &genesisCommittee
+		} else {
+			preIndex := index - 1
+			var preUpdate structs.LightClientUpdateWithVersion
+			exists, err := fileStore.GetUpdate(preIndex, &preUpdate)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !exists {
+				panic("not exists")
+			}
+			var currentSyncCommittee utils.SyncCommittee
+			err = deepCopy(preUpdate.Data.NextSyncCommittee, &currentSyncCommittee)
+			if err != nil {
+				t.Fatal(err)
+			}
+			reUpdate.CurrentSyncCommittee = &currentSyncCommittee
+		}
+		t.Log(reUpdate)
+		reData, err := json.Marshal(reUpdate)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dir := "/Users/red/lworkspace/lightec/daemon/node/test/parseUpdate"
+		ok, err := fileExists(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !ok {
+			os.MkdirAll(dir, os.ModePerm)
+		}
+		fileName := fmt.Sprintf("%s/holesky_sync_committee_update_%d.json", dir, index)
+		err = WriteFile(fileName, reData)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 	}
+
 }
