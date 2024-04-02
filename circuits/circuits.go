@@ -95,8 +95,9 @@ func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) 
 		return debugProof()
 	}
 	// todo
-	proof, err := unitProve(c.Cfg.DataDir, c.Cfg.SrsDir, fmt.Sprintf("sc%d", period), update)
-	//proof, err := c.unit.Prove(update)
+	logger.Warn("really do unit prove now: %v", period)
+	//proof, err := unitProve(c.Cfg.DataDir, c.Cfg.SrsDir, fmt.Sprintf("sc%d", period), update)
+	proof, err := c.unit.Prove(update)
 	if err != nil {
 		logger.Error("unit prove error:%v", err)
 		return nil, err
