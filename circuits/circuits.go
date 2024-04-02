@@ -15,6 +15,7 @@ import (
 	"github.com/lightec-xyz/reLight/circuits/unit"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -191,63 +192,77 @@ func ParseProof(proof []byte) (native_plonk.Proof, error) {
 }
 
 func unitProve(dataDir, srsDir, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
-	{
-
-		innerCfg := unit.NewInnerConfig(dataDir, "", subDir)
-		inner := unit.NewInner(&innerCfg)
-		err := inner.Load()
-		if err != nil {
-			return nil, err
-		}
-		assignments, err := inner.GetCircuitAssignments(update)
-		if err != nil {
-			return nil, err
-		}
-		for index, assignment := range assignments {
-			proof, err := inner.Prove(assignment)
-			if err != nil {
-				return nil, err
-			}
-			err = inner.Save(index, proof)
-			if err != nil {
-				return nil, err
-			}
-		}
+	err := innerProve(dataDir, subDir, update)
+	if err != nil {
+		return nil, err
+	}
+	runtime.GC()
+	time.Sleep(4 * time.Second)
+	err = outerProve(dataDir, subDir, update)
+	if err != nil {
+		return nil, err
 	}
 
-	{
-		outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
-		outer := unit.NewOuter(&outerCfg)
-		err := outer.Load()
-		if err != nil {
-			return nil, err
-		}
-		proofs, err := outer.Prove(update)
-		if err != nil {
-			return nil, err
-		}
-		err = outer.Save(proofs)
-		if err != nil {
-			return nil, err
-		}
+	err = outerProve(dataDir, subDir, update)
+	runtime.GC()
+	time.Sleep(4 * time.Second)
+	unitCfg := unit.NewUnitConfig(dataDir, "", subDir)
+	unit := unit.NewUnit(unitCfg)
+	err = unit.Load()
+	if err != nil {
+		return nil, err
 	}
-	{
-		unitCfg := unit.NewUnitConfig(dataDir, "", subDir)
-		unit := unit.NewUnit(unitCfg)
-		err := unit.Load()
-		if err != nil {
-			return nil, err
-		}
-		proofs, err := unit.Prove(update)
-		if err != nil {
-			return nil, err
-		}
-		if err != nil {
-			return nil, err
-		}
-		return proofs, nil
+	proofs, err := unit.Prove(update)
+	if err != nil {
+		return nil, err
 	}
+	if err != nil {
+		return nil, err
+	}
+	return proofs, nil
 
+}
+
+func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
+	outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
+	outer := unit.NewOuter(&outerCfg)
+	err := outer.Load()
+	if err != nil {
+		return err
+	}
+	proofs, err := outer.Prove(update)
+	if err != nil {
+		return err
+	}
+	err = outer.Save(proofs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func innerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
+	innerCfg := unit.NewInnerConfig(dataDir, "", subDir)
+	inner := unit.NewInner(&innerCfg)
+	err := inner.Load()
+	if err != nil {
+		return err
+	}
+	assignments, err := inner.GetCircuitAssignments(update)
+	if err != nil {
+		return err
+	}
+	for index, assignment := range assignments {
+		proof, err := inner.Prove(assignment)
+		if err != nil {
+			return err
+		}
+		err = inner.Save(index, proof)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func ParseWitness(body []byte) (witness.Witness, error) {

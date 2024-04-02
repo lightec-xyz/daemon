@@ -96,6 +96,7 @@ func TestDemo001(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		reUpdate.Version = update.Version
 		if index == 0 {
 			var bootstrap structs.LightClientBootstrapResponse
 			exists, err := fileStore.GetBootstrap(&bootstrap)
