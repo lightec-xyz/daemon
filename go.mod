@@ -171,6 +171,6 @@ replace (
 	github.com/consensys/gnark => github.com/lightec-xyz/gnark v0.0.0-20240314143013-a200efabb849
 	github.com/consensys/gnark-crypto => github.com/lightec-xyz/gnark-crypto v0.0.0-20240314062713-0c4d1f3833df
 	github.com/lightec-xyz/btc_provers => ../btc_provers
-	github.com/lightec-xyz/provers => ../provers
+	//github.com/lightec-xyz/provers => ../provers
 	github.com/lightec-xyz/reLight => ../reLight
 )
