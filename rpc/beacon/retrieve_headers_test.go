@@ -136,6 +136,7 @@ var rpcURL = ""
 func TestRetrieveBeaconHeaders(t *testing.T) {
 	ctx := context.Background()
 	headers, err := RetrieveBeaconHeaders(ctx, rpcURL, 1315329, 1315360)
+
 	require.NoError(t, err)
 
 	headersChain := &BeaconHeaderChain{}

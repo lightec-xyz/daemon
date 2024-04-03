@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prysmaticlabs/prysm/v5/container/slice"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -111,6 +112,49 @@ func (c *Client) GetLightClientUpdates(start uint64, count uint64) ([]structs.Li
 		return nil, err
 	}
 	return updates, nil
+}
+
+func (c *Client) beaconHeaders(value interface{}) (*structs.BeaconBlockHeader, error) {
+	result := &structs.BeaconBlockHeader{}
+	path := fmt.Sprintf("/eth/v1/beacon/headers/%v", value)
+	err := c.get(path, nil, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c *Client) BeaconHeaderBySlot(slot uint64) (*structs.BeaconBlockHeader, error) {
+	return c.beaconHeaders(slot)
+}
+
+func (c *Client) BeaconHeaderByRoot(root string) (*structs.BeaconBlockHeader, error) {
+	return c.beaconHeaders(root)
+}
+
+func (c *Client) RetrieveBeaconHeaders(start, end uint64) ([]*structs.BeaconBlockHeader, error) {
+	endHeader, err := c.BeaconHeaderBySlot(end)
+	if err != nil {
+		return nil, err
+	}
+	var headers []*structs.BeaconBlockHeader
+	headers = append(headers, endHeader)
+	for index := end; index >= start; index-- {
+		header, err := c.BeaconHeaderByRoot(endHeader.ParentRoot)
+		if err != nil {
+			return nil, err
+		}
+		slot, ok := big.NewInt(0).SetString(header.Slot, 10)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse slot")
+		}
+		headers = append(headers, header)
+		if slot.Uint64() == start {
+			return slice.Reverse(headers), nil
+		}
+	}
+	return nil, fmt.Errorf("no find %v ~ %v Beacon Header", start, end)
+
 }
 
 func (c *Client) get(path string, param Param, value interface{}, headers ...Header) error {

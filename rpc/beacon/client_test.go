@@ -2,9 +2,9 @@ package beacon
 
 import "testing"
 
-var endpoint = "http://127.0.0.1:8970"
+//var endpoint = "http://127.0.0.1:8970"
 
-// var endpoint = "http://37.120.151.183:8970"
+var endpoint = "http://37.120.151.183:8970"
 var err error
 var client *Client
 
@@ -53,4 +53,14 @@ func TestClient_GetLightClientUpdates(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(updates)
+}
+
+func TestClient_RetrieveBeaconHeaders(t *testing.T) {
+	headers, err := client.RetrieveBeaconHeaders(1315329, 1315360)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, header := range headers {
+		t.Log(header)
+	}
 }
