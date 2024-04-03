@@ -53,6 +53,8 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 }
 
 func (c *Circuit) Load() error {
+	// todo
+	return nil
 	if c.debug {
 		logger.Warn("current zk circuit is debug mode,skip load")
 		return nil
@@ -165,7 +167,19 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	return c.recursive.Prove(choice, firstPr, secondPr, firstWit, secondWit, beginId, relayId, endId)
+	config := recursive.NewRecursiveConfig(c.Cfg.DataDir, c.Cfg.SrsDir, "")
+	recursiveCir := recursive.NewRecursive(config)
+	err = recursiveCir.Load()
+	if err != nil {
+		logger.Error("recursive load error:%v", err)
+		return nil, err
+	}
+	proof, err := recursiveCir.Prove(choice, firstPr, secondPr, firstWit, secondWit, beginId, relayId, endId)
+	if err != nil {
+		logger.Error("recursive prove error:%v", err)
+		return nil, err
+	}
+	return proof, err
 }
 
 func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,
@@ -196,7 +210,19 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	return c.genesis.Prove(firstPf, secondPf, firstWit, secondWit, genesisId, firstId, secondId)
+	config := genesis.NewGenesisConfig(c.Cfg.DataDir, "", "")
+	genesisCir := genesis.NewGenesis(config)
+	err = genesisCir.Load()
+	if err != nil {
+		logger.Error("genesis load error:%v", err)
+		return nil, err
+	}
+	proof, err := genesisCir.Prove(firstPf, secondPf, firstWit, secondWit, genesisId, firstId, secondId)
+	if err != nil {
+		logger.Error("genesis prove error:%v", err)
+		return nil, err
+	}
+	return proof, err
 }
 func (c *Circuit) VerifyProve() (*common.Proof, error) {
 
