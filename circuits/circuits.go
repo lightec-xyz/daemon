@@ -98,6 +98,16 @@ func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) 
 	//proof, err := unitProve(c.Cfg.DataDir, c.Cfg.SrsDir, fmt.Sprintf("sc%d", period), update)
 	//proof, err := c.unit.Prove(update)
 	subDir := fmt.Sprintf("sc%d", period)
+	err := innerProve(c.Cfg.DataDir, subDir, update)
+	if err != nil {
+		logger.Error("inner prove error:%v", err)
+		return nil, err
+	}
+	err = outerProve(c.Cfg.DataDir, subDir, update)
+	if err != nil {
+		logger.Error("outer prove error:%v", err)
+		return nil, err
+	}
 	proof, err := innerUnitProv(c.Cfg.DataDir, subDir, update)
 	if err != nil {
 		logger.Error("unit prove error:%v", err)
@@ -191,24 +201,6 @@ func ParseProof(proof []byte) (native_plonk.Proof, error) {
 		return nil, err
 	}
 	return &bn254Proof, nil
-}
-
-func unitProve(dataDir, srsDir, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
-	err := innerProve(dataDir, subDir, update)
-	if err != nil {
-		return nil, err
-	}
-	err = outerProve(dataDir, subDir, update)
-	if err != nil {
-		return nil, err
-	}
-
-	proof, err := innerUnitProv(dataDir, subDir, update)
-	if err != nil {
-		return nil, err
-	}
-	return proof, nil
-
 }
 
 func innerUnitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
