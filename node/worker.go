@@ -82,7 +82,7 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 
 func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
 	logger.Debug("start gen genesis prove %v period", req.Period)
-	proof, err := w.circuit.GenesisProve(req.FirstProof, req.FirstWitness, req.SecondProof, req.SecondWitness,
+	proof, err := w.circuit.GenesisProve(req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
 		req.GenesisID, req.FirstID, req.SecondID)
 	if err != nil {
 		logger.Error("genesis prove error %v", err)
