@@ -181,7 +181,7 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	logger.Info("send genesis proof: %d,data %x", len(secondProof), secondProof)
+	logger.Info("send genesis proof: %d,data", len(secondProof))
 	secondPf, err := ParseProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
