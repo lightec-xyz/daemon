@@ -102,16 +102,17 @@ func (m *manager) genProof() error {
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
 		m.txProofQueue.Remove(element)
-		logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), request.reqType.String(), request.period)
 		go func() {
+			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), request.reqType.String(), request.period)
 			err := m.workerGenProof(worker, request, chanResponse)
 			if err != nil {
-				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), request.reqType, request.period, err)
+				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), request.reqType.String(), request.period, err)
 				//  take fail request to queue again
 				m.txProofQueue.PushBack(request)
 				logger.Info("add Proof request type: %v ,Period: %v to queue again", request.reqType.String(), request.period)
 				return
 			}
+			logger.Info("complete generate Proof type: %v Period: %v", request.reqType.String(), request.period)
 		}()
 		return nil
 	})

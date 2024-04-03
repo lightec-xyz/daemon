@@ -300,9 +300,10 @@ func (b *BeaconAgent) CheckData() error {
 		if b.stateCache.CheckFetchData(index) {
 			continue
 		}
-		logger.Warn("need fetch data: %v", index)
+		//logger.Warn("need fetch data: %v", index)
 		b.beaconFetch.NewUpdateRequest(index)
 	}
+	return nil
 	unitProofIndexes, err := b.fileStore.NeedGenUnitProofIndexes()
 	if err != nil {
 		logger.Error(err.Error())
