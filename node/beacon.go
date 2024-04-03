@@ -2,15 +2,15 @@ package node
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/log"
+	"sync/atomic"
+	"time"
+
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
-	"sync/atomic"
-	"time"
 )
 
 var _ IBeaconAgent = (*BeaconAgent)(nil)
@@ -33,13 +33,13 @@ func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan
 	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
 	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
 	if err != nil {
-		log.Error(err.Error())
+		logger.Error(err.Error())
 		return nil, err
 	}
 	logger.Info("init beacon slot: %v, period: %v", cfg.BeaconSlotHeight, genesisPeriod)
 	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconSlotHeight, fetchDataResp)
 	if err != nil {
-		log.Error(err.Error())
+		logger.Error(err.Error())
 		return nil, err
 	}
 	currentPeriod := &atomic.Uint64{}
@@ -101,7 +101,7 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 	logger.Debug("beacon scan sync Period")
 	currentPeriod, ok, err := b.fileStore.GetLatestPeriod()
 	if err != nil {
-		log.Error(err.Error())
+		logger.Error(err.Error())
 		return err
 	}
 	if !ok {
@@ -109,7 +109,7 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 	}
 	latestSyncPeriod, err := b.beaconClient.GetLatestSyncPeriod()
 	if err != nil {
-		log.Error(err.Error())
+		logger.Error(err.Error())
 		return err
 	}
 	latestSyncPeriod = latestSyncPeriod - 1
@@ -125,7 +125,7 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 				b.beaconFetch.NewUpdateRequest(index)
 				err := b.fileStore.StoreLatestPeriod(index)
 				if err != nil {
-					log.Error(err.Error())
+					logger.Error(err.Error())
 					return err
 				}
 				b.currentPeriod.Store(index)
@@ -704,7 +704,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 	endPeriod := relayPeriod + 1
 	endId, ok, err := b.GetSyncCommitRootID(endPeriod)
 	if err != nil {
-		log.Error(err.Error())
+		logger.Error(err.Error())
 		return nil, false, err
 	}
 	if !ok {
@@ -766,19 +766,19 @@ func (b *BeaconAgent) ProofResponse(resp ZkProofResponse) error {
 	case SyncComGenesisType:
 		err := b.fileStore.StoreGenesisProof(resp.Proof, resp.Witness)
 		if err != nil {
-			log.Error(err.Error())
+			logger.Error(err.Error())
 			return err
 		}
 	case SyncComUnitType:
 		err := b.fileStore.StoreUnitProof(currentPeriod, resp.Proof, resp.Witness)
 		if err != nil {
-			log.Error(err.Error())
+			logger.Error(err.Error())
 			return err
 		}
 	case SyncComRecursiveType:
 		err := b.fileStore.StoreRecursiveProof(currentPeriod, resp.Proof, resp.Witness)
 		if err != nil {
-			log.Error(err.Error())
+			logger.Error(err.Error())
 			return err
 		}
 	default:
@@ -804,7 +804,7 @@ func (b *BeaconAgent) deleteCacheProofReqStatus(reqType ZkProofType, period uint
 func (b *BeaconAgent) Close() error {
 	err := b.beaconFetch.Close()
 	if err != nil {
-		log.Error("beacon fetch close error: %v", err)
+		logger.Error("beacon fetch close error: %v", err)
 		return err
 	}
 	return nil
