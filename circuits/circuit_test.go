@@ -31,6 +31,12 @@ func TestCircuit(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Log(proofBytes)
+		witness, err := ParseWitness(proof.Witness)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(witness)
+
 	}
 
 }

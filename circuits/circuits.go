@@ -181,7 +181,6 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	logger.Info("send genesis proof: %d,data", len(secondProof))
 	secondPf, err := ParseProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
@@ -278,9 +277,13 @@ func innerProve(dataDir string, subDir string, update *utils.LightClientUpdateIn
 }
 
 func ParseWitness(body []byte) (witness.Witness, error) {
+	field := ecc.BN254.ScalarField()
 	reader := bytes.NewReader(body)
-	var wit witness.Witness
-	_, err := wit.ReadFrom(reader)
+	wit, err := witness.New(field)
+	if err != nil {
+		return nil, err
+	}
+	_, err = wit.ReadFrom(reader)
 	if err != nil {
 		return nil, err
 	}
