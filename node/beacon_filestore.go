@@ -31,6 +31,7 @@ const (
 	UpdateDir    = "update"
 	UnitDir      = "unit"
 	RecursiveDir = "recursive"
+	Tx           = "txes"
 )
 
 type FileStore struct {
@@ -40,6 +41,7 @@ type FileStore struct {
 	updateDir     string
 	unitDir       string
 	recursiveDir  string
+	txDir         string
 	genesisPeriod uint64
 }
 
@@ -91,6 +93,15 @@ func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
 	}
 	if !ok {
 		return nil, fmt.Errorf("create dir error:%v %v", "recursive", err)
+	}
+	txDir := fmt.Sprintf("%s/%s", dataDir, Tx)
+	ok, err = dirNotExistsAndCreate(txDir)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
 	return &FileStore{
 		dataDir:       dataDir,
@@ -251,6 +262,32 @@ func (f *FileStore) GetLatestPeriod() (uint64, bool, error) {
 	return period, true, nil
 }
 
+func (f *FileStore) StoreTxInEth2Proof(hash string, data interface{}) error {
+	err := f.txDirCheckOrCreate(hash)
+	if err != nil {
+		return err
+	}
+	key := fmt.Sprintf("%s/%s", Tx, hash)
+	return f.InsertData(key, parseKey(key), data)
+}
+
+func (f *FileStore) txDirCheckOrCreate(hash string) error {
+	txHashDir := fmt.Sprintf("%s/%s", f.txDir, hash)
+	exists, err := fileExists(txHashDir)
+	if err != nil {
+		logger.Error("file exists error:%v", err)
+		return err
+	}
+	if !exists {
+		err := os.MkdirAll(txHashDir, os.ModePerm)
+		if err != nil {
+			logger.Error("create tx dir error:%v", err)
+			return err
+		}
+	}
+	return nil
+}
+
 func (f *FileStore) Clear() error {
 	return os.RemoveAll(f.dataDir)
 }
@@ -375,6 +412,8 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 		return fmt.Sprintf("%s/%s", f.unitDir, key), nil
 	case RecursiveDir:
 		return fmt.Sprintf("%s/%s", f.recursiveDir, key), nil
+	case Tx:
+		return fmt.Sprintf("%s/%s", f.txDir, key), nil
 	default:
 		return "", fmt.Errorf("no find table: %v", table)
 	}

@@ -100,8 +100,8 @@ func (m *manager) genProof() error {
 	}
 	chanResponse := m.getChanResponse(request.reqType)
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
-		m.txProofQueue.Remove(element)
 		worker.AddReqNum()
+		m.txProofQueue.Remove(element)
 		logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), request.reqType.String(), request.period)
 		go func() {
 			err := m.workerGenProof(worker, request, chanResponse)
