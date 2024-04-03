@@ -78,8 +78,17 @@ func (c *Circuit) Load() error {
 	return nil
 }
 
-func (c *Circuit) VerifyProve() (*common.Proof, error) {
-	panic(c)
+func (c *Circuit) TxInEth2Prove() (*common.Proof, error) {
+	return nil, nil
+}
+
+func (c *Circuit) TxBlockIsParentOfCpsProve() (*common.Proof, error) {
+
+	return nil, nil
+}
+
+func (c *Circuit) CheckPointFinalityProve() (*common.Proof, error) {
+
 	return nil, nil
 }
 
@@ -93,12 +102,10 @@ func (c *Circuit) DepositProve(ec *ethclient.Client, cl *apiclient.Client, txHas
 	if err != nil {
 		return nil, err
 	}
-
 	proof, wit, err := txineth2.Prove(c.Cfg.DataDir, ethProof)
 	if err != nil {
 		return nil, err
 	}
-
 	return &common.Proof{
 		Proof: proof,
 		Wit:   wit,
@@ -196,13 +203,9 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	}
 	return c.genesis.Prove(firstPf, secondPf, firstWit, secondWit, genesisId, firstId, secondId)
 }
+func (c *Circuit) VerifyProve() (*common.Proof, error) {
 
-func WriteProof(proofFile string, proof native_plonk.Proof) error {
-	return utils.WriteProof(proofFile, proof)
-}
-
-func WriteWitness(witnessFile string, witness witness.Witness) error {
-	return utils.WriteWintess(witnessFile, witness)
+	return nil, nil
 }
 
 func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
