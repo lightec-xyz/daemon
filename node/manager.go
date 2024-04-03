@@ -13,7 +13,7 @@ import (
 )
 
 type manager struct {
-	proofQueue     *Queue
+	txProofQueue   *Queue
 	schedule       *Schedule
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
@@ -26,7 +26,7 @@ type manager struct {
 
 func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan ZkProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {
 	return &manager{
-		proofQueue:     NewQueue(),
+		txProofQueue:   NewQueue(),
 		schedule:       schedule,
 		store:          store,
 		memory:         memory,
@@ -67,17 +67,22 @@ func (m *manager) init() error {
 func (m *manager) run(requestList []ZkProofRequest) error {
 	for _, req := range requestList {
 		logger.Info("queue receive gen Proof request:%v %v", req.reqType.String(), req.period)
-		m.proofQueue.PushFront(req)
+		// Todo queue need to sort by req weight ?
+		if req.reqType == SyncComGenesisType || req.reqType == SyncComRecursiveType {
+			m.txProofQueue.PushBack(req)
+		} else {
+			m.txProofQueue.PushFront(req)
+		}
 	}
 	return nil
 }
 
 func (m *manager) genProof() error {
-	if m.proofQueue.Len() == 0 {
+	if m.txProofQueue.Len() == 0 {
 		time.Sleep(1 * time.Second)
 		return nil
 	}
-	element := m.proofQueue.Back()
+	element := m.txProofQueue.Back()
 	request, ok := element.Value.(ZkProofRequest)
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
@@ -95,7 +100,7 @@ func (m *manager) genProof() error {
 	}
 	chanResponse := m.getChanResponse(request.reqType)
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
-		m.proofQueue.Remove(element)
+		m.txProofQueue.Remove(element)
 		worker.AddReqNum()
 		logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), request.reqType.String(), request.period)
 		go func() {
@@ -103,7 +108,7 @@ func (m *manager) genProof() error {
 			if err != nil {
 				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), request.reqType, request.period, err)
 				//  take fail request to queue again
-				m.proofQueue.PushBack(request)
+				m.txProofQueue.PushBack(request)
 				logger.Info("add Proof request type: %v ,Period: %v to queue again", request.reqType.String(), request.period)
 				return
 			}

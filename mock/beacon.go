@@ -57,7 +57,7 @@ func RunBeaconServer() {
 	})
 
 	//---------------------
-	err := router.Run(":8970")
+	err := router.Run(":8980")
 	if err != nil {
 		panic(err)
 	}
