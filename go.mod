@@ -12,12 +12,13 @@ require (
 	github.com/consensys/gnark v0.9.1
 	github.com/consensys/gnark-crypto v0.12.2-0.20240215234832-d72fcb379d3e
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
-	github.com/ethereum/go-ethereum v1.13.12
+	github.com/ethereum/go-ethereum v1.13.14
 	github.com/fxamacker/cbor/v2 v2.5.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.5.0
+	github.com/lightec-xyz/btc_provers v0.0.0-00010101000000-000000000000
 	github.com/lightec-xyz/provers v0.0.0-00010101000000-000000000000
-	github.com/lightec-xyz/reLight v0.0.0-00010101000000-000000000000
+	github.com/lightec-xyz/reLight v0.0.0-20240329065153-d26254301ed4
 	github.com/prysmaticlabs/prysm/v5 v5.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
@@ -29,7 +30,6 @@ require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/VictoriaMetrics/fastcache v1.12.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -170,6 +170,7 @@ require (
 replace (
 	github.com/consensys/gnark => github.com/lightec-xyz/gnark v0.0.0-20240314143013-a200efabb849
 	github.com/consensys/gnark-crypto => github.com/lightec-xyz/gnark-crypto v0.0.0-20240314062713-0c4d1f3833df
+	github.com/lightec-xyz/btc_provers => ../btc_provers
 	github.com/lightec-xyz/provers => ../provers
 	github.com/lightec-xyz/reLight => ../reLight
 )
