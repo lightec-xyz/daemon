@@ -72,7 +72,7 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		nodeConfig:  cfg,
 		server:      server,
 		exitSignal:  exitSignal,
-		beaconAgent: NewWrapperBeacon(beaconAgent, 10*time.Second, 10*time.Second, syncCommitResp, fetchDataResp),
+		beaconAgent: NewWrapperBeacon(beaconAgent, 10*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
 		manager:     NewWrapperManger(manager, proofRequest),
 	}
 	return daemon, nil

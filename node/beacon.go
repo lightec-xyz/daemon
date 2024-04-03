@@ -164,7 +164,7 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 		return err
 	}
 	if existsRequest {
-		logger.Warn("Proof request exists，%v %v  skip it now", period, reqType.String())
+		//logger.Warn("Proof request exists，%v %v  skip it now", period, reqType.String())
 		return nil
 	}
 	data, prepareDataOk, err := b.prepareProofRequestData(period, reqType)
@@ -303,7 +303,6 @@ func (b *BeaconAgent) CheckData() error {
 		//logger.Warn("need fetch data: %v", index)
 		b.beaconFetch.NewUpdateRequest(index)
 	}
-	return nil
 	unitProofIndexes, err := b.fileStore.NeedGenUnitProofIndexes()
 	if err != nil {
 		logger.Error(err.Error())
@@ -317,7 +316,7 @@ func (b *BeaconAgent) CheckData() error {
 		if b.stateCache.CheckUnit(index) {
 			continue
 		}
-		logger.Warn("need unit proof: %v", index)
+		//logger.Warn("need unit proof: %v", index)
 		err := b.tryProofRequest(index, SyncComUnitType)
 		if err != nil {
 			logger.Error(err.Error())
@@ -336,7 +335,7 @@ func (b *BeaconAgent) CheckData() error {
 		if b.stateCache.CheckRecursive(index) {
 			continue
 		}
-		logger.Warn("need recursive proof: %v", index)
+		//logger.Warn("need recursive proof: %v", index)
 		err := b.tryProofRequest(index, SyncComRecursiveType)
 		if err != nil {
 			logger.Error(err.Error())
