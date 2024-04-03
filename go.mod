@@ -17,7 +17,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.5.0
 	github.com/lightec-xyz/provers v0.0.0-00010101000000-000000000000
-	github.com/lightec-xyz/reLight v0.0.0-00010101000000-000000000000
+	github.com/lightec-xyz/reLight v0.0.0-20240320162439-a36dab5467ba
 	github.com/prysmaticlabs/prysm/v5 v5.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2

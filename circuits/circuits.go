@@ -77,14 +77,7 @@ func (c *Circuit) Load() error {
 }
 
 func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
-	proof, wit, err := txineth2.Prove(c.Cfg.DataDir, param)
-	if err != nil {
-		return nil, err
-	}
-	return &common.Proof{
-		Proof: proof,
-		Wit:   wit,
-	}, nil
+	return txineth2.Prove(c.Cfg.DataDir, param)
 }
 
 func (c *Circuit) TxBlockIsParentOfCheckPointProve() (*common.Proof, error) {
