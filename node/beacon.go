@@ -308,7 +308,6 @@ func (b *BeaconAgent) CheckData() error {
 		logger.Error(err.Error())
 		return err
 	}
-	// todo
 	for _, index := range unitProofIndexes {
 		if index < b.genesisPeriod {
 			continue
@@ -328,20 +327,28 @@ func (b *BeaconAgent) CheckData() error {
 		logger.Error(err.Error())
 		return err
 	}
-	for _, index := range genRecProofIndexes {
-		if index <= b.genesisPeriod+1 {
-			continue
-		}
-		if b.stateCache.CheckRecursive(index) {
-			continue
-		}
-		//logger.Warn("need recursive proof: %v", index)
-		err := b.tryProofRequest(index, SyncComRecursiveType)
+	if len(genRecProofIndexes) > 0 {
+		logger.Warn("need recursive proof: %v", genRecProofIndexes[0])
+		err := b.tryProofRequest(genRecProofIndexes[0], SyncComRecursiveType)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
 		}
 	}
+	//for _, index := range genRecProofIndexes {
+	//	if index <= b.genesisPeriod+1 {
+	//		continue
+	//	}
+	//	if b.stateCache.CheckRecursive(index) {
+	//		continue
+	//	}
+	//	//logger.Warn("need recursive proof: %v", index)
+	//	err := b.tryProofRequest(genRecProofIndexes[0], SyncComRecursiveType)
+	//	if err != nil {
+	//		logger.Error(err.Error())
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
@@ -658,7 +665,7 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v period recursive data, send new proof request", prePeriod)
+		//logger.Warn("no find %v period recursive data, send new proof request", prePeriod)
 		//err := b.tryProofRequest(prePeriod, SyncComRecursiveType)
 		//if err != nil {
 		//	logger.Error(err.Error())
