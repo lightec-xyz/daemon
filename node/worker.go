@@ -85,7 +85,7 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 	proof, err := w.circuit.GenesisProve(req.FirstProof, req.FirstWitness, req.SecondProof, req.SecondWitness,
 		req.GenesisID, req.FirstID, req.SecondID)
 	if err != nil {
-		logger.Error("unit prove error %v", err)
+		logger.Error("genesis prove error %v", err)
 		return rpc.SyncCommGenesisResponse{}, err
 	}
 	logger.Debug("complete  genesis prove %v", req.Period)

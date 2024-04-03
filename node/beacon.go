@@ -491,6 +491,7 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 		//}
 		return nil, false, nil
 	}
+	logger.Info("get genesis first proof: %v", b.genesisPeriod)
 
 	var secondProof StoreProof
 	exists, err = b.fileStore.GetUnitProof(nextPeriod, &secondProof)
@@ -508,6 +509,7 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 		//}
 		return nil, false, nil
 	}
+	logger.Info("get genesis second proof: %v", nextPeriod)
 
 	genesisProofParam := &GenesisProofParam{
 		FirstProof:    firstProof.Proof,
