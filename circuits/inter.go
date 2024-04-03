@@ -1,8 +1,7 @@
 package circuits
 
 import (
-	"github.com/ethereum/go-ethereum/ethclient"
-	apiclient "github.com/lightec-xyz/provers/utils/api-client"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 )
@@ -10,11 +9,10 @@ import (
 type ICircuit interface {
 	CheckPointFinalityProve() (*common.Proof, error)
 	TxInEth2Prove() (*common.Proof, error)
-	
-	TxBlockIsParentOfCpsProve() (*common.Proof, error)
+	TxBlockIsParentOfCheckPointProve() (*common.Proof, error)
 	RedeemProve() (*common.Proof, error)
 
-	DepositProve(ec *ethclient.Client, cl *apiclient.Client, txHash string) (*common.Proof, error)
+	DepositProve(param *ethblock.TxInEth2ProofData) (*common.Proof, error)
 
 	GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,
 		genesisId, firstId, secondId []byte) (*common.Proof, error)
