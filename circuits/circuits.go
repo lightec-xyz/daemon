@@ -3,20 +3,25 @@ package circuits
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/consensys/gnark-crypto/ecc"
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
+	"github.com/ethereum/go-ethereum/ethclient"
 	dCom "github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
+	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
 	"github.com/lightec-xyz/reLight/circuits/utils"
-	"os"
-	"strconv"
-	"time"
 )
 
 type Circuit struct {
@@ -83,9 +88,21 @@ func (c *Circuit) RedeemProve() (*common.Proof, error) {
 	return nil, nil
 }
 
-func (c *Circuit) DepositProve() (*common.Proof, error) {
-	panic(c)
-	return nil, nil
+func (c *Circuit) DepositProve(ec *ethclient.Client, cl *apiclient.Client, txHash string) (*common.Proof, error) {
+	ethProof, err := ethblock.GenerateTxInEth2Proof(ec, cl, txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	proof, wit, err := txineth2.Prove(c.Cfg.DataDir, ethProof)
+	if err != nil {
+		return nil, err
+	}
+
+	return &common.Proof{
+		Proof: proof,
+		Wit:   wit,
+	}, nil
 }
 
 func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
