@@ -76,8 +76,15 @@ func (c *Circuit) Load() error {
 	return nil
 }
 
-func (c *Circuit) TxInEth2Prove() (*common.Proof, error) {
-	return nil, nil
+func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
+	proof, wit, err := txineth2.Prove(c.Cfg.DataDir, param)
+	if err != nil {
+		return nil, err
+	}
+	return &common.Proof{
+		Proof: proof,
+		Wit:   wit,
+	}, nil
 }
 
 func (c *Circuit) TxBlockIsParentOfCheckPointProve() (*common.Proof, error) {
@@ -95,15 +102,9 @@ func (c *Circuit) RedeemProve() (*common.Proof, error) {
 	return nil, nil
 }
 
-func (c *Circuit) DepositProve(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
-	proof, wit, err := txineth2.Prove(c.Cfg.DataDir, param)
-	if err != nil {
-		return nil, err
-	}
-	return &common.Proof{
-		Proof: proof,
-		Wit:   wit,
-	}, nil
+func (c *Circuit) DepositProve() (*common.Proof, error) {
+	panic(c)
+	return nil, nil
 }
 
 func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
