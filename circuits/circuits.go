@@ -11,9 +11,11 @@ import (
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
+	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
 	dCom "github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
-	//ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
+	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	"github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
 	"github.com/lightec-xyz/reLight/circuits/recursive"
@@ -77,10 +79,9 @@ func (c *Circuit) Load() error {
 	return nil
 }
 
-//func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
-//	//return txineth2.Prove(c.Cfg.DataDir, param)
-//	return nil, nil
-//}
+func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
+	return txineth2.Prove(c.Cfg.DataDir, param)
+}
 
 func (c *Circuit) TxBlockIsParentOfCheckPointProve() (*common.Proof, error) {
 
@@ -98,8 +99,7 @@ func (c *Circuit) RedeemProve() (*common.Proof, error) {
 }
 
 func (c *Circuit) DepositProve(txId string) (*common.Proof, error) {
-	panic(c)
-	//return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId)
+	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId)
 }
 
 func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {

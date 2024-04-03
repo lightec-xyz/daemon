@@ -1,14 +1,14 @@
 package circuits
 
 import (
-	//ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 )
 
 type ICircuit interface {
 	CheckPointFinalityProve() (*common.Proof, error)
-	//TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error)
+	TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error)
 	TxBlockIsParentOfCheckPointProve() (*common.Proof, error)
 	RedeemProve() (*common.Proof, error)
 	DepositProve(txId string) (*common.Proof, error)
