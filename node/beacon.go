@@ -548,6 +548,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 			return nil, false, nil
 		}
 		return &UnitProofParam{
+			Version:                 currentPeriodUpdate.Version,
 			AttestedHeader:          currentPeriodUpdate.Data.AttestedHeader,
 			CurrentSyncCommittee:    genesisData.Data.CurrentSyncCommittee, // todo
 			SyncAggregate:           currentPeriodUpdate.Data.SyncAggregate,
@@ -575,6 +576,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 			return nil, false, nil
 		}
 		return &UnitProofParam{
+			Version:                 currentPeriodUpdate.Version,
 			AttestedHeader:          currentPeriodUpdate.Data.AttestedHeader,
 			CurrentSyncCommittee:    perUpdateData.Data.NextSyncCommittee, // TODO
 			SyncAggregate:           currentPeriodUpdate.Data.SyncAggregate,
