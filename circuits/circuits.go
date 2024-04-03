@@ -11,6 +11,7 @@ import (
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
+	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
 	dCom "github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
@@ -95,9 +96,8 @@ func (c *Circuit) RedeemProve() (*common.Proof, error) {
 	return nil, nil
 }
 
-func (c *Circuit) DepositProve() (*common.Proof, error) {
-	panic(c)
-	return nil, nil
+func (c *Circuit) DepositProve(txId string) (*common.Proof, error) {
+	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId)
 }
 
 func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
