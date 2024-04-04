@@ -79,14 +79,14 @@ func (m *manager) run(requestList []ZkProofRequest) error {
 
 func (m *manager) genProof() error {
 	if m.txProofQueue.Len() == 0 {
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 		return nil
 	}
 	element := m.txProofQueue.Back()
 	request, ok := element.Value.(ZkProofRequest)
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 		return nil
 	}
 	proofSubmitted, err := m.CheckProofStatus(request)
@@ -102,18 +102,18 @@ func (m *manager) genProof() error {
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
 		m.txProofQueue.Remove(element)
-		go func() {
-			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), request.reqType.String(), request.period)
-			err := m.workerGenProof(worker, request, chanResponse)
+		go func(req ZkProofRequest) {
+			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), req.reqType.String(), req.period)
+			err := m.workerGenProof(worker, req, chanResponse)
 			if err != nil {
-				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), request.reqType.String(), request.period, err)
+				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.reqType.String(), req.period, err)
 				//  take fail request to queue again
 				m.txProofQueue.PushBack(request)
-				logger.Info("add Proof request type: %v ,Period: %v to queue again", request.reqType.String(), request.period)
+				logger.Info("add Proof request type: %v ,Period: %v to queue again", req.reqType.String(), req.period)
 				return
 			}
-			logger.Info("complete generate Proof type: %v Period: %v", request.reqType.String(), request.period)
-		}()
+			logger.Info("complete generate Proof type: %v Period: %v", req.reqType.String(), req.period)
+		}(request)
 		return nil
 	})
 	if err != nil {
@@ -126,6 +126,7 @@ func (m *manager) genProof() error {
 		time.Sleep(10 * time.Second)
 		return nil
 	}
+	time.Sleep(2 * time.Second)
 	return nil
 }
 
@@ -255,6 +256,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 
 	}
 	resp <- zkbProofResponse
+	logger.Info("send zkProof:%v %v", zkbProofResponse.Period, zkbProofResponse.ZkProofType.String())
 	return nil
 
 }

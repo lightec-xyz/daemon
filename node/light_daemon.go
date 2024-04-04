@@ -27,11 +27,11 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []ZkProofRequest, 1000)
-	btcProofResp := make(chan ZkProofResponse, 1000)
-	ethProofResp := make(chan ZkProofResponse, 1000)
-	syncCommitResp := make(chan ZkProofResponse, 1000)
-	fetchDataResp := make(chan FetchDataResponse, 1000)
+	proofRequest := make(chan []ZkProofRequest, 100)
+	btcProofResp := make(chan ZkProofResponse, 100)
+	ethProofResp := make(chan ZkProofResponse, 100)
+	syncCommitResp := make(chan ZkProofResponse, 100)
+	fetchDataResp := make(chan FetchDataResponse, 100)
 
 	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fetchDataResp)
 	if err != nil {
