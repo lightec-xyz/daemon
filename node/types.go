@@ -56,6 +56,7 @@ type ZkProofResponse struct {
 	ZkProofType ZkProofType
 	Status      ProofStatus
 	Proof       common.ZkProof
+	ProofStr    string
 	Witness     []byte
 	Period      uint64
 	TxHash      string

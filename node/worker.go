@@ -75,7 +75,7 @@ func (w *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	time.Sleep(10 * time.Second)
 	return rpc.ProofInfo{
 		Status: 0,
-		Proof:  common.ZkProof([]byte("")),
+		Proof:  "",
 		TxId:   proofId,
 	}, nil
 }
@@ -93,9 +93,10 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 		return rpc.DepositResponse{}, nil
 	}
 	return rpc.DepositResponse{
-		TxHash:  req.TxHash,
-		Proof:   common.ZkProof(hexProof),
-		Witness: circuits.WitnessToBytes(proof.Wit),
+		TxHash:   req.TxHash,
+		Proof:    common.ZkProof(hexProof),
+		ProofStr: hexProof,
+		Witness:  circuits.WitnessToBytes(proof.Wit),
 	}, nil
 }
 

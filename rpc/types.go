@@ -69,9 +69,10 @@ type DepositRequest struct {
 }
 
 type DepositResponse struct {
-	TxHash  string
-	Proof   common.ZkProof
-	Witness []byte
+	TxHash   string
+	Proof    common.ZkProof
+	ProofStr string
+	Witness  []byte
 }
 
 type RedeemRequest struct {
@@ -159,8 +160,8 @@ type SyncCommRecursiveResponse struct {
 
 type ProofInfo struct {
 	reqType   int
-	TxId      string         `json:"txId"`
-	ProofType int            `json:"type"`
-	Proof     common.ZkProof `json:"proof"`
-	Status    int            `json:"status"`
+	TxId      string `json:"txId"`
+	ProofType int    `json:"type"`
+	Proof     string `json:"proof"`
+	Status    int    `json:"status"`
 }

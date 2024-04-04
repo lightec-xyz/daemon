@@ -149,7 +149,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen deposit Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, proofResponse.ProofStr, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 	case VerifyTxType:
 		verifyProofParam, ok := request.data.(*VerifyProofParam)
 		if !ok {
@@ -180,7 +180,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen redeem Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
 	case RedeemTxType:
 		redeemParam, ok := request.data.(*RedeemProofParam)
@@ -197,7 +197,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen redeem Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComGenesisType:
 		genesisReq, ok := request.data.(*GenesisProofParam)
@@ -316,11 +316,12 @@ func NewZkProofResp(reqType ZkProofType, period uint64, proof common.ZkProof, wi
 	}
 }
 
-func NewZkTxProofResp(reqType ZkProofType, txHash string, proof common.ZkProof, witness []byte) ZkProofResponse {
+func NewZkTxProofResp(reqType ZkProofType, txHash, proofStr string, proof common.ZkProof, witness []byte) ZkProofResponse {
 	return ZkProofResponse{
 		ZkProofType: reqType,
 		TxHash:      txHash,
 		Proof:       proof,
+		ProofStr:    proofStr,
 		Witness:     witness,
 		Status:      ProofSuccess,
 	}

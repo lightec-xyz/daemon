@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
 )
@@ -100,7 +99,7 @@ func WriteDbProof(store store.IStore, txes []DbProof) error {
 	return nil
 }
 
-func UpdateProof(store store.IStore, txId string, proof common.ZkProof, proofType ZkProofType, status ProofStatus) error {
+func UpdateProof(store store.IStore, txId string, proof string, proofType ZkProofType, status ProofStatus) error {
 	txProof := DbProof{
 		TxHash:    txId,
 		Proof:     proof,

@@ -255,7 +255,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp)
 	proofId := resp.TxHash
-	err := b.updateDepositProof(proofId, resp.Proof, resp.Status)
+	err := b.updateDepositProof(proofId, resp.ProofStr, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", proofId, err)
 		return err
@@ -375,7 +375,7 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
 	return redeemBtcTx, isRedeemTx
 }
 
-func (b *BitcoinAgent) updateDepositProof(txId string, proof common.ZkProof, status ProofStatus) error {
+func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status ProofStatus) error {
 	logger.Debug("update DepositTx  Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(b.store, txId, proof, DepositTxType, status)
 	if err != nil {
