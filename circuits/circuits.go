@@ -2,6 +2,7 @@ package circuits
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -335,6 +336,17 @@ func debugProof() (*common.Proof, error) {
 		Proof: &plonk_bn254.Proof{},
 		Wit:   w,
 	}, nil
+}
+
+func ProofToHexSolBytes(proof native_plonk.Proof) ([]byte, error) {
+	_proof := proof.(*plonk_bn254.Proof)
+	proofStr := hex.EncodeToString(_proof.MarshalSolidity())
+	hexSolBytes, err := hex.DecodeString(proofStr)
+	if err != nil {
+		return nil, err
+	}
+	return hexSolBytes, nil
+
 }
 
 func ProofToBytes(proof native_plonk.Proof) []byte {
