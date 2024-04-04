@@ -98,8 +98,8 @@ func (c *Circuit) RedeemProve() (*common.Proof, error) {
 	return nil, nil
 }
 
-func (c *Circuit) DepositProve(txId string) (*common.Proof, error) {
-	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId)
+func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
+	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
 }
 
 func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
