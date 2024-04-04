@@ -11,3 +11,7 @@ func TestUuid(t *testing.T) {
 	}
 	t.Log(uuid)
 }
+
+func TestDemo(t *testing.T) {
+
+}
