@@ -15,6 +15,7 @@ type ZkProofType int
 const (
 	DepositTxType ZkProofType = iota + 1
 	RedeemTxType
+	TxInEth2
 	VerifyTxType
 	SyncComGenesisType
 	SyncComUnitType
@@ -69,6 +70,12 @@ type DepositProofParam struct {
 	Body      interface{}
 	TxHash    string
 	BlockHash string
+}
+
+type TxInEth2Param struct {
+	Version string
+	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
 }
 
 type RedeemProofParam struct {

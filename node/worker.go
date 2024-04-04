@@ -43,7 +43,7 @@ func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) 
 }
 
 func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
-	logger.Info("")
+	logger.Debug("local worker transaction in eth2")
 	proof, err := w.circuit.TxInEth2Prove(req.TxData)
 	if err != nil {
 		logger.Error("TxInEth2Prove error: %v", err)
@@ -84,11 +84,17 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 	logger.Debug("gen deposit proof")
 	proof, err := w.circuit.DepositProve(req.TxHash, req.BlockHash)
 	if err != nil {
+		logger.Error(err.Error())
 		return rpc.DepositResponse{}, fmt.Errorf("gen deposit prove error: %v", err)
+	}
+	hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
+	if err != nil {
+		logger.Error(err.Error())
+		return rpc.DepositResponse{}, nil
 	}
 	return rpc.DepositResponse{
 		TxHash:  req.TxHash,
-		Proof:   common.ZkProof(circuits.ProofToBytes(proof.Proof)),
+		Proof:   common.ZkProof(hexProof),
 		Witness: circuits.WitnessToBytes(proof.Wit),
 	}, nil
 }
