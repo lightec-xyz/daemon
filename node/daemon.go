@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
@@ -116,7 +117,8 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
-		localWorker, err := NewLocalWorker("", "", 1)
+		zkParamDir := os.Getenv(common.ZkParameterDir)
+		localWorker, err := NewLocalWorker(zkParamDir, "", 1)
 		if err != nil {
 			logger.Error("new local worker error:%v", err)
 			return nil, err
