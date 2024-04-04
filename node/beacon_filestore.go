@@ -147,6 +147,7 @@ func (f *FileStore) CheckUnitProof(period uint64) (bool, error) {
 }
 
 func (f *FileStore) StoreUnitProof(period uint64, proof, witness []byte) error {
+	logger.Info("store unit proof")
 	return f.InsertData(UnitDir, parseKey(period), StoreProof{
 		Period:  period,
 		Proof:   proof,
