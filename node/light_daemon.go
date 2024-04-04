@@ -27,11 +27,11 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []ZkProofRequest, 100)
-	btcProofResp := make(chan ZkProofResponse, 100)
-	ethProofResp := make(chan ZkProofResponse, 100)
-	syncCommitResp := make(chan ZkProofResponse, 100)
-	fetchDataResp := make(chan FetchDataResponse, 100)
+	proofRequest := make(chan []ZkProofRequest)
+	btcProofResp := make(chan ZkProofResponse)
+	ethProofResp := make(chan ZkProofResponse)
+	syncCommitResp := make(chan ZkProofResponse)
+	fetchDataResp := make(chan FetchDataResponse)
 
 	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fetchDataResp)
 	if err != nil {
@@ -69,11 +69,12 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	daemon := &Daemon{
-		nodeConfig:  cfg,
-		server:      server,
-		exitSignal:  exitSignal,
-		beaconAgent: NewWrapperBeacon(beaconAgent, 10*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
-		manager:     NewWrapperManger(manager, proofRequest),
+		nodeConfig:    cfg,
+		server:        server,
+		exitSignal:    exitSignal,
+		onlyRecursive: true,
+		beaconAgent:   NewWrapperBeacon(beaconAgent, 10*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
+		manager:       NewWrapperManger(manager, proofRequest),
 	}
 	return daemon, nil
 }

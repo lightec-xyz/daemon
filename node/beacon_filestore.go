@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// Todo refactor
 // store filestore protocol
 
 type StoreProof struct {
@@ -269,6 +270,14 @@ func (f *FileStore) StoreTxInEth2Proof(hash string, data interface{}) error {
 	}
 	key := fmt.Sprintf("%s/%s", Tx, hash)
 	return f.InsertData(key, parseKey(key), data)
+}
+
+func (f *FileStore) StoreCheckPointFinalityProve(hash string, data interface{}) error {
+	panic(hash)
+}
+
+func (f *FileStore) TxBlockIsParentOfCheckPointProve(hash string, data interface{}) error {
+	panic(hash)
 }
 
 func (f *FileStore) txDirCheckOrCreate(hash string) error {
