@@ -341,11 +341,7 @@ func debugProof() (*common.Proof, error) {
 func ProofToHexSolBytes(proof native_plonk.Proof) ([]byte, error) {
 	_proof := proof.(*plonk_bn254.Proof)
 	proofStr := hex.EncodeToString(_proof.MarshalSolidity())
-	hexSolBytes, err := hex.DecodeString(proofStr)
-	if err != nil {
-		return nil, err
-	}
-	return hexSolBytes, nil
+	return []byte(proofStr), nil
 
 }
 
