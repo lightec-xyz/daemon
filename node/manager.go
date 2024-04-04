@@ -149,7 +149,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen deposit Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, proofResponse.ProofStr, request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
 	case VerifyTxType:
 		verifyProofParam, ok := request.data.(*VerifyProofParam)
 		if !ok {
