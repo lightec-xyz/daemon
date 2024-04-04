@@ -105,6 +105,7 @@ func toRedeemZkProofRequest(list []RedeemProofParam) ([]ZkProofRequest, error) {
 		result = append(result, ZkProofRequest{
 			reqType: RedeemTxType,
 			data:    item,
+			txHash:  item.TxHash,
 		})
 	}
 	return result, nil

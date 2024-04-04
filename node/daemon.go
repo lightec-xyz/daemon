@@ -46,7 +46,8 @@ type Daemon struct {
 	nodeConfig    NodeConfig
 	exitSignal    chan os.Signal
 	manager       *WrapperManger
-	onlyRecursive bool // true ,Only enable the function of generating recursive proofs
+	enableSyncCom bool // true ,Only enable the function of generating recursive proofs
+	enableTx      bool
 }
 
 func NewDaemon(cfg NodeConfig) (*Daemon, error) {
@@ -137,20 +138,25 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents:      agents,
-		server:      server,
-		nodeConfig:  cfg,
-		exitSignal:  make(chan os.Signal, 1),
-		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
-		manager:     NewWrapperManger(manager, proofRequest),
+		agents:        agents,
+		server:        server,
+		nodeConfig:    cfg,
+		enableSyncCom: false, //todo
+		enableTx:      true,  // todo
+		exitSignal:    make(chan os.Signal, 1),
+		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
+		manager:       NewWrapperManger(manager, proofRequest),
 	}
 	return daemon, nil
 }
 
 func (d *Daemon) Init() error {
-
-	if !d.onlyRecursive {
-		// true ,skip init node agent
+	err := d.manager.manager.init()
+	if err != nil {
+		logger.Error("manager init error %v", err)
+		return err
+	}
+	if d.enableTx {
 		for _, agent := range d.agents {
 			if err := agent.node.Init(); err != nil {
 				logger.Error("%v:init agent error %v", agent.node.Name(), err)
@@ -158,16 +164,14 @@ func (d *Daemon) Init() error {
 			}
 		}
 	}
-	err := d.manager.manager.init()
-	if err != nil {
-		logger.Error("manager init error %v", err)
-		return err
+	if d.enableSyncCom {
+		err = d.beaconAgent.node.Init()
+		if err != nil {
+			logger.Error("node agent init error %v", err)
+			return err
+		}
 	}
-	err = d.beaconAgent.node.Init()
-	if err != nil {
-		logger.Error("node agent init error %v", err)
-		return err
-	}
+
 	return nil
 }
 
@@ -177,16 +181,18 @@ func (d *Daemon) Run() error {
 	go d.server.Run()
 
 	// syncCommit
-	go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
-	go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
-	go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
-	go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
+	if d.enableSyncCom {
+		go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
+		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
+		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
+		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
 
+	}
 	// generate Proof manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
 	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
 
-	if !d.onlyRecursive {
+	if d.enableTx {
 		// true skip this step
 		//tx Proof
 		for _, agent := range d.agents {
@@ -218,7 +224,7 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
-	if !d.onlyRecursive {
+	if d.enableTx {
 		for _, agent := range d.agents {
 			if err := agent.node.Close(); err != nil {
 				logger.Error("%v:close agent error %v", agent.node.Name(), err)
@@ -230,9 +236,11 @@ func (d *Daemon) Close() error {
 		logger.Error("rpc server shutdown error:%v", err)
 	}
 	d.manager.manager.Close()
-	err = d.beaconAgent.node.Close()
-	if err != nil {
-		logger.Error("node agent close error:%v", err)
+	if d.enableSyncCom {
+		err = d.beaconAgent.node.Close()
+		if err != nil {
+			logger.Error("node agent close error:%v", err)
+		}
 	}
 	if d.exitSignal != nil {
 		close(d.exitSignal)

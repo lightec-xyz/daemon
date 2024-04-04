@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/lightec-xyz/daemon/common"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
@@ -73,6 +74,7 @@ type RedeemProofParam struct {
 	Version string
 	Body    interface{}
 	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
 }
 
 type VerifyProofParam struct {

@@ -15,7 +15,7 @@ type NodeConfig struct {
 	Rpcbind           string `json:"rpcbind"`
 	RpcPort           string `json:"rpcport"`
 	EnableLocalWorker bool   `json:"enableLocalWorker"`
-	OnlyRecursive     bool   `json:"onlyRecursive"`
+	EnableRecursive   bool   `json:"enableSyncCom"`
 
 	BtcUrl            string           `json:"btcUrl"`
 	BtcUser           string           `json:"btcUser"`

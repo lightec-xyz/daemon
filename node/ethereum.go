@@ -18,6 +18,7 @@ import (
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 )
 
 type EthereumAgent struct {
@@ -298,7 +299,12 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			if submitted {
 				redeemTxProof = NewRedeemProof(redeemTx.TxHash, ProofSuccess)
 			} else {
-				requests = append(requests, NewRedeemProofRequest(redeemTx.TxHash))
+				// Todo
+				txData, err := ethblock.GenerateTxInEth2Proof(nil, nil, redeemTx.TxHash)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				requests = append(requests, NewRedeemProofRequest(redeemTx.TxHash, txData))
 				redeemTxProof = NewRedeemProof(redeemTx.TxHash, ProofDefault)
 			}
 			proofs = append(proofs, redeemTxProof)
@@ -498,9 +504,10 @@ func (e *EthereumAgent) Name() string {
 	return "Ethereum WrapperAgent"
 }
 
-func NewRedeemProofRequest(txId string) RedeemProofParam {
+func NewRedeemProofRequest(txId string, txData *ethblock.TxInEth2ProofData) RedeemProofParam {
 	return RedeemProofParam{
 		TxHash: txId,
+		TxData: txData,
 	}
 }
 
