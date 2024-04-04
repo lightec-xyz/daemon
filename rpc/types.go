@@ -47,8 +47,9 @@ type TxInEth2ProveReq struct {
 }
 
 type TxInEth2ProveResp struct {
-	Proof   []byte
-	Witness []byte
+	ProofStr string
+	Proof    []byte
+	Witness  []byte
 }
 
 type TxBlockIsParentOfCheckPointProveReq struct {

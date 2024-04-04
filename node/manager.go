@@ -180,7 +180,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen redeem Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
 
 	case RedeemTxType:
 		redeemParam, ok := request.data.(*RedeemProofParam)
@@ -287,7 +287,7 @@ func (m *manager) getChanResponse(reqType ZkProofType) chan ZkProofResponse {
 	switch reqType {
 	case DepositTxType, VerifyTxType:
 		return m.btcProofResp
-	case RedeemTxType, TxInEth2:
+	case RedeemTxType, TxInEth2: // todo
 		return m.ethProofResp
 	case SyncComGenesisType, SyncComUnitType, SyncComRecursiveType:
 		return m.syncCommitResp

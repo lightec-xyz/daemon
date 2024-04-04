@@ -85,7 +85,12 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proo
 		logger.Warn("current zk circuit TxInEth2Prove prove is debug,skip prove")
 		return debugProof()
 	}
-	return txineth2.Prove(c.Cfg.DataDir, param)
+	proof, err := txineth2.Prove(c.Cfg.DataDir, param)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	return proof, err
 }
 
 func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {

@@ -49,8 +49,14 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2Pro
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
 	}
+	hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
 	return &rpc.TxInEth2ProveResp{
-		Proof:   circuits.ProofToBytes(proof.Proof),
+		ProofStr: hexProof,
+		//Proof:    circuits.ProofToBytes(proof.Proof),
 		Witness: circuits.WitnessToBytes(proof.Wit),
 	}, nil
 
