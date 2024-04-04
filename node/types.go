@@ -44,7 +44,7 @@ type ZkProofRequest struct {
 	reqType ZkProofType
 	data    interface{}
 	period  uint64
-	txHash  string
+	TxHash  string
 }
 
 func (r *ZkProofRequest) String() string {
@@ -65,14 +65,14 @@ func (zkResp *ZkProofResponse) String() string {
 }
 
 type DepositProofParam struct {
-	Version string
-	Body    interface{}
-	TxHash  string
+	Version   string
+	Body      interface{}
+	TxHash    string
+	BlockHash string
 }
 
 type RedeemProofParam struct {
 	Version string
-	Body    interface{}
 	TxHash  string
 	TxData  *ethblock.TxInEth2ProofData
 }

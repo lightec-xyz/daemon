@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/lightec-xyz/daemon/common"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
@@ -40,19 +41,25 @@ type NodeInfo struct {
 //------
 
 type DepositRequest struct {
-	Version string
+	Version   string
+	TxHash    string
+	BlockHash string
 }
 
 type DepositResponse struct {
-	Proof common.ZkProof
+	Proof   common.ZkProof
+	Witness []byte
 }
 
 type RedeemRequest struct {
 	Version string
+	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
 }
 
 type RedeemResponse struct {
-	Proof common.ZkProof
+	Proof   common.ZkProof
+	Witness []byte
 }
 
 type VerifyRequest struct {

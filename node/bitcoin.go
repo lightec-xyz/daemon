@@ -238,7 +238,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			if submitted {
 				depositTxProof = NewDepositTxProof(tx.Txid, ProofSuccess)
 			} else {
-				requests = append(requests, NewDepositProofRequest(depositTx.TxHash))
+				requests = append(requests, NewDepositProofParam(depositTx.TxHash, blockHash))
 				depositTxProof = NewDepositTxProof(tx.Txid, ProofDefault)
 			}
 			proofs = append(proofs, depositTxProof)
@@ -456,9 +456,10 @@ func getEthAddrFromScript(script string) (string, error) {
 	return script[4:], nil
 }
 
-func NewDepositProofRequest(txId string) DepositProofParam {
+func NewDepositProofParam(txId, blockHash string) DepositProofParam {
 	return DepositProofParam{
-		TxHash: txId,
+		TxHash:    txId,
+		BlockHash: blockHash,
 	}
 }
 

@@ -135,19 +135,21 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 	var zkbProofResponse ZkProofResponse
 	switch request.reqType {
 	case DepositTxType:
-		depositProofParam, ok := request.data.(*DepositProofParam)
+		depositParam, ok := request.data.(*DepositProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
 		depositRpcRequest := rpc.DepositRequest{
-			Version: depositProofParam.Version,
+			Version:   depositParam.Version,
+			TxHash:    request.TxHash,
+			BlockHash: depositParam.BlockHash,
 		}
 		proofResponse, err := worker.GenDepositProof(depositRpcRequest)
 		if err != nil {
 			logger.Error("gen deposit Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 	case VerifyTxType:
 		verifyProofParam, ok := request.data.(*VerifyProofParam)
 		if !ok {
@@ -163,19 +165,21 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		}
 		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 	case RedeemTxType:
-		redeemProofParam, ok := request.data.(*RedeemProofParam)
+		redeemParam, ok := request.data.(*RedeemProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
 		redeemRpcRequest := rpc.RedeemRequest{
-			Version: redeemProofParam.Version,
+			Version: redeemParam.Version,
+			TxHash:  request.TxHash,
+			TxData:  redeemParam.TxData,
 		}
 		proofResponse, err := worker.GenRedeemProof(redeemRpcRequest)
 		if err != nil {
 			logger.Error("gen redeem Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComGenesisType:
 		genesisReq, ok := request.data.(*GenesisProofParam)
@@ -288,6 +292,16 @@ func NewZkProofResp(reqType ZkProofType, period uint64, proof common.ZkProof, wi
 	return ZkProofResponse{
 		ZkProofType: reqType,
 		Period:      period,
+		Proof:       proof,
+		Witness:     witness,
+		Status:      ProofSuccess,
+	}
+}
+
+func NewZkTxProofResp(reqType ZkProofType, txHash string, proof common.ZkProof, witness []byte) ZkProofResponse {
+	return ZkProofResponse{
+		ZkProofType: reqType,
+		TxHash:      txHash,
 		Proof:       proof,
 		Witness:     witness,
 		Status:      ProofSuccess,

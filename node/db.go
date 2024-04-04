@@ -224,9 +224,9 @@ func ReadAllUnGenProof(store store.IStore) ([]ZkProofRequest, error) {
 	//	}
 	//	var req ProofRequest
 	//	if chainType == Bitcoin {
-	//		req = NewDepositProofRequest(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
+	//		req = NewDepositProofParam(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
 	//	} else if chainType == Ethereum {
-	//		req = NewRedeemProofRequest(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
+	//		req = NewRedeemProofParam(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
 	//	} else {
 	//		return nil, fmt.Errorf("unknown chain type:%v", chainType)
 	//	}
