@@ -20,6 +20,15 @@ type Client struct {
 	token  string // todo
 }
 
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func NewClient(url, user, pwd, network string) (*Client, error) {
+	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: false}, nil
+}
+
 func (c *Client) GetBlockHeader(hash string) (*types.BlockHeader, error) {
 	var header = &types.BlockHeader{}
 	err := c.call(GETBLOCKHEADER, NewParams(hash), &header)
@@ -57,15 +66,6 @@ func (c *Client) GetBlock(hash string) (*types.Block, error) {
 	return res, err
 }
 
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-func NewClient(url, user, pwd, network string) (*Client, error) {
-	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: false}, nil
-}
-
 func (c *Client) newRequest(method string, param Params) (*http.Request, error) {
 	jsonRpc := JsonReq{
 		Jsonrpc: "2.0",
@@ -76,6 +76,9 @@ func (c *Client) newRequest(method string, param Params) (*http.Request, error) 
 	reqData, err := json.Marshal(jsonRpc)
 	if err != nil {
 		return nil, err
+	}
+	if c.debug {
+		fmt.Printf("%v requst: data: %v \n", method, string(reqData))
 	}
 	request, err := http.NewRequest(http.MethodPost, c.url, bytes.NewReader(reqData))
 	if err != nil {
@@ -102,6 +105,9 @@ func (c *Client) call(method string, param Params, result interface{}) error {
 	if err != nil {
 		return err
 	}
+	if c.debug {
+		fmt.Printf("%v rsponse: %v \n", method, string(data))
+	}
 	var resp JsonResp
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
@@ -121,16 +127,20 @@ type JsonResp struct {
 }
 
 type JsonReq struct {
-	Jsonrpc string        `json:"jsonrpc"`
-	Method  string        `json:"method"`
-	Params  []interface{} `json:"params"`
-	ID      int64         `json:"id"`
+	Jsonrpc string      `json:"jsonrpc"`
+	Method  string      `json:"method"`
+	Params  interface{} `json:"params"`
+	ID      int64       `json:"id"`
 }
 
 type Params []interface{}
 
 func NewParams(value ...interface{}) Params {
-	return Params{value}
+	var param Params
+	for _, v := range value {
+		param = append(param, v)
+	}
+	return param
 }
 
 func (p *Params) AddValue(value interface{}) {

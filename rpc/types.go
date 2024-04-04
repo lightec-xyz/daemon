@@ -69,6 +69,7 @@ type DepositRequest struct {
 }
 
 type DepositResponse struct {
+	TxHash  string
 	Proof   common.ZkProof
 	Witness []byte
 }
@@ -106,10 +107,9 @@ type SyncCommGenesisRequest struct {
 }
 
 type SyncCommGenesisResponse struct {
-	Version   string                           `json:"version"`
-	Period    uint64                           `json:"period"`
-	ProofType common.ZkProofType               `json:"proofType"`
-	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Version   string             `json:"version"`
+	Period    uint64             `json:"period"`
+	ProofType common.ZkProofType `json:"proofType"`
 	Proof     common.ZkProof
 	Witness   []byte
 }
@@ -128,12 +128,11 @@ type SyncCommUnitsRequest struct {
 }
 
 type SyncCommUnitsResponse struct {
-	Version   string                           `json:"version"`
-	Period    uint64                           `json:"period"`
-	ProofType common.ZkProofType               `json:"proofType"`
-	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     common.ZkProof                   `json:"proof"`
-	Witness   []byte                           `json:"witness"`
+	Version   string             `json:"version"`
+	Period    uint64             `json:"period"`
+	ProofType common.ZkProofType `json:"proofType"`
+	Proof     common.ZkProof     `json:"proof"`
+	Witness   []byte             `json:"witness"`
 }
 
 type SyncCommRecursiveRequest struct {
@@ -151,10 +150,9 @@ type SyncCommRecursiveRequest struct {
 }
 
 type SyncCommRecursiveResponse struct {
-	Version   string                           `json:"version"`
-	Period    uint64                           `json:"period"`
-	ProofType common.ZkProofType               `json:"proofType"`
-	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Version   string             `json:"version"`
+	Period    uint64             `json:"period"`
+	ProofType common.ZkProofType `json:"proofType"`
 	Proof     common.ZkProof
 	Witness   []byte
 }
@@ -166,20 +164,3 @@ type ProofInfo struct {
 	Proof     common.ZkProof `json:"proof"`
 	Status    int            `json:"status"`
 }
-
-type SyncCommitteeProofGenerateStatus int
-
-const (
-	SyncCommitteeProofGenerateStatus_None       SyncCommitteeProofGenerateStatus = 0
-	SyncCommitteeProofGenerateStatus_Generating SyncCommitteeProofGenerateStatus = 1
-	SyncCommitteeProofGenerateStatus_Done       SyncCommitteeProofGenerateStatus = 2
-)
-
-type SyncCommitteeProofType int
-
-const (
-	SyncCommitteeProofType_None      SyncCommitteeProofType = 0
-	SyncCommitteeProofType_Genesis   SyncCommitteeProofType = 1
-	SyncCommitteeProofType_Unit      SyncCommitteeProofType = 2
-	SyncCommitteeProofType_Recursive SyncCommitteeProofType = 3
-)

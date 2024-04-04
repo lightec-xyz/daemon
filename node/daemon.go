@@ -106,12 +106,12 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, btcProofResp))
 
-	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
+	//ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
+	//agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {

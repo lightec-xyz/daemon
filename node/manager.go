@@ -135,7 +135,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 	var zkbProofResponse ZkProofResponse
 	switch request.reqType {
 	case DepositTxType:
-		depositParam, ok := request.data.(*DepositProofParam)
+		depositParam, ok := request.data.(DepositProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}

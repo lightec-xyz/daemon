@@ -90,6 +90,7 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proo
 func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
+		return debugProof()
 	}
 	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
 }

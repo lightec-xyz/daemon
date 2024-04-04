@@ -87,6 +87,7 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 		return rpc.DepositResponse{}, fmt.Errorf("gen deposit prove error: %v", err)
 	}
 	return rpc.DepositResponse{
+		TxHash:  req.TxHash,
 		Proof:   common.ZkProof(circuits.ProofToBytes(proof.Proof)),
 		Witness: circuits.WitnessToBytes(proof.Wit),
 	}, nil
