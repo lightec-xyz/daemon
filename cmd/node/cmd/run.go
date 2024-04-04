@@ -36,9 +36,9 @@ var runCmd = &cobra.Command{
 	Short:   "run node",
 	Example: "./node run",
 	Run: func(cmd *cobra.Command, args []string) {
-		enableLocalWorker, autoSubmit, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
+		_, autoSubmit, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
 		//fmt.Printf("datadir:%s, network:%s, rpcbind:%s, rpcport:%s, btcUrl:%s, btcUser:%s, btcPwd:%s, ethUrl:%s, ethPrivateKey:%s \n", datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
-		config, err := node.NewNodeConfig(enableLocalWorker, autoSubmit, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd,
+		config, err := node.NewNodeConfig(true, autoSubmit, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd,
 			"http://127.0.0.1:8970", ethUrl, ethPrivate)
 		//config := node.TestnetDaemonConfig()
 		cobra.CheckErr(err)
