@@ -61,6 +61,7 @@ func (c *Client) GetBlock(hash string) (*types.Block, error) {
 	err := c.call(GETBLOCK, NewParams(hash, 3), res)
 	if err != nil {
 		logger.Error("getblock error:%s", err.Error())
+		return nil, err
 	}
 
 	return res, err

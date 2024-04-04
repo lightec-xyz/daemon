@@ -265,20 +265,54 @@ func (f *FileStore) GetLatestPeriod() (uint64, bool, error) {
 }
 
 func (f *FileStore) StoreTxInEth2Proof(hash string, data interface{}) error {
-	err := f.txDirCheckOrCreate(hash)
-	if err != nil {
-		return err
-	}
-	key := fmt.Sprintf("%s/%s", Tx, hash)
-	return f.InsertData(key, parseKey(key), data)
+	key := fmt.Sprintf("%s/txInEth2", hash)
+	return f.InsertData(Tx, key, data)
 }
 
 func (f *FileStore) StoreCheckPointFinalityProve(hash string, data interface{}) error {
-	panic(hash)
+	key := fmt.Sprintf("%s/checkPointFinality", hash)
+	return f.InsertData(Tx, key, data)
 }
 
 func (f *FileStore) TxBlockIsParentOfCheckPointProve(hash string, data interface{}) error {
-	panic(hash)
+	key := fmt.Sprintf("%s/txBlockIsParentOfCheckPoint", hash)
+	return f.InsertData(Tx, key, data)
+}
+
+func (f *FileStore) GetTxInEth2Proof(hash string, value interface{}) (bool, error) {
+	key := fmt.Sprintf("%s/txInEth2", hash)
+	exists, err := f.CheckStorageKey(Tx, key)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(Tx, key, value)
+}
+
+func (f *FileStore) GetCheckPointFinalityProve(hash string, value interface{}) (bool, error) {
+	key := fmt.Sprintf("%s/checkPointFinality", hash)
+	exists, err := f.CheckStorageKey(Tx, key)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(Tx, key, value)
+}
+
+func (f *FileStore) GetTxBlockIsParentOfCheckPointProve(hash string, value interface{}) (bool, error) {
+	key := fmt.Sprintf("%s/txBlockIsParentOfCheckPoint", hash)
+	exists, err := f.CheckStorageKey(Tx, key)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.GetObj(Tx, key, value)
 }
 
 func (f *FileStore) txDirCheckOrCreate(hash string) error {
@@ -320,6 +354,11 @@ func (f *FileStore) InsertData(table, key string, value interface{}) error {
 	storeKey, err := f.generateStoreKey(table, key)
 	if err != nil {
 		logger.Error("generate store key error:%v", err)
+		return err
+	}
+	err = dirCheckOrCreate(storeKey)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
 		return err
 	}
 	exists, err := fileExists(storeKey)
@@ -525,6 +564,11 @@ func traverseFile(path string) (map[string]string, error) {
 }
 
 func WriteFile(path string, data []byte) error {
+	err := dirCheckOrCreate(path)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
+		return err
+	}
 	exists, err := fileExists(path)
 	if err != nil {
 		logger.Error("file exists error:%v", err)
@@ -552,6 +596,22 @@ func WriteFile(path string, data []byte) error {
 	if err != nil {
 		logger.Error("sync file error:%v", err)
 		return err
+	}
+	return nil
+}
+
+func dirCheckOrCreate(path string) error {
+	dir := filepath.Dir(path)
+	_, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 	return nil
 }

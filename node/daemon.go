@@ -9,6 +9,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"os"
 	"os/signal"
 	"syscall"
@@ -92,7 +93,15 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	syncCommitResp := make(chan ZkProofResponse, 1000)
 	fetchDataResp := make(chan FetchDataResponse, 1000)
 
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fetchDataResp)
+	// todo
+	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
+	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, genesisPeriod, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -107,12 +116,19 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, btcProofResp))
 
-	//ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest)
-	//if err != nil {
-	//	logger.Error(err.Error())
-	//	return nil, err
-	//}
-	//agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
+	// todo
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {

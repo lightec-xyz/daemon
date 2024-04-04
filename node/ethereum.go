@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"strconv"
 	"strings"
 	"time"
@@ -23,8 +24,10 @@ import (
 type EthereumAgent struct {
 	btcClient        *bitcoin.Client
 	ethClient        *ethrpc.Client
+	apiClient        *apiclient.Client // todo temp use
 	store            store.IStore
 	memoryStore      store.IStore
+	fileStore        *FileStore
 	blockTime        time.Duration
 	taskManager      *TaskManager
 	whiteList        map[string]bool
@@ -40,9 +43,8 @@ type EthereumAgent struct {
 	submitQueue      *Queue
 }
 
-func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethrpc.Client,
-	proofRequest chan []ZkProofRequest) (IAgent, error) {
-	// todo
+func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileStore, store, memoryStore store.IStore, beaClient *apiclient.Client,
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []ZkProofRequest) (IAgent, error) {
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -54,9 +56,11 @@ func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore
 		privateKeys = append(privateKeys, privKey)
 	}
 	return &EthereumAgent{
+		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
 		ethClient:        ethClient,
 		store:            store,
+		fileStore:        fileStore,
 		memoryStore:      memoryStore,
 		blockTime:        cfg.EthScanBlockTime,
 		proofRequest:     proofRequest,
@@ -299,7 +303,7 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 				redeemTxProof = NewRedeemProof(redeemTx.TxHash, ProofSuccess)
 			} else {
 				// Todo
-				txData, err := ethblock.GenerateTxInEth2Proof(nil, nil, redeemTx.TxHash)
+				txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, redeemTx.TxHash)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
