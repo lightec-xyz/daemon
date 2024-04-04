@@ -93,8 +93,8 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 		return rpc.DepositResponse{}, nil
 	}
 	return rpc.DepositResponse{
-		TxHash:   req.TxHash,
-		Proof:    common.ZkProof(hexProof),
+		TxHash: req.TxHash,
+		//Proof:    common.ZkProof(hexProof),
 		ProofStr: hexProof,
 		Witness:  circuits.WitnessToBytes(proof.Wit),
 	}, nil
