@@ -193,7 +193,6 @@ func (d *Daemon) Run() error {
 	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
 
 	if d.enableTx {
-		// true skip this step
 		//tx Proof
 		for _, agent := range d.agents {
 			name := fmt.Sprintf("%s-submitProof", agent.node.Name())

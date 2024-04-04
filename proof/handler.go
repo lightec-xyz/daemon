@@ -22,6 +22,21 @@ type Handler struct {
 	lock        sync.Mutex
 }
 
+func (h *Handler) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h *Handler) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	logger.Debug("proof info: %v", proofId)
 	time.Sleep(10 * time.Second)

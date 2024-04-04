@@ -18,6 +18,10 @@ type IProof interface {
 	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
 	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
 	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
+
+	TxInEth2Prove(req *TxInEth2ProveReq) (*TxInEth2ProveResp, error)
+	TxBlockIsParentOfCheckPointProve(req *TxBlockIsParentOfCheckPointProveReq) (*TxBlockIsParentOfCheckPointResp, error)
+	CheckPointFinalityProve(req *CheckPointFinalityProveReq) (*CheckPointFinalityProveResp, error)
 	ProofInfo(proofId string) (ProofInfo, error)
 }
 

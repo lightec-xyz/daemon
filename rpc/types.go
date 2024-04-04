@@ -40,6 +40,28 @@ type NodeInfo struct {
 
 //------
 
+type TxInEth2ProveReq struct {
+	Version string
+	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
+}
+
+type TxInEth2ProveResp struct {
+	Proof   []byte
+	Witness []byte
+}
+
+type TxBlockIsParentOfCheckPointProveReq struct {
+}
+
+type TxBlockIsParentOfCheckPointResp struct {
+}
+type CheckPointFinalityProveReq struct {
+}
+
+type CheckPointFinalityProveResp struct {
+}
+
 type DepositRequest struct {
 	Version   string
 	TxHash    string

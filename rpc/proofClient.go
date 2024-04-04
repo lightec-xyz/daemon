@@ -15,6 +15,21 @@ type ProofClient struct {
 	timeout time.Duration
 }
 
+func (p *ProofClient) TxInEth2Prove(req *TxInEth2ProveReq) (*TxInEth2ProveResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) TxBlockIsParentOfCheckPointProve(req *TxBlockIsParentOfCheckPointProveReq) (*TxBlockIsParentOfCheckPointResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) CheckPointFinalityProve(req *CheckPointFinalityProveReq) (*CheckPointFinalityProveResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (p *ProofClient) GenDepositProof(req DepositRequest) (DepositResponse, error) {
 	response := DepositResponse{}
 	err := p.call(&response, "zkbtc_genDepositProof", req)

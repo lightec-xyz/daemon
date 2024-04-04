@@ -42,6 +42,30 @@ func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) 
 	}, nil
 }
 
+func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
+	logger.Info("")
+	proof, err := w.circuit.TxInEth2Prove(req.TxData)
+	if err != nil {
+		logger.Error("TxInEth2Prove error: %v", err)
+		return nil, err
+	}
+	return &rpc.TxInEth2ProveResp{
+		Proof:   circuits.ProofToBytes(proof.Proof),
+		Witness: circuits.WitnessToBytes(proof.Wit),
+	}, nil
+
+}
+
+func (w *LocalWorker) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *LocalWorker) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (w *LocalWorker) Id() string {
 	return w.wid
 }
@@ -57,10 +81,14 @@ func (w *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 }
 
 func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	logger.Debug("gen deposit Proof")
-	time.Sleep(6 * time.Second)
+	logger.Debug("gen deposit proof")
+	proof, err := w.circuit.DepositProve(req.TxHash, req.BlockHash)
+	if err != nil {
+		return rpc.DepositResponse{}, fmt.Errorf("gen deposit prove error: %v", err)
+	}
 	return rpc.DepositResponse{
-		Proof: common.ZkProof([]byte("deposit Proof")),
+		Proof:   common.ZkProof(circuits.ProofToBytes(proof.Proof)),
+		Witness: circuits.WitnessToBytes(proof.Wit),
 	}, nil
 }
 
@@ -171,6 +199,22 @@ type Worker struct {
 	currentNums int
 	lock        sync.Mutex
 	wid         string
+}
+
+func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
+
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (w *Worker) Id() string {

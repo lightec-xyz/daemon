@@ -386,11 +386,11 @@ func LocalDevDaemonConfig() NodeConfig {
 		"local",
 		"127.0.0.1",
 		"9870",
-		"http://127.0.0.1:8970",
+		"http://127.0.0.1:8980",
 		"lightec",
 		"abcd1234",
-		"http://127.0.0.1:8970",
-		"http://127.0.0.1:8970",
+		"http://127.0.0.1:8980",
+		"http://127.0.0.1:8980",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
 	if err != nil {
