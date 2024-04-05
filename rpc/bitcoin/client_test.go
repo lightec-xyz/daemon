@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/blockcypher/gobcy/v2"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -259,12 +258,6 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 
 	txHex := hex.EncodeToString(btxTx)
 	fmt.Printf("btx Tx: %v\n", txHex)
-
-	bc := gobcy.API{
-		Token: "46ef69aa6c2349bc9a38fb5b6ae6080c",
-		Coin:  "btc",
-		Chain: "test3",
-	}
 
 	trans, err := bc.PushTX(txHex)
 	require.NoError(t, err)

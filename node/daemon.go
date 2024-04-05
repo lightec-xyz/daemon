@@ -110,13 +110,13 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 
 	var agents []*WrapperAgent
-	//keyStore := NewKeyStore(cfg.EthPrivateKey)
-	//btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
-	//if err != nil {
-	//	logger.Error(err.Error())
-	//	return nil, err
-	//}
-	//agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
+	keyStore := NewKeyStore(cfg.EthPrivateKey)
+	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
 
 	// todo
 	params.UseHoleskyNetworkConfig()
