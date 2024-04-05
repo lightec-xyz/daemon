@@ -446,7 +446,7 @@ func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
 	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
 	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
 
-	proofData, err := hexutil.Decode(proof)
+	proofData, err := hex.DecodeString(proof)
 	if err != nil {
 		logger.Error("decode proof error:%v", err)
 		return nil, err
