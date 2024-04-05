@@ -27,8 +27,8 @@ import (
 type EthereumAgent struct {
 	btcClient        *bitcoin.Client
 	ethClient        *ethrpc.Client
-	apiClient        *apiclient.Client // todo temp use
-	oasisClient      *oasis.Client     // todo temp use
+	apiClient        *apiclient.Client // todo temporary use
+	oasisClient      *oasis.Client     // todo temporary use
 	store            store.IStore
 	memoryStore      store.IStore
 	fileStore        *FileStore

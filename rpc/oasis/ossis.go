@@ -40,7 +40,6 @@ func (c *Client) PublicKey() ([][]byte, error) {
 }
 
 func (c *Client) SignBtcTx(rawTx, receiptTx, proof []byte) ([][][]byte, error) {
-	// todo
 	signature1, err := c.zkBridgeVerifyCall1.SignBtcTx(nil, rawTx, receiptTx, proof)
 	if err != nil {
 		return nil, err
