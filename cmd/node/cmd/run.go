@@ -62,7 +62,6 @@ func init() {
 	runCmd.Flags().StringVar(&btcUser, btcUserFlag, "", "bitcoin json rpc username")
 	runCmd.Flags().StringVar(&btcPwd, btcPwdFlag, "", "bitcoin json rpc password")
 	runCmd.Flags().StringVar(&ethUrl, ethUrlFlag, "", "ethereum json rpc endpoint")
-	runCmd.Flags().StringVar(&ethUrl, ethUrlFlag, "", "ethereum json rpc endpoint")
 	runCmd.Flags().StringVar(&beaconUrl, beaconUrlFlag, "", "eth2 json rpc endpoint")
 	//runCmd.Flags().StringVar(&ethPrivateKey, ethPrivateKeyFlag, "", "ethereum private key")
 	//runCmd.Flags().BoolVar(&autoSubmit, autoSubmitFlag, false, "autoSubmit eth tx")
