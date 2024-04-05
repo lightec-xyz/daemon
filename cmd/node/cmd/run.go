@@ -39,6 +39,8 @@ var runCmd = &cobra.Command{
 	Example: "./node run",
 	Run: func(cmd *cobra.Command, args []string) {
 		_, autoSubmit, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
+		ethPrivate = "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
+		autoSubmit = true
 		//fmt.Printf("datadir:%s, network:%s, rpcbind:%s, rpcport:%s, btcUrl:%s, btcUser:%s, btcPwd:%s, ethUrl:%s, ethPrivateKey:%s \n", datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
 		config, err := node.NewNodeConfig(true, autoSubmit, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd,
 			beaconUrl, ethUrl, ethPrivate)

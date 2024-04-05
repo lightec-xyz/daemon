@@ -259,10 +259,7 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 	txHex := hex.EncodeToString(btxTx)
 	fmt.Printf("btx Tx: %v\n", txHex)
 
-	trans, err := bc.PushTX(txHex)
 	require.NoError(t, err)
-	fmt.Printf("%+v\n", trans)
-
 	// txHash, err := client.Sendrawtransaction(txHex)
 	// require.NoError(t, err)
 	// fmt.Printf("btc hash: %v\n", txHash)
