@@ -78,8 +78,8 @@ const (
 	LocalInitBeaconHeight   = 153 //slot of 596751 in holesky
 	LocalInitEthereumHeight = 1284350
 
-	LocalEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"
-	LocalEthZkBtcAddress    = "0xd2a00777a7e5b6afaa5c053a6425619653541c82"
+	LocalEthZkBridgeAddress = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
+	LocalEthZkBtcAddress    = "0xbf3041e37be70a58920a6fd776662b50323021c9"
 
 	// utxo manager contract
 	LocalLogDepositAddr = "0xab5146a46e90c497b3d23afab7ddaedf3ff61eaf"

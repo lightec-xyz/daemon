@@ -417,7 +417,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
 	ethTxHash := common.HexToHash(txHash)
-	zkBridgeAddr, zkBtcAddr := "0x19d376e6a10aad92e787288464d4c738de97d135", "0xbf3041e37be70a58920a6fd776662b50323021c9"
+	zkBridgeAddr, zkBtcAddr := "0x8e4f5a8f3e24a279d8ed39e868f698130777fded", "0xbf3041e37be70a58920a6fd776662b50323021c9"
 	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
 	if err != nil {
 		logger.Error("new eth client error:%v", err)
