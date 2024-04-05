@@ -177,7 +177,7 @@ func (e *EthereumAgent) ScanBlock() error {
 }
 
 func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
-	logger.Info("receive proof response: %v", resp.TxHash)
+	logger.Info("receive proof response: %v", resp)
 	err := e.updateRedeemProof(resp.TxHash, resp.ProofStr, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error:%v", err)

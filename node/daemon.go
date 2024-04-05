@@ -10,6 +10,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
+	"github.com/prysmaticlabs/prysm/v5/config/params"
 	"os"
 	"os/signal"
 	"syscall"
@@ -118,6 +119,9 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	//agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
 
 	// todo
+	params.UseHoleskyNetworkConfig()
+	params.OverrideBeaconConfig(params.HoleskyConfig())
+
 	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error(err.Error())

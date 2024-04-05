@@ -166,7 +166,7 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
 
 	case TxInEth2:
-		redeemParam, ok := request.data.(TxInEth2Param)
+		redeemParam, ok := request.data.(RedeemProofParam)
 		if !ok {
 			return fmt.Errorf("not txInEth2 Proof param")
 		}
