@@ -389,7 +389,7 @@ func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status Proo
 func (b *BitcoinAgent) CheckState() error {
 
 	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (b *BitcoinAgent) Close() error {

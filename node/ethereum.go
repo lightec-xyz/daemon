@@ -490,7 +490,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 //}
 
 func (e *EthereumAgent) CheckState() error {
-	panic(e)
+	return nil
 }
 
 func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status ProofStatus) error {
