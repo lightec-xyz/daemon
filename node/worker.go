@@ -115,10 +115,21 @@ func (w *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse,
 }
 
 func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	logger.Debug("verify Proof")
-	time.Sleep(10 * time.Second)
+	logger.Debug("update change proof %v", req.TxHash)
+	proof, err := w.circuit.UpdateChangeProve(req.TxHash, req.BlockHash)
+	if err != nil {
+		logger.Error(err.Error())
+		return rpc.VerifyResponse{}, fmt.Errorf("gen verify proof error: %v", err)
+	}
+	hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
+	if err != nil {
+		logger.Error(err.Error())
+		return rpc.VerifyResponse{}, nil
+	}
 	return rpc.VerifyResponse{
-		Proof: common.ZkProof([]byte("verify Proof")),
+		TxHash: req.TxHash,
+		Proof:  hexProof,
+		Wit:    circuits.WitnessToBytes(proof.Wit),
 	}, nil
 }
 

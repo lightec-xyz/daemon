@@ -149,12 +149,18 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("write btc height error: %v %v", index, err)
 			return err
 		}
+		// todo
+		updateZkProofRequests, err := toUpdateZkProofRequest(redeemTxes)
+		if err != nil {
+			logger.Error("to update zk Proof request error: %v %v", index, err)
+			return err
+		}
 		zkProofRequest, err := toDepositZkProofRequest(proofRequests)
 		if err != nil {
 			logger.Error("to deposit zk Proof request error: %v %v", index, err)
 			return err
 		}
-		b.proofRequest <- zkProofRequest
+		b.proofRequest <- append(updateZkProofRequests, zkProofRequest...)
 		if len(zkProofRequest) > 0 {
 			logger.Info("success send btc deposit proof request: %v", len(zkProofRequest))
 		}
@@ -222,7 +228,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 	var requests []DepositProofParam
 	var proofs []Proof
 	for _, tx := range blockWithTx.Tx {
-		redeemTx, isRedeem := b.isRedeemTx(tx)
+		redeemTx, isRedeem := b.isRedeemTx(tx, blockHash)
 		if isRedeem {
 			redeemTxes = append(redeemTxes, redeemTx)
 			continue
@@ -260,28 +266,31 @@ func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
 		logger.Error("update Proof error: %v %v", proofId, err)
 		return err
 	}
-	// todo
-	if b.autoSubmit {
-		txHash, err := b.taskManager.MintZkBtcRequest(proofId, resp.Proof)
+	switch resp.ZkProofType {
+	case DepositTxType:
+	case VerifyTxType:
+		logger.Info("start update utxo change: %v", proofId)
+		err := b.updateContractUtxoChange([]string{resp.TxHash}, resp.ProofStr)
 		if err != nil {
-			logger.Error("mint btc tx error:%v", err)
+			logger.Error("update utxo error: %v %v", proofId, err)
 			return err
 		}
-		logger.Info("success mint zkbtc tx: %v", txHash)
+	default:
 	}
+	//// todo
+	//if b.autoSubmit {
+	//	txHash, err := b.taskManager.MintZkBtcRequest(proofId, resp.Proof)
+	//	if err != nil {
+	//		logger.Error("mint btc tx error:%v", err)
+	//		return err
+	//	}
+	//	logger.Info("success mint zkbtc tx: %v", txHash)
+	//}
 	return nil
 }
 
-func (b *BitcoinAgent) updateContractUtxoChange(utxoList []Transaction) error {
+func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof string) error {
 	// todo
-	var txIds []string
-	for _, tx := range utxoList {
-		txId := tx.TxHash
-		if !strings.HasPrefix(txId, "0x") {
-			txId = fmt.Sprintf("0x%s", txId)
-		}
-		txIds = append(txIds, txId)
-	}
 	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
 	if err != nil {
 		logger.Error("get  nonce error:%v", err)
@@ -297,8 +306,12 @@ func (b *BitcoinAgent) updateContractUtxoChange(utxoList []Transaction) error {
 		logger.Error("get gas price error:%v", err)
 		return err
 	}
+	proofBytes, err := hex.DecodeString(proof)
+	if err != nil {
+		logger.Error("decode proof error:%v", err)
+		return err
+	}
 	gasLimit := uint64(500000)
-	proofBytes := []byte("test ok")
 	txHash, err := b.ethClient.UpdateUtxoChange(b.keyStore.GetPrivateKey(), txIds, nonce, gasLimit, chainId, gasPrice, proofBytes)
 	if err != nil {
 		logger.Error("update utxo change error:%v", err)
@@ -343,7 +356,7 @@ func (b *BitcoinAgent) MintZKBtcTx(utxo []Utxo, proof common.ZkProof, receiverAd
 	return txHash, nil
 }
 
-func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
+func (b *BitcoinAgent) isRedeemTx(tx types.Tx, blockHash string) (Transaction, bool) {
 	// todo more check
 	var inputs []Utxo
 	isRedeemTx := false
@@ -371,7 +384,7 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
 	if isRedeemTx {
 		logger.Info("bitcoin agent find redeem tx: %v,inputs:%v ,outputs:%v", tx.Txid, formatUtxo(inputs), formatOut(outputs))
 	}
-	redeemBtcTx := NewRedeemBtcTx(tx.Txid, inputs, outputs)
+	redeemBtcTx := NewRedeemBtcTx(tx.Txid, blockHash, inputs, outputs)
 	return redeemBtcTx, isRedeemTx
 }
 
@@ -512,10 +525,11 @@ func NewDepositBtcTx(txId, ethAddr string, utxo []Utxo, amount int64) Transactio
 	}
 }
 
-func NewRedeemBtcTx(txId string, inputs []Utxo, outputs []TxOut) Transaction {
+func NewRedeemBtcTx(txId, blockHash string, inputs []Utxo, outputs []TxOut) Transaction {
 	return Transaction{
 		TxHash:    txId,
 		TxType:    RedeemTx,
 		ChainType: Bitcoin,
+		BlockHash: blockHash,
 	}
 }

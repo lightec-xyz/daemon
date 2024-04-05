@@ -151,19 +151,21 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		}
 		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
 	case VerifyTxType:
-		verifyProofParam, ok := request.data.(*VerifyProofParam)
+		verifyProofParam, ok := request.data.(VerifyProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
 		verifyRpcRequest := rpc.VerifyRequest{
-			Version: verifyProofParam.Version,
+			Version:   verifyProofParam.Version,
+			TxHash:    verifyProofParam.TxHash,
+			BlockHash: verifyProofParam.BlockHash,
 		}
 		proofResponse, err := worker.GenVerifyProof(verifyRpcRequest)
 		if err != nil {
 			logger.Error("gen verify Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, nil)
+		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.Proof, nil, proofResponse.Wit)
 
 	case TxInEth2:
 		redeemParam, ok := request.data.(RedeemProofParam)

@@ -88,11 +88,15 @@ type RedeemResponse struct {
 }
 
 type VerifyRequest struct {
-	Version string
+	Version   string
+	TxHash    string
+	BlockHash string
 }
 
 type VerifyResponse struct {
-	Proof common.ZkProof
+	TxHash string
+	Proof  string
+	Wit    []byte
 }
 
 type SyncCommGenesisRequest struct {

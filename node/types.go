@@ -86,8 +86,9 @@ type RedeemProofParam struct {
 }
 
 type VerifyProofParam struct {
-	Version string
-	Body    interface{}
+	Version   string
+	TxHash    string
+	BlockHash string
 }
 
 type GenesisProofParam struct {
@@ -201,6 +202,7 @@ func formatOut(outputs []TxOut) string {
 type Transaction struct {
 	TxHash    string
 	Height    int64
+	BlockHash string
 	TxType    TxType
 	ChainType ChainType
 

@@ -100,6 +100,21 @@ func toDepositZkProofRequest(list []DepositProofParam) ([]ZkProofRequest, error)
 	return result, nil
 }
 
+func toUpdateZkProofRequest(redeemTxes []Transaction) ([]ZkProofRequest, error) {
+	var result []ZkProofRequest
+	for _, item := range redeemTxes {
+		result = append(result, ZkProofRequest{
+			reqType: VerifyTxType,
+			data: VerifyProofParam{
+				TxHash:    item.TxHash,
+				BlockHash: item.BlockHash,
+			},
+			TxHash: item.TxHash,
+		})
+	}
+	return result, nil
+}
+
 func toRedeemZkProofRequest(list []RedeemProofParam) ([]ZkProofRequest, error) {
 	var result []ZkProofRequest
 	for _, item := range list {
