@@ -12,6 +12,7 @@ var btcUrl string
 var btcUser string
 var btcPwd string
 var ethUrl string
+var beaconUrl string
 var ethPrivateKey string
 
 //var enableLocalWorker bool
@@ -25,6 +26,7 @@ const (
 	btcUserFlag           = "btcUser"
 	btcPwdFlag            = "btcPwd"
 	ethUrlFlag            = "ethUrl"
+	beaconUrlFlag         = "beaconUrl"
 	networkFlag           = "network"
 	ethPrivateKeyFlag     = "ethPrivateKey"
 	enableLocalWorkerFlag = "enableLocalWorker"
@@ -39,7 +41,7 @@ var runCmd = &cobra.Command{
 		_, autoSubmit, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate := getRunConfig()
 		//fmt.Printf("datadir:%s, network:%s, rpcbind:%s, rpcport:%s, btcUrl:%s, btcUser:%s, btcPwd:%s, ethUrl:%s, ethPrivateKey:%s \n", datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, ethUrl, ethPrivate)
 		config, err := node.NewNodeConfig(true, autoSubmit, datadir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd,
-			"http://127.0.0.1:8970", ethUrl, ethPrivate)
+			beaconUrl, ethUrl, ethPrivate)
 		//config := node.TestnetDaemonConfig()
 		cobra.CheckErr(err)
 		daemon, err := node.NewDaemon(config)
@@ -60,6 +62,8 @@ func init() {
 	runCmd.Flags().StringVar(&btcUser, btcUserFlag, "", "bitcoin json rpc username")
 	runCmd.Flags().StringVar(&btcPwd, btcPwdFlag, "", "bitcoin json rpc password")
 	runCmd.Flags().StringVar(&ethUrl, ethUrlFlag, "", "ethereum json rpc endpoint")
+	runCmd.Flags().StringVar(&ethUrl, ethUrlFlag, "", "ethereum json rpc endpoint")
+	runCmd.Flags().StringVar(&beaconUrl, beaconUrlFlag, "", "eth2 json rpc endpoint")
 	//runCmd.Flags().StringVar(&ethPrivateKey, ethPrivateKeyFlag, "", "ethereum private key")
 	//runCmd.Flags().BoolVar(&autoSubmit, autoSubmitFlag, false, "autoSubmit eth tx")
 	rootCmd.AddCommand(runCmd)
