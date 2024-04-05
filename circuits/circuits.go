@@ -230,9 +230,12 @@ func (c *Circuit) RedeemProve() (*common.Proof, error) {
 	panic(c)
 	return nil, nil
 }
-func (c *Circuit) VerifyProve() (*common.Proof, error) {
-
-	return nil, nil
+func (c *Circuit) UpdateChangeProve(txId, blockHash string) (*common.Proof, error) {
+	if c.debug {
+		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
+		return debugProof()
+	}
+	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
 }
 
 func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {

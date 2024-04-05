@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/blockcypher/gobcy/v2"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -207,10 +208,10 @@ func Test_GetMultiSigScriptRelatedsFromOasis(t *testing.T) {
 }
 
 func TestMultiTransactionSignFromOasis(t *testing.T) {
-	// https://holesky.etherscan.io/tx/0xe88fa618634a210f2b2a5c32393d75c44474057a77fc2062288c078b005a4a12
-	ethTxHash := common.HexToHash("0x48262094098497cbbe7246487601c141d0427aae294505b0a949419f649c699b")
+	// https://holesky.etherscan.io/tx/0x1d540c2298d2e0b5de5b28cc0ad3eb3dbab56c0d554b8e8d3a3c7e140b098553
+	ethTxHash := common.HexToHash("0x1d540c2298d2e0b5de5b28cc0ad3eb3dbab56c0d554b8e8d3a3c7e140b098553")
 
-	zkBridgeAddr, zkBtcAddr := "0x4f413972ab2d4e53714a479db1519ce0e89ea30c", "0xbf3041e37be70a58920a6fd776662b50323021c9"
+	zkBridgeAddr, zkBtcAddr := "0x19d376e6a10aad92e787288464d4c738de97d135", "0xbf3041e37be70a58920a6fd776662b50323021c9"
 	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
 	require.NoError(t, err)
 
@@ -228,7 +229,7 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 	fmt.Printf("rawTx: %v\n", hexutil.Encode(rawTx))
 	fmt.Printf("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
 
-	proofData, err := hexutil.Decode("0x233fd9fd21e614b801719516313a177c21222c28e1ab9b9bd2ed6db4d6f3b92823be74df686b218c75f8f880cdc5f73555d155d027a4ac74a259c23437652e571c0c35956868e4369bc057e61247cefaac3e2eb94a17f9d450f03d80dd32cd780e4fe637196404a0fd627321428a8ce2e3cb1180b15c8c1d792b99ac9140059a0a216a23f068afff3c128210f761d1e7cb607708ce78089085c57ad7f84a50411309fcd392aa0c8c9f6c7397b092b74308d3fb4548d410a7466427cc21df9ccf22c0c09a663e7467cb39541c80c710df0de9b0ff5dd6de21736d7dd0397b2e572e973a19be35130a1a609e1dfc31f1c6ea28ba726dd030dd64d192d68f737c4813e96f5e44c5e765cb9c1f3cc67a3fa5579f678b5cfee24441049336c54cf915155892072acceb10137b31fb5c814abe95501c026a124d28f5271996a51013620511de4dd95d4bf40198421e9f763057ea12759de557e767447b85ac925d4f9012a220765cb87f07f91bce290761d5ef844a097d4f02a4147b3228e6ecf6ab42204988fb87256e71c9f8568ee35c47f3324e0df0df38c306c0f689278fd9cb1824313cbfe50fa627ce6bce8cc93cc7a55fbb28bc54f3bdf7a7193b9ec921611c107d019f0eb237195a9809db1c40ddd33898fdc0969f63650fec75eca891a5111ceb4dcfd61c4f5728d21e9fea1b5a06e1fe9e572f4920433f1f53dbaed96de0094f921d4db89fd3dd439bfb9e40c505b12772b0969467098e56ac69aab018f8162d0617d2f0c141da8e50579d13fc66d24476f5901c513286704d2a1abe010c27248ba61827bc5632d406db69c7c297a5fadd889aaa7056b49c3743e70622b21bb0e9af0696ccc99697635022b3c2a902b78ff6cfea5c50424a6d89443fabfe21ce37b2e681be73fe20e675a2cd41d03295d3486d5c2143a2f6ea8032793cb82c97a09950a2013e46251bdfe0eeb62ac4ffca710234bd0f02dbf4ba44d211f11c72c19b8e5727d0b1e95fd69ef1fb6441ba6b6eb9771d71e21f6b7ae377c86503674893d4034ebd83e611dceead450c9b646d01bc9f59873b17da46834db4d11f23bb03da1d90ba41bc50367ba0ae47a1d8e42a61ec647577c684e5ac53d977287cc37d5a8d8489188b4ba0659d0b712ba682256338a8b1876460fe5ee743f405db2a4b48334b29a11429b4e56b2c559fc3dd9ae361ff37d3ec52a432ff503617add429e949fe248fd2b1b4b6af3e12aee4a58088d35eb6b77c4eb9ffbb944011c041500303ee2d6846c29b0e08bd5ce8c5c76d8181c4ebf638dbf9d6e417cd")
+	proofData, err := hexutil.Decode("0x123456")
 	require.NoError(t, err)
 
 	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
@@ -259,9 +260,19 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 	txHex := hex.EncodeToString(btxTx)
 	fmt.Printf("btx Tx: %v\n", txHex)
 
-	txHash, err := client.Sendrawtransaction(txHex)
+	bc := gobcy.API{
+		Token: "46ef69aa6c2349bc9a38fb5b6ae6080c",
+		Coin:  "btc",
+		Chain: "test3",
+	}
+
+	trans, err := bc.PushTX(txHex)
 	require.NoError(t, err)
-	fmt.Printf("btc hash: %v\n", txHash)
+	fmt.Printf("%+v\n", trans)
+
+	// txHash, err := client.Sendrawtransaction(txHex)
+	// require.NoError(t, err)
+	// fmt.Printf("btc hash: %v\n", txHash)
 }
 
 func TestMultiTransactionBuilder(t *testing.T) {
@@ -359,7 +370,6 @@ func TestMultiTransactionBuilder(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("txHash: %v\n", txHash)
-
 }
 
 func TestMockDemo(t *testing.T) {
