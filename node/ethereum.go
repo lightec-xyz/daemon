@@ -489,6 +489,10 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 //return TxHash, nil
 //}
 
+func (e *EthereumAgent) CheckState() error {
+	panic(e)
+}
+
 func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status ProofStatus) error {
 	logger.Debug("update Redeem Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(e.store, txId, proof, RedeemTxType, status)

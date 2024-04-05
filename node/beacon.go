@@ -271,7 +271,7 @@ func (b *BeaconAgent) CheckProofExists(period uint64, reqType ZkProofType) (bool
 	}
 }
 
-func (b *BeaconAgent) CheckData() error {
+func (b *BeaconAgent) CheckState() error {
 	genesisProofExists, err := b.fileStore.CheckGenesisProof()
 	if err != nil {
 		logger.Error(err.Error())

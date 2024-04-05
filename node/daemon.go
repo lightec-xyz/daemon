@@ -9,7 +9,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,6 +26,7 @@ type IAgent interface {
 	ScanBlock() error
 	ProofResponse(resp ZkProofResponse) error
 	Init() error
+	CheckState() error
 	Close() error
 	Name() string
 }
@@ -35,7 +35,7 @@ type IBeaconAgent interface {
 	ScanSyncPeriod() error
 	ProofResponse(resp ZkProofResponse) error
 	FetchDataResponse(resp FetchDataResponse) error
-	CheckData() error
+	CheckState() error
 	Init() error
 	Close() error
 	Name() string
@@ -114,21 +114,21 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, btcProofResp))
+	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
 
 	// todo
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
+	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
 
-	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
+	//ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
+	//agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, 1*time.Minute, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
@@ -203,7 +203,7 @@ func (d *Daemon) Run() error {
 		go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
-		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
+		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
 
 	}
 	// generate Proof manager
@@ -218,9 +218,12 @@ func (d *Daemon) Run() error {
 		}
 		//scan block with tx
 		for _, agent := range d.agents {
-			name := fmt.Sprintf("%s-scanBlock", agent.node.Name())
-			go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+			scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
+			checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
+			go doTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+			go doTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
 		}
+
 	}
 
 	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
@@ -312,16 +315,18 @@ func NewWrapperManger(manager *manager, request chan []ZkProofRequest) *WrapperM
 }
 
 type WrapperAgent struct {
-	node      IAgent
-	scanTime  time.Duration
-	proofResp chan ZkProofResponse
+	node           IAgent
+	scanTime       time.Duration
+	proofResp      chan ZkProofResponse
+	checkStateTime time.Duration
 }
 
-func NewWrapperAgent(agent IAgent, scanTime time.Duration, proofResp chan ZkProofResponse) *WrapperAgent {
+func NewWrapperAgent(agent IAgent, scanTime, checkState time.Duration, proofResp chan ZkProofResponse) *WrapperAgent {
 	return &WrapperAgent{
-		node:      agent,
-		scanTime:  scanTime,
-		proofResp: proofResp,
+		node:           agent,
+		scanTime:       scanTime,
+		proofResp:      proofResp,
+		checkStateTime: checkState,
 	}
 }
 

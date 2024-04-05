@@ -33,7 +33,14 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 	syncCommitResp := make(chan ZkProofResponse)
 	fetchDataResp := make(chan FetchDataResponse)
 
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fetchDataResp)
+	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
+	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, genesisPeriod, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
