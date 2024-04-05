@@ -155,15 +155,15 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("to update zk Proof request error: %v %v", index, err)
 			return err
 		}
-		updateZkProofRequests = append(updateZkProofRequests, ZkProofRequest{
-			ReqType: VerifyTxType,
-			TxHash:  "dasdasfsf",
-			Data: VerifyProofParam{
-				Version:   "1.0",
-				TxHash:    "dasdasfsf",
-				BlockHash: "dasdasfsf",
-			},
-		})
+		//updateZkProofRequests = append(updateZkProofRequests, ZkProofRequest{
+		//	ReqType: VerifyTxType,
+		//	TxHash:  "dasdasfsf",
+		//	Data: VerifyProofParam{
+		//		Version:   "1.0",
+		//		TxHash:    "dasdasfsf",
+		//		BlockHash: "dasdasfsf",
+		//	},
+		//})
 		zkProofRequest, err := toDepositZkProofRequest(proofRequests)
 		if err != nil {
 			logger.Error("to deposit zk Proof request error: %v %v", index, err)
@@ -321,6 +321,7 @@ func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof string) er
 		return err
 	}
 	gasLimit := uint64(500000)
+	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(2))
 	txHash, err := b.ethClient.UpdateUtxoChange(b.keyStore.GetPrivateKey(), txIds, nonce, gasLimit, chainId, gasPrice, proofBytes)
 	if err != nil {
 		logger.Error("update utxo change error:%v", err)
