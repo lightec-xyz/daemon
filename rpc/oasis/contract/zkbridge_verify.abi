@@ -1,4 +1,4 @@
-  [
+[
     {
       "inputs": [
         {
@@ -131,7 +131,7 @@
       "name": "verifierAddress",
       "outputs": [
         {
-          "internalType": "address",
+          "internalType": "contract IEthTxVerifier",
           "name": "",
           "type": "address"
         }
@@ -168,7 +168,7 @@
     {
       "inputs": [
         {
-          "internalType": "address",
+          "internalType": "contract IEthTxVerifier",
           "name": "addr",
           "type": "address"
         }
@@ -176,25 +176,6 @@
       "name": "updateVerifierAddress",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "_data",
-          "type": "bytes32"
-        }
-      ],
-      "name": "bytes32ToBytes",
-      "outputs": [
-        {
-          "internalType": "bytes",
-          "name": "",
-          "type": "bytes"
-        }
-      ],
-      "stateMutability": "pure",
       "type": "function"
     },
     {

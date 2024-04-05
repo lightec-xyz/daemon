@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"strconv"
 	"strings"
@@ -25,6 +28,7 @@ type EthereumAgent struct {
 	btcClient        *bitcoin.Client
 	ethClient        *ethrpc.Client
 	apiClient        *apiclient.Client // todo temp use
+	oasisClient      *oasis.Client     // todo temp use
 	store            store.IStore
 	memoryStore      store.IStore
 	fileStore        *FileStore
@@ -183,14 +187,19 @@ func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
 		logger.Error("update Proof error:%v", err)
 		return err
 	}
-	// todo
-	if e.autoSubmit {
-		_, err := e.taskManager.RedeemBtcRequest(resp.TxHash, nil, nil, nil)
-		if err != nil {
-			logger.Error("submit redeem request error:%v", err)
-			return err
-		}
+	_, err = e.RedeemBtcTx(resp.TxHash, resp.ProofStr)
+	if err != nil {
+		logger.Error("redeem btc tx error:%v", err)
+		return err
 	}
+	// todo
+	//if e.autoSubmit {
+	//	_, err := e.taskManager.RedeemBtcRequest(resp.TxHash, nil, nil, nil)
+	//	if err != nil {
+	//		logger.Error("submit redeem request error:%v", err)
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
@@ -404,88 +413,95 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 }
 
-//func (e *EthereumAgent) RedeemBtcTx(resp RedeemProof) (string, error) {
-////todo
-//var txIns []btctx.TxIn
-//logger.Debug("************************************")
-//for _, input := range resp.Inputs {
-//	utxo, err := e.btcClient.GetUtxoByTxId(input.TxHash, int(input.Index))
-//	if err != nil {
-//		logger.Error("get utxo error:%v", err)
-//		return "", err
-//	}
-//	logger.Debug(fmt.Sprintf("utxo:%v", utxo.Amount))
-//	amount := BtcToSat(utxo.Amount)
-//	in := btctx.TxIn{
-//		Hash:     input.TxHash,
-//		VOut:     input.Index,
-//		PkScript: utxo.ScriptPubKey,
-//		Amount:   amount,
-//	}
-//	txIns = append(txIns, in)
-//	logger.Debug("txIn: txid:%v, index:%v, amount:%v ,scriptPubKey:%v", input.TxHash, input.Index, amount, utxo.ScriptPubKey)
-//}
-//
-//builder := btctx.NewMultiTransactionBuilder()
-//err := builder.NetParams(e.btcNetwork)
-//if err != nil {
-//	logger.Error("multi btc tx net params error:%v", err)
-//	return "", err
-//}
-//err = builder.AddMultiPublicKey(e.multiAddressInfo.PublicKeyList, e.multiAddressInfo.NRequired)
-//if err != nil {
-//	logger.Error("multi btc tx add public key error:%v", err)
-//	return "", err
-//}
-//
-//err = builder.AddTxIn(txIns)
-//if err != nil {
-//	logger.Error("multi btc tx add txIn error:%v", err)
-//	return "", err
-//}
-//txOuts := []btctx.TxOut{}
-//for _, output := range resp.Outputs {
-//	txOuts = append(txOuts, btctx.TxOut{
-//		PayScript: output.PkScript,
-//		Amount:    output.Value,
-//	})
-//	logger.Debug("txOut: pkScript:%x, amount:%v", output.PkScript, output.Value)
-//}
-//err = builder.AddTxOutScript(txOuts)
-//if err != nil {
-//	logger.Error("multi btc tx add txOut error:%v", err)
-//	return "", err
-//}
-//err = builder.Sign(func(hash []byte) ([][]byte, error) {
-//	// todo
-//	var sigs [][]byte
-//	for _, privkey := range e.privateKeys {
-//		sig := ecdsa.Sign(privkey, hash)
-//		sigWithType := append(sig.Serialize(), byte(txscript.SigHashAll))
-//		sigs = append(sigs, sigWithType)
-//	}
-//	return sigs, nil
-//
-//})
-//logger.Debug("************************************")
-//if err != nil {
-//	logger.Error("multi tx sign error:%v", err)
-//	return "", err
-//}
-//txBytes, err := builder.Build()
-//if err != nil {
-//	logger.Error("build btc tx error:%v", err)
-//	return "", err
-//}
-//logger.Info("redeem btc tx hash: %v", builder.TxHash())
-//TxHash, err := e.btcClient.Sendrawtransaction(hex.EncodeToString(txBytes))
-//if err != nil {
-//	logger.Error("send btc tx error:%v", err)
-//	return "", err
-//}
-//logger.Info("send redeem btc tx: %v", TxHash)
-//return TxHash, nil
-//}
+// todo refactor
+
+func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
+	ethTxHash := common.HexToHash(txHash)
+	zkBridgeAddr, zkBtcAddr := "0x19d376e6a10aad92e787288464d4c738de97d135", "0xbf3041e37be70a58920a6fd776662b50323021c9"
+	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
+	if err != nil {
+		logger.Error("new eth client error:%v", err)
+		return nil, err
+	}
+	ethTx, _, err := ec.TransactionByHash(context.Background(), ethTxHash)
+	if err != nil {
+		logger.Error("get eth tx error:%v", err)
+		return nil, err
+	}
+	receipt, err := ec.TransactionReceipt(context.Background(), ethTxHash)
+	if err != nil {
+		logger.Error("get eth tx receipt error:%v", err)
+		return nil, err
+	}
+
+	btcRawTx, _, err := ethereum.DecodeRedeemLog(receipt.Logs[3].Data)
+	if err != nil {
+		logger.Error("decode redeem log error:%v", err)
+		return nil, err
+	}
+
+	logger.Info("btcRawTx: %v\n", hexutil.Encode(btcRawTx))
+
+	rawTx, rawReceipt := ethereum.GetRawTxAndReceipt(ethTx, receipt)
+	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
+	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
+
+	proofData, err := hexutil.Decode(proof)
+	if err != nil {
+		logger.Error("decode proof error:%v", err)
+		return nil, err
+	}
+
+	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
+	if err != nil {
+		logger.Error("new client error:%v", err)
+		return nil, err
+	}
+
+	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proofData)
+	if err != nil {
+		logger.Error("sign btc tx error:%v", err)
+		return nil, err
+	}
+
+	transaction := btctx.NewMultiTransactionBuilder()
+	err = transaction.Deserialize(btcRawTx)
+	if err != nil {
+		logger.Error("deserialize btc tx error:%v", err)
+		return nil, err
+	}
+
+	multiSigScript, err := ec.GetMultiSigScript()
+	if err != nil {
+		logger.Error("get multi sig script error:%v", err)
+		return nil, err
+	}
+
+	nTotal, nRequred := 3, 2
+	transaction.AddMultiScript(multiSigScript, nRequred, nTotal)
+
+	err = transaction.MergeSignature(sigs[:nRequred])
+	if err != nil {
+		logger.Error("merge signature error:%v", err)
+		return nil, err
+	}
+
+	btxTx, err := transaction.Serialize()
+	if err != nil {
+		logger.Error("serialize btc tx error:%v", err)
+		return nil, err
+	}
+	txHex := hex.EncodeToString(btxTx)
+	logger.Info("btx Tx: %v\n", txHex)
+	TxHash, err := e.btcClient.Sendrawtransaction(txHex)
+	if err != nil {
+		logger.Error("send btc tx error:%v", err)
+		return "", err
+	}
+	logger.Info("send redeem btc tx: %v", TxHash)
+	return TxHash, nil
+}
 
 func (e *EthereumAgent) CheckState() error {
 	return nil
