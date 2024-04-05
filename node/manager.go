@@ -66,9 +66,9 @@ func (m *manager) init() error {
 
 func (m *manager) run(requestList []ZkProofRequest) error {
 	for _, req := range requestList {
-		logger.Info("queue receive gen Proof request:%v %v", req.reqType.String(), req.period)
+		logger.Info("queue receive gen Proof request:%v %v", req.ReqType.String(), req.period)
 		// Todo queue need to sort by req weight ?
-		if req.reqType == SyncComGenesisType || req.reqType == SyncComRecursiveType {
+		if req.ReqType == SyncComGenesisType || req.ReqType == SyncComRecursiveType {
 			m.txProofQueue.PushBack(req)
 		} else {
 			m.txProofQueue.PushFront(req)
@@ -98,21 +98,21 @@ func (m *manager) genProof() error {
 		logger.Info("Proof already submitted:%v", request.String())
 		return nil
 	}
-	chanResponse := m.getChanResponse(request.reqType)
+	chanResponse := m.getChanResponse(request.ReqType)
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
 		m.txProofQueue.Remove(element)
 		go func(req ZkProofRequest) {
-			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), req.reqType.String(), req.period)
+			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), req.ReqType.String(), req.period)
 			err := m.workerGenProof(worker, req, chanResponse)
 			if err != nil {
-				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.reqType.String(), req.period, err)
+				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.ReqType.String(), req.period, err)
 				//  take fail request to queue again
 				m.txProofQueue.PushBack(request)
-				logger.Info("add Proof request type: %v ,Period: %v to queue again", req.reqType.String(), req.period)
+				logger.Info("add Proof request type: %v ,Period: %v to queue again", req.ReqType.String(), req.period)
 				return
 			}
-			logger.Info("complete generate Proof type: %v Period: %v", req.reqType.String(), req.period)
+			logger.Info("complete generate Proof type: %v Period: %v", req.ReqType.String(), req.period)
 		}(request)
 		return nil
 	})
@@ -133,9 +133,9 @@ func (m *manager) genProof() error {
 func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProofResponse) error {
 	defer worker.DelReqNum()
 	var zkbProofResponse ZkProofResponse
-	switch request.reqType {
+	switch request.ReqType {
 	case DepositTxType:
-		depositParam, ok := request.data.(DepositProofParam)
+		depositParam, ok := request.Data.(DepositProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
@@ -149,9 +149,9 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen deposit Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
 	case VerifyTxType:
-		verifyProofParam, ok := request.data.(VerifyProofParam)
+		verifyProofParam, ok := request.Data.(VerifyProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
@@ -165,10 +165,10 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen verify Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.Proof, nil, proofResponse.Wit)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, nil, proofResponse.Wit)
 
 	case TxInEth2:
-		redeemParam, ok := request.data.(RedeemProofParam)
+		redeemParam, ok := request.Data.(RedeemProofParam)
 		if !ok {
 			return fmt.Errorf("not txInEth2 Proof param")
 		}
@@ -182,10 +182,10 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen redeem Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
 
 	case RedeemTxType:
-		redeemParam, ok := request.data.(*RedeemProofParam)
+		redeemParam, ok := request.Data.(*RedeemProofParam)
 		if !ok {
 			return fmt.Errorf("not deposit Proof param")
 		}
@@ -199,10 +199,10 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen redeem Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.reqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComGenesisType:
-		genesisReq, ok := request.data.(*GenesisProofParam)
+		genesisReq, ok := request.Data.(*GenesisProofParam)
 		if !ok {
 			logger.Error("parse sync comm genesis request error")
 			return fmt.Errorf("parse sync comm genesis request error")
@@ -224,10 +224,10 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen sync comm genesis Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkProofResp(request.ReqType, request.period, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComUnitType:
-		unitParam, ok := request.data.(*UnitProofParam)
+		unitParam, ok := request.Data.(*UnitProofParam)
 		if !ok {
 			return fmt.Errorf("parse sync comm unit request error")
 		}
@@ -248,10 +248,10 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen sync comm unit Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkProofResp(request.ReqType, request.period, proofResponse.Proof, proofResponse.Witness)
 
 	case SyncComRecursiveType:
-		recursiveParam, ok := request.data.(*RecursiveProofParam)
+		recursiveParam, ok := request.Data.(*RecursiveProofParam)
 		if !ok {
 			return fmt.Errorf("parse sync comm recursive request error")
 		}
@@ -273,10 +273,10 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 			logger.Error("gen sync comm recursive Proof error:%v", err)
 			return err
 		}
-		zkbProofResponse = NewZkProofResp(request.reqType, request.period, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkProofResp(request.ReqType, request.period, proofResponse.Proof, proofResponse.Witness)
 	default:
-		logger.Error("never should happen Proof type:%v", request.reqType)
-		return fmt.Errorf("never should happen Proof type:%v", request.reqType)
+		logger.Error("never should happen Proof type:%v", request.ReqType)
+		return fmt.Errorf("never should happen Proof type:%v", request.ReqType)
 
 	}
 	resp <- zkbProofResponse

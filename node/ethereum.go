@@ -162,7 +162,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		}
 		err = e.saveRedeemData(redeemTxes, proofs, requests)
 		if err != nil {
-			logger.Error("ethereum save data error: %v %v", index, err)
+			logger.Error("ethereum save Data error: %v %v", index, err)
 			return err
 		}
 		err = WriteEthereumHeight(e.store, index)

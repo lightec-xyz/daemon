@@ -121,14 +121,14 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 		logger.Error(err.Error())
 		return rpc.VerifyResponse{}, fmt.Errorf("gen verify proof error: %v", err)
 	}
-	hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
-	if err != nil {
-		logger.Error(err.Error())
-		return rpc.VerifyResponse{}, nil
-	}
+	//hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return rpc.VerifyResponse{}, nil
+	//}
 	return rpc.VerifyResponse{
 		TxHash: req.TxHash,
-		Proof:  hexProof,
+		Proof:  "ddddd",
 		Wit:    circuits.WitnessToBytes(proof.Wit),
 	}, nil
 }

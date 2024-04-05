@@ -9,7 +9,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/prysmaticlabs/prysm/v5/config/params"
 	"os"
 	"os/signal"
@@ -110,30 +109,29 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 
 	var agents []*WrapperAgent
-	//keyStore := NewKeyStore(cfg.EthPrivateKey)
-	//btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
-	//if err != nil {
-	//	logger.Error(err.Error())
-	//	return nil, err
-	//}
-	//agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
+	keyStore := NewKeyStore(cfg.EthPrivateKey)
+	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
 
 	// todo
 	params.UseHoleskyNetworkConfig()
 	params.OverrideBeaconConfig(params.HoleskyConfig())
 
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-
-	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, 1*time.Minute, ethProofResp))
+	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
+	//ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
+	//agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, 1*time.Minute, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {

@@ -141,7 +141,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		}
 		err = b.saveDepositData(proofs, proofRequests)
 		if err != nil {
-			logger.Error("bitcoin agent save data to db error: %v %v", index, err)
+			logger.Error("bitcoin agent save Data to db error: %v %v", index, err)
 			return err
 		}
 		err = WriteBitcoinHeight(b.store, index)
@@ -155,6 +155,15 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("to update zk Proof request error: %v %v", index, err)
 			return err
 		}
+		updateZkProofRequests = append(updateZkProofRequests, ZkProofRequest{
+			ReqType: VerifyTxType,
+			TxHash:  "dasdasfsf",
+			Data: VerifyProofParam{
+				Version:   "1.0",
+				TxHash:    "dasdasfsf",
+				BlockHash: "dasdasfsf",
+			},
+		})
 		zkProofRequest, err := toDepositZkProofRequest(proofRequests)
 		if err != nil {
 			logger.Error("to deposit zk Proof request error: %v %v", index, err)
@@ -165,16 +174,16 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Info("success send btc deposit proof request: %v", len(zkProofRequest))
 		}
 
-		if len(redeemTxes) > 0 {
-			// todo
-			if b.autoSubmit {
-				_, err = b.taskManager.UpdateUtxoRequest(txesToTxIds(redeemTxes), "")
-				if err != nil {
-					logger.Error("update utxo error: %v %v", index, err)
-					return err
-				}
-			}
-		}
+		//if len(redeemTxes) > 0 {
+		//	// todo
+		//	if b.autoSubmit {
+		//		_, err = b.taskManager.UpdateUtxoRequest(txesToTxIds(redeemTxes), "")
+		//		if err != nil {
+		//			logger.Error("update utxo error: %v %v", index, err)
+		//			return err
+		//		}
+		//	}
+		//}
 	}
 	return nil
 }

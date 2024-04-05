@@ -381,7 +381,7 @@ func LocalDevDaemonConfig() NodeConfig {
 	dataDir := "/Users/red/lworkspace/lightec/daemon/node/test"
 	config, err := NewNodeConfig(
 		true,
-		false,
+		true,
 		dataDir,
 		"local",
 		"127.0.0.1",

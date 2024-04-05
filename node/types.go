@@ -42,14 +42,14 @@ func (zkpr *ZkProofType) String() string {
 }
 
 type ZkProofRequest struct {
-	reqType ZkProofType
-	data    interface{}
+	ReqType ZkProofType
+	Data    interface{}
 	period  uint64
 	TxHash  string
 }
 
 func (r *ZkProofRequest) String() string {
-	return fmt.Sprintf("ZkProofRequest{reqType:%v,Period:%v,data:%v}", r.reqType, r.period, r.data)
+	return fmt.Sprintf("ZkProofRequest{ReqType:%v,Period:%v,Data:%v}", r.ReqType, r.period, r.Data)
 }
 
 type ZkProofResponse struct {

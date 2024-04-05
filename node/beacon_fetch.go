@@ -112,12 +112,12 @@ func (bf *BeaconFetch) fetch() error {
 	}
 	bf.fetchQueue.Remove(element)
 	bf.currentReqNums.Add(1)
-	logger.Debug("get fetch request Period:%v,type:%v,fetch data now", request.period, request.UpdateType.String())
+	logger.Debug("get fetch request Period:%v,type:%v,fetch Data now", request.period, request.UpdateType.String())
 	if request.UpdateType == GenesisUpdateType {
 		go func() {
 			err := bf.getBootStrap()
 			if err != nil {
-				logger.Error("get genesis data error:%v", err)
+				logger.Error("get genesis Data error:%v", err)
 				bf.innerNewGenesisRequest(true)
 				return
 			} else {
@@ -130,7 +130,7 @@ func (bf *BeaconFetch) fetch() error {
 		go func() {
 			err := bf.getUpdateData(request.period)
 			if err != nil {
-				logger.Error("get update data error:%v %v", err, request.period)
+				logger.Error("get update Data error:%v %v", err, request.period)
 				bf.innerNewUpdateRequest(true, request.period)
 			} else {
 				bf.currentReqNums.Add(-1)
@@ -202,7 +202,7 @@ func (bf *BeaconFetch) getBootStrap() error {
 		UpdateType: GenesisUpdateType,
 		period:     bf.genesisSlot / 8192,
 	}
-	logger.Debug("success get genesis update data:%v", bf.genesisSlot/8192)
+	logger.Debug("success get genesis update Data:%v", bf.genesisSlot/8192)
 	bf.fetchProofResponse <- updateResponse
 	return nil
 }
@@ -227,7 +227,7 @@ func (bf *BeaconFetch) getUpdateData(period uint64) error {
 		period:     period,
 		UpdateType: PeriodUpdateType,
 	}
-	logger.Debug("success get update data:%v", period)
+	logger.Debug("success get update Data:%v", period)
 	bf.fetchProofResponse <- updateResponse
 	return nil
 }

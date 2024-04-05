@@ -88,7 +88,7 @@ func (b *BeaconAgent) Init() error {
 		logger.Warn("no find %v first period update, send request update", b.genesisPeriod)
 		b.beaconFetch.NewUpdateRequest(b.genesisPeriod)
 	}
-	// todo check data
+	// todo check Data
 	return err
 }
 
@@ -159,7 +159,7 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 		return err
 	}
 	if existsRequest {
-		//logger.Warn("Proof request exists，%v %v  skip it now", period, reqType.String())
+		//logger.Warn("Proof request exists，%v %v  skip it now", period, ReqType.String())
 		return nil
 	}
 	data, prepareDataOk, err := b.prepareProofRequestData(period, reqType)
@@ -168,7 +168,7 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 		return err
 	}
 	if !prepareDataOk {
-		//logger.Warn("Proof request data haven`t prepared now ,%v %v  can`t generate Proof", period, reqType.String())
+		//logger.Warn("Proof request Data haven`t prepared now ,%v %v  can`t generate Proof", period, ReqType.String())
 		return nil
 	}
 	err = b.cacheProofRequestStatus(period, reqType)
@@ -179,8 +179,8 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType ZkProofType) error 
 	b.zkProofRequest <- []ZkProofRequest{
 		{
 			period:  period,
-			reqType: reqType,
-			data:    data,
+			ReqType: reqType,
+			Data:    data,
 		},
 	}
 	logger.Info("success send Proof request: %v %v", period, reqType.String())
@@ -252,7 +252,7 @@ func (b *BeaconAgent) prepareProofRequestData(period uint64, reqType ZkProofType
 		}
 		return data, prepared, nil
 	default:
-		logger.Error(" prepare request data never should happen : %v %v", period, reqType)
+		logger.Error(" prepare request Data never should happen : %v %v", period, reqType)
 		return nil, false, fmt.Errorf("never should happen : %v %v", period, reqType)
 	}
 }
@@ -295,7 +295,7 @@ func (b *BeaconAgent) CheckState() error {
 		if b.stateCache.CheckFetchData(index) {
 			continue
 		}
-		//logger.Warn("need fetch data: %v", index)
+		//logger.Warn("need fetch Data: %v", index)
 		b.beaconFetch.NewUpdateRequest(index)
 	}
 	unitProofIndexes, err := b.fileStore.NeedGenUnitProofIndexes()
@@ -373,7 +373,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v period update data, send new update request", period)
+		logger.Warn("no find %v period update Data, send new update request", period)
 		b.beaconFetch.NewUpdateRequest(period)
 		return nil, false, nil
 	}
@@ -392,7 +392,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 			return nil, false, err
 		}
 		if !genesisExists {
-			logger.Warn("no find genesis update data, send new update request")
+			logger.Warn("no find genesis update Data, send new update request")
 			b.beaconFetch.BootStrapRequest()
 			return nil, false, nil
 		}
@@ -417,7 +417,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 			return nil, false, err
 		}
 		if !preUpdateExists {
-			logger.Warn("get unit data,no find %v period update data, send new update request", prePeriod)
+			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
 			b.beaconFetch.NewUpdateRequest(prePeriod)
 			return nil, false, nil
 		}
@@ -478,7 +478,7 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("get genesis data,first proof not exists: %v period", b.genesisPeriod)
+		logger.Warn("get genesis Data,first proof not exists: %v period", b.genesisPeriod)
 		//err := b.tryProofRequest(b.genesisPeriod, SyncComUnitType)
 		//if err != nil {
 		//	logger.Error(err.Error())
@@ -496,7 +496,7 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 	}
 
 	if !exists {
-		logger.Warn("get genesis data,second proof not exists: %v period", nextPeriod)
+		logger.Warn("get genesis Data,second proof not exists: %v period", nextPeriod)
 		//err := b.tryProofRequest(nextPeriod, SyncComUnitType)
 		//if err != nil {
 		//	logger.Error(err.Error())
@@ -528,7 +528,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v period update data, send new update request", period)
+		logger.Warn("no find %v period update Data, send new update request", period)
 		b.beaconFetch.NewUpdateRequest(period)
 		return nil, false, nil
 	}
@@ -540,7 +540,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 			return nil, false, err
 		}
 		if !genesisExists {
-			logger.Warn("no find genesis update data, send new update request")
+			logger.Warn("no find genesis update Data, send new update request")
 			b.beaconFetch.BootStrapRequest()
 			return nil, false, nil
 		}
@@ -568,7 +568,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (interface{}, bool, error) {
 			return nil, false, err
 		}
 		if !preUpdateExists {
-			logger.Warn("get unit data,no find %v period update data, send new update request", prePeriod)
+			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
 			b.beaconFetch.NewUpdateRequest(prePeriod)
 			return nil, false, nil
 		}
@@ -636,7 +636,7 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v unit proof data, send new proof request", period)
+		logger.Warn("no find %v unit proof Data, send new proof request", period)
 		//err := b.tryProofRequest(period, SyncComUnitType)
 		//if err != nil {
 		//	logger.Error(err.Error())
@@ -653,7 +653,7 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v period recursive data, send new proof request", prePeriod)
+		logger.Warn("no find %v period recursive Data, send new proof request", prePeriod)
 		//err := b.tryProofRequest(prePeriod, SyncComRecursiveType)
 		//if err != nil {
 		//	logger.Error(err.Error())

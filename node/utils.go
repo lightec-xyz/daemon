@@ -92,8 +92,8 @@ func toDepositZkProofRequest(list []DepositProofParam) ([]ZkProofRequest, error)
 	var result []ZkProofRequest
 	for _, item := range list {
 		result = append(result, ZkProofRequest{
-			reqType: DepositTxType,
-			data:    item,
+			ReqType: DepositTxType,
+			Data:    item,
 			TxHash:  item.TxHash,
 		})
 	}
@@ -104,8 +104,8 @@ func toUpdateZkProofRequest(redeemTxes []Transaction) ([]ZkProofRequest, error) 
 	var result []ZkProofRequest
 	for _, item := range redeemTxes {
 		result = append(result, ZkProofRequest{
-			reqType: VerifyTxType,
-			data: VerifyProofParam{
+			ReqType: VerifyTxType,
+			Data: VerifyProofParam{
 				TxHash:    item.TxHash,
 				BlockHash: item.BlockHash,
 			},
@@ -119,8 +119,8 @@ func toRedeemZkProofRequest(list []RedeemProofParam) ([]ZkProofRequest, error) {
 	var result []ZkProofRequest
 	for _, item := range list {
 		result = append(result, ZkProofRequest{
-			reqType: TxInEth2,
-			data:    item,
+			ReqType: TxInEth2,
+			Data:    item,
 			TxHash:  item.TxHash,
 		})
 	}
