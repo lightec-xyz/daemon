@@ -21,4 +21,5 @@ type ICircuit interface {
 	UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error)
 	RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness []byte,
 		beginId, relayId, endId []byte) (*common.Proof, error)
+	UpdateChangeProve(txId, blockHash string) (*common.Proof, error)
 }
