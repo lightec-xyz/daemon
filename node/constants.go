@@ -76,7 +76,7 @@ const (
 
 	LocalInitBitcoinHeight  = 2585310
 	LocalInitBeaconHeight   = 153 //slot of 596751 in holesky
-	LocalInitEthereumHeight = 1283350
+	LocalInitEthereumHeight = 1284350
 
 	LocalEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"
 	LocalEthZkBtcAddress    = "0xd2a00777a7e5b6afaa5c053a6425619653541c82"
