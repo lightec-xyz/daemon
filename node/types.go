@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/lightec-xyz/daemon/common"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
@@ -14,6 +15,7 @@ type ZkProofType int
 const (
 	DepositTxType ZkProofType = iota + 1
 	RedeemTxType
+	TxInEth2
 	VerifyTxType
 	SyncComGenesisType
 	SyncComUnitType
@@ -43,7 +45,7 @@ type ZkProofRequest struct {
 	reqType ZkProofType
 	data    interface{}
 	period  uint64
-	txHash  string
+	TxHash  string
 }
 
 func (r *ZkProofRequest) String() string {
@@ -54,6 +56,7 @@ type ZkProofResponse struct {
 	ZkProofType ZkProofType
 	Status      ProofStatus
 	Proof       common.ZkProof
+	ProofStr    string
 	Witness     []byte
 	Period      uint64
 	TxHash      string
@@ -64,15 +67,22 @@ func (zkResp *ZkProofResponse) String() string {
 }
 
 type DepositProofParam struct {
+	Version   string
+	Body      interface{}
+	TxHash    string
+	BlockHash string
+}
+
+type TxInEth2Param struct {
 	Version string
-	Body    interface{}
 	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
 }
 
 type RedeemProofParam struct {
 	Version string
-	Body    interface{}
 	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
 }
 
 type VerifyProofParam struct {

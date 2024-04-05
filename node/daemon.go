@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
@@ -25,6 +26,7 @@ type IAgent interface {
 	ScanBlock() error
 	ProofResponse(resp ZkProofResponse) error
 	Init() error
+	CheckState() error
 	Close() error
 	Name() string
 }
@@ -33,7 +35,7 @@ type IBeaconAgent interface {
 	ScanSyncPeriod() error
 	ProofResponse(resp ZkProofResponse) error
 	FetchDataResponse(resp FetchDataResponse) error
-	CheckData() error
+	CheckState() error
 	Init() error
 	Close() error
 	Name() string
@@ -46,7 +48,8 @@ type Daemon struct {
 	nodeConfig    NodeConfig
 	exitSignal    chan os.Signal
 	manager       *WrapperManger
-	onlyRecursive bool // true ,Only enable the function of generating recursive proofs
+	enableSyncCom bool // true ,Only enable the function of generating recursive proofs
+	enableTx      bool
 }
 
 func NewDaemon(cfg NodeConfig) (*Daemon, error) {
@@ -90,7 +93,15 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	syncCommitResp := make(chan ZkProofResponse, 1000)
 	fetchDataResp := make(chan FetchDataResponse, 1000)
 
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fetchDataResp)
+	// todo
+	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
+	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, genesisPeriod, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -103,19 +114,27 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, btcProofResp))
+	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
 
-	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, ethProofResp))
+	// todo
+	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
+
+	//ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
+	//agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, 1*time.Minute, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enable")
-		localWorker, err := NewLocalWorker("", "", 1)
+		zkParamDir := os.Getenv(common.ZkParameterDir)
+		localWorker, err := NewLocalWorker(zkParamDir, "", 1)
 		if err != nil {
 			logger.Error("new local worker error:%v", err)
 			return nil, err
@@ -137,20 +156,25 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents:      agents,
-		server:      server,
-		nodeConfig:  cfg,
-		exitSignal:  make(chan os.Signal, 1),
-		beaconAgent: NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
-		manager:     NewWrapperManger(manager, proofRequest),
+		agents:        agents,
+		server:        server,
+		nodeConfig:    cfg,
+		enableSyncCom: false, //todo
+		enableTx:      true,  // todo
+		exitSignal:    make(chan os.Signal, 1),
+		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
+		manager:       NewWrapperManger(manager, proofRequest),
 	}
 	return daemon, nil
 }
 
 func (d *Daemon) Init() error {
-
-	if !d.onlyRecursive {
-		// true ,skip init node agent
+	err := d.manager.manager.init()
+	if err != nil {
+		logger.Error("manager init error %v", err)
+		return err
+	}
+	if d.enableTx {
 		for _, agent := range d.agents {
 			if err := agent.node.Init(); err != nil {
 				logger.Error("%v:init agent error %v", agent.node.Name(), err)
@@ -158,16 +182,14 @@ func (d *Daemon) Init() error {
 			}
 		}
 	}
-	err := d.manager.manager.init()
-	if err != nil {
-		logger.Error("manager init error %v", err)
-		return err
+	if d.enableSyncCom {
+		err = d.beaconAgent.node.Init()
+		if err != nil {
+			logger.Error("node agent init error %v", err)
+			return err
+		}
 	}
-	err = d.beaconAgent.node.Init()
-	if err != nil {
-		logger.Error("node agent init error %v", err)
-		return err
-	}
+
 	return nil
 }
 
@@ -177,17 +199,18 @@ func (d *Daemon) Run() error {
 	go d.server.Run()
 
 	// syncCommit
-	go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
-	go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
-	go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
-	go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckData, d.exitSignal)
+	if d.enableSyncCom {
+		go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
+		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
+		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
+		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
 
+	}
 	// generate Proof manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
 	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
 
-	if !d.onlyRecursive {
-		// true skip this step
+	if d.enableTx {
 		//tx Proof
 		for _, agent := range d.agents {
 			name := fmt.Sprintf("%s-submitProof", agent.node.Name())
@@ -195,9 +218,12 @@ func (d *Daemon) Run() error {
 		}
 		//scan block with tx
 		for _, agent := range d.agents {
-			name := fmt.Sprintf("%s-scanBlock", agent.node.Name())
-			go doTimerTask(name, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+			scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
+			checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
+			go doTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+			go doTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
 		}
+
 	}
 
 	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
@@ -218,7 +244,7 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
-	if !d.onlyRecursive {
+	if d.enableTx {
 		for _, agent := range d.agents {
 			if err := agent.node.Close(); err != nil {
 				logger.Error("%v:close agent error %v", agent.node.Name(), err)
@@ -230,9 +256,11 @@ func (d *Daemon) Close() error {
 		logger.Error("rpc server shutdown error:%v", err)
 	}
 	d.manager.manager.Close()
-	err = d.beaconAgent.node.Close()
-	if err != nil {
-		logger.Error("node agent close error:%v", err)
+	if d.enableSyncCom {
+		err = d.beaconAgent.node.Close()
+		if err != nil {
+			logger.Error("node agent close error:%v", err)
+		}
 	}
 	if d.exitSignal != nil {
 		close(d.exitSignal)
@@ -287,16 +315,18 @@ func NewWrapperManger(manager *manager, request chan []ZkProofRequest) *WrapperM
 }
 
 type WrapperAgent struct {
-	node      IAgent
-	scanTime  time.Duration
-	proofResp chan ZkProofResponse
+	node           IAgent
+	scanTime       time.Duration
+	proofResp      chan ZkProofResponse
+	checkStateTime time.Duration
 }
 
-func NewWrapperAgent(agent IAgent, scanTime time.Duration, proofResp chan ZkProofResponse) *WrapperAgent {
+func NewWrapperAgent(agent IAgent, scanTime, checkState time.Duration, proofResp chan ZkProofResponse) *WrapperAgent {
 	return &WrapperAgent{
-		node:      agent,
-		scanTime:  scanTime,
-		proofResp: proofResp,
+		node:           agent,
+		scanTime:       scanTime,
+		proofResp:      proofResp,
+		checkStateTime: checkState,
 	}
 }
 

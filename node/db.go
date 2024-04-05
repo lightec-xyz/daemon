@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
 )
@@ -100,7 +99,7 @@ func WriteDbProof(store store.IStore, txes []DbProof) error {
 	return nil
 }
 
-func UpdateProof(store store.IStore, txId string, proof common.ZkProof, proofType ZkProofType, status ProofStatus) error {
+func UpdateProof(store store.IStore, txId string, proof string, proofType ZkProofType, status ProofStatus) error {
 	txProof := DbProof{
 		TxHash:    txId,
 		Proof:     proof,
@@ -224,9 +223,9 @@ func ReadAllUnGenProof(store store.IStore) ([]ZkProofRequest, error) {
 	//	}
 	//	var req ProofRequest
 	//	if chainType == Bitcoin {
-	//		req = NewDepositProofRequest(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
+	//		req = NewDepositProofParam(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
 	//	} else if chainType == Ethereum {
-	//		req = NewRedeemProofRequest(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
+	//		req = NewRedeemProofParam(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
 	//	} else {
 	//		return nil, fmt.Errorf("unknown chain type:%v", chainType)
 	//	}

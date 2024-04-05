@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/lightec-xyz/daemon/common"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
@@ -39,20 +40,51 @@ type NodeInfo struct {
 
 //------
 
-type DepositRequest struct {
+type TxInEth2ProveReq struct {
 	Version string
+	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
+}
+
+type TxInEth2ProveResp struct {
+	ProofStr string
+	Proof    []byte
+	Witness  []byte
+}
+
+type TxBlockIsParentOfCheckPointProveReq struct {
+}
+
+type TxBlockIsParentOfCheckPointResp struct {
+}
+type CheckPointFinalityProveReq struct {
+}
+
+type CheckPointFinalityProveResp struct {
+}
+
+type DepositRequest struct {
+	Version   string
+	TxHash    string
+	BlockHash string
 }
 
 type DepositResponse struct {
-	Proof common.ZkProof
+	TxHash   string
+	Proof    common.ZkProof
+	ProofStr string
+	Witness  []byte
 }
 
 type RedeemRequest struct {
 	Version string
+	TxHash  string
+	TxData  *ethblock.TxInEth2ProofData
 }
 
 type RedeemResponse struct {
-	Proof common.ZkProof
+	Proof   common.ZkProof
+	Witness []byte
 }
 
 type VerifyRequest struct {
@@ -77,10 +109,9 @@ type SyncCommGenesisRequest struct {
 }
 
 type SyncCommGenesisResponse struct {
-	Version   string                           `json:"version"`
-	Period    uint64                           `json:"period"`
-	ProofType common.ZkProofType               `json:"proofType"`
-	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Version   string             `json:"version"`
+	Period    uint64             `json:"period"`
+	ProofType common.ZkProofType `json:"proofType"`
 	Proof     common.ZkProof
 	Witness   []byte
 }
@@ -99,12 +130,11 @@ type SyncCommUnitsRequest struct {
 }
 
 type SyncCommUnitsResponse struct {
-	Version   string                           `json:"version"`
-	Period    uint64                           `json:"period"`
-	ProofType common.ZkProofType               `json:"proofType"`
-	Status    SyncCommitteeProofGenerateStatus `json:"status"`
-	Proof     common.ZkProof                   `json:"proof"`
-	Witness   []byte                           `json:"witness"`
+	Version   string             `json:"version"`
+	Period    uint64             `json:"period"`
+	ProofType common.ZkProofType `json:"proofType"`
+	Proof     common.ZkProof     `json:"proof"`
+	Witness   []byte             `json:"witness"`
 }
 
 type SyncCommRecursiveRequest struct {
@@ -122,35 +152,17 @@ type SyncCommRecursiveRequest struct {
 }
 
 type SyncCommRecursiveResponse struct {
-	Version   string                           `json:"version"`
-	Period    uint64                           `json:"period"`
-	ProofType common.ZkProofType               `json:"proofType"`
-	Status    SyncCommitteeProofGenerateStatus `json:"status"`
+	Version   string             `json:"version"`
+	Period    uint64             `json:"period"`
+	ProofType common.ZkProofType `json:"proofType"`
 	Proof     common.ZkProof
 	Witness   []byte
 }
 
 type ProofInfo struct {
 	reqType   int
-	TxId      string         `json:"txId"`
-	ProofType int            `json:"type"`
-	Proof     common.ZkProof `json:"proof"`
-	Status    int            `json:"status"`
+	TxId      string `json:"txId"`
+	ProofType int    `json:"type"`
+	Proof     string `json:"proof"`
+	Status    int    `json:"status"`
 }
-
-type SyncCommitteeProofGenerateStatus int
-
-const (
-	SyncCommitteeProofGenerateStatus_None       SyncCommitteeProofGenerateStatus = 0
-	SyncCommitteeProofGenerateStatus_Generating SyncCommitteeProofGenerateStatus = 1
-	SyncCommitteeProofGenerateStatus_Done       SyncCommitteeProofGenerateStatus = 2
-)
-
-type SyncCommitteeProofType int
-
-const (
-	SyncCommitteeProofType_None      SyncCommitteeProofType = 0
-	SyncCommitteeProofType_Genesis   SyncCommitteeProofType = 1
-	SyncCommitteeProofType_Unit      SyncCommitteeProofType = 2
-	SyncCommitteeProofType_Recursive SyncCommitteeProofType = 3
-)

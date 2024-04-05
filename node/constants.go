@@ -65,7 +65,7 @@ var TestLogTopics = []string{TestTopicDepositAddr, TestTopicRedeemAddr}
 // ********************* local ************************
 const (
 	Lighteclocal            = "local"
-	LocalBtcOperatorAddress = "bcrt1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq2aw6ze"
+	LocalBtcOperatorAddress = "tb1qtysxx7zkmm5nwy0hv2mjxfrermsry2vjsygg0eqawwwp6gy4hl4s2tudtw"
 	LocalBtcMultiSigPublic1 = "03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050"
 	LocalBtcMultiSigPublic2 = "03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22"
 	LocalBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
@@ -74,7 +74,7 @@ const (
 	LocalBtcScanTime        = 15 * time.Second
 	LocalEthScanTime        = 5 * time.Second
 
-	LocalInitBitcoinHeight  = 17838
+	LocalInitBitcoinHeight  = 2585246
 	LocalInitBeaconHeight   = 153 //slot of 596751 in holesky
 	LocalInitEthereumHeight = 596751
 

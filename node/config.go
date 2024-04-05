@@ -15,7 +15,7 @@ type NodeConfig struct {
 	Rpcbind           string `json:"rpcbind"`
 	RpcPort           string `json:"rpcport"`
 	EnableLocalWorker bool   `json:"enableLocalWorker"`
-	OnlyRecursive     bool   `json:"onlyRecursive"`
+	EnableGenScProof  bool   `json:"enableGenScProof"`
 
 	BtcUrl            string           `json:"btcUrl"`
 	BtcUser           string           `json:"btcUser"`
@@ -386,11 +386,11 @@ func LocalDevDaemonConfig() NodeConfig {
 		"local",
 		"127.0.0.1",
 		"9870",
-		"http://127.0.0.1:8970",
+		"https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
 		"lightec",
 		"abcd1234",
-		"http://127.0.0.1:8970",
-		"http://127.0.0.1:8970",
+		"http://127.0.0.1:8980",
+		"https://1rpc.io/holesky",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
 	if err != nil {

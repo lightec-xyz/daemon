@@ -155,6 +155,10 @@ func (b *BitcoinAgent) ScanBlock() error {
 			return err
 		}
 		b.proofRequest <- zkProofRequest
+		if len(zkProofRequest) > 0 {
+			logger.Info("success send btc deposit proof request: %v", len(zkProofRequest))
+		}
+
 		if len(redeemTxes) > 0 {
 			// todo
 			if b.autoSubmit {
@@ -238,7 +242,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			if submitted {
 				depositTxProof = NewDepositTxProof(tx.Txid, ProofSuccess)
 			} else {
-				requests = append(requests, NewDepositProofRequest(depositTx.TxHash))
+				requests = append(requests, NewDepositProofParam(depositTx.TxHash, blockHash))
 				depositTxProof = NewDepositTxProof(tx.Txid, ProofDefault)
 			}
 			proofs = append(proofs, depositTxProof)
@@ -251,7 +255,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp)
 	proofId := resp.TxHash
-	err := b.updateDepositProof(proofId, resp.Proof, resp.Status)
+	err := b.updateDepositProof(proofId, resp.ProofStr, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", proofId, err)
 		return err
@@ -371,7 +375,7 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx) (Transaction, bool) {
 	return redeemBtcTx, isRedeemTx
 }
 
-func (b *BitcoinAgent) updateDepositProof(txId string, proof common.ZkProof, status ProofStatus) error {
+func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status ProofStatus) error {
 	logger.Debug("update DepositTx  Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(b.store, txId, proof, DepositTxType, status)
 	if err != nil {
@@ -380,6 +384,12 @@ func (b *BitcoinAgent) updateDepositProof(txId string, proof common.ZkProof, sta
 	}
 	return nil
 
+}
+
+func (b *BitcoinAgent) CheckState() error {
+
+	//TODO implement me
+	return nil
 }
 
 func (b *BitcoinAgent) Close() error {
@@ -412,22 +422,17 @@ func parseDepositTx(tx types.Tx, operatorAddr string, minDepositValue float64) (
 	if len(txOuts) < 2 {
 		return Transaction{}, false, nil
 	}
-	if txOuts[1].ScriptPubKey.Address != operatorAddr {
-		return Transaction{}, false, nil
-	}
-	amount := txOuts[1].Value
-	if amount <= minDepositValue {
-		logger.Warn("deposit tx less than min value: %v %v", operatorAddr, tx.Txid)
-		return Transaction{}, false, nil
-	}
-	if !(txOuts[0].ScriptPubKey.Type == "nulldata" && strings.HasPrefix(txOuts[0].ScriptPubKey.Hex, "6a")) {
-		logger.Warn("find deposit tx but check rule fail: %v", tx.Txid)
-		return Transaction{}, false, nil
-	}
-	ethAddr, err := getEthAddrFromScript(txOuts[0].ScriptPubKey.Hex)
+	amount, isDeposit, err := isContainOperator(tx.Vout, operatorAddr)
 	if err != nil {
-		logger.Error("get eth addr from script error:%v %v", txOuts[0].ScriptPubKey.Hex, err)
 		return Transaction{}, false, err
+	}
+	if !isDeposit {
+		return Transaction{}, false, nil
+	}
+
+	ethAddr, ok, err := getOPReturn(tx.Vout)
+	if !ok {
+		return Transaction{}, false, nil
 	}
 	utxoList := []Utxo{
 		{
@@ -438,6 +443,31 @@ func parseDepositTx(tx types.Tx, operatorAddr string, minDepositValue float64) (
 	logger.Info("bitcoin agent find  deposit tx: %v, ethAddr:%v,amount:%v,utxo:%v", tx.Txid, ethAddr, amount, formatUtxo(utxoList))
 	depositTx := NewDepositBtcTx(tx.Txid, ethAddr, utxoList, BtcToSat(amount))
 	return depositTx, true, nil
+}
+
+func isContainOperator(txOuts []types.TxVout, operatorAddr string) (float64, bool, error) {
+	var isDeposit bool
+	var total float64
+	for _, out := range txOuts {
+		if out.ScriptPubKey.Address == operatorAddr {
+			isDeposit = true
+			total = total + out.Value
+		}
+	}
+	return total, isDeposit, nil
+}
+
+func getOPReturn(txOuts []types.TxVout) (string, bool, error) {
+	for _, out := range txOuts {
+		if out.ScriptPubKey.Type == "nulldata" && strings.HasPrefix(out.ScriptPubKey.Hex, "6a") {
+			ethAddr, err := getEthAddrFromScript(out.ScriptPubKey.Hex)
+			if err != nil {
+				return "", false, err
+			}
+			return ethAddr, true, nil
+		}
+	}
+	return "", false, nil
 }
 
 func getEthAddrFromScript(script string) (string, error) {
@@ -456,9 +486,10 @@ func getEthAddrFromScript(script string) (string, error) {
 	return script[4:], nil
 }
 
-func NewDepositProofRequest(txId string) DepositProofParam {
+func NewDepositProofParam(txId, blockHash string) DepositProofParam {
 	return DepositProofParam{
-		TxHash: txId,
+		TxHash:    txId,
+		BlockHash: blockHash,
 	}
 }
 

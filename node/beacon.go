@@ -28,14 +28,9 @@ type BeaconAgent struct {
 	circuitsFp     common.CircuitsFP
 }
 
-func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []ZkProofRequest, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
-	// todo
-	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
-	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
+func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []ZkProofRequest,
+	fileStore *FileStore, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
+
 	logger.Info("init beacon slot: %v, period: %v", cfg.BeaconSlotHeight, genesisPeriod)
 	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconSlotHeight, fetchDataResp)
 	if err != nil {
@@ -276,7 +271,7 @@ func (b *BeaconAgent) CheckProofExists(period uint64, reqType ZkProofType) (bool
 	}
 }
 
-func (b *BeaconAgent) CheckData() error {
+func (b *BeaconAgent) CheckState() error {
 	genesisProofExists, err := b.fileStore.CheckGenesisProof()
 	if err != nil {
 		logger.Error(err.Error())

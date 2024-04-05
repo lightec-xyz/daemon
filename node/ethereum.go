@@ -5,26 +5,29 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 )
 
 type EthereumAgent struct {
 	btcClient        *bitcoin.Client
 	ethClient        *ethrpc.Client
+	apiClient        *apiclient.Client // todo temp use
 	store            store.IStore
 	memoryStore      store.IStore
+	fileStore        *FileStore
 	blockTime        time.Duration
 	taskManager      *TaskManager
 	whiteList        map[string]bool
@@ -40,9 +43,8 @@ type EthereumAgent struct {
 	submitQueue      *Queue
 }
 
-func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethrpc.Client,
-	proofRequest chan []ZkProofRequest) (IAgent, error) {
-	// todo
+func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileStore, store, memoryStore store.IStore, beaClient *apiclient.Client,
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []ZkProofRequest) (IAgent, error) {
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -54,9 +56,11 @@ func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore
 		privateKeys = append(privateKeys, privKey)
 	}
 	return &EthereumAgent{
+		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
 		ethClient:        ethClient,
 		store:            store,
+		fileStore:        fileStore,
 		memoryStore:      memoryStore,
 		blockTime:        cfg.EthScanBlockTime,
 		proofRequest:     proofRequest,
@@ -174,7 +178,7 @@ func (e *EthereumAgent) ScanBlock() error {
 
 func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
 	logger.Info("receive proof response: %v", resp.TxHash)
-	err := e.updateRedeemProof(resp.TxHash, resp.Proof, resp.Status)
+	err := e.updateRedeemProof(resp.TxHash, resp.ProofStr, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error:%v", err)
 		return err
@@ -298,7 +302,12 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			if submitted {
 				redeemTxProof = NewRedeemProof(redeemTx.TxHash, ProofSuccess)
 			} else {
-				requests = append(requests, NewRedeemProofRequest(redeemTx.TxHash))
+				// Todo
+				txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, redeemTx.TxHash)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				requests = append(requests, NewRedeemProofParam(redeemTx.TxHash, txData))
 				redeemTxProof = NewRedeemProof(redeemTx.TxHash, ProofDefault)
 			}
 			proofs = append(proofs, redeemTxProof)
@@ -480,7 +489,11 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 //return TxHash, nil
 //}
 
-func (e *EthereumAgent) updateRedeemProof(txId string, proof common.ZkProof, status ProofStatus) error {
+func (e *EthereumAgent) CheckState() error {
+	return nil
+}
+
+func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status ProofStatus) error {
 	logger.Debug("update Redeem Proof status: %v %v %v", txId, proof, status)
 	err := UpdateProof(e.store, txId, proof, RedeemTxType, status)
 	if err != nil {
@@ -498,9 +511,10 @@ func (e *EthereumAgent) Name() string {
 	return "Ethereum WrapperAgent"
 }
 
-func NewRedeemProofRequest(txId string) RedeemProofParam {
+func NewRedeemProofParam(txId string, txData *ethblock.TxInEth2ProofData) RedeemProofParam {
 	return RedeemProofParam{
 		TxHash: txId,
+		TxData: txData,
 	}
 }
 

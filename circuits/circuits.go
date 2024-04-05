@@ -2,6 +2,7 @@ package circuits
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -56,49 +57,47 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 func (c *Circuit) Load() error {
 	// todo
 	return nil
-	if c.debug {
-		logger.Warn("current zk circuit is debug mode,skip load")
-		return nil
-	}
-	// todo
-	err := c.genesis.Load()
-	if err != nil {
-		logger.Error("genesis load error:%v", err)
-		return err
-	}
-	err = c.unit.Load()
-	if err != nil {
-		logger.Error("unit load error:%v", err)
-		return err
-	}
-	err = c.recursive.Load()
-	if err != nil {
-		logger.Error("recursive load error:%v", err)
-		return err
-	}
-	return nil
+	//if c.debug {
+	//	logger.Warn("current zk circuit is debug mode,skip load")
+	//	return nil
+	//}
+	//// todo
+	//err := c.genesis.Load()
+	//if err != nil {
+	//	logger.Error("genesis load error:%v", err)
+	//	return err
+	//}
+	//err = c.unit.Load()
+	//if err != nil {
+	//	logger.Error("unit load error:%v", err)
+	//	return err
+	//}
+	//err = c.recursive.Load()
+	//if err != nil {
+	//	logger.Error("recursive load error:%v", err)
+	//	return err
+	//}
+	//return nil
 }
 
 func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
-	return txineth2.Prove(c.Cfg.DataDir, param)
-}
-
-func (c *Circuit) TxBlockIsParentOfCheckPointProve() (*common.Proof, error) {
-
-	return nil, nil
-}
-
-func (c *Circuit) CheckPointFinalityProve() (*common.Proof, error) {
-
-	return nil, nil
-}
-
-func (c *Circuit) RedeemProve() (*common.Proof, error) {
-	panic(c)
-	return nil, nil
+	if c.debug {
+		logger.Warn("current zk circuit TxInEth2Prove prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := txineth2.Prove(c.Cfg.DataDir, param)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	return proof, err
 }
 
 func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
+	if c.debug {
+		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
+		return debugProof()
+	}
 	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
 }
 
@@ -217,6 +216,20 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	}
 	return proof, err
 }
+func (c *Circuit) TxBlockIsParentOfCheckPointProve() (*common.Proof, error) {
+
+	return nil, nil
+}
+
+func (c *Circuit) CheckPointFinalityProve() (*common.Proof, error) {
+
+	return nil, nil
+}
+
+func (c *Circuit) RedeemProve() (*common.Proof, error) {
+	panic(c)
+	return nil, nil
+}
 func (c *Circuit) VerifyProve() (*common.Proof, error) {
 
 	return nil, nil
@@ -328,6 +341,13 @@ func debugProof() (*common.Proof, error) {
 		Proof: &plonk_bn254.Proof{},
 		Wit:   w,
 	}, nil
+}
+
+func ProofToHexSolBytes(proof native_plonk.Proof) (string, error) {
+	_proof := proof.(*plonk_bn254.Proof)
+	proofStr := hex.EncodeToString(_proof.MarshalSolidity())
+	return proofStr, nil
+
 }
 
 func ProofToBytes(proof native_plonk.Proof) []byte {

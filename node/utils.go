@@ -94,6 +94,7 @@ func toDepositZkProofRequest(list []DepositProofParam) ([]ZkProofRequest, error)
 		result = append(result, ZkProofRequest{
 			reqType: DepositTxType,
 			data:    item,
+			TxHash:  item.TxHash,
 		})
 	}
 	return result, nil
@@ -103,8 +104,9 @@ func toRedeemZkProofRequest(list []RedeemProofParam) ([]ZkProofRequest, error) {
 	var result []ZkProofRequest
 	for _, item := range list {
 		result = append(result, ZkProofRequest{
-			reqType: RedeemTxType,
+			reqType: TxInEth2,
 			data:    item,
+			TxHash:  item.TxHash,
 		})
 	}
 	return result, nil
