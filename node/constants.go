@@ -76,17 +76,17 @@ const (
 
 	LocalInitBitcoinHeight  = 2585246
 	LocalInitBeaconHeight   = 153 //slot of 596751 in holesky
-	LocalInitEthereumHeight = 596751
+	LocalInitEthereumHeight = 1283350
 
 	LocalEthZkBridgeAddress = "0x07417a531e376ce150493ffa98cd5516b544441d"
 	LocalEthZkBtcAddress    = "0xd2a00777a7e5b6afaa5c053a6425619653541c82"
 
 	// utxo manager contract
 	LocalLogDepositAddr = "0xab5146a46e90c497b3d23afab7ddaedf3ff61eaf"
-	LocalLogRedeemAddr  = "0x07417a531e376ce150493ffa98cd5516b544441d"
+	LocalLogRedeemAddr  = "0x19d376e6a10aad92e787288464d4c738de97d135"
 
 	LocalTopicDepositAddr = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
-	LocalTopicRedeemAddr  = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
+	LocalTopicRedeemAddr  = "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"
 )
 
 var LocalLogAddrs = []string{LocalLogDepositAddr, LocalLogRedeemAddr}

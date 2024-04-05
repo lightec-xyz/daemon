@@ -7,9 +7,13 @@ import (
 )
 
 type ICircuit interface {
-	CheckPointFinalityProve() (*common.Proof, error)
+	// todo per 32 slot to generate proof
+	BeaconHeaderFinalityUpdateProve() (*common.Proof, error)
+	// todo find redeem tx,immediately to generate proof
 	TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error)
-	TxBlockIsParentOfCheckPointProve() (*common.Proof, error)
+	// todo only container rededm tx, we should need generate prof
+	BeaconHeaderProve() (*common.Proof, error)
+	// todo submit to eth contract proof
 	RedeemProve() (*common.Proof, error)
 	DepositProve(txId, blockHash string) (*common.Proof, error)
 	GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,

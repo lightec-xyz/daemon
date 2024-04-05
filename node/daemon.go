@@ -9,6 +9,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"os"
 	"os/signal"
 	"syscall"
@@ -107,28 +108,28 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 
-	keyStore := NewKeyStore(cfg.EthPrivateKey)
 	var agents []*WrapperAgent
-	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
+	//keyStore := NewKeyStore(cfg.EthPrivateKey)
+	//btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return nil, err
+	//}
+	//agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
+
+	// todo
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
 
-	// todo
-	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
-	//if err != nil {
-	//	logger.Error(err.Error())
-	//	return nil, err
-	//}
-
-	//ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
-	//if err != nil {
-	//	logger.Error(err.Error())
-	//	return nil, err
-	//}
-	//agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, 1*time.Minute, ethProofResp))
+	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, 1*time.Minute, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {

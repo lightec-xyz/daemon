@@ -286,7 +286,6 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			depositTxes = append(depositTxes, depositTx)
 			continue
 		}
-
 		redeemTx, isRedeem, err := e.isRedeemTx(log)
 		if err != nil {
 			logger.Error("check is redeem tx error:%v", err)
@@ -352,7 +351,6 @@ func (e *EthereumAgent) isDepositTx(log types.Log) (Transaction, bool, error) {
 	} else {
 		return Transaction{}, false, nil
 	}
-
 }
 
 func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
@@ -521,7 +519,7 @@ func NewRedeemProofParam(txId string, txData *ethblock.TxInEth2ProofData) Redeem
 func NewRedeemProof(txId string, status ProofStatus) Proof {
 	return Proof{
 		TxHash:    txId,
-		ProofType: RedeemTxType,
+		ProofType: TxInEth2,
 		Status:    int(status),
 	}
 }

@@ -221,7 +221,7 @@ func (c *Circuit) TxBlockIsParentOfCheckPointProve() (*common.Proof, error) {
 	return nil, nil
 }
 
-func (c *Circuit) CheckPointFinalityProve() (*common.Proof, error) {
+func (c *Circuit) FinalityUpdateProve() (*common.Proof, error) {
 
 	return nil, nil
 }

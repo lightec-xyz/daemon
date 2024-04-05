@@ -389,7 +389,7 @@ func LocalDevDaemonConfig() NodeConfig {
 		"https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
 		"lightec",
 		"abcd1234",
-		"http://127.0.0.1:8980",
+		"https://young-morning-meadow.ethereum-holesky.quiknode.pro",
 		"https://1rpc.io/holesky",
 		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
 	)
