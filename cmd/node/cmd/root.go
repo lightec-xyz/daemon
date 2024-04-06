@@ -29,7 +29,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.node/node.json)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.daemon/node.json)")
 	rootCmd.PersistentFlags().StringVar(&datadir, datadirFlag, "", "node storage directory")
 	rootCmd.PersistentFlags().StringVar(&rpcbind, rpcbindFlag, "", "rpc server host")
 	rootCmd.PersistentFlags().StringVar(&rpcport, rpcportFlag, "", "rpc server port")

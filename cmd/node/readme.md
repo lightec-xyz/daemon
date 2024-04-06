@@ -1,10 +1,9 @@
 ## Command Example
 
-     ./node --datadir /opt/lightec/redworkspace/.daemon recursive  --beaconUrl http://127.0.0.1:8970 --initSlot 1253376
+      ./node --config /Users/red/lworkspace/lightec/daemon/cmd/node/node.json run
 
 
-    ./node --datadir /opt/testnet/redworkspace/.daemon run  --btcUrl https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02 --ethUrl https://1rpc.io/holesky --network local
-
+    test ethereum address:0x771815eFD58e8D6e66773DB0bc002899c00d5b0c
 
     
     
