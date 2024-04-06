@@ -1,0 +1,16 @@
+Here is a template for the configuration file. You can change it according to your needs.
+
+    {
+        "datadir": "//Users/red/lworkspace/lightec/daemon/node/test",
+        "network": "local",
+        "rpcbind": "127.0.0.1",
+        "rpcport": "9870",
+        "btcUrl": "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
+        "ethUrl": "https://1rpc.io/holesky",
+        "beaconUrl": "https://young-morning-meadow.ethereum-holesky.quiknode.pro",
+        "ethPrivateKey": "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
+        "btcInitHeight": 2585325,
+        "ethInitHeight": 1286949,
+        "enableLocalWorker": true,
+        "autoSubmit": true
+    }
