@@ -259,10 +259,9 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 	txHex := hex.EncodeToString(btxTx)
 	fmt.Printf("btx Tx: %v\n", txHex)
 
+	txHash, err := client.Sendrawtransaction(txHex)
 	require.NoError(t, err)
-	// txHash, err := client.Sendrawtransaction(txHex)
-	// require.NoError(t, err)
-	// fmt.Printf("btc hash: %v\n", txHash)
+	fmt.Printf("btc hash: %v\n", txHash)
 }
 
 func TestMultiTransactionBuilder(t *testing.T) {
