@@ -58,6 +58,7 @@ func NewClientModeConfig() Config {
 		Url:     "http://127.0.0.1:9780",
 		MaxNums: 1,
 		Mode:    common.Client,
+		Network: "local",
 		DataDir: "/Users/red/lworkspace/lightec/daemon/proof/test",
 	}
 }

@@ -86,12 +86,15 @@ func (m *manager) GetProofRequest() (common.ZkProofRequest, bool, error) {
 		logger.Warn("current queue is empty")
 		return common.ZkProofRequest{}, false, nil
 	}
+	//todo
 	element := m.txProofQueue.Back()
 	request, ok := element.Value.(common.ZkProofRequest)
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
 		return common.ZkProofRequest{}, false, fmt.Errorf("parse Proof request error")
 	}
+	// todo
+	m.txProofQueue.Remove(element)
 	logger.Info("get proof request:%v %v", request.ReqType.String(), request.Period)
 	return request, true, nil
 }
@@ -162,8 +165,9 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 	var zkbProofResponse common.ZkProofResponse
 	switch request.ReqType {
 	case common.DepositTxType:
-		depositParam, ok := request.Data.(DepositProofParam)
-		if !ok {
+		var depositParam DepositProofParam
+		err := ParseObj(request.Data, &depositParam)
+		if err != nil {
 			return zkbProofResponse, fmt.Errorf("not deposit Proof param")
 		}
 		depositRpcRequest := rpc.DepositRequest{
@@ -178,9 +182,10 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 		}
 		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
 	case common.VerifyTxType:
-		verifyProofParam, ok := request.Data.(VerifyProofParam)
-		if !ok {
-			return zkbProofResponse, fmt.Errorf("not deposit Proof param")
+		var verifyProofParam VerifyProofParam
+		err := ParseObj(request.Data, &verifyProofParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not verify Proof param")
 		}
 		verifyRpcRequest := rpc.VerifyRequest{
 			Version:   verifyProofParam.Version,
@@ -195,8 +200,9 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, nil, proofResponse.Wit)
 
 	case common.TxInEth2:
-		redeemParam, ok := request.Data.(RedeemProofParam)
-		if !ok {
+		var redeemParam RedeemProofParam
+		err := ParseObj(request.Data, &redeemParam)
+		if err != nil {
 			return zkbProofResponse, fmt.Errorf("not txInEth2 Proof param")
 		}
 		txInEth2Req := &rpc.TxInEth2ProveReq{
@@ -212,9 +218,10 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
 
 	case common.RedeemTxType:
-		redeemParam, ok := request.Data.(*RedeemProofParam)
-		if !ok {
-			return zkbProofResponse, fmt.Errorf("not deposit Proof param")
+		var redeemParam RedeemProofParam
+		err := ParseObj(request.Data, &redeemParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not redeem Proof param")
 		}
 		redeemRpcRequest := rpc.RedeemRequest{
 			Version: redeemParam.Version,
@@ -229,10 +236,10 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 		zkbProofResponse = NewZkTxProofResp(request.ReqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
 	case common.SyncComGenesisType:
-		genesisReq, ok := request.Data.(*GenesisProofParam)
-		if !ok {
-			logger.Error("parse sync comm genesis request error")
-			return zkbProofResponse, fmt.Errorf("parse sync comm genesis request error")
+		var genesisReq GenesisProofParam
+		err := ParseObj(request.Data, &genesisReq)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not genesis Proof param")
 		}
 		genesisRpcRequest := rpc.SyncCommGenesisRequest{
 			Version:       genesisReq.Version,
@@ -254,9 +261,10 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 		zkbProofResponse = NewZkProofResp(request.ReqType, request.Period, proofResponse.Proof, proofResponse.Witness)
 
 	case common.SyncComUnitType:
-		unitParam, ok := request.Data.(*UnitProofParam)
-		if !ok {
-			return zkbProofResponse, fmt.Errorf("parse sync comm unit request error")
+		var unitParam UnitProofParam
+		err := ParseObj(request.Data, &unitParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not sync comm unit Proof param")
 		}
 		commUnitsRequest := rpc.SyncCommUnitsRequest{
 			Version:                 unitParam.Version,
@@ -278,9 +286,10 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 		zkbProofResponse = NewZkProofResp(request.ReqType, request.Period, proofResponse.Proof, proofResponse.Witness)
 
 	case common.SyncComRecursiveType:
-		recursiveParam, ok := request.Data.(*RecursiveProofParam)
-		if !ok {
-			return zkbProofResponse, fmt.Errorf("parse sync comm recursive request error")
+		var recursiveParam RecursiveProofParam
+		err := ParseObj(request.Data, &recursiveParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not sync comm recursive Proof param")
 		}
 		recursiveRequest := rpc.SyncCommRecursiveRequest{
 			Version:       recursiveParam.Version,

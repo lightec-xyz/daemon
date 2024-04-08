@@ -1,15 +1,11 @@
 package proof
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 )
 
 func TestClientModeProof(t *testing.T) {
 	config := NewClientModeConfig()
-	marshal, _ := json.Marshal(config)
-	fmt.Println(string(marshal))
 	node, err := NewNode(config)
 	if err != nil {
 		t.Fatal(err)

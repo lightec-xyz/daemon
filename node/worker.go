@@ -155,7 +155,7 @@ func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 	// todo
 	logger.Debug("unit prove request: %v period", req.Period)
 	var update utils.LightClientUpdateInfo
-	err := deepCopy(req, &update)
+	err := ParseObj(req, &update)
 	if err != nil {
 		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
@@ -327,7 +327,7 @@ func GetRecursiveWitnessPath(recursiveDir string, period uint64) string {
 	return fmt.Sprintf("%s/%d_recursive.witness", recursiveDir, period)
 }
 
-func deepCopy(src, dst interface{}) error {
+func ParseObj(src, dst interface{}) error {
 	if reflect.ValueOf(dst).Kind() != reflect.Ptr {
 		return fmt.Errorf("dst must be a pointer")
 	}

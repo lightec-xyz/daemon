@@ -42,6 +42,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 
 func (h *Handler) SubmitProof(req common.SubmitProof) (string, error) {
 	//todo check
+	logger.Info("submit proof type:%v period:%v hash:%v", req.Data.ZkProofType.String(), req.Data.Period, req.Data.TxHash)
 	err := h.manager.SendProofResponse(req.Data)
 	if err != nil {
 		logger.Error("send proof to manager error: %v", err)

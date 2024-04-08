@@ -61,7 +61,6 @@ func (l *Local) Run() error {
 		}
 		l.worker.AddReqNum()
 		go func(request common.ZkProofRequest) {
-			defer l.worker.DelReqNum()
 			count := 0
 			for {
 				count = count + 1
@@ -81,7 +80,8 @@ func (l *Local) Run() error {
 					logger.Error("submit proof error:%v", err)
 					continue // Todo ,retry should in queue
 				}
-				logger.Info("submit proof to daemon")
+				logger.Info("submit proof to daemon type: %v Period: %v,txHash: %v %v", request.ReqType.String(), request.Period, request.TxHash)
+				return
 			}
 		}(requestResp.Request)
 

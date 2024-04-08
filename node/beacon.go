@@ -378,7 +378,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 	}
 	// todo
 	var update utils.LightClientUpdateInfo
-	err = deepCopy(currentPeriodUpdate, &update)
+	err = ParseObj(currentPeriodUpdate, &update)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -397,7 +397,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		}
 		// todo
 		var genesisCommittee utils.SyncCommittee
-		err = deepCopy(genesisData.Data.CurrentSyncCommittee, &genesisCommittee)
+		err = ParseObj(genesisData.Data.CurrentSyncCommittee, &genesisCommittee)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, false, err
@@ -422,7 +422,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		}
 		// todo
 		var currentSyncCommittee utils.SyncCommittee
-		err = deepCopy(preUpdateData.Data.NextSyncCommittee, &currentSyncCommittee)
+		err = ParseObj(preUpdateData.Data.NextSyncCommittee, &currentSyncCommittee)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, false, err
