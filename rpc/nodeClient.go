@@ -42,8 +42,8 @@ func (c *NodeClient) Transaction(txHash string) (Transaction, error) {
 	return result, nil
 }
 
-func (c *NodeClient) ProofInfo(proofId string) (ProofInfo, error) {
-	var result ProofInfo
+func (c *NodeClient) ProofInfo(proofId []string) ([]ProofInfo, error) {
+	var result []ProofInfo
 	err := c.call(&result, "zkbtc_proofInfo", proofId)
 	if err != nil {
 		return result, err
