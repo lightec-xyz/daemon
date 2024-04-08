@@ -17,16 +17,37 @@ type Handler struct {
 	memoryDb store.IStore
 	exitCh   chan os.Signal
 	schedule *Schedule
+	manager  *manager
 }
 
 func (h *Handler) GetTask(request *common.TaskRequest) (*common.TaskResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	// Todo
+	zkProofRequest, ok, err := h.manager.GetProofRequest()
+	if err != nil {
+		logger.Error("get proof request error: %v", err)
+		return nil, err
+	}
+	var response common.TaskResponse
+	if !ok {
+		logger.Warn("maybe no new proof task")
+		response.CanGen = false
+		return &response, nil
+	}
+	response.CanGen = true
+	response.Request = zkProofRequest
+	logger.Info("worker: %v get task: type:%v hash:%v %v:period:%v", request.Id, zkProofRequest.ReqType.String(),
+		zkProofRequest.TxHash, zkProofRequest.Period)
+	return &response, nil
 }
 
 func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	//todo check
+	err := h.manager.SendProofResponse(req.Data)
+	if err != nil {
+		logger.Error("send proof to manager error: %v", err)
+		return "", err
+	}
+	return "ok", nil
 }
 
 func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string, error) {
@@ -119,12 +140,13 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 	return daemonInfo, nil
 }
 
-func NewHandler(store, memoryDb store.IStore, schedule *Schedule, exitCh chan os.Signal) *Handler {
+func NewHandler(manager *manager, store, memoryDb store.IStore, schedule *Schedule, exitCh chan os.Signal) *Handler {
 	return &Handler{
 		store:    store,
 		memoryDb: memoryDb,
 		exitCh:   exitCh,
 		schedule: schedule,
+		manager:  manager,
 	}
 }
 

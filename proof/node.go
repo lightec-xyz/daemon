@@ -15,6 +15,7 @@ type Node struct {
 	server *rpc.Server
 	mode   Mode
 	local  *Local
+	exit   chan os.Signal
 }
 
 func NewNode(cfg Config) (*Node, error) {
@@ -36,6 +37,7 @@ func NewNode(cfg Config) (*Node, error) {
 		return &Node{
 			local: local,
 			mode:  cfg.Mode,
+			exit:  make(chan os.Signal, 1),
 		}, nil
 	} else if cfg.Mode == Cluster {
 		host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
@@ -50,6 +52,7 @@ func NewNode(cfg Config) (*Node, error) {
 		return &Node{
 			server: server,
 			mode:   cfg.Mode,
+			exit:   make(chan os.Signal, 1),
 		}, nil
 	}
 	return nil, fmt.Errorf("new node error: unknown model:%v", cfg.Mode)
@@ -63,14 +66,14 @@ func (node *Node) Start() error {
 		go node.server.Run()
 	}
 	logger.Info("proof worker node start now ....")
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
+
+	signal.Notify(node.exit, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
 	for {
-		msg := <-ch
+		msg := <-node.exit
 		switch msg {
 		case syscall.SIGHUP:
 			logger.Info("node get SIGHUP")
-		case syscall.SIGQUIT, syscall.SIGTERM:
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
 			logger.Info("get shutdown signal ...")
 			err := node.Close()
 			if err != nil {
@@ -82,6 +85,7 @@ func (node *Node) Start() error {
 }
 
 func (node *Node) Close() error {
+	logger.Warn("proof worker node exit now ....")
 	if node.server != nil {
 		err := node.server.Shutdown()
 		if err != nil {

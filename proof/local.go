@@ -12,6 +12,7 @@ type Local struct {
 	Id     string
 	client *rpc.NodeClient
 	worker rpc.IWorker
+	exit   chan struct{}
 }
 
 func NewLocal(url, datadir string, num int) (*Local, error) {
@@ -20,7 +21,7 @@ func NewLocal(url, datadir string, num int) (*Local, error) {
 		logger.Error("new node client error:%v", err)
 		return nil, err
 	}
-	worker, err := node.NewLocalWorker("", "", int(num))
+	worker, err := node.NewLocalWorker(datadir, datadir, int(num))
 	if err != nil {
 		logger.Error("new local worker error:%v", err)
 		return nil, err
@@ -29,14 +30,20 @@ func NewLocal(url, datadir string, num int) (*Local, error) {
 		client: client,
 		worker: worker,
 		Id:     worker.Id(),
+		exit:   make(chan struct{}, 1),
 	}, nil
 }
 
 func (l *Local) Run() error {
 	for {
+		select {
+		case <-l.exit:
+			return nil
+		default:
+			time.Sleep(10 * time.Second)
+		}
 		if l.worker.CurrentNums() >= l.worker.MaxNums() {
 			logger.Warn("wait proof generated")
-			time.Sleep(1 * time.Minute)
 			continue
 		}
 		request := common.TaskRequest{
@@ -50,7 +57,6 @@ func (l *Local) Run() error {
 		}
 		if !requestResp.CanGen {
 			logger.Info("daemon server no task need to generate proof now ....")
-			time.Sleep(1 * time.Minute)
 			continue
 		}
 		l.worker.AddReqNum()
@@ -75,7 +81,7 @@ func (l *Local) Run() error {
 					logger.Error("submit proof error:%v", err)
 					continue // Todo ,retry should in queue
 				}
-				logger.Info("submit proof to daemon server success:%v %v %v", request.ReqType.String(), request.Period, request.TxHash)
+				logger.Info("submit proof to daemon")
 			}
 		}(requestResp.Request)
 
@@ -83,5 +89,6 @@ func (l *Local) Run() error {
 }
 
 func (l *Local) Close() error {
+	close(l.exit)
 	return nil
 }

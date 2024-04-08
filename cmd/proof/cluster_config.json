@@ -1,0 +1,8 @@
+{
+  "rpcbind": "0.0.0.0",
+  "rpcport": "30001",
+  "maxNums": 1,
+  "network": "local",
+  "datadir": "/Users/red/lworkspace/lightec/daemon/proof/test",
+  "model": "cluster"
+}

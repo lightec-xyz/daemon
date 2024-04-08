@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/lightec-xyz/daemon/common"
@@ -22,6 +23,7 @@ type manager struct {
 	btcProofResp   chan common.ZkProofResponse
 	ethProofResp   chan common.ZkProofResponse
 	syncCommitResp chan common.ZkProofResponse
+	lock           sync.Mutex
 }
 
 func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan common.ZkProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {
@@ -74,6 +76,29 @@ func (m *manager) run(requestList []common.ZkProofRequest) error {
 			m.txProofQueue.PushFront(req)
 		}
 	}
+	return nil
+}
+
+func (m *manager) GetProofRequest() (common.ZkProofRequest, bool, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if m.txProofQueue.Len() == 0 {
+		return common.ZkProofRequest{}, false, nil
+	}
+	element := m.txProofQueue.Back()
+	request, ok := element.Value.(common.ZkProofRequest)
+	if !ok {
+		logger.Error("should never happen,parse Proof request error")
+		return common.ZkProofRequest{}, false, fmt.Errorf("parse Proof request error")
+	}
+	logger.Info("get proof request:%v %v", request.ReqType.String(), request.Period)
+	return request, true, nil
+}
+
+func (m *manager) SendProofResponse(response common.ZkProofResponse) error {
+	chanResponse := m.getChanResponse(response.ZkProofType)
+	chanResponse <- response
+	logger.Info("send Proof response:%v %v", response.ZkProofType.String(), response.Period)
 	return nil
 }
 

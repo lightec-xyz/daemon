@@ -18,6 +18,7 @@ var runCmd = &cobra.Command{
 			fmt.Printf("read config error: %v %v \n", cfgFile, err)
 			return
 		}
+		fmt.Printf("%v\n", string(cfgBytes))
 		var config proof.Config
 		err = json.Unmarshal(cfgBytes, &config)
 		if err != nil {
