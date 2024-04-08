@@ -43,7 +43,7 @@ func (l *Local) Run() error {
 			time.Sleep(10 * time.Second)
 		}
 		if l.worker.CurrentNums() >= l.worker.MaxNums() {
-			logger.Warn("wait proof generated")
+			logger.Warn("maxNums limit reached, wait proof generated")
 			continue
 		}
 		request := common.TaskRequest{
