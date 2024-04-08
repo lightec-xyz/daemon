@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 )
 
 const (
@@ -25,10 +26,10 @@ type DbTx struct {
 }
 
 type DbProof struct {
-	TxHash    string      `json:"txId"`
-	ProofType ZkProofType `json:"type"`
-	Status    int         `json:"status"`
-	Proof     string      `json:"Proof"`
+	TxHash    string             `json:"txId"`
+	ProofType common.ZkProofType `json:"type"`
+	Status    int                `json:"status"`
+	Proof     string             `json:"Proof"`
 }
 
 type TxType = int

@@ -10,9 +10,11 @@ import (
 	"syscall"
 )
 
+// Node Todo
 type Node struct {
-	server  *rpc.Server
-	handler *Handler
+	server *rpc.Server
+	mode   Mode
+	local  *Local
 }
 
 func NewNode(cfg Config) (*Node, error) {
@@ -21,22 +23,45 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("init logger error:%v", err)
 		return nil, err
 	}
-	host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
-	memoryStore := store.NewMemoryStore()
-	handler := NewHandler(memoryStore, cfg.MaxNums)
-	logger.Info("proof worker info: %v", cfg.Info())
-	server, err := rpc.NewWsServer(RpcRegisterName, host, handler)
+	err = cfg.Check()
 	if err != nil {
-		logger.Error("new rpc server error:%v", err)
+		logger.Error("config check error:%v", err)
 		return nil, err
 	}
-	return &Node{
-		server: server,
-	}, nil
+	if cfg.Mode == Client {
+		local, err := NewLocal(cfg.Url, cfg.DataDir, cfg.MaxNums)
+		if err != nil {
+			return nil, err
+		}
+		return &Node{
+			local: local,
+			mode:  cfg.Mode,
+		}, nil
+	} else if cfg.Mode == Cluster {
+		host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
+		memoryStore := store.NewMemoryStore()
+		handler := NewHandler(memoryStore, cfg.MaxNums)
+		logger.Info("proof worker info: %v", cfg.Info())
+		server, err := rpc.NewWsServer(RpcRegisterName, host, handler)
+		if err != nil {
+			logger.Error("new rpc server error:%v", err)
+			return nil, err
+		}
+		return &Node{
+			server: server,
+			mode:   cfg.Mode,
+		}, nil
+	}
+	return nil, fmt.Errorf("new node error: unknown model:%v", cfg.Mode)
+
 }
 
 func (node *Node) Start() error {
-	go node.server.Run()
+	if node.mode == Client {
+		go node.local.Run()
+	} else if node.mode == Cluster {
+		go node.server.Run()
+	}
 	logger.Info("proof worker node start now ....")
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
@@ -62,7 +87,12 @@ func (node *Node) Close() error {
 		if err != nil {
 			logger.Error(" proof worker node exit now: %v", err)
 		}
-		return err
+	}
+	if node.local != nil {
+		err := node.local.Close()
+		if err != nil {
+			logger.Error(" proof worker node exit now: %v", err)
+		}
 	}
 	return nil
 }

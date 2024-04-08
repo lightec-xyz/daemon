@@ -3,68 +3,12 @@ package node
 import (
 	"bytes"
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"strconv"
 
-	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
-
-type ZkProofType int
-
-const (
-	DepositTxType ZkProofType = iota + 1
-	RedeemTxType
-	TxInEth2
-	VerifyTxType
-	SyncComGenesisType
-	SyncComUnitType
-	SyncComRecursiveType
-)
-
-func (zkpr *ZkProofType) String() string {
-	switch *zkpr {
-	case DepositTxType:
-		return "DepositTxType"
-	case RedeemTxType:
-		return "RedeemTxType"
-	case VerifyTxType:
-		return "VerifyTxType"
-	case SyncComGenesisType:
-		return "SyncComGenesisType"
-	case SyncComUnitType:
-		return "SyncComUnitType"
-	case SyncComRecursiveType:
-		return "SyncComRecursiveType"
-	default:
-		return ""
-	}
-}
-
-type ZkProofRequest struct {
-	ReqType ZkProofType
-	Data    interface{}
-	period  uint64
-	TxHash  string
-}
-
-func (r *ZkProofRequest) String() string {
-	return fmt.Sprintf("ZkProofRequest{ReqType:%v,Period:%v,Data:%v}", r.ReqType, r.period, r.Data)
-}
-
-type ZkProofResponse struct {
-	ZkProofType ZkProofType
-	Status      ProofStatus
-	Proof       common.ZkProof
-	ProofStr    string
-	Witness     []byte
-	Period      uint64
-	TxHash      string
-}
-
-func (zkResp *ZkProofResponse) String() string {
-	return fmt.Sprintf("ZkProofType:%v Period:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
-}
 
 type DepositProofParam struct {
 	Version   string
@@ -159,15 +103,6 @@ type FetchDataResponse struct {
 	UpdateType FetchType
 }
 
-type ProofStatus int
-
-const (
-	ProofDefault ProofStatus = iota
-	ProofPending
-	ProofSuccess
-	ProofFailed
-)
-
 type Utxo struct {
 	TxId  string `json:"txId"`
 	Index uint32 `json:"index"`
@@ -216,8 +151,8 @@ type Transaction struct {
 }
 
 type Proof struct {
-	TxHash    string      `json:"txId"`
-	ProofType ZkProofType `json:"type"`
-	Status    int         `json:"status"`
-	Proof     string      `json:"Proof"`
+	TxHash    string             `json:"txId"`
+	ProofType common.ZkProofType `json:"type"`
+	Status    int                `json:"status"`
+	Proof     string             `json:"Proof"`
 }

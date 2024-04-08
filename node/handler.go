@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
@@ -16,6 +17,16 @@ type Handler struct {
 	memoryDb store.IStore
 	exitCh   chan os.Signal
 	schedule *Schedule
+}
+
+func (h *Handler) GetTask(request *common.TaskRequest) (*common.TaskResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string, error) {
