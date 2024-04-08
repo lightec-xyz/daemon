@@ -20,7 +20,7 @@ type Handler struct {
 	manager  *manager
 }
 
-func (h *Handler) GetTask(request *common.TaskRequest) (*common.TaskResponse, error) {
+func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	// Todo
 	zkProofRequest, ok, err := h.manager.GetProofRequest()
 	if err != nil {
@@ -35,12 +35,12 @@ func (h *Handler) GetTask(request *common.TaskRequest) (*common.TaskResponse, er
 	}
 	response.CanGen = true
 	response.Request = zkProofRequest
-	logger.Info("worker: %v get task: type:%v hash:%v %v:period:%v", request.Id, zkProofRequest.ReqType.String(),
+	logger.Info("worker: %v get task: type:%v hash:%v:period:%v", request.Id, zkProofRequest.ReqType.String(),
 		zkProofRequest.TxHash, zkProofRequest.Period)
 	return &response, nil
 }
 
-func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
+func (h *Handler) SubmitProof(req common.SubmitProof) (string, error) {
 	//todo check
 	err := h.manager.SendProofResponse(req.Data)
 	if err != nil {

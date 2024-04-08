@@ -29,3 +29,10 @@ const (
 	ProofSuccess
 	ProofFailed
 )
+
+type Mode string
+
+const (
+	Client  Mode = "client"
+	Cluster Mode = "cluster"
+)

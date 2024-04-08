@@ -2,6 +2,7 @@ package proof
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
@@ -13,7 +14,7 @@ import (
 // Node Todo
 type Node struct {
 	server *rpc.Server
-	mode   Mode
+	mode   common.Mode
 	local  *Local
 	exit   chan os.Signal
 }
@@ -29,7 +30,7 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("config check error:%v", err)
 		return nil, err
 	}
-	if cfg.Mode == Client {
+	if cfg.Mode == common.Client {
 		local, err := NewLocal(cfg.Url, cfg.DataDir, cfg.MaxNums)
 		if err != nil {
 			return nil, err
@@ -39,7 +40,7 @@ func NewNode(cfg Config) (*Node, error) {
 			mode:  cfg.Mode,
 			exit:  make(chan os.Signal, 1),
 		}, nil
-	} else if cfg.Mode == Cluster {
+	} else if cfg.Mode == common.Cluster {
 		host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
 		memoryStore := store.NewMemoryStore()
 		handler := NewHandler(memoryStore, cfg.MaxNums)
@@ -60,9 +61,9 @@ func NewNode(cfg Config) (*Node, error) {
 }
 
 func (node *Node) Start() error {
-	if node.mode == Client {
+	if node.mode == common.Client {
 		go node.local.Run()
-	} else if node.mode == Cluster {
+	} else if node.mode == common.Cluster {
 		go node.server.Run()
 	}
 	logger.Info("proof worker node start now ....")

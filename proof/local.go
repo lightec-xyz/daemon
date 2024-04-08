@@ -50,7 +50,7 @@ func (l *Local) Run() error {
 			Id:        l.Id,
 			ProofType: []common.ZkProofType{}, // Todo worker support which proof type
 		}
-		requestResp, err := l.client.GetTask(&request)
+		requestResp, err := l.client.GetTask(request)
 		if err != nil {
 			logger.Error("get task error:%v", err)
 			continue
@@ -76,7 +76,7 @@ func (l *Local) Run() error {
 					continue
 				}
 				logger.Info("complete generate Proof type: %v Period: %v", request.ReqType.String(), request.Period)
-				_, err = l.client.SubmitProof(&common.SubmitProof{Data: proof})
+				_, err = l.client.SubmitProof(common.SubmitProof{Data: proof})
 				if err != nil {
 					logger.Error("submit proof error:%v", err)
 					continue // Todo ,retry should in queue

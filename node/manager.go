@@ -83,6 +83,7 @@ func (m *manager) GetProofRequest() (common.ZkProofRequest, bool, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if m.txProofQueue.Len() == 0 {
+		logger.Warn("current queue is empty")
 		return common.ZkProofRequest{}, false, nil
 	}
 	element := m.txProofQueue.Back()
@@ -148,7 +149,7 @@ func (m *manager) genProof() error {
 		return err
 	}
 	if !find {
-		logger.Warn(" no find best worker to gen Proof")
+		//logger.Warn(" no find best worker to gen Proof")
 		time.Sleep(10 * time.Second)
 		return nil
 	}

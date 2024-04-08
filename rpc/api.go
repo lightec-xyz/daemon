@@ -9,8 +9,8 @@ type INode interface {
 	Transaction(txHash string) (Transaction, error)
 	TransactionsByHeight(height uint64, network string) ([]string, error)
 	Transactions(txId []string) ([]Transaction, error)
-	GetTask(request *common.TaskRequest) (*common.TaskResponse, error)
-	SubmitProof(req *common.SubmitProof) (string, error)
+	GetTask(request common.TaskRequest) (*common.TaskResponse, error)
+	SubmitProof(req common.SubmitProof) (string, error)
 	Stop() error
 }
 

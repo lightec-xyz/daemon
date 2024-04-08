@@ -12,10 +12,10 @@ var mock *Mock
 
 func init() {
 	logger.InitLogger()
-	mock, err = NewMock("testnet")
-	if err != nil {
-		panic(err)
-	}
+	//mock, err = NewMock("testnet")
+	//if err != nil {
+	//	panic(err)
+	//}
 }
 func TestMockDeposit(t *testing.T) {
 	err = mock.DepositBtc(10000)
