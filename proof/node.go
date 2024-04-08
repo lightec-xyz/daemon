@@ -60,6 +60,10 @@ func NewNode(cfg Config) (*Node, error) {
 
 }
 
+func (node *Node) CheckGenEnv() error {
+	panic(node)
+}
+
 func (node *Node) Start() error {
 	if node.mode == common.Client {
 		go node.local.Run()
