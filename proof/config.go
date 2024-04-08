@@ -8,16 +8,17 @@ import (
 const RpcRegisterName = "zkbtc"
 
 type Config struct {
-	RpcBind      string `json:"rpcbind"`
-	RpcPort      string `json:"rpcport"`
-	ParallelNums int    `json:"parallelNums"`
-	Network      string `json:"network"`
-	DataDir      string `json:"datadir"`
+	RpcBind string `json:"rpcbind"`
+	RpcPort string `json:"rpcport"`
+	MaxNums int    `json:"maxNums"`
+	Network string `json:"network"`
+	DataDir string `json:"datadir"`
+	Model   string `json:"model"`
 }
 
 func (c *Config) Info() string {
-	return fmt.Sprintf("ip:%v,port:%v,parallelNums:%v,network:%v,datadir:%v",
-		c.RpcBind, c.RpcPort, c.ParallelNums, c.Network, c.DataDir)
+	return fmt.Sprintf("ip:%v,port:%v,Maxnums:%v,network:%v,datadir:%v",
+		c.RpcBind, c.RpcPort, c.MaxNums, c.Network, c.DataDir)
 }
 
 func LocalDevConfig() Config {
@@ -26,10 +27,10 @@ func LocalDevConfig() Config {
 		panic("user.Current() error: " + err.Error())
 	}
 	return Config{
-		RpcBind:      "0.0.0.0",
-		RpcPort:      "30001",
-		ParallelNums: 1,
-		Network:      "testnet",
-		DataDir:      fmt.Sprintf("%v/.daemon/node.json", current.HomeDir),
+		RpcBind: "0.0.0.0",
+		RpcPort: "30001",
+		MaxNums: 1,
+		Network: "testnet",
+		DataDir: fmt.Sprintf("%v/.daemon/node.json", current.HomeDir),
 	}
 }

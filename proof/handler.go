@@ -63,7 +63,7 @@ func (h *Handler) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, err
 	logger.Debug("gen verify proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
-		Proof: common.ZkProof([]byte("verify proof")),
+		Proof: "verify proof",
 	}, nil
 }
 
@@ -119,7 +119,6 @@ func NewHandler(memoryStore store.IStore, max int) *Handler {
 		maxNums:     max,
 	}
 }
-
 func objParse(src, dest interface{}) error {
 	marshal, err := json.Marshal(src)
 	if err != nil {

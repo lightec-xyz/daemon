@@ -69,18 +69,21 @@ func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
 	return transaction, err
 }
 
-func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
-	proof, err := ReadDbProof(h.store, txId)
-	if err != nil {
-		logger.Error("read Proof error: %v %v", txId, err)
-		return rpc.ProofInfo{}, err
+func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
+	var results []rpc.ProofInfo
+	for _, txId := range txIds {
+		proof, err := ReadDbProof(h.store, txId)
+		if err != nil {
+			logger.Error("read Proof error: %v %v", txId, err)
+			return nil, err
+		}
+		results = append(results, rpc.ProofInfo{
+			Status: int(proof.Status),
+			Proof:  proof.Proof,
+			TxId:   proof.TxHash,
+		})
 	}
-	rpcProof := rpc.ProofInfo{
-		Status: int(proof.Status),
-		Proof:  proof.Proof,
-		TxId:   proof.TxHash,
-	}
-	return rpcProof, nil
+	return results, nil
 }
 
 func (h *Handler) Stop() error {

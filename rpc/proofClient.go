@@ -110,16 +110,6 @@ func (p *ProofClient) CurrentNums() (int, error) {
 	return result, nil
 }
 
-func (p *ProofClient) AddReqNum() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (p *ProofClient) DelReqNum() {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (p *ProofClient) call(result interface{}, method string, args ...interface{}) error {
 	vi := reflect.ValueOf(result)
 	if vi.Kind() != reflect.Ptr {

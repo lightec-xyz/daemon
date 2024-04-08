@@ -23,7 +23,7 @@ func NewNode(cfg Config) (*Node, error) {
 	}
 	host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
 	memoryStore := store.NewMemoryStore()
-	handler := NewHandler(memoryStore, cfg.ParallelNums)
+	handler := NewHandler(memoryStore, cfg.MaxNums)
 	logger.Info("proof worker info: %v", cfg.Info())
 	server, err := rpc.NewWsServer(RpcRegisterName, host, handler)
 	if err != nil {

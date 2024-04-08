@@ -28,9 +28,9 @@ var runCmd = &cobra.Command{
 
 func newConfig() proof.Config {
 	return proof.Config{
-		RpcBind:      *ip,
-		RpcPort:      *port,
-		ParallelNums: *maxNums,
+		RpcBind: *ip,
+		RpcPort: *port,
+		MaxNums: *maxNums,
 	}
 }
 
