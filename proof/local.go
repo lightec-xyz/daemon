@@ -56,7 +56,7 @@ func (l *Local) Run() error {
 			continue
 		}
 		if !requestResp.CanGen {
-			logger.Info("daemon server no task need to generate proof now ....")
+			logger.Info("no new proof request, wait  request coming now ....")
 			continue
 		}
 		l.worker.AddReqNum()
