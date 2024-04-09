@@ -137,7 +137,7 @@ func (m *manager) DistributeRequest() error {
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
 		m.proofQueue.Remove(element)
-		go func(req *common.ZkProofRequest) {
+		go func(req *common.ZkProofRequest, chaResp chan common.ZkProofResponse) {
 			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), req.ReqType.String(), req.Period)
 			zkProofResponse, err := WorkerGenProof(worker, req)
 			if err != nil {
@@ -147,9 +147,9 @@ func (m *manager) DistributeRequest() error {
 				logger.Info("add Proof request type: %v ,Period: %v to queue again", req.ReqType.String(), req.Period)
 				return
 			}
-			chanResponse <- zkProofResponse
-			logger.Info("complete generate Proof type: %v Period: %v", req.ReqType.String(), req.Period)
-		}(request)
+			logger.Debug("complete generate Proof type: %v Period: %v", req.ReqType.String(), req.Period)
+			chaResp <- zkProofResponse
+		}(request, chanResponse)
 		return nil
 	})
 	if err != nil {
