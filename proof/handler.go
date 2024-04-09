@@ -63,7 +63,7 @@ func (h *Handler) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, err
 	logger.Debug("gen verify proof")
 	time.Sleep(10 * time.Second)
 	return rpc.VerifyResponse{
-		Proof: "verify proof",
+		Proof: []byte("verify proof"),
 	}, nil
 }
 

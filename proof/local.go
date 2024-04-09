@@ -80,7 +80,7 @@ func (l *Local) Run() error {
 					logger.Error("submit proof error:%v", err)
 					continue // Todo ,retry should in queue
 				}
-				logger.Info("submit proof to daemon type: %v Period: %v,txHash: %v %v", request.ReqType.String(), request.Period, request.TxHash)
+				logger.Info("submit proof to daemon type: %v Period: %v,txHash: %v", request.ReqType.String(), request.Period, request.TxHash)
 				return
 			}
 		}(requestResp.Request)
