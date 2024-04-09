@@ -2,15 +2,14 @@ package node
 
 import (
 	"fmt"
-	"sync"
-	"time"
-
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"sync"
+	"time"
 )
 
 type manager struct {

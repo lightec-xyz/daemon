@@ -129,9 +129,10 @@ func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
 
 func (f *FileStore) StoreRecursiveProof(period uint64, proof []byte, witness []byte) error {
 	return f.InsertData(RecursiveDir, parseKey(period), storeProof{
-		Period:  period,
-		Proof:   hex.EncodeToString(proof),
-		Witness: hex.EncodeToString(witness),
+		Period:    period,
+		ProofType: common.SyncComRecursiveType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
 	})
 }
 
@@ -165,9 +166,10 @@ func (f *FileStore) CheckUnitProof(period uint64) (bool, error) {
 func (f *FileStore) StoreUnitProof(period uint64, proof, witness []byte) error {
 	logger.Info("store unit proof")
 	return f.InsertData(UnitDir, parseKey(period), storeProof{
-		Period:  period,
-		Proof:   hex.EncodeToString(proof),
-		Witness: hex.EncodeToString(witness),
+		Period:    period,
+		ProofType: common.SyncComUnitType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
 	})
 }
 
@@ -238,9 +240,10 @@ func (f *FileStore) CheckBootstrap() (bool, error) {
 
 func (f *FileStore) StoreGenesisProof(proof []byte, witness []byte) error {
 	return f.InsertData(GenesisDir, GenesisProofKey, storeProof{
-		Period:  f.genesisPeriod,
-		Proof:   hex.EncodeToString(proof),
-		Witness: hex.EncodeToString(witness),
+		Period:    f.genesisPeriod,
+		ProofType: common.SyncComGenesisType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
 	})
 }
 
@@ -449,7 +452,7 @@ func (f *FileStore) GetData(table, key string) ([]byte, error) {
 
 func (f *FileStore) GetObj(table, key string) (*StoreProof, error) {
 	var obj storeProof
-	err := f.getObj(table, key, obj)
+	err := f.getObj(table, key, &obj)
 	if err != nil {
 		return nil, err
 	}
