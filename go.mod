@@ -16,9 +16,9 @@ require (
 	github.com/fxamacker/cbor/v2 v2.5.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.5.0
-	github.com/lightec-xyz/btc_provers v0.0.0-00010101000000-000000000000
+	github.com/lightec-xyz/btc_provers v0.1.0
 	github.com/lightec-xyz/provers v0.0.0-00010101000000-000000000000
-	github.com/lightec-xyz/reLight v0.0.0-20240329065153-d26254301ed4
+	github.com/lightec-xyz/reLight v0.1.0
 	github.com/prysmaticlabs/prysm/v5 v5.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
@@ -85,7 +85,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lightec-xyz/chainark v0.0.0-20240323163404-5d6e861d4988 // indirect
+	github.com/lightec-xyz/chainark v0.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

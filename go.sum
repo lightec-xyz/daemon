@@ -441,8 +441,8 @@ github.com/leanovate/gopter v0.2.9 h1:fQjYxZaynp97ozCzfOyOuAGOU4aU/z37zf/tOujFk7
 github.com/leanovate/gopter v0.2.9/go.mod h1:U2L/78B+KVFIx2VmW6onHJQzXtFb+p5y3y2Sh+Jxxv8=
 github.com/leodido/go-urn v1.2.4 h1:XlAE/cm/ms7TE/VMVoduSpNBoyc2dOxHs5MZSwAN63Q=
 github.com/leodido/go-urn v1.2.4/go.mod h1:7ZrI8mTSeBSHl/UaRyKQW1qZeMgak41ANeCNaVckg+4=
-github.com/lightec-xyz/chainark v0.0.0-20240323163404-5d6e861d4988 h1:Ct/WXaMcfxfVAYdPL/5IwSl01zw//VxR4uMSyV2CHx8=
-github.com/lightec-xyz/chainark v0.0.0-20240323163404-5d6e861d4988/go.mod h1:YcbPM6V02dFOD+f0wBBUAnEVaaaZVPv/c1Z/fnQTpb4=
+github.com/lightec-xyz/chainark v0.1.0 h1:2hEoslBrSqncGRJPP9wZLFfF5VxY1EBuxzzDG0DU5B0=
+github.com/lightec-xyz/chainark v0.1.0/go.mod h1:YcbPM6V02dFOD+f0wBBUAnEVaaaZVPv/c1Z/fnQTpb4=
 github.com/lightec-xyz/gnark v0.0.0-20240314143013-a200efabb849 h1:wCYK6ly248m0tnby4JTcMc1nuwWuCH7eLp2vNdr4BrU=
 github.com/lightec-xyz/gnark v0.0.0-20240314143013-a200efabb849/go.mod h1:0dnRvl8EDbPsSZsIg8xOP1Au8cf43xOlT7/BhwMV98g=
 github.com/lightec-xyz/gnark-crypto v0.0.0-20240314062713-0c4d1f3833df h1:w5bpq1pyPOjUuCGdzPMdTp1ZgAPcyD8XkZmJ9rv8uIY=
