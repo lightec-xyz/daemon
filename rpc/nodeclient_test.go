@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"github.com/lightec-xyz/daemon/common"
 	"testing"
 )
 
@@ -12,6 +13,30 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestNodeClient_GetTask(t *testing.T) {
+	request := common.TaskRequest{
+		Id:        "test_id",
+		ProofType: nil,
+	}
+	task, err := nodeClient.GetTask(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(task)
+}
+
+func TestNodeClient_SubmitProof(t *testing.T) {
+	result, err := nodeClient.SubmitProof(common.SubmitProof{
+		Data: common.ZkProofResponse{
+			ProofStr: "sdsdfsdf",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(result)
 }
 
 func TestNodeClient_TransactionsByHeight(t *testing.T) {
@@ -47,7 +72,7 @@ func TestNodeClient_Transactions(t *testing.T) {
 }
 
 func TestNodeClient_ProofInfo(t *testing.T) {
-	proofInfo, err := nodeClient.ProofInfo("0x6deff065bbaf2c9e9c12faf1d841d1f0b96502a20e6e5a864cc398cf6d54d6e4")
+	proofInfo, err := nodeClient.ProofInfo([]string{"0x6deff065bbaf2c9e9c12faf1d841d1f0b96502a20e6e5a864cc398cf6d54d6e4"})
 	if err != nil {
 		t.Fatal(err)
 	}

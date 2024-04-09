@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/lightec-xyz/daemon/common"
 	"reflect"
 	"time"
 )
@@ -13,6 +14,25 @@ var _ INode = (*NodeClient)(nil)
 type NodeClient struct {
 	*rpc.Client
 	timeout time.Duration
+}
+
+func (c *NodeClient) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
+	var result common.TaskResponse
+	err := c.call(&result, "zkbtc_getTask", request)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *NodeClient) SubmitProof(req common.SubmitProof) (string, error) {
+	var result string
+	err := c.call(&result, "zkbtc_submitProof", req)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+
 }
 
 func (c *NodeClient) TransactionsByHeight(height uint64, network string) ([]string, error) {
@@ -42,8 +62,8 @@ func (c *NodeClient) Transaction(txHash string) (Transaction, error) {
 	return result, nil
 }
 
-func (c *NodeClient) ProofInfo(proofId string) (ProofInfo, error) {
-	var result ProofInfo
+func (c *NodeClient) ProofInfo(proofId []string) ([]ProofInfo, error) {
+	var result []ProofInfo
 	err := c.call(&result, "zkbtc_proofInfo", proofId)
 	if err != nil {
 		return result, err

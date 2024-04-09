@@ -22,7 +22,7 @@ type BitcoinAgent struct {
 	store                store.IStore
 	memoryStore          store.IStore
 	blockTime            time.Duration
-	proofRequest         chan<- []ZkProofRequest
+	proofRequest         chan<- []common.ZkProofRequest
 	checkProofHeightNums int64
 	taskManager          *TaskManager
 	whiteList            map[string]bool // todo
@@ -37,7 +37,7 @@ type BitcoinAgent struct {
 }
 
 func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	requests chan []ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
+	requests chan []common.ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
@@ -255,10 +255,10 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			}
 			var depositTxProof Proof
 			if submitted {
-				depositTxProof = NewDepositTxProof(tx.Txid, ProofSuccess)
+				depositTxProof = NewDepositTxProof(tx.Txid, common.ProofSuccess)
 			} else {
 				requests = append(requests, NewDepositProofParam(depositTx.TxHash, blockHash))
-				depositTxProof = NewDepositTxProof(tx.Txid, ProofDefault)
+				depositTxProof = NewDepositTxProof(tx.Txid, common.ProofDefault)
 			}
 			proofs = append(proofs, depositTxProof)
 			depositTxes = append(depositTxes, depositTx)
@@ -267,7 +267,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 	return depositTxes, redeemTxes, requests, proofs, nil
 }
 
-func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
+func (b *BitcoinAgent) ProofResponse(resp common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp)
 	proofId := resp.TxHash
 	err := b.updateDepositProof(proofId, resp.ProofStr, resp.Status)
@@ -276,8 +276,8 @@ func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
 		return err
 	}
 	switch resp.ZkProofType {
-	case DepositTxType:
-	case VerifyTxType:
+	case common.DepositTxType:
+	case common.VerifyTxType:
 		logger.Info("start update utxo change: %v", proofId)
 		err := b.updateContractUtxoChange([]string{resp.TxHash}, resp.ProofStr)
 		if err != nil {
@@ -398,9 +398,9 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx, blockHash string) (Transaction, b
 	return redeemBtcTx, isRedeemTx
 }
 
-func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status ProofStatus) error {
+func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status common.ProofStatus) error {
 	logger.Debug("update DepositTx  Proof status: %v %v %v", txId, proof, status)
-	err := UpdateProof(b.store, txId, proof, DepositTxType, status)
+	err := UpdateProof(b.store, txId, proof, common.DepositTxType, status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", txId, err)
 		return err
@@ -516,10 +516,10 @@ func NewDepositProofParam(txId, blockHash string) DepositProofParam {
 	}
 }
 
-func NewDepositTxProof(txId string, status ProofStatus) Proof {
+func NewDepositTxProof(txId string, status common.ProofStatus) Proof {
 	return Proof{
 		TxHash:    txId,
-		ProofType: DepositTxType,
+		ProofType: common.DepositTxType,
 		Status:    int(status),
 	}
 }

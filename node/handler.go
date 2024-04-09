@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
@@ -16,6 +17,38 @@ type Handler struct {
 	memoryDb store.IStore
 	exitCh   chan os.Signal
 	schedule *Schedule
+	manager  *manager
+}
+
+func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
+	// Todo
+	zkProofRequest, ok, err := h.manager.GetProofRequest()
+	if err != nil {
+		logger.Error("get proof request error: %v", err)
+		return nil, err
+	}
+	var response common.TaskResponse
+	if !ok {
+		logger.Warn("maybe no new proof task")
+		response.CanGen = false
+		return &response, nil
+	}
+	response.CanGen = true
+	response.Request = zkProofRequest
+	logger.Info("worker: %v get task: type:%v hash:%v:period:%v", request.Id, zkProofRequest.ReqType.String(),
+		zkProofRequest.TxHash, zkProofRequest.Period)
+	return &response, nil
+}
+
+func (h *Handler) SubmitProof(req common.SubmitProof) (string, error) {
+	//todo check
+	logger.Info("submit proof type:%v period:%v hash:%v", req.Data.ZkProofType.String(), req.Data.Period, req.Data.TxHash)
+	err := h.manager.SendProofResponse(req.Data)
+	if err != nil {
+		logger.Error("send proof to manager error: %v", err)
+		return "", err
+	}
+	return "ok", nil
 }
 
 func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string, error) {
@@ -69,18 +102,21 @@ func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
 	return transaction, err
 }
 
-func (h *Handler) ProofInfo(txId string) (rpc.ProofInfo, error) {
-	proof, err := ReadDbProof(h.store, txId)
-	if err != nil {
-		logger.Error("read Proof error: %v %v", txId, err)
-		return rpc.ProofInfo{}, err
+func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
+	var results []rpc.ProofInfo
+	for _, txId := range txIds {
+		proof, err := ReadDbProof(h.store, txId)
+		if err != nil {
+			logger.Error("read Proof error: %v %v", txId, err)
+			return nil, err
+		}
+		results = append(results, rpc.ProofInfo{
+			Status: int(proof.Status),
+			Proof:  proof.Proof,
+			TxId:   proof.TxHash,
+		})
 	}
-	rpcProof := rpc.ProofInfo{
-		Status: int(proof.Status),
-		Proof:  proof.Proof,
-		TxId:   proof.TxHash,
-	}
-	return rpcProof, nil
+	return results, nil
 }
 
 func (h *Handler) Stop() error {
@@ -105,12 +141,13 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 	return daemonInfo, nil
 }
 
-func NewHandler(store, memoryDb store.IStore, schedule *Schedule, exitCh chan os.Signal) *Handler {
+func NewHandler(manager *manager, store, memoryDb store.IStore, schedule *Schedule, exitCh chan os.Signal) *Handler {
 	return &Handler{
 		store:    store,
 		memoryDb: memoryDb,
 		exitCh:   exitCh,
 		schedule: schedule,
+		manager:  manager,
 	}
 }
 

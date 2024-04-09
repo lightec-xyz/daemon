@@ -176,7 +176,6 @@ func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind
 	}
 	panic(config)
 	return config, nil
-
 	//switch network {
 	//case LightecMainnet:
 	//	return newMainnetConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey, beaconconfig.MainnetConfig())

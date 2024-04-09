@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	MaxReqNums   = 3
-	MaxQueueSize = 2
+	MaxReqNums   = 5
+	MaxQueueSize = 5
 )
 
 type BeaconFetch struct {
