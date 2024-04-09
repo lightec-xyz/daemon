@@ -22,7 +22,7 @@ type BitcoinAgent struct {
 	store                store.IStore
 	memoryStore          store.IStore
 	blockTime            time.Duration
-	proofRequest         chan<- []common.ZkProofRequest
+	proofRequest         chan<- []*common.ZkProofRequest
 	checkProofHeightNums int64
 	taskManager          *TaskManager
 	whiteList            map[string]bool // todo
@@ -37,7 +37,7 @@ type BitcoinAgent struct {
 }
 
 func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	requests chan []common.ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
+	requests chan []*common.ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,

@@ -89,10 +89,10 @@ func redeemToTxHashList(txs []RedeemProofParam) []string {
 	}
 	return txHashList
 }
-func toDepositZkProofRequest(list []DepositProofParam) ([]common.ZkProofRequest, error) {
-	var result []common.ZkProofRequest
+func toDepositZkProofRequest(list []DepositProofParam) ([]*common.ZkProofRequest, error) {
+	var result []*common.ZkProofRequest
 	for _, item := range list {
-		result = append(result, common.ZkProofRequest{
+		result = append(result, &common.ZkProofRequest{
 			ReqType: common.DepositTxType,
 			Data:    item,
 			TxHash:  item.TxHash,
@@ -101,10 +101,10 @@ func toDepositZkProofRequest(list []DepositProofParam) ([]common.ZkProofRequest,
 	return result, nil
 }
 
-func toUpdateZkProofRequest(redeemTxes []Transaction) ([]common.ZkProofRequest, error) {
-	var result []common.ZkProofRequest
+func toUpdateZkProofRequest(redeemTxes []Transaction) ([]*common.ZkProofRequest, error) {
+	var result []*common.ZkProofRequest
 	for _, item := range redeemTxes {
-		result = append(result, common.ZkProofRequest{
+		result = append(result, &common.ZkProofRequest{
 			ReqType: common.VerifyTxType,
 			Data: VerifyProofParam{
 				TxHash:    item.TxHash,
@@ -116,10 +116,10 @@ func toUpdateZkProofRequest(redeemTxes []Transaction) ([]common.ZkProofRequest, 
 	return result, nil
 }
 
-func toRedeemZkProofRequest(list []RedeemProofParam) ([]common.ZkProofRequest, error) {
-	var result []common.ZkProofRequest
+func toRedeemZkProofRequest(list []RedeemProofParam) ([]*common.ZkProofRequest, error) {
+	var result []*common.ZkProofRequest
 	for _, item := range list {
-		result = append(result, common.ZkProofRequest{
+		result = append(result, &common.ZkProofRequest{
 			ReqType: common.TxInEth2,
 			Data:    item,
 			TxHash:  item.TxHash,

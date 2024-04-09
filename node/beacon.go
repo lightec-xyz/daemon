@@ -18,7 +18,7 @@ var _ IBeaconAgent = (*BeaconAgent)(nil)
 type BeaconAgent struct {
 	beaconClient   *beacon.Client
 	fileStore      *FileStore
-	zkProofRequest chan []common.ZkProofRequest
+	zkProofRequest chan []*common.ZkProofRequest
 	name           string
 	genesisPeriod  uint64
 	beaconFetch    *BeaconFetch
@@ -27,7 +27,7 @@ type BeaconAgent struct {
 	currentPeriod  *atomic.Uint64
 }
 
-func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []common.ZkProofRequest,
+func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []*common.ZkProofRequest,
 	fileStore *FileStore, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
 
 	logger.Info("init beacon slot: %v, period: %v", cfg.BeaconSlotHeight, genesisPeriod)
@@ -175,13 +175,12 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType common.ZkProofType)
 		logger.Error(err.Error())
 		return err
 	}
-	b.zkProofRequest <- []common.ZkProofRequest{
-		{
-			Period:  period,
-			ReqType: reqType,
-			Data:    data,
-		},
+	request := &common.ZkProofRequest{
+		Period:  period,
+		ReqType: reqType,
+		Data:    data,
 	}
+	b.zkProofRequest <- []*common.ZkProofRequest{request}
 	logger.Info("success send Proof request: %v %v", period, reqType.String())
 
 	return nil

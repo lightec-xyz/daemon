@@ -2,7 +2,6 @@ package node
 
 import (
 	"container/list"
-	"github.com/lightec-xyz/daemon/common"
 	"sync"
 )
 
@@ -71,17 +70,8 @@ func (sl *Queue) Remove(e *list.Element) {
 	sl.list.Remove(e)
 }
 
-type ProofQueue struct {
-	queue *queue
-	lock  sync.Mutex
-}
-
-type queue []*common.ZkProofRequest
-
-func (q *queue) Len() int {
-	return len(*q)
-}
-
-func (q *queue) PushBack(value *common.ZkProofRequest) {
-	*q = append(*q, value)
+func (sl *Queue) Iterator(fn func(value *list.Element)) {
+	for element := sl.list.Front(); element != nil; element = element.Next() {
+		fn(element)
+	}
 }

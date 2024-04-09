@@ -13,7 +13,8 @@ import (
 )
 
 type manager struct {
-	txProofQueue   *Queue
+	proofQueue     *Queue
+	pendingQueue   *Queue
 	schedule       *Schedule
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
@@ -27,7 +28,8 @@ type manager struct {
 
 func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan common.ZkProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {
 	return &manager{
-		txProofQueue:   NewQueue(),
+		proofQueue:     NewQueue(),
+		pendingQueue:   NewQueue(),
 		schedule:       schedule,
 		store:          store,
 		memory:         memory,
@@ -65,36 +67,37 @@ func (m *manager) init() error {
 	return nil
 }
 
-func (m *manager) run(requestList []common.ZkProofRequest) error {
+func (m *manager) run(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
 		logger.Info("queue receive gen Proof request:%v %v", req.ReqType.String(), req.Period)
 		// Todo queue need to sort by req weight ?
 		if req.ReqType == common.SyncComGenesisType || req.ReqType == common.SyncComRecursiveType {
-			m.txProofQueue.PushBack(req)
+			m.proofQueue.PushBack(req)
 		} else {
-			m.txProofQueue.PushFront(req)
+			m.proofQueue.PushFront(req)
 		}
 	}
 	return nil
 }
 
-func (m *manager) GetProofRequest() (common.ZkProofRequest, bool, error) {
+func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if m.txProofQueue.Len() == 0 {
+	if m.proofQueue.Len() == 0 {
 		logger.Warn("current queue is empty")
-		return common.ZkProofRequest{}, false, nil
+		return nil, false, nil
 	}
 	//todo
-	element := m.txProofQueue.Back()
-	request, ok := element.Value.(common.ZkProofRequest)
+	element := m.proofQueue.Back()
+	request, ok := element.Value.(*common.ZkProofRequest)
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
-		return common.ZkProofRequest{}, false, fmt.Errorf("parse Proof request error")
+		return nil, false, fmt.Errorf("parse Proof request error")
 	}
 	// todo
-	m.txProofQueue.Remove(element)
+	m.proofQueue.Remove(element)
 	logger.Info("get proof request:%v %v", request.ReqType.String(), request.Period)
+	m.pendingQueue.PushBack(request)
 	return request, true, nil
 }
 
@@ -106,12 +109,12 @@ func (m *manager) SendProofResponse(response common.ZkProofResponse) error {
 }
 
 func (m *manager) genProof() error {
-	if m.txProofQueue.Len() == 0 {
+	if m.proofQueue.Len() == 0 {
 		time.Sleep(2 * time.Second)
 		return nil
 	}
-	element := m.txProofQueue.Back()
-	request, ok := element.Value.(common.ZkProofRequest)
+	element := m.proofQueue.Back()
+	request, ok := element.Value.(*common.ZkProofRequest)
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
 		time.Sleep(5 * time.Second)
@@ -129,14 +132,14 @@ func (m *manager) genProof() error {
 	chanResponse := m.getChanResponse(request.ReqType)
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
-		m.txProofQueue.Remove(element)
-		go func(req common.ZkProofRequest) {
+		m.proofQueue.Remove(element)
+		go func(req *common.ZkProofRequest) {
 			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), req.ReqType.String(), req.Period)
 			zkProofResponse, err := WorkerGenProof(worker, req)
 			if err != nil {
 				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.ReqType.String(), req.Period, err)
 				//  take fail request to queue again
-				m.txProofQueue.PushBack(request)
+				m.proofQueue.PushBack(request)
 				logger.Info("add Proof request type: %v ,Period: %v to queue again", req.ReqType.String(), req.Period)
 				return
 			}
@@ -159,7 +162,7 @@ func (m *manager) genProof() error {
 	return nil
 }
 
-func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.ZkProofResponse, error) {
+func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) (common.ZkProofResponse, error) {
 	defer worker.DelReqNum()
 	var zkbProofResponse common.ZkProofResponse
 	switch request.ReqType {
@@ -334,7 +337,7 @@ func (m *manager) getChanResponse(reqType common.ZkProofType) chan common.ZkProo
 	}
 }
 
-func (m *manager) CheckProofStatus(request common.ZkProofRequest) (bool, error) {
+func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error) {
 	// todo check Proof
 	return false, nil
 }

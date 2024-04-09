@@ -89,7 +89,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []common.ZkProofRequest, 1000)
+	proofRequest := make(chan []*common.ZkProofRequest, 1000)
 	btcProofResp := make(chan common.ZkProofResponse, 1000)
 	ethProofResp := make(chan common.ZkProofResponse, 1000)
 	syncCommitResp := make(chan common.ZkProofResponse, 1000)
@@ -308,10 +308,10 @@ func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Du
 
 type WrapperManger struct {
 	manager      *manager
-	proofRequest chan []common.ZkProofRequest
+	proofRequest chan []*common.ZkProofRequest
 }
 
-func NewWrapperManger(manager *manager, request chan []common.ZkProofRequest) *WrapperManger {
+func NewWrapperManger(manager *manager, request chan []*common.ZkProofRequest) *WrapperManger {
 	return &WrapperManger{
 		manager:      manager,
 		proofRequest: request,
@@ -368,7 +368,7 @@ func doTimerTask(name string, interval time.Duration, fn func() error, exit chan
 	}
 }
 
-func doProofRequestTask(name string, req chan []common.ZkProofRequest, fn func(req []common.ZkProofRequest) error, exit chan os.Signal) {
+func doProofRequestTask(name string, req chan []*common.ZkProofRequest, fn func(req []*common.ZkProofRequest) error, exit chan os.Signal) {
 	logger.Info("%v goroutine start ...", name)
 	for {
 		select {

@@ -27,7 +27,7 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []common.ZkProofRequest)
+	proofRequest := make(chan []*common.ZkProofRequest)
 	btcProofResp := make(chan common.ZkProofResponse)
 	ethProofResp := make(chan common.ZkProofResponse)
 	syncCommitResp := make(chan common.ZkProofResponse)

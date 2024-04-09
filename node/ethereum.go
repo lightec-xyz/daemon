@@ -36,7 +36,7 @@ type EthereumAgent struct {
 	blockTime        time.Duration
 	taskManager      *TaskManager
 	whiteList        map[string]bool
-	proofRequest     chan []dcommon.ZkProofRequest
+	proofRequest     chan []*dcommon.ZkProofRequest
 	exitSign         chan struct{}
 	multiAddressInfo MultiAddressInfo
 	btcNetwork       btctx.NetWork
@@ -49,7 +49,7 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileStore, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []dcommon.ZkProofRequest) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []*dcommon.ZkProofRequest) (IAgent, error) {
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
