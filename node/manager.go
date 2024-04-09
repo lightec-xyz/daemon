@@ -365,3 +365,9 @@ func NewZkTxProofResp(reqType common.ZkProofType, txHash string, proof common.Zk
 		Status:      common.ProofSuccess,
 	}
 }
+
+func NewPendingZkRequest(req *common.ZkProofRequest) *common.ZkProofRequest {
+	return &common.ZkProofRequest{
+		Id: req.Id,
+	}
+}

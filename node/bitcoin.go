@@ -155,15 +155,6 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("to update zk Proof request error: %v %v", index, err)
 			return err
 		}
-		//updateZkProofRequests = append(updateZkProofRequests, ZkProofRequest{
-		//	ReqType: VerifyTxType,
-		//	TxHash:  "dasdasfsf",
-		//	Data: VerifyProofParam{
-		//		Version:   "1.0",
-		//		TxHash:    "dasdasfsf",
-		//		BlockHash: "dasdasfsf",
-		//	},
-		//})
 		zkProofRequest, err := toDepositZkProofRequest(proofRequests)
 		if err != nil {
 			logger.Error("to deposit zk Proof request error: %v %v", index, err)

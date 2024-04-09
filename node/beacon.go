@@ -175,11 +175,7 @@ func (b *BeaconAgent) tryProofRequest(period uint64, reqType common.ZkProofType)
 		logger.Error(err.Error())
 		return err
 	}
-	request := &common.ZkProofRequest{
-		Period:  period,
-		ReqType: reqType,
-		Data:    data,
-	}
+	request := common.NewZkProofRequest(reqType, data, period, "")
 	b.zkProofRequest <- []*common.ZkProofRequest{request}
 	logger.Info("success send Proof request: %v %v", period, reqType.String())
 

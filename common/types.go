@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"time"
 )
 
 type TaskRequest struct {
@@ -24,42 +25,30 @@ const ZkProofLength = 928
 
 type ZkProof []byte
 
-type ZkProofType int
-
-const (
-	DepositTxType ZkProofType = iota + 1
-	RedeemTxType
-	TxInEth2
-	VerifyTxType
-	SyncComGenesisType
-	SyncComUnitType
-	SyncComRecursiveType
-)
-
-func (zkpr *ZkProofType) String() string {
-	switch *zkpr {
-	case DepositTxType:
-		return "DepositTxType"
-	case RedeemTxType:
-		return "RedeemTxType"
-	case VerifyTxType:
-		return "VerifyTxType"
-	case SyncComGenesisType:
-		return "SyncComGenesisType"
-	case SyncComUnitType:
-		return "SyncComUnitType"
-	case SyncComRecursiveType:
-		return "SyncComRecursiveType"
-	default:
-		return ""
-	}
-}
-
 type ZkProofRequest struct {
+	Id      string // todo
 	ReqType ZkProofType
 	Data    interface{}
 	Period  uint64
 	TxHash  string
+
+	Status     ProofStatus
+	Weight     int // todo
+	CreateTime time.Time
+	StartTime  time.Time
+	EndTime    time.Time
+}
+
+func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txHash string) *ZkProofRequest {
+	return &ZkProofRequest{
+		Id:         fmt.Sprintf("%v_%v_%v", reqType.String(), period, txHash), // todo
+		ReqType:    reqType,
+		Data:       data,
+		Period:     period,
+		TxHash:     txHash,
+		Status:     ProofDefault,
+		CreateTime: time.Now(),
+	}
 }
 
 func (r *ZkProofRequest) String() string {
@@ -77,4 +66,12 @@ type ZkProofResponse struct {
 
 func (zkResp *ZkProofResponse) String() string {
 	return fmt.Sprintf("ZkProofType:%v Period:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
+}
+
+type ProofTask struct {
+	Id        string
+	Weight    int // todo
+	StartTime time.Time
+	EndTime   time.Time
+	Task      ZkProofRequest
 }
