@@ -14,7 +14,7 @@ import (
 
 type manager struct {
 	proofQueue     *Queue
-	pendingQueue   *Queue
+	pendingQueue   *PendingQueue
 	schedule       *Schedule
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
@@ -26,10 +26,10 @@ type manager struct {
 	lock           sync.Mutex
 }
 
-func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan common.ZkProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan common.ZkProofResponse, store, memory store.IStore, schedule *Schedule) (IManager, error) {
 	return &manager{
 		proofQueue:     NewQueue(),
-		pendingQueue:   NewQueue(),
+		pendingQueue:   NewPendingQueue(),
 		schedule:       schedule,
 		store:          store,
 		memory:         memory,
@@ -41,7 +41,7 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofR
 	}, nil
 }
 
-func (m *manager) init() error {
+func (m *manager) Init() error {
 	//dbRequests, err := ReadAllUnGenProof(m.store)
 	//if err != nil {
 	//	logger.Error("read un gen Proof error:%v", err)
@@ -67,7 +67,7 @@ func (m *manager) init() error {
 	return nil
 }
 
-func (m *manager) run(requestList []*common.ZkProofRequest) error {
+func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
 		logger.Info("queue receive gen Proof request:%v %v", req.ReqType.String(), req.Period)
 		// Todo queue need to sort by req weight ?
@@ -97,7 +97,8 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 	// todo
 	m.proofQueue.Remove(element)
 	logger.Info("get proof request:%v %v", request.ReqType.String(), request.Period)
-	m.pendingQueue.PushBack(request)
+	request.StartTime = time.Now()
+	m.pendingQueue.Push(request)
 	return request, true, nil
 }
 
@@ -105,10 +106,13 @@ func (m *manager) SendProofResponse(response common.ZkProofResponse) error {
 	chanResponse := m.getChanResponse(response.ZkProofType)
 	chanResponse <- response
 	logger.Info("send Proof response:%v %v", response.ZkProofType.String(), response.Period)
+	proofId := response.Id()
+	logger.Info("delete pending request:%v", proofId)
+	m.pendingQueue.Delete(proofId)
 	return nil
 }
 
-func (m *manager) genProof() error {
+func (m *manager) DistributeRequest() error {
 	if m.proofQueue.Len() == 0 {
 		time.Sleep(2 * time.Second)
 		return nil
@@ -342,7 +346,26 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 	return false, nil
 }
 
-func (m *manager) Close() {
+func (m *manager) CheckPendingRequest() error {
+	logger.Debug("check pending request now")
+	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
+		if request.StartTime.IsZero() {
+			logger.Error("request start time is zero")
+			return fmt.Errorf("request start time is zero")
+		}
+		currentTime := time.Now()
+		if currentTime.Sub(request.StartTime).Hours() >= 3 { // todo
+			logger.Warn("request timeout:%v %v,add to queue again", request.ReqType.String(), request.Period)
+			m.proofQueue.PushBack(request)
+		}
+		return nil
+	})
+	return nil
+}
+
+func (m *manager) Close() error {
+
+	return nil
 
 }
 
@@ -363,11 +386,5 @@ func NewZkTxProofResp(reqType common.ZkProofType, txHash string, proof common.Zk
 		Proof:       proof,
 		Witness:     witness,
 		Status:      common.ProofSuccess,
-	}
-}
-
-func NewPendingZkRequest(req *common.ZkProofRequest) *common.ZkProofRequest {
-	return &common.ZkProofRequest{
-		Id: req.Id,
 	}
 }

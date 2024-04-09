@@ -13,7 +13,7 @@ type TaskRequest struct {
 
 type TaskResponse struct {
 	CanGen  bool
-	Request ZkProofRequest
+	Request *ZkProofRequest
 }
 
 type SubmitProof struct {
@@ -41,7 +41,7 @@ type ZkProofRequest struct {
 
 func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
-		Id:         fmt.Sprintf("%v_%v_%v", reqType.String(), period, txHash), // todo
+		Id:         NewProofId(reqType, period, txHash), // todo
 		ReqType:    reqType,
 		Data:       data,
 		Period:     period,
@@ -64,14 +64,14 @@ type ZkProofResponse struct {
 	TxHash      string
 }
 
+func (zkp *ZkProofResponse) Id() string {
+	return NewProofId(zkp.ZkProofType, zkp.Period, zkp.TxHash)
+}
+
 func (zkResp *ZkProofResponse) String() string {
 	return fmt.Sprintf("ZkProofType:%v Period:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
 }
 
-type ProofTask struct {
-	Id        string
-	Weight    int // todo
-	StartTime time.Time
-	EndTime   time.Time
-	Task      ZkProofRequest
+func NewProofId(reqType ZkProofType, period uint64, txHash string) string {
+	return fmt.Sprintf("%v_%v_%v", reqType.String(), period, txHash)
 }

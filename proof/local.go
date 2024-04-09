@@ -60,7 +60,7 @@ func (l *Local) Run() error {
 			continue
 		}
 		l.worker.AddReqNum()
-		go func(request common.ZkProofRequest) {
+		go func(request *common.ZkProofRequest) {
 			count := 0
 			for {
 				count = count + 1

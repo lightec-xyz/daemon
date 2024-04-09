@@ -43,6 +43,16 @@ type IBeaconAgent interface {
 	Name() string
 }
 
+type IManager interface {
+	Init() error
+	ReceiveRequest(requests []*common.ZkProofRequest) error
+	CheckPendingRequest() error
+	GetProofRequest() (*common.ZkProofRequest, bool, error)
+	SendProofResponse(response common.ZkProofResponse) error
+	DistributeRequest() error
+	Close() error
+}
+
 type Daemon struct {
 	agents        []*WrapperAgent
 	beaconAgent   *WrapperBeacon
@@ -167,13 +177,13 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		enableTx:      true,  // todo
 		exitSignal:    make(chan os.Signal, 1),
 		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
-		manager:       NewWrapperManger(manager, proofRequest),
+		manager:       NewWrapperManger(manager, proofRequest, 1*time.Minute),
 	}
 	return daemon, nil
 }
 
 func (d *Daemon) Init() error {
-	err := d.manager.manager.init()
+	err := d.manager.manager.Init()
 	if err != nil {
 		logger.Error("manager init error %v", err)
 		return err
@@ -202,17 +212,19 @@ func (d *Daemon) Run() error {
 	// rpc server
 	go d.server.Run()
 
-	// syncCommit
 	if d.enableSyncCom {
+		// syncCommit proof
 		go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
 		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
 
 	}
-	// generate Proof manager
-	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
-	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
+
+	// proof request manager
+	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)
+	go doTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
+	go doTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
 
 	if d.enableTx {
 		//tx Proof
@@ -307,14 +319,16 @@ func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Du
 }
 
 type WrapperManger struct {
-	manager      *manager
+	manager      IManager
 	proofRequest chan []*common.ZkProofRequest
+	checkTime    time.Duration
 }
 
-func NewWrapperManger(manager *manager, request chan []*common.ZkProofRequest) *WrapperManger {
+func NewWrapperManger(manager IManager, request chan []*common.ZkProofRequest, checkTime time.Duration) *WrapperManger {
 	return &WrapperManger{
 		manager:      manager,
 		proofRequest: request,
+		checkTime:    checkTime,
 	}
 }
 

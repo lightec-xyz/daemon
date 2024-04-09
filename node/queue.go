@@ -2,6 +2,8 @@ package node
 
 import (
 	"container/list"
+	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"sync"
 )
 
@@ -70,8 +72,55 @@ func (sl *Queue) Remove(e *list.Element) {
 	sl.list.Remove(e)
 }
 
-func (sl *Queue) Iterator(fn func(value *list.Element)) {
+func (sl *Queue) Iterator(fn func(value *list.Element) error) {
 	for element := sl.list.Front(); element != nil; element = element.Next() {
-		fn(element)
+		err := fn(element)
+		if err != nil {
+			return
+		}
 	}
+}
+
+type PendingQueue struct {
+	list *sync.Map
+}
+
+func NewPendingQueue() *PendingQueue {
+	return &PendingQueue{
+		list: new(sync.Map),
+	}
+}
+
+func (q *PendingQueue) Push(value *common.ZkProofRequest) {
+	q.list.Store(value.Id, value)
+}
+
+func (q *PendingQueue) Delete(key string) {
+	q.list.Delete(key)
+}
+
+func (q *PendingQueue) Get(key string) (*common.ZkProofRequest, error) {
+	value, ok := q.list.Load(key)
+	if !ok {
+		return nil, fmt.Errorf("not found")
+	}
+	req, ok := value.(*common.ZkProofRequest)
+	if !ok {
+		return nil, fmt.Errorf("parse error")
+	}
+	return req, nil
+}
+
+func (q *PendingQueue) Iterator(fn func(value *common.ZkProofRequest) error) {
+	q.list.Range(func(key, value interface{}) bool {
+		req, ok := value.(*common.ZkProofRequest)
+		if !ok {
+			return false
+		}
+		err := fn(req)
+		if err != nil {
+			return false
+		}
+		return true
+	})
 }

@@ -17,7 +17,7 @@ type Handler struct {
 	memoryDb store.IStore
 	exitCh   chan os.Signal
 	schedule *Schedule
-	manager  *manager
+	manager  IManager
 }
 
 func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
@@ -141,7 +141,7 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 	return daemonInfo, nil
 }
 
-func NewHandler(manager *manager, store, memoryDb store.IStore, schedule *Schedule, exitCh chan os.Signal) *Handler {
+func NewHandler(manager IManager, store, memoryDb store.IStore, schedule *Schedule, exitCh chan os.Signal) *Handler {
 	return &Handler{
 		store:    store,
 		memoryDb: memoryDb,
