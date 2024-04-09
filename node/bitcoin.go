@@ -270,7 +270,8 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 func (b *BitcoinAgent) ProofResponse(resp common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp)
 	proofId := resp.TxHash
-	err := b.updateDepositProof(proofId, resp.ProofStr, resp.Status)
+	hexProof := hex.EncodeToString(resp.Proof)
+	err := b.updateDepositProof(proofId, hexProof, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", proofId, err)
 		return err
@@ -279,7 +280,7 @@ func (b *BitcoinAgent) ProofResponse(resp common.ZkProofResponse) error {
 	case common.DepositTxType:
 	case common.VerifyTxType:
 		logger.Info("start update utxo change: %v", proofId)
-		err := b.updateContractUtxoChange([]string{resp.TxHash}, resp.ProofStr)
+		err := b.updateContractUtxoChange([]string{resp.TxHash}, resp.Proof)
 		if err != nil {
 			logger.Error("update utxo error: %v %v", proofId, err)
 			return err
@@ -298,7 +299,7 @@ func (b *BitcoinAgent) ProofResponse(resp common.ZkProofResponse) error {
 	return nil
 }
 
-func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof string) error {
+func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof []byte) error {
 	// todo
 	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
 	if err != nil {
@@ -315,14 +316,9 @@ func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof string) er
 		logger.Error("get gas price error:%v", err)
 		return err
 	}
-	proofBytes, err := hex.DecodeString(proof)
-	if err != nil {
-		logger.Error("decode proof error:%v", err)
-		return err
-	}
 	gasLimit := uint64(500000)
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(2))
-	txHash, err := b.ethClient.UpdateUtxoChange(b.keyStore.GetPrivateKey(), txIds, nonce, gasLimit, chainId, gasPrice, proofBytes)
+	txHash, err := b.ethClient.UpdateUtxoChange(b.keyStore.GetPrivateKey(), txIds, nonce, gasLimit, chainId, gasPrice, proof)
 	if err != nil {
 		logger.Error("update utxo change error:%v", err)
 		return err

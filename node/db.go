@@ -217,7 +217,7 @@ func ReadAllUnGenProof(store store.IStore) ([]common.ZkProofRequest, error) {
 	//		return nil, err
 	//	}
 	//	var tx DbTx
-	//	err = store.GetObj(DbTxId(id), &tx)
+	//	err = store.getObj(DbTxId(id), &tx)
 	//	if err != nil {
 	//		logger.Error("get ungen Proof error:%v", err)
 	//		return nil, err

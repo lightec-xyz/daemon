@@ -49,15 +49,19 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2Pro
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
 	}
-	hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
+	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("TxInEth2Prove error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
 	}
 	return &rpc.TxInEth2ProveResp{
-		ProofStr: hexProof,
-		//Proof:    circuits.ProofToBytes(proof.Proof),
-		Witness: circuits.WitnessToBytes(proof.Wit),
+		Proof:   proofSolBytes,
+		Witness: witnessBytes,
 	}, nil
 
 }
@@ -93,16 +97,20 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 		logger.Error(err.Error())
 		return rpc.DepositResponse{}, fmt.Errorf("gen deposit prove error: %v", err)
 	}
-	hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
+	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
+	if err != nil {
+		logger.Error(err.Error())
+		return rpc.DepositResponse{}, nil
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
 	if err != nil {
 		logger.Error(err.Error())
 		return rpc.DepositResponse{}, nil
 	}
 	return rpc.DepositResponse{
-		TxHash: req.TxHash,
-		//Proof:    common.ZkProof(hexProof),
-		ProofStr: hexProof,
-		Witness:  circuits.WitnessToBytes(proof.Wit),
+		TxHash:  req.TxHash,
+		Proof:   proofSolBytes,
+		Witness: witnessBytes,
 	}, nil
 }
 
@@ -121,15 +129,20 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 		logger.Error(err.Error())
 		return rpc.VerifyResponse{}, fmt.Errorf("gen verify proof error: %v", err)
 	}
-	hexProof, err := circuits.ProofToHexSolBytes(proof.Proof)
+	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
+	if err != nil {
+		logger.Error(err.Error())
+		return rpc.VerifyResponse{}, nil
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
 	if err != nil {
 		logger.Error(err.Error())
 		return rpc.VerifyResponse{}, nil
 	}
 	return rpc.VerifyResponse{
 		TxHash: req.TxHash,
-		Proof:  hexProof,
-		Wit:    circuits.WitnessToBytes(proof.Wit),
+		Proof:  proofSolBytes,
+		Wit:    witnessBytes,
 	}, nil
 }
 
@@ -142,12 +155,23 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 		return rpc.SyncCommGenesisResponse{}, err
 	}
 	logger.Debug("complete  genesis prove %v", req.Period)
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("proof to bytes error %v", err)
+		return rpc.SyncCommGenesisResponse{}, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("witness to bytes error %v", err)
+		return rpc.SyncCommGenesisResponse{}, err
+	}
+
 	return rpc.SyncCommGenesisResponse{
 		Version:   req.Version,
 		Period:    req.Period,
 		ProofType: common.SyncComGenesisType,
-		Proof:     common.ZkProof(circuits.ProofToBytes(proof.Proof)),
-		Witness:   circuits.WitnessToBytes(proof.Wit),
+		Proof:     proofBytes,
+		Witness:   witnessBytes,
 	}, nil
 }
 
@@ -166,12 +190,22 @@ func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 		return rpc.SyncCommUnitsResponse{}, err
 	}
 	logger.Debug("complete unit prove %v", req.Period)
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("proof to bytes error %v", err)
+		return rpc.SyncCommUnitsResponse{}, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("witness to bytes error %v", err)
+		return rpc.SyncCommUnitsResponse{}, err
+	}
 	return rpc.SyncCommUnitsResponse{
 		Version:   req.Version,
 		Period:    req.Period,
 		ProofType: common.SyncComUnitType,
-		Proof:     common.ZkProof(circuits.ProofToBytes(proof.Proof)),
-		Witness:   circuits.WitnessToBytes(proof.Wit),
+		Proof:     proofBytes,
+		Witness:   witnessBytes,
 	}, nil
 
 }
@@ -185,12 +219,22 @@ func (w *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 		return rpc.SyncCommRecursiveResponse{}, err
 	}
 	logger.Debug("complete recursive prove %v", req.Period)
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("proof to bytes error %v", err)
+		return rpc.SyncCommRecursiveResponse{}, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("witness to bytes error %v", err)
+		return rpc.SyncCommRecursiveResponse{}, err
+	}
 	return rpc.SyncCommRecursiveResponse{
 		Version:   req.Version,
 		Period:    req.Period,
 		ProofType: common.SyncComRecursiveType,
-		Proof:     common.ZkProof(circuits.ProofToBytes(proof.Proof)),
-		Witness:   circuits.WitnessToBytes(proof.Wit),
+		Proof:     proofBytes,
+		Witness:   witnessBytes,
 	}, nil
 }
 

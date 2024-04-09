@@ -183,12 +183,13 @@ func (e *EthereumAgent) ScanBlock() error {
 
 func (e *EthereumAgent) ProofResponse(resp dcommon.ZkProofResponse) error {
 	logger.Info("receive proof response: %v", resp)
-	err := e.updateRedeemProof(resp.TxHash, resp.ProofStr, resp.Status)
+	hexProof := hex.EncodeToString(resp.Proof)
+	err := e.updateRedeemProof(resp.TxHash, hexProof, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error:%v", err)
 		return err
 	}
-	_, err = e.RedeemBtcTx(resp.TxHash, resp.ProofStr)
+	_, err = e.RedeemBtcTx(resp.TxHash, resp.Proof)
 	if err != nil {
 		logger.Error("redeem btc tx error:%v", err)
 		return err
@@ -416,7 +417,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 // todo refactor
 
-func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
+func (e *EthereumAgent) RedeemBtcTx(txHash string, proof []byte) (interface{}, error) {
 	ethTxHash := common.HexToHash(txHash)
 	zkBridgeAddr, zkBtcAddr := "0x8e4f5a8f3e24a279d8ed39e868f698130777fded", "0xbf3041e37be70a58920a6fd776662b50323021c9"
 	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
@@ -447,12 +448,6 @@ func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
 	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
 	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
 
-	proofData, err := hex.DecodeString(proof)
-	if err != nil {
-		logger.Error("decode proof error:%v", err)
-		return nil, err
-	}
-
 	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
 	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
 	if err != nil {
@@ -460,7 +455,7 @@ func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
 		return nil, err
 	}
 
-	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proofData)
+	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proof)
 	if err != nil {
 		logger.Error("sign btc tx error:%v", err)
 		return nil, err

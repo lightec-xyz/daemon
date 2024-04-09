@@ -356,27 +356,35 @@ func debugProof() (*common.Proof, error) {
 	}, nil
 }
 
-func ProofToHexSolBytes(proof native_plonk.Proof) (string, error) {
+func ProofToHexSol(proof native_plonk.Proof) (string, error) {
 	_proof := proof.(*plonk_bn254.Proof)
 	proofStr := hex.EncodeToString(_proof.MarshalSolidity())
 	return proofStr, nil
 
 }
 
-func ProofToBytes(proof native_plonk.Proof) []byte {
+func ProofToSolBytes(proof native_plonk.Proof) ([]byte, error) {
+	_proof, ok := proof.(*plonk_bn254.Proof)
+	if !ok {
+		return nil, fmt.Errorf("proof to bn154 error")
+	}
+	return _proof.MarshalSolidity(), nil
+}
+
+func ProofToBytes(proof native_plonk.Proof) ([]byte, error) {
 	var buf bytes.Buffer
 	_, err := proof.WriteTo(&buf)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
-func WitnessToBytes(witness witness.Witness) []byte {
+func WitnessToBytes(witness witness.Witness) ([]byte, error) {
 	var buf bytes.Buffer
 	_, err := witness.WriteTo(&buf)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }

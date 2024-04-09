@@ -74,7 +74,6 @@ type ZkProofResponse struct {
 	ZkProofType ZkProofType
 	Status      ProofStatus
 	Proof       ZkProof
-	ProofStr    string
 	Witness     []byte
 	Period      uint64
 	TxHash      string

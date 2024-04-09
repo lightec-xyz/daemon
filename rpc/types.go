@@ -55,9 +55,8 @@ type TxInEth2ProveReq struct {
 }
 
 type TxInEth2ProveResp struct {
-	ProofStr string
-	Proof    []byte
-	Witness  []byte
+	Proof   []byte
+	Witness []byte
 }
 
 type TxBlockIsParentOfCheckPointProveReq struct {
@@ -78,10 +77,9 @@ type DepositRequest struct {
 }
 
 type DepositResponse struct {
-	TxHash   string
-	Proof    common.ZkProof
-	ProofStr string
-	Witness  []byte
+	TxHash  string
+	Proof   common.ZkProof
+	Witness []byte
 }
 
 type RedeemRequest struct {
@@ -103,7 +101,7 @@ type VerifyRequest struct {
 
 type VerifyResponse struct {
 	TxHash string
-	Proof  string
+	Proof  []byte
 	Wit    []byte
 }
 

@@ -470,8 +470,7 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 		return nil, false, nil
 	}
 
-	var firstProof StoreProof
-	exists, err := b.fileStore.GetUnitProof(b.genesisPeriod, &firstProof)
+	firstProof, exists, err := b.fileStore.GetUnitProof(b.genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -487,8 +486,7 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 	}
 	logger.Info("get genesis first proof: %v", b.genesisPeriod)
 
-	var secondProof StoreProof
-	exists, err = b.fileStore.GetUnitProof(nextPeriod, &secondProof)
+	secondProof, exists, err := b.fileStore.GetUnitProof(nextPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -627,8 +625,7 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 		logger.Warn("get %v period end commitId no find", endPeriod)
 		return nil, false, nil
 	}
-	var secondProof StoreProof
-	exists, err := b.fileStore.GetUnitProof(period, &secondProof)
+	secondProof, exists, err := b.fileStore.GetUnitProof(period)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -643,9 +640,8 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 		return nil, false, nil
 	}
 
-	var firstProof StoreProof
 	prePeriod := period - 1
-	exists, err = b.fileStore.GetRecursiveProof(prePeriod, &firstProof)
+	firstProof, exists, err := b.fileStore.GetRecursiveProof(prePeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -704,8 +700,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		return nil, false, nil
 	}
 
-	var fistProof StoreProof
-	firstExists, err := b.fileStore.GetGenesisProof(&fistProof)
+	fistProof, firstExists, err := b.fileStore.GetGenesisProof()
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -719,8 +714,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		//}
 		return nil, false, nil
 	}
-	var secondProof StoreProof
-	secondExists, err := b.fileStore.GetUnitProof(relayPeriod, &secondProof)
+	secondProof, secondExists, err := b.fileStore.GetUnitProof(relayPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err

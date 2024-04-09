@@ -180,7 +180,7 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 			logger.Error("gen deposit Proof error:%v", err)
 			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 	case common.VerifyTxType:
 		var verifyProofParam VerifyProofParam
 		err := ParseObj(request.Data, &verifyProofParam)
@@ -197,7 +197,7 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 			logger.Error("gen verify Proof error:%v", err)
 			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, nil, proofResponse.Wit)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Wit)
 
 	case common.TxInEth2:
 		var redeemParam RedeemProofParam
@@ -215,7 +215,7 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 			logger.Error("gen redeem Proof error:%v", err)
 			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
 	case common.RedeemTxType:
 		var redeemParam RedeemProofParam
@@ -233,7 +233,7 @@ func WorkerGenProof(worker rpc.IWorker, request common.ZkProofRequest) (common.Z
 			logger.Error("gen redeem Proof error:%v", err)
 			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
 	case common.SyncComGenesisType:
 		var genesisReq GenesisProofParam
@@ -354,12 +354,11 @@ func NewZkProofResp(reqType common.ZkProofType, period uint64, proof common.ZkPr
 	}
 }
 
-func NewZkTxProofResp(reqType common.ZkProofType, txHash, proofStr string, proof common.ZkProof, witness []byte) common.ZkProofResponse {
+func NewZkTxProofResp(reqType common.ZkProofType, txHash string, proof common.ZkProof, witness []byte) common.ZkProofResponse {
 	return common.ZkProofResponse{
 		ZkProofType: reqType,
 		TxHash:      txHash,
 		Proof:       proof,
-		ProofStr:    proofStr,
 		Witness:     witness,
 		Status:      common.ProofSuccess,
 	}
