@@ -391,7 +391,7 @@ func (b *BeaconAgent) CheckState() error {
 		skip = true
 	}
 
-	b.beaconClient.GetLatestFinalizedSlot()
+	//b.beaconClient.GetLatestFinalizedSlot()
 
 	return nil
 }
@@ -736,7 +736,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		logger.Warn("get %v period genesis commitId no find", b.genesisPeriod)
 		return nil, false, nil
 	}
-	relayPeriod := period + 1
+	relayPeriod := period
 	relayId, ok, err := b.GetSyncCommitRootID(relayPeriod)
 	if err != nil {
 		logger.Error(err.Error())
