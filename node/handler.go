@@ -108,12 +108,13 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 	for _, txId := range txIds {
 		proof, err := ReadDbProof(h.store, txId)
 		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				continue
+			}
 			logger.Error("read Proof error: %v %v", txId, err)
 			return nil, err
 		}
-		if strings.Contains(err.Error(), "not found") {
-			continue
-		}
+
 		results = append(results, rpc.ProofInfo{
 			Status: int(proof.Status),
 			Proof:  proof.Proof,
