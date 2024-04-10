@@ -183,7 +183,7 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *EthereumAgent) ProofResponse(resp dcommon.ZkProofResponse) error {
+func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
 	logger.Info("receive proof response: %v", resp)
 	hexProof := hex.EncodeToString(resp.Proof)
 	err := e.updateRedeemProof(resp.TxHash, hexProof, resp.Status)

@@ -799,7 +799,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 
 }
 
-func (b *BeaconAgent) ProofResponse(resp common.ZkProofResponse) error {
+func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	// todo
 	logger.Info("beacon Proof response type: %v, Period: %v", resp.ZkProofType.String(), resp.Period)
 	currentPeriod := resp.Period
