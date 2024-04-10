@@ -5,14 +5,16 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
+	"sync"
 	"time"
 )
 
 type Local struct {
-	Id     string
-	client *rpc.NodeClient
-	worker rpc.IWorker
-	exit   chan struct{}
+	Id                string
+	client            *rpc.NodeClient
+	worker            rpc.IWorker
+	exit              chan struct{}
+	pendingProofsList *sync.Map
 }
 
 func NewLocal(url, datadir string, num int) (*Local, error) {
@@ -27,10 +29,11 @@ func NewLocal(url, datadir string, num int) (*Local, error) {
 		return nil, err
 	}
 	return &Local{
-		client: client,
-		worker: worker,
-		Id:     worker.Id(),
-		exit:   make(chan struct{}, 1),
+		client:            client,
+		worker:            worker,
+		Id:                worker.Id(),
+		exit:              make(chan struct{}, 1),
+		pendingProofsList: new(sync.Map),
 	}, nil
 }
 
@@ -75,10 +78,13 @@ func (l *Local) Run() error {
 					continue
 				}
 				logger.Info("complete generate Proof type: %v Period: %v", request.ReqType.String(), request.Period)
-				_, err = l.client.SubmitProof(common.SubmitProof{Data: proof})
+				submitProof := common.SubmitProof{Data: proof}
+				_, err = l.client.SubmitProof(submitProof)
 				if err != nil {
 					logger.Error("submit proof error:%v", err)
-					continue // Todo ,retry should in queue
+					l.pendingProofsList.Store(proof.Id(), &submitProof)
+					// todo check again
+					return
 				}
 				logger.Info("submit proof to daemon type: %v Period: %v,txHash: %v", request.ReqType.String(), request.Period, request.TxHash)
 				return
@@ -86,6 +92,41 @@ func (l *Local) Run() error {
 		}(requestResp.Request)
 
 	}
+}
+
+func (l *Local) CheckState() error {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-l.exit:
+			logger.Info("%v goroutine exit now ...", "CheckState")
+			return nil
+		case <-ticker.C:
+			err := l.checkPendingProof()
+			if err != nil {
+				logger.Error("check pending proof error:%v", err)
+			}
+		}
+	}
+}
+
+func (l *Local) checkPendingProof() error {
+	l.pendingProofsList.Range(func(key, value any) bool {
+		proof, ok := value.(*common.SubmitProof)
+		if !ok {
+			logger.Error("value is not SubmitProof")
+			return false
+		}
+		_, err := l.client.SubmitProof(*proof)
+		if err != nil {
+			logger.Error("submit proof error again:%v %v ", key, err)
+			return false
+		}
+		l.pendingProofsList.Delete(key)
+		return true
+	})
+	return nil
 }
 
 func (l *Local) Close() error {

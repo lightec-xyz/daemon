@@ -355,7 +355,7 @@ func (m *manager) CheckPendingRequest() error {
 		}
 		currentTime := time.Now()
 		if currentTime.Sub(request.StartTime).Hours() >= 3 { // todo
-			logger.Warn("request timeout:%v %v,add to queue again", request.ReqType.String(), request.Period)
+			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Period)
 			m.proofQueue.PushBack(request)
 		}
 		return nil

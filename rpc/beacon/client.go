@@ -74,7 +74,7 @@ func (c *Client) GetBeaconHeaders(slot uint64) (*structs.GetBlockHeaderResponse,
 	return resp, nil
 }
 
-func (c *Client) GetLatestSlot() (uint64, error) {
+func (c *Client) GetLatestFinalizedSlot() (uint64, error) {
 	resp := &structs.GetBlockHeaderResponse{}
 	err := c.get("/eth/v1/beacon/headers/finalized", nil, &resp)
 	if err != nil {

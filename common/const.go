@@ -2,6 +2,8 @@ package common
 
 // env
 
+const BeaconHeaderSlot = 32 // todo
+
 const (
 	ZkDebugEnv     = "ZkDebug"
 	ZkParameterDir = "ZkParameterDir"
@@ -47,6 +49,8 @@ const (
 	SyncComGenesisType
 	SyncComUnitType
 	SyncComRecursiveType
+	BeaconHeaderFinalityUpdate
+	BeaconHeader
 )
 
 func (zkpr *ZkProofType) String() string {

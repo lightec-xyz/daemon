@@ -67,6 +67,7 @@ func (node *Node) CheckGenEnv() error {
 func (node *Node) Start() error {
 	if node.mode == common.Client {
 		go node.local.Run()
+		go node.local.CheckState()
 	} else if node.mode == common.Cluster {
 		go node.server.Run()
 	}

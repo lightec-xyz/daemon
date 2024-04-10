@@ -34,17 +34,19 @@ type storeProof struct {
 
 const (
 	LatestPeriodKey = "latest"
+	LatestSlotKey   = "latestSlot"
 	GenesisRawData  = "genesisRaw"
 	GenesisProofKey = "genesisProof"
 )
 
 const (
-	PeriodDir    = "period"
-	GenesisDir   = "genesis"
-	UpdateDir    = "update"
-	UnitDir      = "unit"
-	RecursiveDir = "recursive"
-	Tx           = "txes"
+	PeriodDir                  = "period"
+	GenesisDir                 = "genesis"
+	UpdateDir                  = "update"
+	UnitDir                    = "unit"
+	RecursiveDir               = "recursive"
+	BeaconHeaderFinalityUpdate = "beaconHeaderFinalityUpdate"
+	Tx                         = "txes"
 )
 
 type FileStore struct {
@@ -125,6 +127,57 @@ func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
 		recursiveDir:  recursiveDir,
 		genesisPeriod: genesisPeriod,
 	}, nil
+}
+
+func (f *FileStore) StoreBeaconHeaderFinalityUpdateProof(slot uint64, proof, witness []byte) error {
+	return f.InsertData(BeaconHeaderFinalityUpdate, parseKey(slot), storeProof{
+		Period:    slot,
+		ProofType: common.BeaconHeaderFinalityUpdate,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
+	})
+}
+
+func (f *FileStore) CheckBeaconHeaderFinalityUpdateProof(slot uint64) (bool, error) {
+	return f.CheckStorageKey(BeaconHeaderFinalityUpdate, parseKey(slot))
+}
+
+func (f *FileStore) GetBeaconHeaderFinalityUpdateProof(slot uint64) (*StoreProof, bool, error) {
+	exists, err := f.CheckBeaconHeaderFinalityUpdateProof(slot)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	proof, err := f.GetObj(BeaconHeaderFinalityUpdate, parseKey(slot))
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
+}
+
+func (f *FileStore) CheckLatestSlot() (bool, error) {
+	return f.CheckStorageKey(PeriodDir, LatestSlotKey)
+}
+
+func (f *FileStore) StoreLatestSlot(slot uint64) error {
+	return f.InsertData(PeriodDir, LatestSlotKey, slot)
+}
+func (f *FileStore) GetLatestSlot() (uint64, bool, error) {
+	exists, err := f.CheckLatestSlot()
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
+	var latestSlot uint64
+	err = f.getObj(PeriodDir, LatestSlotKey, &latestSlot)
+	if err != nil {
+		return 0, false, err
+	}
+	return latestSlot, true, nil
 }
 
 func (f *FileStore) StoreRecursiveProof(period uint64, proof []byte, witness []byte) error {
