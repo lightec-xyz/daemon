@@ -27,11 +27,11 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []*common.ZkProofRequest, 100)
-	btcProofResp := make(chan common.ZkProofResponse, 100)
-	ethProofResp := make(chan common.ZkProofResponse, 100)
-	syncCommitResp := make(chan common.ZkProofResponse, 100)
-	fetchDataResp := make(chan FetchDataResponse, 100)
+	proofRequest := make(chan []*common.ZkProofRequest)
+	btcProofResp := make(chan common.ZkProofResponse)
+	ethProofResp := make(chan common.ZkProofResponse)
+	syncCommitResp := make(chan common.ZkProofResponse)
+	fetchDataResp := make(chan FetchDataResponse)
 
 	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
 	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
