@@ -77,7 +77,7 @@ func ReadDbProof(store store.IStore, txId string) (DbProof, error) {
 	var proof DbProof
 	err := store.GetObj(DbProofId(txId), &proof)
 	if err != nil {
-		logger.Error("get Proof tx error:%v", err)
+		logger.Error("get Proof tx error:%v %v", txId, err)
 		return proof, err
 	}
 	return proof, nil
