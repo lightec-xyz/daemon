@@ -43,7 +43,7 @@ func (l *Local) Run() error {
 		case <-l.exit:
 			return nil
 		default:
-			time.Sleep(10 * time.Second)
+			time.Sleep(1 * time.Minute)
 		}
 		if l.worker.CurrentNums() >= l.worker.MaxNums() {
 			logger.Warn("maxNums limit reached, wait proof generated")
@@ -59,7 +59,7 @@ func (l *Local) Run() error {
 			continue
 		}
 		if !requestResp.CanGen {
-			logger.Info("no new proof request, wait  request coming now ....")
+			logger.Debug("no new proof request, wait  request coming now ....")
 			continue
 		}
 		l.worker.AddReqNum()
@@ -123,6 +123,7 @@ func (l *Local) checkPendingProof() error {
 			logger.Error("submit proof error again:%v %v ", key, err)
 			return false
 		}
+		logger.Info("success submit proof again:%v", key)
 		l.pendingProofsList.Delete(key)
 		return true
 	})

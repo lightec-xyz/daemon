@@ -12,5 +12,5 @@
         "model": "client"                        // generator mode (client: server-client)
     }
 
-## tips
+## Important tips
 **please prepare all setup files before starting the proof generator**

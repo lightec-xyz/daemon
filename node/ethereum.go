@@ -143,7 +143,9 @@ func (e *EthereumAgent) ScanBlock() error {
 		return nil
 	}
 	for index := ethHeight + 1; index <= int64(blockNumber); index++ {
-		logger.Debug("ethereum parse block:%d", index)
+		if index%100 == 0 {
+			logger.Debug("ethereum parse block:%d", index)
+		}
 		redeemTxes, depositTxes, requests, proofs, err := e.parseBlock(index)
 		if err != nil {
 			logger.Error("eth parse block error: %v %v", index, err)
