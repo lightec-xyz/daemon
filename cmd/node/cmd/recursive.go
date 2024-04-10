@@ -18,9 +18,6 @@ var recursiveCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		// todo
-		//datadir = "/Users/red/lworkspace/lightec/daemon/node/test"
-		//beaconUrl = "http://37.120.151.183:8970"
 		cfg, err := node.NewLightLocalDaemonConfig(true, datadir, "testnet", rpcbind,
 			rpcport, beaconUrl, initSlot)
 		if err != nil {
