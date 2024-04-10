@@ -22,7 +22,7 @@ func TestClient(t *testing.T) {
 	}
 	t.Log(latestSyncPeriod)
 
-	latestSlot, err := client.GetLatestSlot()
+	latestSlot, err := client.GetLatestFinalizedSlot()
 	if err != nil {
 		t.Fatal(err)
 	}

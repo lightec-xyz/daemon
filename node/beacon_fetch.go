@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	MaxReqNums   = 3
-	MaxQueueSize = 2
+	MaxReqNums   = 5
+	MaxQueueSize = 5
 )
 
 type BeaconFetch struct {
@@ -128,6 +128,7 @@ func (bf *BeaconFetch) fetch() error {
 		}()
 	} else if request.UpdateType == PeriodUpdateType {
 		go func() {
+			logger.Debug("get update data now: %v", request.period)
 			err := bf.getUpdateData(request.period)
 			if err != nil {
 				logger.Error("get update Data error:%v %v", err, request.period)

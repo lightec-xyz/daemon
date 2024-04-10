@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"strconv"
 	"strings"
 
@@ -99,7 +100,7 @@ func WriteDbProof(store store.IStore, txes []DbProof) error {
 	return nil
 }
 
-func UpdateProof(store store.IStore, txId string, proof string, proofType ZkProofType, status ProofStatus) error {
+func UpdateProof(store store.IStore, txId string, proof string, proofType common.ZkProofType, status common.ProofStatus) error {
 	txProof := DbProof{
 		TxHash:    txId,
 		Proof:     proof,
@@ -197,7 +198,7 @@ func WriteUnGenProof(store store.IStore, chain ChainType, txList []string) error
 	return nil
 }
 
-func ReadAllUnGenProof(store store.IStore) ([]ZkProofRequest, error) {
+func ReadAllUnGenProof(store store.IStore) ([]common.ZkProofRequest, error) {
 	panic(store)
 	//var txIds []string
 	//var requests []ProofRequest
@@ -216,7 +217,7 @@ func ReadAllUnGenProof(store store.IStore) ([]ZkProofRequest, error) {
 	//		return nil, err
 	//	}
 	//	var tx DbTx
-	//	err = store.GetObj(DbTxId(id), &tx)
+	//	err = store.getObj(DbTxId(id), &tx)
 	//	if err != nil {
 	//		logger.Error("get ungen Proof error:%v", err)
 	//		return nil, err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
+	"github.com/lightec-xyz/daemon/common"
 	"math/big"
 	"strings"
 )
@@ -88,41 +89,27 @@ func redeemToTxHashList(txs []RedeemProofParam) []string {
 	}
 	return txHashList
 }
-func toDepositZkProofRequest(list []DepositProofParam) ([]ZkProofRequest, error) {
-	var result []ZkProofRequest
+func toDepositZkProofRequest(list []DepositProofParam) ([]*common.ZkProofRequest, error) {
+	var result []*common.ZkProofRequest
 	for _, item := range list {
-		result = append(result, ZkProofRequest{
-			ReqType: DepositTxType,
-			Data:    item,
-			TxHash:  item.TxHash,
-		})
+		result = append(result, common.NewZkProofRequest(common.DepositTxType, item, 0, item.TxHash))
 	}
 	return result, nil
 }
 
-func toUpdateZkProofRequest(redeemTxes []Transaction) ([]ZkProofRequest, error) {
-	var result []ZkProofRequest
+func toUpdateZkProofRequest(redeemTxes []Transaction) ([]*common.ZkProofRequest, error) {
+	var result []*common.ZkProofRequest
 	for _, item := range redeemTxes {
-		result = append(result, ZkProofRequest{
-			ReqType: VerifyTxType,
-			Data: VerifyProofParam{
-				TxHash:    item.TxHash,
-				BlockHash: item.BlockHash,
-			},
-			TxHash: item.TxHash,
-		})
+		data := VerifyProofParam{TxHash: item.TxHash, BlockHash: item.BlockHash}
+		result = append(result, common.NewZkProofRequest(common.VerifyTxType, data, 0, item.TxHash))
 	}
 	return result, nil
 }
 
-func toRedeemZkProofRequest(list []RedeemProofParam) ([]ZkProofRequest, error) {
-	var result []ZkProofRequest
+func toRedeemZkProofRequest(list []RedeemProofParam) ([]*common.ZkProofRequest, error) {
+	var result []*common.ZkProofRequest
 	for _, item := range list {
-		result = append(result, ZkProofRequest{
-			ReqType: TxInEth2,
-			Data:    item,
-			TxHash:  item.TxHash,
-		})
+		result = append(result, common.NewZkProofRequest(common.TxInEth2, item, 0, item.TxHash))
 	}
 	return result, nil
 }

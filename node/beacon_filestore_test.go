@@ -92,7 +92,7 @@ func TestDemo001(t *testing.T) {
 			t.Fatal(err)
 		}
 		var reUpdate utils.LightClientUpdateInfo
-		err = deepCopy(update.Data, &reUpdate)
+		err = ParseObj(update.Data, &reUpdate)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -107,7 +107,7 @@ func TestDemo001(t *testing.T) {
 				t.Fatal(err)
 			}
 			var genesisCommittee utils.SyncCommittee
-			err = deepCopy(bootstrap.Data.CurrentSyncCommittee, &genesisCommittee)
+			err = ParseObj(bootstrap.Data.CurrentSyncCommittee, &genesisCommittee)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -123,7 +123,7 @@ func TestDemo001(t *testing.T) {
 				panic("not exists")
 			}
 			var currentSyncCommittee utils.SyncCommittee
-			err = deepCopy(preUpdate.Data.NextSyncCommittee, &currentSyncCommittee)
+			err = ParseObj(preUpdate.Data.NextSyncCommittee, &currentSyncCommittee)
 			if err != nil {
 				t.Fatal(err)
 			}

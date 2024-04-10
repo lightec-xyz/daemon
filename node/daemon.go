@@ -26,7 +26,7 @@ func init() {
 
 type IAgent interface {
 	ScanBlock() error
-	ProofResponse(resp ZkProofResponse) error
+	ProofResponse(resp common.ZkProofResponse) error
 	Init() error
 	CheckState() error
 	Close() error
@@ -35,12 +35,22 @@ type IAgent interface {
 
 type IBeaconAgent interface {
 	ScanSyncPeriod() error
-	ProofResponse(resp ZkProofResponse) error
+	ProofResponse(resp common.ZkProofResponse) error
 	FetchDataResponse(resp FetchDataResponse) error
 	CheckState() error
 	Init() error
 	Close() error
 	Name() string
+}
+
+type IManager interface {
+	Init() error
+	ReceiveRequest(requests []*common.ZkProofRequest) error
+	CheckPendingRequest() error
+	GetProofRequest() (*common.ZkProofRequest, bool, error)
+	SendProofResponse(response common.ZkProofResponse) error
+	DistributeRequest() error
+	Close() error
 }
 
 type Daemon struct {
@@ -89,10 +99,10 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []ZkProofRequest, 1000)
-	btcProofResp := make(chan ZkProofResponse, 1000)
-	ethProofResp := make(chan ZkProofResponse, 1000)
-	syncCommitResp := make(chan ZkProofResponse, 1000)
+	proofRequest := make(chan []*common.ZkProofRequest, 1000)
+	btcProofResp := make(chan common.ZkProofResponse, 1000)
+	ethProofResp := make(chan common.ZkProofResponse, 1000)
+	syncCommitResp := make(chan common.ZkProofResponse, 1000)
 	fetchDataResp := make(chan FetchDataResponse, 1000)
 
 	// todo
@@ -103,7 +113,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, genesisPeriod, fetchDataResp)
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, cfg.BeaconSlotHeight, genesisPeriod, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -153,7 +163,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(storeDb, memoryStore, schedule, exitSignal)
+	rpcHandler := NewHandler(manager, storeDb, memoryStore, schedule, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
@@ -167,13 +177,13 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		enableTx:      true,  // todo
 		exitSignal:    make(chan os.Signal, 1),
 		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
-		manager:       NewWrapperManger(manager, proofRequest),
+		manager:       NewWrapperManger(manager, proofRequest, 1*time.Minute),
 	}
 	return daemon, nil
 }
 
 func (d *Daemon) Init() error {
-	err := d.manager.manager.init()
+	err := d.manager.manager.Init()
 	if err != nil {
 		logger.Error("manager init error %v", err)
 		return err
@@ -202,17 +212,19 @@ func (d *Daemon) Run() error {
 	// rpc server
 	go d.server.Run()
 
-	// syncCommit
 	if d.enableSyncCom {
+		// syncCommit proof
 		go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
 		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
 
 	}
-	// generate Proof manager
-	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.run, d.exitSignal)
-	go doTask("manager-generateProof:", d.manager.manager.genProof, d.exitSignal)
+
+	// proof request manager
+	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)
+	go doTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
+	go doTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
 
 	if d.enableTx {
 		//tx Proof
@@ -237,7 +249,7 @@ func (d *Daemon) Run() error {
 		case syscall.SIGHUP:
 			logger.Info("daemon get SIGHUP")
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
-			logger.Info("get shutdown signal ,exit now ...")
+			logger.Info("get shutdown signal ,waiting exit now ...")
 			err := d.Close()
 			if err != nil {
 				logger.Error(err.Error())
@@ -292,11 +304,11 @@ type WrapperBeacon struct {
 	node              IBeaconAgent
 	scanPeriodTime    time.Duration // get node Period
 	checkDataTime     time.Duration
-	proofResponse     chan ZkProofResponse
+	proofResponse     chan common.ZkProofResponse
 	fetchDataResponse chan FetchDataResponse
 }
 
-func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Duration, proofResponse chan ZkProofResponse, fetchDataResp chan FetchDataResponse) *WrapperBeacon {
+func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Duration, proofResponse chan common.ZkProofResponse, fetchDataResp chan FetchDataResponse) *WrapperBeacon {
 	return &WrapperBeacon{
 		node:              beacon,
 		scanPeriodTime:    scanPeriodTime,
@@ -307,25 +319,27 @@ func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Du
 }
 
 type WrapperManger struct {
-	manager      *manager
-	proofRequest chan []ZkProofRequest
+	manager      IManager
+	proofRequest chan []*common.ZkProofRequest
+	checkTime    time.Duration
 }
 
-func NewWrapperManger(manager *manager, request chan []ZkProofRequest) *WrapperManger {
+func NewWrapperManger(manager IManager, request chan []*common.ZkProofRequest, checkTime time.Duration) *WrapperManger {
 	return &WrapperManger{
 		manager:      manager,
 		proofRequest: request,
+		checkTime:    checkTime,
 	}
 }
 
 type WrapperAgent struct {
 	node           IAgent
 	scanTime       time.Duration
-	proofResp      chan ZkProofResponse
+	proofResp      chan common.ZkProofResponse
 	checkStateTime time.Duration
 }
 
-func NewWrapperAgent(agent IAgent, scanTime, checkState time.Duration, proofResp chan ZkProofResponse) *WrapperAgent {
+func NewWrapperAgent(agent IAgent, scanTime, checkState time.Duration, proofResp chan common.ZkProofResponse) *WrapperAgent {
 	return &WrapperAgent{
 		node:           agent,
 		scanTime:       scanTime,
@@ -368,7 +382,7 @@ func doTimerTask(name string, interval time.Duration, fn func() error, exit chan
 	}
 }
 
-func doProofRequestTask(name string, req chan []ZkProofRequest, fn func(req []ZkProofRequest) error, exit chan os.Signal) {
+func doProofRequestTask(name string, req chan []*common.ZkProofRequest, fn func(req []*common.ZkProofRequest) error, exit chan os.Signal) {
 	logger.Info("%v goroutine start ...", name)
 	for {
 		select {
@@ -401,7 +415,7 @@ func doFetchRespTask(name string, resp chan FetchDataResponse, fn func(resp Fetc
 	}
 }
 
-func doProofResponseTask(name string, resp chan ZkProofResponse, fn func(resp ZkProofResponse) error, exit chan os.Signal) {
+func doProofResponseTask(name string, resp chan common.ZkProofResponse, fn func(resp common.ZkProofResponse) error, exit chan os.Signal) {
 	logger.Info("%v goroutine start ...", name)
 	for {
 		select {

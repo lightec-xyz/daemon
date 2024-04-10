@@ -12,6 +12,13 @@ func Uuid() (string, error) {
 	}
 	return newV7.String(), nil
 }
+func MustUUID() string {
+	newV7, err := uuid.NewV7()
+	if err != nil {
+		panic("gen uuid error,should never happen")
+	}
+	return newV7.String()
+}
 
 func objToJson(obj interface{}) string {
 	ojbBytes, err := json.Marshal(obj)

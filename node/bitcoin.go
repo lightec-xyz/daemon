@@ -22,7 +22,7 @@ type BitcoinAgent struct {
 	store                store.IStore
 	memoryStore          store.IStore
 	blockTime            time.Duration
-	proofRequest         chan<- []ZkProofRequest
+	proofRequest         chan<- []*common.ZkProofRequest
 	checkProofHeightNums int64
 	taskManager          *TaskManager
 	whiteList            map[string]bool // todo
@@ -37,7 +37,7 @@ type BitcoinAgent struct {
 }
 
 func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	requests chan []ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
+	requests chan []*common.ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
@@ -155,15 +155,6 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("to update zk Proof request error: %v %v", index, err)
 			return err
 		}
-		//updateZkProofRequests = append(updateZkProofRequests, ZkProofRequest{
-		//	ReqType: VerifyTxType,
-		//	TxHash:  "dasdasfsf",
-		//	Data: VerifyProofParam{
-		//		Version:   "1.0",
-		//		TxHash:    "dasdasfsf",
-		//		BlockHash: "dasdasfsf",
-		//	},
-		//})
 		zkProofRequest, err := toDepositZkProofRequest(proofRequests)
 		if err != nil {
 			logger.Error("to deposit zk Proof request error: %v %v", index, err)
@@ -255,10 +246,10 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			}
 			var depositTxProof Proof
 			if submitted {
-				depositTxProof = NewDepositTxProof(tx.Txid, ProofSuccess)
+				depositTxProof = NewDepositTxProof(tx.Txid, common.ProofSuccess)
 			} else {
 				requests = append(requests, NewDepositProofParam(depositTx.TxHash, blockHash))
-				depositTxProof = NewDepositTxProof(tx.Txid, ProofDefault)
+				depositTxProof = NewDepositTxProof(tx.Txid, common.ProofDefault)
 			}
 			proofs = append(proofs, depositTxProof)
 			depositTxes = append(depositTxes, depositTx)
@@ -267,19 +258,20 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 	return depositTxes, redeemTxes, requests, proofs, nil
 }
 
-func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
+func (b *BitcoinAgent) ProofResponse(resp common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive deposit Proof resp: %v", resp)
 	proofId := resp.TxHash
-	err := b.updateDepositProof(proofId, resp.ProofStr, resp.Status)
+	hexProof := hex.EncodeToString(resp.Proof)
+	err := b.updateDepositProof(proofId, hexProof, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", proofId, err)
 		return err
 	}
 	switch resp.ZkProofType {
-	case DepositTxType:
-	case VerifyTxType:
+	case common.DepositTxType:
+	case common.VerifyTxType:
 		logger.Info("start update utxo change: %v", proofId)
-		err := b.updateContractUtxoChange([]string{resp.TxHash}, resp.ProofStr)
+		err := b.updateContractUtxoChange([]string{resp.TxHash}, resp.Proof)
 		if err != nil {
 			logger.Error("update utxo error: %v %v", proofId, err)
 			return err
@@ -298,7 +290,7 @@ func (b *BitcoinAgent) ProofResponse(resp ZkProofResponse) error {
 	return nil
 }
 
-func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof string) error {
+func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof []byte) error {
 	// todo
 	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
 	if err != nil {
@@ -315,14 +307,9 @@ func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof string) er
 		logger.Error("get gas price error:%v", err)
 		return err
 	}
-	proofBytes, err := hex.DecodeString(proof)
-	if err != nil {
-		logger.Error("decode proof error:%v", err)
-		return err
-	}
 	gasLimit := uint64(500000)
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(2))
-	txHash, err := b.ethClient.UpdateUtxoChange(b.keyStore.GetPrivateKey(), txIds, nonce, gasLimit, chainId, gasPrice, proofBytes)
+	txHash, err := b.ethClient.UpdateUtxoChange(b.keyStore.GetPrivateKey(), txIds, nonce, gasLimit, chainId, gasPrice, proof)
 	if err != nil {
 		logger.Error("update utxo change error:%v", err)
 		return err
@@ -398,9 +385,9 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx, blockHash string) (Transaction, b
 	return redeemBtcTx, isRedeemTx
 }
 
-func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status ProofStatus) error {
+func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status common.ProofStatus) error {
 	logger.Debug("update DepositTx  Proof status: %v %v %v", txId, proof, status)
-	err := UpdateProof(b.store, txId, proof, DepositTxType, status)
+	err := UpdateProof(b.store, txId, proof, common.DepositTxType, status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", txId, err)
 		return err
@@ -516,10 +503,10 @@ func NewDepositProofParam(txId, blockHash string) DepositProofParam {
 	}
 }
 
-func NewDepositTxProof(txId string, status ProofStatus) Proof {
+func NewDepositTxProof(txId string, status common.ProofStatus) Proof {
 	return Proof{
 		TxHash:    txId,
-		ProofType: DepositTxType,
+		ProofType: common.DepositTxType,
 		Status:    int(status),
 	}
 }

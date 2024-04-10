@@ -6,6 +6,14 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
+type ProofTaskRequest struct {
+	ProofType []common.ZkProofType
+}
+
+type ProfTaskResponse struct {
+	ProofType common.ZkProofType
+}
+
 type Transaction struct {
 	TxHash   string
 	DestHash string
@@ -47,9 +55,8 @@ type TxInEth2ProveReq struct {
 }
 
 type TxInEth2ProveResp struct {
-	ProofStr string
-	Proof    []byte
-	Witness  []byte
+	Proof   []byte
+	Witness []byte
 }
 
 type TxBlockIsParentOfCheckPointProveReq struct {
@@ -70,10 +77,9 @@ type DepositRequest struct {
 }
 
 type DepositResponse struct {
-	TxHash   string
-	Proof    common.ZkProof
-	ProofStr string
-	Witness  []byte
+	TxHash  string
+	Proof   common.ZkProof
+	Witness []byte
 }
 
 type RedeemRequest struct {
@@ -95,14 +101,14 @@ type VerifyRequest struct {
 
 type VerifyResponse struct {
 	TxHash string
-	Proof  string
+	Proof  []byte
 	Wit    []byte
 }
 
 type SyncCommGenesisRequest struct {
 	Period        uint64 `json:"period"`
 	Version       string `json:"version"`
-	FirstProof    []byte
+	FirstProof    []byte `json:"firstProof"`
 	FirstWitness  []byte
 	SecondProof   []byte
 	SecondWitness []byte
@@ -169,4 +175,13 @@ type ProofInfo struct {
 	ProofType int    `json:"type"`
 	Proof     string `json:"proof"`
 	Status    int    `json:"status"`
+}
+
+type CheckReqStatus struct {
+	Status int
+}
+
+type IDepositRequest struct {
+	DepositRequest
+	CheckReqStatus
 }

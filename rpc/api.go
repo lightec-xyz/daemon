@@ -1,12 +1,16 @@
 package rpc
 
+import "github.com/lightec-xyz/daemon/common"
+
 type INode interface {
 	Version() (NodeInfo, error)
 	AddWorker(endpoint string, max int) (string, error)
-	ProofInfo(txId string) (ProofInfo, error)
+	ProofInfo(txIds []string) ([]ProofInfo, error)
 	Transaction(txHash string) (Transaction, error)
 	TransactionsByHeight(height uint64, network string) ([]string, error)
 	Transactions(txId []string) ([]Transaction, error)
+	GetTask(request common.TaskRequest) (*common.TaskResponse, error)
+	SubmitProof(req common.SubmitProof) (string, error)
 	Stop() error
 }
 
@@ -32,4 +36,10 @@ type IWorker interface {
 	MaxNums() int
 	CurrentNums() int
 	Id() string
+}
+
+// ICRequest Todo
+type ICRequest interface {
+	DepositProofReq() (IDepositRequest, error)
+	DepositResponse(data DepositResponse) error
 }

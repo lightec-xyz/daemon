@@ -1,43 +1,44 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/proof"
 	"github.com/spf13/cobra"
+	"os"
 )
-
-var ip *string
-var port *string
-var maxNums *int
 
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "generate zk proof node",
 	Long:  "example: ./proof  run --ip 0.0.0.0 --port 30001 --nums 1",
 	Run: func(cmd *cobra.Command, args []string) {
-		//config := proof.LocalDevConfig()
-		config := newConfig()
+		cfgBytes, err := os.ReadFile(cfgFile)
+		if err != nil {
+			fmt.Printf("read config error: %v %v \n", cfgFile, err)
+			return
+		}
+		fmt.Printf("%v\n", string(cfgBytes))
+		var config proof.Config
+		err = json.Unmarshal(cfgBytes, &config)
+		if err != nil {
+			fmt.Printf("unmarshal config error: %v %v \n", cfgFile, err)
+			return
+		}
 		node, err := proof.NewNode(config)
-		cobra.CheckErr(err)
+		if err != nil {
+			fmt.Printf("new node error: %v %v \n", cfgFile, err)
+			return
+		}
 		err = node.Start()
 		if err != nil {
-			fmt.Printf(" %v\n", err)
+			fmt.Printf("start node error: %v %v \n", cfgFile, err)
+			return
 		}
 	},
 }
 
-func newConfig() proof.Config {
-	return proof.Config{
-		RpcBind:      *ip,
-		RpcPort:      *port,
-		ParallelNums: *maxNums,
-	}
-}
-
 func init() {
-	ip = runCmd.Flags().String("ip", "127.0.0.1", "rpc server host")
-	port = runCmd.Flags().String("port", "30001", "rpc server port")
-	maxNums = runCmd.Flags().Int("nums", 1, "The maximum number of proofs that can be generated at the same time")
 	rootCmd.AddCommand(runCmd)
 
 }

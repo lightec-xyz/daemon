@@ -27,10 +27,10 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []ZkProofRequest)
-	btcProofResp := make(chan ZkProofResponse)
-	ethProofResp := make(chan ZkProofResponse)
-	syncCommitResp := make(chan ZkProofResponse)
+	proofRequest := make(chan []*common.ZkProofRequest)
+	btcProofResp := make(chan common.ZkProofResponse)
+	ethProofResp := make(chan common.ZkProofResponse)
+	syncCommitResp := make(chan common.ZkProofResponse)
 	fetchDataResp := make(chan FetchDataResponse)
 
 	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
@@ -40,7 +40,7 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, genesisPeriod, fetchDataResp)
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, cfg.BeaconSlotHeight, genesisPeriod, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -69,7 +69,7 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(storeDb, memoryStore, schedule, exitSignal)
+	rpcHandler := NewHandler(manager, storeDb, memoryStore, schedule, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
@@ -81,8 +81,8 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		exitSignal:    exitSignal,
 		enableSyncCom: true,
 		enableTx:      false,
-		beaconAgent:   NewWrapperBeacon(beaconAgent, 10*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
-		manager:       NewWrapperManger(manager, proofRequest),
+		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
+		manager:       NewWrapperManger(manager, proofRequest, 1*time.Minute),
 	}
 	return daemon, nil
 }

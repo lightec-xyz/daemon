@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	dcommon "github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"strconv"
@@ -35,7 +36,7 @@ type EthereumAgent struct {
 	blockTime        time.Duration
 	taskManager      *TaskManager
 	whiteList        map[string]bool
-	proofRequest     chan []ZkProofRequest
+	proofRequest     chan []*dcommon.ZkProofRequest
 	exitSign         chan struct{}
 	multiAddressInfo MultiAddressInfo
 	btcNetwork       btctx.NetWork
@@ -48,7 +49,7 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileStore, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []ZkProofRequest) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []*dcommon.ZkProofRequest) (IAgent, error) {
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -142,7 +143,9 @@ func (e *EthereumAgent) ScanBlock() error {
 		return nil
 	}
 	for index := ethHeight + 1; index <= int64(blockNumber); index++ {
-		logger.Debug("ethereum parse block:%d", index)
+		if index%100 == 0 {
+			logger.Debug("ethereum parse block:%d", index)
+		}
 		redeemTxes, depositTxes, requests, proofs, err := e.parseBlock(index)
 		if err != nil {
 			logger.Error("eth parse block error: %v %v", index, err)
@@ -180,14 +183,15 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *EthereumAgent) ProofResponse(resp ZkProofResponse) error {
+func (e *EthereumAgent) ProofResponse(resp dcommon.ZkProofResponse) error {
 	logger.Info("receive proof response: %v", resp)
-	err := e.updateRedeemProof(resp.TxHash, resp.ProofStr, resp.Status)
+	hexProof := hex.EncodeToString(resp.Proof)
+	err := e.updateRedeemProof(resp.TxHash, hexProof, resp.Status)
 	if err != nil {
 		logger.Error("update Proof error:%v", err)
 		return err
 	}
-	_, err = e.RedeemBtcTx(resp.TxHash, resp.ProofStr)
+	_, err = e.RedeemBtcTx(resp.TxHash, resp.Proof)
 	if err != nil {
 		logger.Error("redeem btc tx error:%v", err)
 		return err
@@ -308,7 +312,7 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			}
 			var redeemTxProof Proof
 			if submitted {
-				redeemTxProof = NewRedeemProof(redeemTx.TxHash, ProofSuccess)
+				redeemTxProof = NewRedeemProof(redeemTx.TxHash, dcommon.ProofSuccess)
 			} else {
 				// Todo
 				txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, redeemTx.TxHash)
@@ -316,7 +320,7 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 					return nil, nil, nil, nil, err
 				}
 				requests = append(requests, NewRedeemProofParam(redeemTx.TxHash, txData))
-				redeemTxProof = NewRedeemProof(redeemTx.TxHash, ProofDefault)
+				redeemTxProof = NewRedeemProof(redeemTx.TxHash, dcommon.ProofDefault)
 			}
 			proofs = append(proofs, redeemTxProof)
 			redeemTxes = append(redeemTxes, redeemTx)
@@ -415,7 +419,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 // todo refactor
 
-func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
+func (e *EthereumAgent) RedeemBtcTx(txHash string, proof []byte) (interface{}, error) {
 	ethTxHash := common.HexToHash(txHash)
 	zkBridgeAddr, zkBtcAddr := "0x8e4f5a8f3e24a279d8ed39e868f698130777fded", "0xbf3041e37be70a58920a6fd776662b50323021c9"
 	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
@@ -446,12 +450,6 @@ func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
 	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
 	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
 
-	proofData, err := hex.DecodeString(proof)
-	if err != nil {
-		logger.Error("decode proof error:%v", err)
-		return nil, err
-	}
-
 	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
 	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
 	if err != nil {
@@ -459,7 +457,7 @@ func (e *EthereumAgent) RedeemBtcTx(txHash, proof string) (interface{}, error) {
 		return nil, err
 	}
 
-	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proofData)
+	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proof)
 	if err != nil {
 		logger.Error("sign btc tx error:%v", err)
 		return nil, err
@@ -507,9 +505,9 @@ func (e *EthereumAgent) CheckState() error {
 	return nil
 }
 
-func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status ProofStatus) error {
+func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status dcommon.ProofStatus) error {
 	logger.Debug("update Redeem Proof status: %v %v %v", txId, proof, status)
-	err := UpdateProof(e.store, txId, proof, RedeemTxType, status)
+	err := UpdateProof(e.store, txId, proof, dcommon.RedeemTxType, status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", txId, err)
 		return err
@@ -532,10 +530,10 @@ func NewRedeemProofParam(txId string, txData *ethblock.TxInEth2ProofData) Redeem
 	}
 }
 
-func NewRedeemProof(txId string, status ProofStatus) Proof {
+func NewRedeemProof(txId string, status dcommon.ProofStatus) Proof {
 	return Proof{
 		TxHash:    txId,
-		ProofType: TxInEth2,
+		ProofType: dcommon.TxInEth2,
 		Status:    int(status),
 	}
 }

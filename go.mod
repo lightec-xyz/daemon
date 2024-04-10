@@ -5,7 +5,6 @@ go 1.22
 toolchain go1.22.0
 
 require (
-	github.com/blockcypher/gobcy/v2 v2.0.5
 	github.com/btcsuite/btcd v0.23.4
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/btcsuite/btcd/btcutil v1.1.3
@@ -19,7 +18,8 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/lightec-xyz/btc_provers v0.0.0-00010101000000-000000000000
 	github.com/lightec-xyz/provers v0.0.0-00010101000000-000000000000
-	github.com/lightec-xyz/reLight v0.0.0-20240329065153-d26254301ed4
+	github.com/lightec-xyz/reLight v0.1.0
+	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v5 v5.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
@@ -86,7 +86,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lightec-xyz/chainark v0.0.0-20240323163404-5d6e861d4988 // indirect
+	github.com/lightec-xyz/chainark v0.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -109,7 +109,6 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/prysmaticlabs/fastssz v0.0.0-20221107182844-78142813af44 // indirect
-	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7 // indirect
 	github.com/prysmaticlabs/gohashtree v0.0.4-beta // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect

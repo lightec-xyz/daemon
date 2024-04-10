@@ -1,8 +1,10 @@
 package node
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"os"
 	"path/filepath"
@@ -15,24 +17,36 @@ import (
 // store filestore protocol
 
 type StoreProof struct {
-	Period  uint64 `json:"period"`
-	Proof   []byte `json:"proof"`
-	Witness []byte `json:"witness"`
+	ProofType common.ZkProofType `json:"type"`
+	Hash      string             `json:"hash"`
+	Period    uint64             `json:"period"`
+	Proof     []byte             `json:"proof"`
+	Witness   []byte             `json:"witness"`
+}
+
+type storeProof struct {
+	ProofType common.ZkProofType `json:"type"`
+	Hash      string             `json:"hash"`
+	Period    uint64             `json:"period"`
+	Proof     string             `json:"proof"`
+	Witness   string             `json:"witness"`
 }
 
 const (
 	LatestPeriodKey = "latest"
+	LatestSlotKey   = "latestSlot"
 	GenesisRawData  = "genesisRaw"
 	GenesisProofKey = "genesisProof"
 )
 
 const (
-	PeriodDir    = "period"
-	GenesisDir   = "genesis"
-	UpdateDir    = "update"
-	UnitDir      = "unit"
-	RecursiveDir = "recursive"
-	Tx           = "txes"
+	PeriodDir                  = "period"
+	GenesisDir                 = "genesis"
+	UpdateDir                  = "update"
+	UnitDir                    = "unit"
+	RecursiveDir               = "recursive"
+	BeaconHeaderFinalityUpdate = "beaconHeaderFinalityUpdate"
+	Tx                         = "txes"
 )
 
 type FileStore struct {
@@ -115,23 +129,79 @@ func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
 	}, nil
 }
 
-func (f *FileStore) StoreRecursiveProof(period uint64, proof []byte, witness []byte) error {
-	return f.InsertData(RecursiveDir, parseKey(period), StoreProof{
-		Period:  period,
-		Proof:   proof,
-		Witness: witness,
+func (f *FileStore) StoreBeaconHeaderFinalityUpdateProof(slot uint64, proof, witness []byte) error {
+	return f.InsertData(BeaconHeaderFinalityUpdate, parseKey(slot), storeProof{
+		Period:    slot,
+		ProofType: common.BeaconHeaderFinalityUpdate,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
 	})
 }
 
-func (f *FileStore) GetRecursiveProof(period uint64, value interface{}) (bool, error) {
-	exists, err := f.CheckRecursiveProof(period)
+func (f *FileStore) CheckBeaconHeaderFinalityUpdateProof(slot uint64) (bool, error) {
+	return f.CheckStorageKey(BeaconHeaderFinalityUpdate, parseKey(slot))
+}
+
+func (f *FileStore) GetBeaconHeaderFinalityUpdateProof(slot uint64) (*StoreProof, bool, error) {
+	exists, err := f.CheckBeaconHeaderFinalityUpdateProof(slot)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 	if !exists {
-		return false, nil
+		return nil, false, nil
 	}
-	return true, f.GetObj(RecursiveDir, parseKey(period), value)
+	proof, err := f.GetObj(BeaconHeaderFinalityUpdate, parseKey(slot))
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
+}
+
+func (f *FileStore) CheckLatestSlot() (bool, error) {
+	return f.CheckStorageKey(PeriodDir, LatestSlotKey)
+}
+
+func (f *FileStore) StoreLatestSlot(slot uint64) error {
+	return f.InsertData(PeriodDir, LatestSlotKey, slot)
+}
+func (f *FileStore) GetLatestSlot() (uint64, bool, error) {
+	exists, err := f.CheckLatestSlot()
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
+	var latestSlot uint64
+	err = f.getObj(PeriodDir, LatestSlotKey, &latestSlot)
+	if err != nil {
+		return 0, false, err
+	}
+	return latestSlot, true, nil
+}
+
+func (f *FileStore) StoreRecursiveProof(period uint64, proof []byte, witness []byte) error {
+	return f.InsertData(RecursiveDir, parseKey(period), storeProof{
+		Period:    period,
+		ProofType: common.SyncComRecursiveType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
+	})
+}
+
+func (f *FileStore) GetRecursiveProof(period uint64) (*StoreProof, bool, error) {
+	exists, err := f.CheckRecursiveProof(period)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	proof, err := f.GetObj(RecursiveDir, parseKey(period))
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
 }
 
 func (f *FileStore) GetRecursiveProofData(period uint64) ([]byte, error) {
@@ -148,10 +218,11 @@ func (f *FileStore) CheckUnitProof(period uint64) (bool, error) {
 
 func (f *FileStore) StoreUnitProof(period uint64, proof, witness []byte) error {
 	logger.Info("store unit proof")
-	return f.InsertData(UnitDir, parseKey(period), StoreProof{
-		Period:  period,
-		Proof:   proof,
-		Witness: witness,
+	return f.InsertData(UnitDir, parseKey(period), storeProof{
+		Period:    period,
+		ProofType: common.SyncComUnitType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
 	})
 }
 
@@ -159,15 +230,19 @@ func (f *FileStore) GetUnitProofData(period uint64) ([]byte, error) {
 	return f.GetData(UnitDir, parseKey(period))
 }
 
-func (f *FileStore) GetUnitProof(period uint64, data interface{}) (bool, error) {
+func (f *FileStore) GetUnitProof(period uint64) (*StoreProof, bool, error) {
 	exists, err := f.CheckUnitProof(period)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 	if !exists {
-		return false, nil
+		return nil, false, nil
 	}
-	return true, f.GetObj(UnitDir, parseKey(period), data)
+	proof, err := f.GetObj(UnitDir, parseKey(period))
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
 }
 
 func (f *FileStore) StoreUpdate(period uint64, data interface{}) error {
@@ -190,7 +265,7 @@ func (f *FileStore) GetUpdate(period uint64, value interface{}) (bool, error) {
 	if !exists {
 		return false, nil
 	}
-	return true, f.GetObj(UpdateDir, parseKey(period), value)
+	return true, f.getObj(UpdateDir, parseKey(period), value)
 }
 
 func (f *FileStore) GetBootstrap(value interface{}) (bool, error) {
@@ -201,7 +276,7 @@ func (f *FileStore) GetBootstrap(value interface{}) (bool, error) {
 	if !exists {
 		return false, nil
 	}
-	return true, f.GetObj(GenesisDir, GenesisRawData, value)
+	return true, f.getObj(GenesisDir, GenesisRawData, value)
 }
 
 func (f *FileStore) GetBootstrapData() ([]byte, error) {
@@ -217,22 +292,31 @@ func (f *FileStore) CheckBootstrap() (bool, error) {
 }
 
 func (f *FileStore) StoreGenesisProof(proof []byte, witness []byte) error {
-	return f.InsertData(GenesisDir, GenesisProofKey, StoreProof{Period: f.genesisPeriod, Proof: proof, Witness: witness})
+	return f.InsertData(GenesisDir, GenesisProofKey, storeProof{
+		Period:    f.genesisPeriod,
+		ProofType: common.SyncComGenesisType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
+	})
 }
 
 func (f *FileStore) CheckGenesisProof() (bool, error) {
 	return f.CheckStorageKey(GenesisDir, GenesisProofKey)
 }
 
-func (f *FileStore) GetGenesisProof(value interface{}) (bool, error) {
+func (f *FileStore) GetGenesisProof() (*StoreProof, bool, error) {
 	exists, err := f.CheckGenesisProof()
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 	if !exists {
-		return false, nil
+		return nil, false, nil
 	}
-	return true, f.GetObj(GenesisDir, GenesisProofKey, value)
+	proof, err := f.GetObj(GenesisDir, GenesisProofKey)
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
 }
 
 func (f *FileStore) GetGenesisProofData() ([]byte, error) {
@@ -256,7 +340,7 @@ func (f *FileStore) GetLatestPeriod() (uint64, bool, error) {
 		return 0, false, nil
 	}
 	var period uint64
-	err = f.GetObj(PeriodDir, LatestPeriodKey, &period)
+	err = f.getObj(PeriodDir, LatestPeriodKey, &period)
 	if err != nil {
 		logger.Error("get latest Period error:%v", err)
 		return 0, false, err
@@ -288,7 +372,7 @@ func (f *FileStore) GetTxInEth2Proof(hash string, value interface{}) (bool, erro
 	if !exists {
 		return false, nil
 	}
-	return true, f.GetObj(Tx, key, value)
+	return true, f.getObj(Tx, key, value)
 }
 
 func (f *FileStore) GetCheckPointFinalityProve(hash string, value interface{}) (bool, error) {
@@ -300,7 +384,7 @@ func (f *FileStore) GetCheckPointFinalityProve(hash string, value interface{}) (
 	if !exists {
 		return false, nil
 	}
-	return true, f.GetObj(Tx, key, value)
+	return true, f.getObj(Tx, key, value)
 }
 
 func (f *FileStore) GetTxBlockIsParentOfCheckPointProve(hash string, value interface{}) (bool, error) {
@@ -312,7 +396,7 @@ func (f *FileStore) GetTxBlockIsParentOfCheckPointProve(hash string, value inter
 	if !exists {
 		return false, nil
 	}
-	return true, f.GetObj(Tx, key, value)
+	return true, f.getObj(Tx, key, value)
 }
 
 func (f *FileStore) txDirCheckOrCreate(hash string) error {
@@ -419,7 +503,31 @@ func (f *FileStore) GetData(table, key string) ([]byte, error) {
 	return dataBytes, nil
 }
 
-func (f *FileStore) GetObj(table, key string, value interface{}) error {
+func (f *FileStore) GetObj(table, key string) (*StoreProof, error) {
+	var obj storeProof
+	err := f.getObj(table, key, &obj)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := hex.DecodeString(obj.Proof)
+	if err != nil {
+		return nil, err
+	}
+	witnessBytes, err := hex.DecodeString(obj.Witness)
+	if err != nil {
+		return nil, err
+	}
+	return &StoreProof{
+		ProofType: obj.ProofType,
+		Period:    obj.Period,
+		Hash:      obj.Hash,
+		Proof:     proofBytes,
+		Witness:   witnessBytes,
+	}, nil
+
+}
+
+func (f *FileStore) getObj(table, key string, value interface{}) error {
 	if reflect.ValueOf(value).Kind() != reflect.Ptr {
 		return fmt.Errorf("value mutst be a pointer")
 	}

@@ -2,31 +2,34 @@ package node
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"sync"
+	"time"
 )
 
 type manager struct {
-	txProofQueue   *Queue
+	proofQueue     *Queue
+	pendingQueue   *PendingQueue
 	schedule       *Schedule
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
 	store          store.IStore
 	memory         store.IStore
-	btcProofResp   chan ZkProofResponse
-	ethProofResp   chan ZkProofResponse
-	syncCommitResp chan ZkProofResponse
+	btcProofResp   chan common.ZkProofResponse
+	ethProofResp   chan common.ZkProofResponse
+	syncCommitResp chan common.ZkProofResponse
+	lock           sync.Mutex
 }
 
-func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan ZkProofResponse, store, memory store.IStore, schedule *Schedule) (*manager, error) {
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan common.ZkProofResponse, store, memory store.IStore, schedule *Schedule) (IManager, error) {
 	return &manager{
-		txProofQueue:   NewQueue(),
+		proofQueue:     NewQueue(),
+		pendingQueue:   NewPendingQueue(),
 		schedule:       schedule,
 		store:          store,
 		memory:         memory,
@@ -38,7 +41,7 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofR
 	}, nil
 }
 
-func (m *manager) init() error {
+func (m *manager) Init() error {
 	//dbRequests, err := ReadAllUnGenProof(m.store)
 	//if err != nil {
 	//	logger.Error("read un gen Proof error:%v", err)
@@ -64,26 +67,58 @@ func (m *manager) init() error {
 	return nil
 }
 
-func (m *manager) run(requestList []ZkProofRequest) error {
+func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
-		logger.Info("queue receive gen Proof request:%v %v", req.ReqType.String(), req.period)
+		logger.Info("queue receive gen Proof request:%v %v", req.ReqType.String(), req.Period)
 		// Todo queue need to sort by req weight ?
-		if req.ReqType == SyncComGenesisType || req.ReqType == SyncComRecursiveType {
-			m.txProofQueue.PushBack(req)
+		if req.ReqType == common.SyncComGenesisType || req.ReqType == common.SyncComRecursiveType {
+			m.proofQueue.PushBack(req)
 		} else {
-			m.txProofQueue.PushFront(req)
+			m.proofQueue.PushFront(req)
 		}
 	}
 	return nil
 }
 
-func (m *manager) genProof() error {
-	if m.txProofQueue.Len() == 0 {
+func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if m.proofQueue.Len() == 0 {
+		logger.Warn("current queue is empty")
+		return nil, false, nil
+	}
+	//todo
+	element := m.proofQueue.Back()
+	request, ok := element.Value.(*common.ZkProofRequest)
+	if !ok {
+		logger.Error("should never happen,parse Proof request error")
+		return nil, false, fmt.Errorf("parse Proof request error")
+	}
+	// todo
+	m.proofQueue.Remove(element)
+	logger.Info("get proof request:%v %v", request.ReqType.String(), request.Period)
+	request.StartTime = time.Now()
+	m.pendingQueue.Push(request)
+	return request, true, nil
+}
+
+func (m *manager) SendProofResponse(response common.ZkProofResponse) error {
+	chanResponse := m.getChanResponse(response.ZkProofType)
+	chanResponse <- response
+	logger.Info("send Proof response:%v %v", response.ZkProofType.String(), response.Period)
+	proofId := response.Id()
+	logger.Info("delete pending request:%v", proofId)
+	m.pendingQueue.Delete(proofId)
+	return nil
+}
+
+func (m *manager) DistributeRequest() error {
+	if m.proofQueue.Len() == 0 {
 		time.Sleep(2 * time.Second)
 		return nil
 	}
-	element := m.txProofQueue.Back()
-	request, ok := element.Value.(ZkProofRequest)
+	element := m.proofQueue.Back()
+	request, ok := element.Value.(*common.ZkProofRequest)
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
 		time.Sleep(5 * time.Second)
@@ -101,19 +136,20 @@ func (m *manager) genProof() error {
 	chanResponse := m.getChanResponse(request.ReqType)
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
-		m.txProofQueue.Remove(element)
-		go func(req ZkProofRequest) {
-			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), req.ReqType.String(), req.period)
-			err := m.workerGenProof(worker, req, chanResponse)
+		m.proofQueue.Remove(element)
+		go func(req *common.ZkProofRequest, chaResp chan common.ZkProofResponse) {
+			logger.Debug("worker %v start generate Proof type: %v Period: %v", worker.Id(), req.ReqType.String(), req.Period)
+			zkProofResponse, err := WorkerGenProof(worker, req)
 			if err != nil {
-				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.ReqType.String(), req.period, err)
+				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.ReqType.String(), req.Period, err)
 				//  take fail request to queue again
-				m.txProofQueue.PushBack(request)
-				logger.Info("add Proof request type: %v ,Period: %v to queue again", req.ReqType.String(), req.period)
+				m.proofQueue.PushBack(request)
+				logger.Info("add Proof request type: %v ,Period: %v to queue again", req.ReqType.String(), req.Period)
 				return
 			}
-			logger.Info("complete generate Proof type: %v Period: %v", req.ReqType.String(), req.period)
-		}(request)
+			logger.Debug("complete generate Proof type: %v Period: %v", req.ReqType.String(), req.Period)
+			chaResp <- zkProofResponse
+		}(request, chanResponse)
 		return nil
 	})
 	if err != nil {
@@ -122,7 +158,7 @@ func (m *manager) genProof() error {
 		return err
 	}
 	if !find {
-		logger.Warn(" no find best worker to gen Proof")
+		//logger.Warn(" no find best worker to gen Proof")
 		time.Sleep(10 * time.Second)
 		return nil
 	}
@@ -130,14 +166,15 @@ func (m *manager) genProof() error {
 	return nil
 }
 
-func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, resp chan ZkProofResponse) error {
+func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) (common.ZkProofResponse, error) {
 	defer worker.DelReqNum()
-	var zkbProofResponse ZkProofResponse
+	var zkbProofResponse common.ZkProofResponse
 	switch request.ReqType {
-	case DepositTxType:
-		depositParam, ok := request.Data.(DepositProofParam)
-		if !ok {
-			return fmt.Errorf("not deposit Proof param")
+	case common.DepositTxType:
+		var depositParam DepositProofParam
+		err := ParseObj(request.Data, &depositParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not deposit Proof param")
 		}
 		depositRpcRequest := rpc.DepositRequest{
 			Version:   depositParam.Version,
@@ -147,13 +184,14 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		proofResponse, err := worker.GenDepositProof(depositRpcRequest)
 		if err != nil {
 			logger.Error("gen deposit Proof error:%v", err)
-			return err
+			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
-	case VerifyTxType:
-		verifyProofParam, ok := request.Data.(VerifyProofParam)
-		if !ok {
-			return fmt.Errorf("not deposit Proof param")
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
+	case common.VerifyTxType:
+		var verifyProofParam VerifyProofParam
+		err := ParseObj(request.Data, &verifyProofParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not verify Proof param")
 		}
 		verifyRpcRequest := rpc.VerifyRequest{
 			Version:   verifyProofParam.Version,
@@ -163,14 +201,15 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		proofResponse, err := worker.GenVerifyProof(verifyRpcRequest)
 		if err != nil {
 			logger.Error("gen verify Proof error:%v", err)
-			return err
+			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, nil, proofResponse.Wit)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Wit)
 
-	case TxInEth2:
-		redeemParam, ok := request.Data.(RedeemProofParam)
-		if !ok {
-			return fmt.Errorf("not txInEth2 Proof param")
+	case common.TxInEth2:
+		var redeemParam RedeemProofParam
+		err := ParseObj(request.Data, &redeemParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not txInEth2 Proof param")
 		}
 		txInEth2Req := &rpc.TxInEth2ProveReq{
 			Version: redeemParam.Version,
@@ -180,14 +219,15 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		proofResponse, err := worker.TxInEth2Prove(txInEth2Req)
 		if err != nil {
 			logger.Error("gen redeem Proof error:%v", err)
-			return err
+			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.ProofStr, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
-	case RedeemTxType:
-		redeemParam, ok := request.Data.(*RedeemProofParam)
-		if !ok {
-			return fmt.Errorf("not deposit Proof param")
+	case common.RedeemTxType:
+		var redeemParam RedeemProofParam
+		err := ParseObj(request.Data, &redeemParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not redeem Proof param")
 		}
 		redeemRpcRequest := rpc.RedeemRequest{
 			Version: redeemParam.Version,
@@ -197,19 +237,19 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		proofResponse, err := worker.GenRedeemProof(redeemRpcRequest)
 		if err != nil {
 			logger.Error("gen redeem Proof error:%v", err)
-			return err
+			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkTxProofResp(request.ReqType, "", request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 
-	case SyncComGenesisType:
-		genesisReq, ok := request.Data.(*GenesisProofParam)
-		if !ok {
-			logger.Error("parse sync comm genesis request error")
-			return fmt.Errorf("parse sync comm genesis request error")
+	case common.SyncComGenesisType:
+		var genesisReq GenesisProofParam
+		err := ParseObj(request.Data, &genesisReq)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not genesis Proof param")
 		}
 		genesisRpcRequest := rpc.SyncCommGenesisRequest{
 			Version:       genesisReq.Version,
-			Period:        request.period,
+			Period:        request.Period,
 			FirstProof:    genesisReq.FirstProof,
 			FirstWitness:  genesisReq.FirstWitness,
 			SecondProof:   genesisReq.SecondProof,
@@ -222,18 +262,19 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		proofResponse, err := worker.GenSyncCommGenesisProof(genesisRpcRequest)
 		if err != nil {
 			logger.Error("gen sync comm genesis Proof error:%v", err)
-			return err
+			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkProofResp(request.ReqType, request.period, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkProofResp(request.ReqType, request.Period, proofResponse.Proof, proofResponse.Witness)
 
-	case SyncComUnitType:
-		unitParam, ok := request.Data.(*UnitProofParam)
-		if !ok {
-			return fmt.Errorf("parse sync comm unit request error")
+	case common.SyncComUnitType:
+		var unitParam UnitProofParam
+		err := ParseObj(request.Data, &unitParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not sync comm unit Proof param")
 		}
 		commUnitsRequest := rpc.SyncCommUnitsRequest{
 			Version:                 unitParam.Version,
-			Period:                  request.period,
+			Period:                  request.Period,
 			AttestedHeader:          unitParam.AttestedHeader,
 			CurrentSyncCommittee:    unitParam.CurrentSyncCommittee,
 			SyncAggregate:           unitParam.SyncAggregate,
@@ -246,18 +287,19 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		proofResponse, err := worker.GenSyncCommitUnitProof(commUnitsRequest)
 		if err != nil {
 			logger.Error("gen sync comm unit Proof error:%v", err)
-			return err
+			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkProofResp(request.ReqType, request.period, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkProofResp(request.ReqType, request.Period, proofResponse.Proof, proofResponse.Witness)
 
-	case SyncComRecursiveType:
-		recursiveParam, ok := request.Data.(*RecursiveProofParam)
-		if !ok {
-			return fmt.Errorf("parse sync comm recursive request error")
+	case common.SyncComRecursiveType:
+		var recursiveParam RecursiveProofParam
+		err := ParseObj(request.Data, &recursiveParam)
+		if err != nil {
+			return zkbProofResponse, fmt.Errorf("not sync comm recursive Proof param")
 		}
 		recursiveRequest := rpc.SyncCommRecursiveRequest{
 			Version:       recursiveParam.Version,
-			Period:        request.period,
+			Period:        request.Period,
 			Choice:        recursiveParam.Choice,
 			FirstProof:    recursiveParam.FirstProof,
 			FirstWitness:  recursiveParam.FirstWitness,
@@ -271,27 +313,27 @@ func (m *manager) workerGenProof(worker rpc.IWorker, request ZkProofRequest, res
 		proofResponse, err := worker.GenSyncCommRecursiveProof(recursiveRequest)
 		if err != nil {
 			logger.Error("gen sync comm recursive Proof error:%v", err)
-			return err
+			return zkbProofResponse, err
 		}
-		zkbProofResponse = NewZkProofResp(request.ReqType, request.period, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse = NewZkProofResp(request.ReqType, request.Period, proofResponse.Proof, proofResponse.Witness)
 	default:
 		logger.Error("never should happen Proof type:%v", request.ReqType)
-		return fmt.Errorf("never should happen Proof type:%v", request.ReqType)
+		return zkbProofResponse, fmt.Errorf("never should happen Proof type:%v", request.ReqType)
 
 	}
-	resp <- zkbProofResponse
+
 	logger.Info("send zkProof:%v %v", zkbProofResponse.Period, zkbProofResponse.ZkProofType.String())
-	return nil
+	return zkbProofResponse, nil
 
 }
 
-func (m *manager) getChanResponse(reqType ZkProofType) chan ZkProofResponse {
+func (m *manager) getChanResponse(reqType common.ZkProofType) chan common.ZkProofResponse {
 	switch reqType {
-	case DepositTxType, VerifyTxType:
+	case common.DepositTxType, common.VerifyTxType:
 		return m.btcProofResp
-	case RedeemTxType, TxInEth2: // todo
+	case common.RedeemTxType, common.TxInEth2: // todo
 		return m.ethProofResp
-	case SyncComGenesisType, SyncComUnitType, SyncComRecursiveType:
+	case common.SyncComGenesisType, common.SyncComUnitType, common.SyncComRecursiveType:
 		return m.syncCommitResp
 	default:
 		logger.Error("never should happen Proof type:%v", reqType)
@@ -299,32 +341,50 @@ func (m *manager) getChanResponse(reqType ZkProofType) chan ZkProofResponse {
 	}
 }
 
-func (m *manager) CheckProofStatus(request ZkProofRequest) (bool, error) {
+func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error) {
 	// todo check Proof
 	return false, nil
 }
 
-func (m *manager) Close() {
+func (m *manager) CheckPendingRequest() error {
+	logger.Debug("check pending request now")
+	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
+		if request.StartTime.IsZero() {
+			logger.Error("request start time is zero")
+			return fmt.Errorf("request start time is zero")
+		}
+		currentTime := time.Now()
+		if currentTime.Sub(request.StartTime).Hours() >= 3 { // todo
+			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Period)
+			m.proofQueue.PushBack(request)
+		}
+		return nil
+	})
+	return nil
+}
+
+func (m *manager) Close() error {
+
+	return nil
 
 }
 
-func NewZkProofResp(reqType ZkProofType, period uint64, proof common.ZkProof, witness []byte) ZkProofResponse {
-	return ZkProofResponse{
+func NewZkProofResp(reqType common.ZkProofType, period uint64, proof common.ZkProof, witness []byte) common.ZkProofResponse {
+	return common.ZkProofResponse{
 		ZkProofType: reqType,
 		Period:      period,
 		Proof:       proof,
 		Witness:     witness,
-		Status:      ProofSuccess,
+		Status:      common.ProofSuccess,
 	}
 }
 
-func NewZkTxProofResp(reqType ZkProofType, txHash, proofStr string, proof common.ZkProof, witness []byte) ZkProofResponse {
-	return ZkProofResponse{
+func NewZkTxProofResp(reqType common.ZkProofType, txHash string, proof common.ZkProof, witness []byte) common.ZkProofResponse {
+	return common.ZkProofResponse{
 		ZkProofType: reqType,
 		TxHash:      txHash,
 		Proof:       proof,
-		ProofStr:    proofStr,
 		Witness:     witness,
-		Status:      ProofSuccess,
+		Status:      common.ProofSuccess,
 	}
 }

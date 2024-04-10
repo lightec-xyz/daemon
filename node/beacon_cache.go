@@ -1,25 +1,39 @@
 package node
 
-import "sync"
+import (
+	"sync"
+)
 
 const (
 	GenesisStateKey = "genesisStateKey"
 )
 
 type BeaconCache struct {
-	fetchData      *sync.Map
-	genesisProof   *sync.Map
-	unitProof      *sync.Map
-	recursiveProof *sync.Map
+	fetchData                  *sync.Map
+	genesisProof               *sync.Map
+	unitProof                  *sync.Map
+	recursiveProof             *sync.Map
+	beaconHeaderFinalityUpdate *sync.Map
 }
 
 func NewBeaconCache() *BeaconCache {
 	return &BeaconCache{
-		fetchData:      new(sync.Map),
-		genesisProof:   new(sync.Map),
-		unitProof:      new(sync.Map),
-		recursiveProof: new(sync.Map),
+		fetchData:                  new(sync.Map),
+		genesisProof:               new(sync.Map),
+		unitProof:                  new(sync.Map),
+		recursiveProof:             new(sync.Map),
+		beaconHeaderFinalityUpdate: new(sync.Map),
 	}
+}
+
+func (bc *BeaconCache) StoreBeaconHeaderFinalityUpdate(slot uint64) error {
+	bc.beaconHeaderFinalityUpdate.Store(slot, true)
+	return nil
+}
+
+func (bc *BeaconCache) CheckBeaconHeaderFinalityUpdate(slot uint64) bool {
+	_, ok := bc.beaconHeaderFinalityUpdate.Load(slot)
+	return ok
 }
 
 func (bc *BeaconCache) CheckFetchData(period uint64) bool {
