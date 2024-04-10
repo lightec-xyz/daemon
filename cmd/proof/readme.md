@@ -11,3 +11,6 @@
         "datadir": "/opt/light/.proof,           // generate proof temporary directory and setup directory, should be separated (environment variable settings ？)
         "model": "client"                        // generator mode (client: server-client)
     }
+
+## tips
+**please prepare all setup files before starting the proof generator**
