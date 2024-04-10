@@ -7,6 +7,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
+	"strings"
 	"syscall"
 )
 
@@ -109,6 +110,9 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 		if err != nil {
 			logger.Error("read Proof error: %v %v", txId, err)
 			return nil, err
+		}
+		if strings.Contains(err.Error(), "not found") {
+			continue
 		}
 		results = append(results, rpc.ProofInfo{
 			Status: int(proof.Status),
