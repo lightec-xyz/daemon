@@ -18,6 +18,7 @@ type TaskResponse struct {
 
 type SubmitProof struct {
 	Data ZkProofResponse
+	Id   string
 }
 
 // todo

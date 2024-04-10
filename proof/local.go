@@ -28,6 +28,7 @@ func NewLocal(url, datadir string, num int) (*Local, error) {
 		logger.Error("new local worker error:%v", err)
 		return nil, err
 	}
+	logger.Info("workerId: %v", worker.Id())
 	return &Local{
 		client:            client,
 		worker:            worker,
@@ -78,7 +79,7 @@ func (l *Local) Run() error {
 					continue
 				}
 				logger.Info("complete generate Proof type: %v Period: %v", request.ReqType.String(), request.Period)
-				submitProof := common.SubmitProof{Data: proof}
+				submitProof := common.SubmitProof{Id: l.Id, Data: proof}
 				_, err = l.client.SubmitProof(submitProof)
 				if err != nil {
 					logger.Error("submit proof error:%v", err)

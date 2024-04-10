@@ -30,7 +30,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 	}
 	var response common.TaskResponse
 	if !ok {
-		logger.Warn("maybe no new proof task")
+		logger.Warn("workerId: %v ,server maybe no new proof task", request.Id)
 		response.CanGen = false
 		return &response, nil
 	}
@@ -43,7 +43,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 
 func (h *Handler) SubmitProof(req common.SubmitProof) (string, error) {
 	//todo check
-	logger.Info("submit proof type:%v period:%v hash:%v", req.Data.ZkProofType.String(), req.Data.Period, req.Data.TxHash)
+	logger.Info("workerId %v,submit proof type:%v period:%v hash:%v", req.Id, req.Data.ZkProofType.String(), req.Data.Period, req.Data.TxHash)
 	err := h.manager.SendProofResponse(req.Data)
 	if err != nil {
 		logger.Error("send proof to manager error: %v", err)
