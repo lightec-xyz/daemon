@@ -40,14 +40,16 @@ const (
 )
 
 const (
-	PeriodDir                  = "period"
-	GenesisDir                 = "genesis"
-	UpdateDir                  = "update"
-	UnitDir                    = "unit"
-	RecursiveDir               = "recursive"
-	BeaconHeaderFinalityUpdate = "beaconHeaderFinalityUpdate"
-	Tx                         = "txes"
+	PeriodDir    = "period"
+	GenesisDir   = "genesis"
+	UpdateDir    = "update"
+	UnitDir      = "unit"
+	RecursiveDir = "recursive"
+	BhfUpdate    = "bhfUpdate"
+	Tx           = "txes"
 )
+
+// todo refactor
 
 type FileStore struct {
 	dataDir       string
@@ -57,10 +59,13 @@ type FileStore struct {
 	unitDir       string
 	recursiveDir  string
 	txDir         string
+	bhfUpdateDir  string
 	genesisPeriod uint64
+	genesisSlot   uint64
 }
 
-func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
+func NewFileStore(dataDir string, genesisSlot, genesisPeriod uint64) (*FileStore, error) {
+
 	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
 	// todo
 	periodDataDir := fmt.Sprintf("%s/%s", dataDir, PeriodDir)
@@ -109,6 +114,17 @@ func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
 	if !ok {
 		return nil, fmt.Errorf("create dir error:%v %v", "recursive", err)
 	}
+
+	bhfuDir := fmt.Sprintf("%s/%s", dataDir, BhfUpdate)
+	ok, err = dirNotExistsAndCreate(bhfuDir)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
+	}
+
 	txDir := fmt.Sprintf("%s/%s", dataDir, Tx)
 	ok, err = dirNotExistsAndCreate(txDir)
 	if err != nil {
@@ -124,33 +140,36 @@ func NewFileStore(dataDir string, genesisPeriod uint64) (*FileStore, error) {
 		updateDir:     updateDataDir,
 		genesisDir:    genesisDir,
 		unitDir:       unitDir,
+		bhfUpdateDir:  bhfuDir,
+		txDir:         txDir,
 		recursiveDir:  recursiveDir,
 		genesisPeriod: genesisPeriod,
+		genesisSlot:   genesisSlot,
 	}, nil
 }
 
-func (f *FileStore) StoreBeaconHeaderFinalityUpdateProof(slot uint64, proof, witness []byte) error {
-	return f.InsertData(BeaconHeaderFinalityUpdate, parseKey(slot), storeProof{
+func (f *FileStore) StoreBhfUpdateProof(slot uint64, proof, witness []byte) error {
+	return f.InsertData(BhfUpdate, parseKey(slot), storeProof{
 		Period:    slot,
-		ProofType: common.BeaconHeaderFinalityUpdate,
+		ProofType: common.BhfUpdate,
 		Proof:     hex.EncodeToString(proof),
 		Witness:   hex.EncodeToString(witness),
 	})
 }
 
-func (f *FileStore) CheckBeaconHeaderFinalityUpdateProof(slot uint64) (bool, error) {
-	return f.CheckStorageKey(BeaconHeaderFinalityUpdate, parseKey(slot))
+func (f *FileStore) CheckBhfUpdateProof(slot uint64) (bool, error) {
+	return f.CheckStorageKey(BhfUpdate, parseKey(slot))
 }
 
-func (f *FileStore) GetBeaconHeaderFinalityUpdateProof(slot uint64) (*StoreProof, bool, error) {
-	exists, err := f.CheckBeaconHeaderFinalityUpdateProof(slot)
+func (f *FileStore) GetBhfUpdateProof(slot uint64) (*StoreProof, bool, error) {
+	exists, err := f.CheckBhfUpdateProof(slot)
 	if err != nil {
 		return nil, false, err
 	}
 	if !exists {
 		return nil, false, nil
 	}
-	proof, err := f.GetObj(BeaconHeaderFinalityUpdate, parseKey(slot))
+	proof, err := f.GetObj(BhfUpdate, parseKey(slot))
 	if err != nil {
 		return nil, false, err
 	}
@@ -574,6 +593,32 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 	default:
 		return "", fmt.Errorf("no find table: %v", table)
 	}
+}
+
+func (f *FileStore) NeedGenBhfUpdateIndex() ([]uint64, error) {
+	latestSlot, ok, err := f.GetLatestSlot()
+	if err != nil {
+		logger.Error("get latest slot error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("get latest slot error")
+	}
+	if latestSlot <= f.genesisSlot {
+		return nil, nil
+	}
+	files, err := traverseFile(f.bhfUpdateDir)
+	if err != nil {
+		return nil, err
+	}
+	var recoverFile []uint64
+	for index := f.genesisSlot + common.BeaconHeaderSlot; index <= latestSlot; index = index + common.BeaconHeaderSlot {
+		if _, ok := files[fmt.Sprintf("%d", index)]; !ok {
+			recoverFile = append(recoverFile, index)
+		}
+	}
+	return recoverFile, nil
+
 }
 
 func (f *FileStore) NeedUpdateIndexes() ([]uint64, error) {

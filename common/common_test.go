@@ -3,6 +3,7 @@ package common
 import (
 	"container/list"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -14,16 +15,16 @@ func TestUuid(t *testing.T) {
 	t.Log(uuid)
 }
 
-func TestDemo(t *testing.T) {
-	// 创建一个列表
-	myList := list.New()
+func TestDemo001(t *testing.T) {
+	fold := strings.EqualFold("genesis", "genesis")
+	t.Log(fold)
+}
 
-	// 向列表中添加一些元素
+func TestDemo(t *testing.T) {
+	myList := list.New()
 	myList.PushBack("Hello")
 	myList.PushBack("Go")
 	myList.PushBack("World")
-
-	// 遍历列表并打印每个元素
 	for element := myList.Front(); element != nil; element = element.Next() {
 		fmt.Println(element.Value)
 	}

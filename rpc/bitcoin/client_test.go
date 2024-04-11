@@ -28,7 +28,8 @@ var client *Client
 var err error
 
 func init() {
-	url := "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02"
+	url := "https://go.getblock.io/706ae594be5b4c70a57d0caa761f333a"
+	//url := "https://rpc.testnet.bitcoin.org"
 	//url := "http://127.0.0.1:8332"
 	user := "lightec"
 	pwd := "abcd1234"

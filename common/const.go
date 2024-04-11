@@ -49,7 +49,7 @@ const (
 	SyncComGenesisType
 	SyncComUnitType
 	SyncComRecursiveType
-	BeaconHeaderFinalityUpdate
+	BhfUpdate //BeaconHeaderFinalityUpdate
 	BeaconHeader
 )
 

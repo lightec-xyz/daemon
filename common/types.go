@@ -17,7 +17,7 @@ type TaskResponse struct {
 }
 
 type SubmitProof struct {
-	Data ZkProofResponse
+	Data *ZkProofResponse
 	Id   string
 }
 
