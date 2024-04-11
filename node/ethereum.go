@@ -136,7 +136,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		logger.Error("get eth block number error:%v", err)
 		return err
 	}
-	blockNumber = blockNumber - 0
+	blockNumber = blockNumber - 3
 	//todo
 	if ethHeight >= int64(blockNumber) {
 		logger.Debug("eth current height:%d,latest block number :%d", ethHeight, blockNumber)
@@ -497,7 +497,7 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 	if err != nil {
 		logger.Error("send btc tx error:%v", err)
 		// todo  just test
-		_, err := bitcoin.BroadcastTx(txHex)
+		_, err = bitcoin.BroadcastTx(txHex)
 		if err != nil {
 			logger.Error("broadcast btc tx error:%v", err)
 		}
