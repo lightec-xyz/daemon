@@ -90,7 +90,10 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proo
 		logger.Error(err.Error())
 		return nil, err
 	}
-	return proof, err
+	return &common.Proof{ // todo
+		Proof: proof.Proof,
+		Wit:   proof.Wit,
+	}, err
 }
 
 func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
