@@ -382,7 +382,11 @@ func ProofToBytes(proof native_plonk.Proof) ([]byte, error) {
 
 func WitnessToBytes(witness witness.Witness) ([]byte, error) {
 	var buf bytes.Buffer
-	_, err := witness.WriteTo(&buf)
+	pubWit, err := witness.Public()
+	if err != nil {
+		return nil, err
+	}
+	_, err = pubWit.WriteTo(&buf)
 	if err != nil {
 		return nil, err
 	}
