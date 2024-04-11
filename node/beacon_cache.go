@@ -9,30 +9,30 @@ const (
 )
 
 type BeaconCache struct {
-	fetchData                  *sync.Map
-	genesisProof               *sync.Map
-	unitProof                  *sync.Map
-	recursiveProof             *sync.Map
-	beaconHeaderFinalityUpdate *sync.Map
+	fetchData      *sync.Map
+	genesisProof   *sync.Map
+	unitProof      *sync.Map
+	recursiveProof *sync.Map
+	bhfUpdate      *sync.Map
 }
 
 func NewBeaconCache() *BeaconCache {
 	return &BeaconCache{
-		fetchData:                  new(sync.Map),
-		genesisProof:               new(sync.Map),
-		unitProof:                  new(sync.Map),
-		recursiveProof:             new(sync.Map),
-		beaconHeaderFinalityUpdate: new(sync.Map),
+		fetchData:      new(sync.Map),
+		genesisProof:   new(sync.Map),
+		unitProof:      new(sync.Map),
+		recursiveProof: new(sync.Map),
+		bhfUpdate:      new(sync.Map),
 	}
 }
 
-func (bc *BeaconCache) StoreBeaconHeaderFinalityUpdate(slot uint64) error {
-	bc.beaconHeaderFinalityUpdate.Store(slot, true)
+func (bc *BeaconCache) StoreBhfUpdate(slot uint64) error {
+	bc.bhfUpdate.Store(slot, true)
 	return nil
 }
 
-func (bc *BeaconCache) CheckBeaconHeaderFinalityUpdate(slot uint64) bool {
-	_, ok := bc.beaconHeaderFinalityUpdate.Load(slot)
+func (bc *BeaconCache) CheckBhfUpdate(slot uint64) bool {
+	_, ok := bc.bhfUpdate.Load(slot)
 	return ok
 }
 

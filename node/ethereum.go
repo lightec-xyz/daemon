@@ -496,6 +496,11 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 	TxHash, err := btcClient.Sendrawtransaction(txHex)
 	if err != nil {
 		logger.Error("send btc tx error:%v", err)
+		// todo  just test
+		_, err := bitcoin.BroadcastTx(txHex)
+		if err != nil {
+			logger.Error("broadcast btc tx error:%v", err)
+		}
 		return "", err
 	}
 	logger.Info("send redeem btc tx: %v", TxHash)

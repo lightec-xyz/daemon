@@ -26,7 +26,7 @@ func basicAuth(username, password string) string {
 }
 
 func NewClient(url, user, pwd, network string) (*Client, error) {
-	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: false}, nil
+	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: true}, nil
 }
 
 func (c *Client) GetBlockHeader(hash string) (*types.BlockHeader, error) {

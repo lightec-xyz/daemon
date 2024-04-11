@@ -108,7 +108,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 
 	// todo
 	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
-	fileStore, err := NewFileStore(cfg.DataDir, genesisPeriod)
+	fileStore, err := NewFileStore(cfg.DataDir, cfg.BeaconSlotHeight, genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

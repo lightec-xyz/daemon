@@ -156,3 +156,7 @@ type Proof struct {
 	Status    int                `json:"status"`
 	Proof     string             `json:"Proof"`
 }
+
+// PreProofRequest todo
+type PreProofRequest struct {
+}
