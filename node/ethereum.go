@@ -45,11 +45,11 @@ type EthereumAgent struct {
 	initStartHeight  int64
 	ethSubmitAddress string
 	autoSubmit       bool
-	submitQueue      *Queue
+	task             *TaskManager
 }
 
 func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileStore, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []*dcommon.ZkProofRequest) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []*dcommon.ZkProofRequest, task *TaskManager) (IAgent, error) {
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -78,7 +78,7 @@ func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileSto
 		ethSubmitAddress: submitTxEthAddr,
 		autoSubmit:       cfg.AutoSubmit,
 		logAddrFilter:    cfg.EthAddrFilter,
-		submitQueue:      NewQueue(),
+		task:             task,
 	}, nil
 }
 
@@ -191,9 +191,10 @@ func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
 		logger.Error("update Proof error:%v", err)
 		return err
 	}
-	_, err = e.RedeemBtcTx(resp.TxHash, resp.Proof)
+	_, err = RedeemBtcTx(e.btcClient, resp.TxHash, resp.Proof)
 	if err != nil {
 		logger.Error("redeem btc tx error:%v", err)
+		e.task.AddTask(resp)
 		return err
 	}
 	// todo
@@ -419,7 +420,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 // todo refactor
 
-func (e *EthereumAgent) RedeemBtcTx(txHash string, proof []byte) (interface{}, error) {
+func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interface{}, error) {
 	ethTxHash := common.HexToHash(txHash)
 	zkBridgeAddr, zkBtcAddr := "0x8e4f5a8f3e24a279d8ed39e868f698130777fded", "0xbf3041e37be70a58920a6fd776662b50323021c9"
 	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
@@ -492,7 +493,7 @@ func (e *EthereumAgent) RedeemBtcTx(txHash string, proof []byte) (interface{}, e
 	}
 	txHex := hex.EncodeToString(btxTx)
 	logger.Info("btx Tx: %v\n", txHex)
-	TxHash, err := e.btcClient.Sendrawtransaction(txHex)
+	TxHash, err := btcClient.Sendrawtransaction(txHex)
 	if err != nil {
 		logger.Error("send btc tx error:%v", err)
 		return "", err

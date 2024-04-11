@@ -82,7 +82,7 @@ func (l *Local) Run() error {
 				submitProof := common.SubmitProof{Id: l.Id, Data: proof}
 				_, err = l.client.SubmitProof(submitProof)
 				if err != nil {
-					logger.Error("submit proof error:%v", err)
+					logger.Error("submit proof error:%v,store proof: %v", err, proof.Id())
 					l.pendingProofsList.Store(proof.Id(), &submitProof)
 					// todo check again
 					return

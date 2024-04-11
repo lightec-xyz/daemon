@@ -60,7 +60,8 @@ type Daemon struct {
 	nodeConfig    NodeConfig
 	exitSignal    chan os.Signal
 	manager       *WrapperManger
-	enableSyncCom bool // true ,Only enable the function of generating recursive proofs
+	taskManager   *TaskManager // todo
+	enableSyncCom bool         // true ,Only enable the function of generating recursive proofs
 	enableTx      bool
 }
 
@@ -118,10 +119,16 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
 	}
+	keyStore := NewKeyStore(cfg.EthPrivateKey)
+
+	taskManager, err := NewTaskManager(keyStore, ethClient, btcClient)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
 
 	var agents []*WrapperAgent
-	keyStore := NewKeyStore(cfg.EthPrivateKey)
-	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore)
+	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -137,7 +144,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest)
+	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -176,6 +183,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		enableSyncCom: false, //todo
 		enableTx:      true,  // todo
 		exitSignal:    make(chan os.Signal, 1),
+		taskManager:   taskManager,
 		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
 		manager:       NewWrapperManger(manager, proofRequest, 1*time.Minute),
 	}
@@ -220,6 +228,9 @@ func (d *Daemon) Run() error {
 		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
 
 	}
+
+	// task manager
+	go doTimerTask("task-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)

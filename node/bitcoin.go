@@ -33,11 +33,11 @@ type BitcoinAgent struct {
 	initStartHeight      int64
 	autoSubmit           bool
 	exitSign             chan struct{}
-	submitQueue          *Queue // submit proof to eth queue
+	task                 *TaskManager
 }
 
-func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	requests chan []*common.ZkProofRequest, keyStore *KeyStore) (IAgent, error) {
+func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client,
+	ethClient *ethereum.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
@@ -53,7 +53,7 @@ func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore 
 		exitSign:             make(chan struct{}, 1),
 		initStartHeight:      cfg.BtcInitHeight,
 		autoSubmit:           cfg.AutoSubmit,
-		submitQueue:          NewQueue(),
+		task:                 task,
 	}, nil
 }
 
@@ -271,9 +271,10 @@ func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	case common.DepositTxType:
 	case common.VerifyTxType:
 		logger.Info("start update utxo change: %v", proofId)
-		err := b.updateContractUtxoChange([]string{resp.TxHash}, resp.Proof)
+		err := updateContractUtxoChange(b.ethClient, b.submitTxEthAddr, b.keyStore.GetPrivateKey(), []string{resp.TxHash}, resp.Proof)
 		if err != nil {
 			logger.Error("update utxo error: %v %v", proofId, err)
+			b.task.AddTask(resp)
 			return err
 		}
 	default:
@@ -290,26 +291,26 @@ func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	return nil
 }
 
-func (b *BitcoinAgent) updateContractUtxoChange(txIds []string, proof []byte) error {
+func updateContractUtxoChange(ethClient *ethereum.Client, address, privateKey string, txIds []string, proof []byte) error {
 	// todo
-	nonce, err := b.ethClient.GetNonce(b.submitTxEthAddr)
+	nonce, err := ethClient.GetNonce(address)
 	if err != nil {
 		logger.Error("get  nonce error:%v", err)
 		return err
 	}
-	chainId, err := b.ethClient.GetChainId()
+	chainId, err := ethClient.GetChainId()
 	if err != nil {
 		logger.Error("get chain id error:%v", err)
 		return err
 	}
-	gasPrice, err := b.ethClient.GetGasPrice()
+	gasPrice, err := ethClient.GetGasPrice()
 	if err != nil {
 		logger.Error("get gas price error:%v", err)
 		return err
 	}
 	gasLimit := uint64(500000)
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(2))
-	txHash, err := b.ethClient.UpdateUtxoChange(b.keyStore.GetPrivateKey(), txIds, nonce, gasLimit, chainId, gasPrice, proof)
+	txHash, err := ethClient.UpdateUtxoChange(privateKey, txIds, nonce, gasLimit, chainId, gasPrice, proof)
 	if err != nil {
 		logger.Error("update utxo change error:%v", err)
 		return err
