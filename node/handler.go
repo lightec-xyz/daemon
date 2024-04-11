@@ -106,6 +106,9 @@ func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
 func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 	var results []rpc.ProofInfo
 	for _, txId := range txIds {
+		if txId == "" {
+			continue
+		}
 		proof, err := ReadDbProof(h.store, txId)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
