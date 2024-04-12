@@ -295,32 +295,6 @@ func (b *BeaconAgent) CheckProofExists(index uint64, reqType common.ZkProofType)
 	}
 }
 
-func (b *BeaconAgent) CheckBeaconHeaderFinality() error {
-	currentSlot, exists, err := b.fileStore.GetLatestSlot()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	if !exists {
-		logger.Warn("no find latest slot, store %v slot to db", b.genesisSlot)
-		return fmt.Errorf("no find latest slot, store %v slot to db", b.genesisSlot)
-	}
-	latestFinalizedSlot, err := b.beaconClient.GetLatestFinalizedSlot()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	for index := currentSlot; index <= latestFinalizedSlot; index = index + common.BeaconHeaderSlot { // todo
-		err := b.tryProofRequest(index, common.BhfUpdate)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	}
-	return nil
-
-}
-
 func (b *BeaconAgent) CheckState() error {
 	genesisProofExists, err := b.fileStore.CheckGenesisProof()
 	if err != nil {
@@ -392,9 +366,18 @@ func (b *BeaconAgent) CheckState() error {
 		}
 		skip = true
 	}
-
-	//b.beaconClient.GetLatestFinalizedSlot()
-
+	bhfUpdateIndexes, err := b.fileStore.NeedGenBhfUpdateIndex()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	for _, index := range bhfUpdateIndexes {
+		err := b.tryProofRequest(index, common.BhfUpdate)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
+	}
 	return nil
 }
 
@@ -868,8 +851,13 @@ func (b *BeaconAgent) Stop() {
 
 }
 
-func (b *BeaconAgent) GetBhfUpdateData(period uint64) (interface{}, bool, error) {
-	beaconHeaders, err := b.beaconClient.RetrieveBeaconHeaders(period, period+common.BeaconHeaderSlot)
+func (b *BeaconAgent) GetBhfUpdateData(index uint64) (interface{}, bool, error) {
+	if index-common.BeaconHeaderSlot < 0 {
+		logger.Error("bhfUpdate: %v ,never should happen", index)
+		return nil, false, fmt.Errorf("never should happen")
+	}
+
+	beaconHeaders, err := b.beaconClient.RetrieveBeaconHeaders(index-common.BeaconHeaderSlot, index)
 	if err != nil {
 		return nil, false, err
 	}

@@ -131,8 +131,6 @@ func RetrieveBeaconHeaders(ctx context.Context, uri string, start, end int) ([]s
 	return nil, fmt.Errorf("failed to %v headers", start)
 }
 
-var rpcURL = ""
-
 func TestRetrieveBeaconHeaders(t *testing.T) {
 	ctx := context.Background()
 	headers, err := RetrieveBeaconHeaders(ctx, rpcURL, 1315329, 1315360)

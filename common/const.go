@@ -67,6 +67,10 @@ func (zkpr *ZkProofType) String() string {
 		return "SyncComUnitType"
 	case SyncComRecursiveType:
 		return "SyncComRecursiveType"
+	case TxInEth2:
+		return "TxInEth2"
+	case BhfUpdate:
+		return "BhfUpdate"
 	default:
 		return ""
 	}

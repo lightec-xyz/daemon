@@ -2,9 +2,9 @@ package beacon
 
 import "testing"
 
-//var endpoint = "http://127.0.0.1:8970"
+var endpoint = "http://127.0.0.1:9870"
 
-var endpoint = "http://37.120.151.183:8970"
+// var endpoint = "http://37.120.151.183:8970"
 var err error
 var client *Client
 
@@ -56,7 +56,12 @@ func TestClient_GetLightClientUpdates(t *testing.T) {
 }
 
 func TestClient_RetrieveBeaconHeaders(t *testing.T) {
-	headers, err := client.RetrieveBeaconHeaders(1315329, 1315360)
+	latestSlot, err := client.GetLatestFinalizedSlot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	latestSlot = latestSlot - 1
+	headers, err := client.RetrieveBeaconHeaders(latestSlot-32, latestSlot)
 	if err != nil {
 		t.Fatal(err)
 	}

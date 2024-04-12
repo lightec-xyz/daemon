@@ -100,11 +100,11 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []*common.ZkProofRequest, 1000)
-	btcProofResp := make(chan *common.ZkProofResponse, 1000)
-	ethProofResp := make(chan *common.ZkProofResponse, 1000)
-	syncCommitResp := make(chan *common.ZkProofResponse, 1000)
-	fetchDataResp := make(chan FetchDataResponse, 1000)
+	proofRequest := make(chan []*common.ZkProofRequest)
+	btcProofResp := make(chan *common.ZkProofResponse)
+	ethProofResp := make(chan *common.ZkProofResponse)
+	syncCommitResp := make(chan *common.ZkProofResponse)
+	fetchDataResp := make(chan FetchDataResponse)
 
 	// todo
 	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192

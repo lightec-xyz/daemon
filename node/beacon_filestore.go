@@ -590,6 +590,8 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 		return fmt.Sprintf("%s/%s", f.recursiveDir, key), nil
 	case Tx:
 		return fmt.Sprintf("%s/%s", f.txDir, key), nil
+	case BhfUpdate:
+		return fmt.Sprintf("%s/%s", f.bhfUpdateDir, key), nil
 	default:
 		return "", fmt.Errorf("no find table: %v", table)
 	}
