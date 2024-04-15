@@ -184,7 +184,8 @@ func (e *EthereumAgent) ScanBlock() error {
 }
 
 func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
-	logger.Info("receive proof response: %v", resp)
+	logger.Info(" ethereumAgent receive proof response: %v %v %v %x", resp.ZkProofType.String(),
+		resp.Period, resp.TxHash, resp.Proof)
 	hexProof := hex.EncodeToString(resp.Proof)
 	err := e.updateRedeemProof(resp.TxHash, hexProof, resp.Status)
 	if err != nil {
@@ -503,7 +504,7 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 			return "", err
 		}
 	}
-	logger.Info("send redeem btc tx: %v", TxHash)
+	logger.Info("send redeem btc tx: %v", transaction.TxHash())
 	return TxHash, nil
 }
 

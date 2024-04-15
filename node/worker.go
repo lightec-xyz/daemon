@@ -42,7 +42,7 @@ func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) 
 	}, nil
 }
 
-func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
+func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
 	logger.Debug("local worker transaction in eth2")
 	proof, err := w.circuit.TxInEth2Prove(req.TxData)
 	if err != nil {
@@ -59,19 +59,19 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2Pro
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
 	}
-	return &rpc.TxInEth2ProveResp{
+	return &rpc.TxInEth2ProveResponse{
 		Proof:   proofSolBytes,
 		Witness: witnessBytes,
 	}, nil
 
 }
 
-func (w *LocalWorker) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
+func (w *LocalWorker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (w *LocalWorker) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
+func (w *LocalWorker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -139,6 +139,7 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 		logger.Error(err.Error())
 		return rpc.VerifyResponse{}, nil
 	}
+	time.Sleep(5 * time.Second)
 	return rpc.VerifyResponse{
 		TxHash: req.TxHash,
 		Proof:  proofSolBytes,
@@ -270,18 +271,18 @@ type Worker struct {
 	wid         string
 }
 
-func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
+func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
 
 	//TODO implement me
 	panic("implement me")
 }
 
-func (w *Worker) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
+func (w *Worker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (w *Worker) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
+func (w *Worker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }

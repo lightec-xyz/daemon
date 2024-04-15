@@ -105,7 +105,7 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 func (m *manager) SendProofResponse(response *common.ZkProofResponse) error {
 	chanResponse := m.getChanResponse(response.ZkProofType)
 	chanResponse <- response
-	logger.Info("send Proof response:%v %v", response.ZkProofType.String(), response.Period)
+	logger.Info("send Proof response:%v %v %v", response.ZkProofType.String(), response.Period, response.TxHash)
 	proofId := response.Id()
 	logger.Info("delete pending request:%v", proofId)
 	m.pendingQueue.Delete(proofId)
@@ -211,7 +211,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) (*common
 		if err != nil {
 			return nil, fmt.Errorf("not txInEth2 Proof param")
 		}
-		txInEth2Req := &rpc.TxInEth2ProveReq{
+		txInEth2Req := &rpc.TxInEth2ProveRequest{
 			Version: redeemParam.Version,
 			TxHash:  request.TxHash,
 			TxData:  redeemParam.TxData,

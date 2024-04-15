@@ -3,6 +3,7 @@ package rpc
 import (
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
@@ -48,26 +49,36 @@ type NodeInfo struct {
 
 //------
 
-type TxInEth2ProveReq struct {
+type TxInEth2ProveRequest struct {
 	Version string
 	TxHash  string
 	TxData  *ethblock.TxInEth2ProofData
 }
 
-type TxInEth2ProveResp struct {
+type TxInEth2ProveResponse struct {
 	Proof   []byte
 	Witness []byte
 }
 
-type TxBlockIsParentOfCheckPointProveReq struct {
+type BlockHeaderRequest struct {
+	Headers proverType.BeaconHeaderChain
 }
 
-type TxBlockIsParentOfCheckPointResp struct {
+type BlockHeaderResponse struct {
+	Proof   []byte
+	Witness []byte
 }
-type CheckPointFinalityProveReq struct {
+type BlockHeaderFinalityRequest struct {
+	GenesisSCSSZRoot string
+	RecursiveProof, RecursiveWitness, OuterProof,
+	OuterWitness []byte
+	FinalityUpdate *proverType.FinalityUpdate
+	ScUpdate       *proverType.SyncCommitteeUpdate
 }
 
-type CheckPointFinalityProveResp struct {
+type BlockHeaderFinalityResponse struct {
+	Proof   []byte
+	Witness []byte
 }
 
 type DepositRequest struct {
@@ -84,12 +95,12 @@ type DepositResponse struct {
 
 type RedeemRequest struct {
 	Version string
-	TxHash  string
-	TxData  *ethblock.TxInEth2ProofData
+	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness, BeginId, EndId, GenesisScRoot,
+	CurrentSCSSZRoot, TxVarBytes, ReceiptVarBytes []byte
 }
 
 type RedeemResponse struct {
-	Proof   common.ZkProof
+	Proof   []byte
 	Witness []byte
 }
 

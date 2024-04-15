@@ -15,17 +15,17 @@ type ProofClient struct {
 	timeout time.Duration
 }
 
-func (p *ProofClient) TxInEth2Prove(req *TxInEth2ProveReq) (*TxInEth2ProveResp, error) {
+func (p *ProofClient) TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *ProofClient) TxBlockIsParentOfCheckPointProve(req *TxBlockIsParentOfCheckPointProveReq) (*TxBlockIsParentOfCheckPointResp, error) {
+func (p *ProofClient) BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *ProofClient) CheckPointFinalityProve(req *CheckPointFinalityProveReq) (*CheckPointFinalityProveResp, error) {
+func (p *ProofClient) BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }

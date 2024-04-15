@@ -17,15 +17,16 @@ type INode interface {
 // IProof api between node and proof
 type IProof interface {
 	GenDepositProof(req DepositRequest) (DepositResponse, error)
-	GenRedeemProof(req RedeemRequest) (RedeemResponse, error)
 	GenVerifyProof(req VerifyRequest) (VerifyResponse, error)
 	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
 	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
 	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
 
-	TxInEth2Prove(req *TxInEth2ProveReq) (*TxInEth2ProveResp, error)
-	TxBlockIsParentOfCheckPointProve(req *TxBlockIsParentOfCheckPointProveReq) (*TxBlockIsParentOfCheckPointResp, error)
-	CheckPointFinalityProve(req *CheckPointFinalityProveReq) (*CheckPointFinalityProveResp, error)
+	GenRedeemProof(req RedeemRequest) (RedeemResponse, error)
+	TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error)
+	BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error)
+	BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error)
+
 	ProofInfo(proofId string) (ProofInfo, error)
 }
 
