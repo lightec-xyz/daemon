@@ -73,7 +73,7 @@ func (f *FinalityUpdate) Run() error {
 		msg := <-f.exitSignal
 		switch msg {
 		case syscall.SIGHUP:
-			logger.Info("daemon get SIGHUP")
+			logger.Info("get exit sign")
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
 			logger.Info("get shutdown signal ,waiting exit now ...")
 			err := f.Close()
@@ -135,7 +135,7 @@ func (f *FinalityUpdate) fetch() error {
 		logger.Error("write file error: %v", err)
 		return err
 	}
-	logger.Info("success write file: %s", slot)
+	logger.Info("success write file: %v", slot)
 	return nil
 }
 
