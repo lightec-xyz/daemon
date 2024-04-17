@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"os"
+	"path/filepath"
 	"reflect"
 )
 
@@ -43,4 +45,61 @@ func ParseObj(src, dst interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func WriteFile(path string, data []byte) error {
+	err := DirCheckOrCreate(path)
+	if err != nil {
+		return err
+	}
+	exists, err := FileExists(path)
+	if err != nil {
+		return err
+	}
+	if exists {
+		err := os.Remove(path)
+		if err != nil {
+			return err
+		}
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+	err = file.Sync()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func DirCheckOrCreate(path string) error {
+	dir := filepath.Dir(path)
+	_, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("stat error: %v", err)
 }
