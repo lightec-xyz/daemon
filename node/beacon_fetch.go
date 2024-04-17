@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -205,6 +206,29 @@ func (bf *BeaconFetch) getBootStrap() error {
 	}
 	logger.Debug("success get genesis update Data:%v", bf.genesisSlot/8192)
 	bf.fetchProofResponse <- updateResponse
+	return nil
+}
+
+func (bf *BeaconFetch) getFinalityUpdate(slot uint64) error {
+	finalityUpdate, err := bf.beaconClient.GetFinalityUpdate()
+	if err != nil {
+		logger.Error("get finality update error:%v %v", slot, err)
+		return err
+	}
+	slotBig, ok := big.NewInt(0).SetString(finalityUpdate.Data.FinalizedHeader.Slot, 10)
+	if !ok {
+		logger.Error("parse slot error:%v %v", finalityUpdate.Data.FinalizedHeader.Slot, err)
+		return err
+	}
+	if slotBig.Uint64() != slot {
+		logger.Error("not match slot: %v %v", slotBig.Uint64(), slot)
+		return fmt.Errorf("not match slot: %v %v", slotBig.Uint64(), slot)
+	}
+	err = bf.fileStore.StoreFinalityUpdate(slot, finalityUpdate)
+	if err != nil {
+		logger.Error("store finality update error:%v %v", slot, err)
+		return err
+	}
 	return nil
 }
 

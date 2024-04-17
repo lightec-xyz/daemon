@@ -88,7 +88,7 @@ func (c *Client) GetLatestFinalizedSlot() (uint64, error) {
 
 }
 
-func (c *Client) GetLatestSyncPeriod() (uint64, error) {
+func (c *Client) GetFinalizedSyncPeriod() (uint64, error) {
 	resp := &structs.GetBlockHeaderResponse{}
 	err := c.get("/eth/v1/beacon/headers/finalized", nil, &resp)
 	if err != nil {
@@ -134,6 +134,15 @@ func (c *Client) BeaconHeaderByRoot(root string) (*structs.GetBlockHeadersRespon
 		return nil, err
 	}
 	return result, nil
+}
+
+func (c *Client) GetFinalityUpdate() (*structs.LightClientUpdateWithVersion, error) {
+	var result structs.LightClientUpdateWithVersion
+	err := c.get("/eth/v1/beacon/light_client/finality_update", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (c *Client) RetrieveBeaconHeaders(start, end uint64) ([]*structs.BeaconBlockHeader, error) {

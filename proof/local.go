@@ -79,11 +79,11 @@ func (l *Local) Run() error {
 					continue
 				}
 				logger.Info("complete generate Proof type: %v Period: %v", request.ReqType.String(), request.Period)
-				submitProof := common.SubmitProof{Id: l.Id, Data: proof}
+				submitProof := common.SubmitProof{Id: common.MustUUID(), WorkerId: l.Id, Data: proof}
 				_, err = l.client.SubmitProof(submitProof)
 				if err != nil {
-					logger.Error("submit proof error:%v,store proof: %v", err, proof.Id())
-					l.pendingProofsList.Store(proof.Id(), &submitProof)
+					logger.Error("submit proof error:%v,store proof: %v", err, submitProof.Id)
+					l.pendingProofsList.Store(submitProof.Id, &submitProof)
 					// todo check again
 					return
 				}

@@ -49,7 +49,7 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
 	}
-	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
+	proofSolBytes, err := circuits.ProofToBytes(proof.Proof)
 	if err != nil {
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
@@ -67,13 +67,51 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth
 }
 
 func (w *LocalWorker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("local worker block header prove %v", req.Headers.BeginSlot)
+	proof, err := w.circuit.BeaconHeaderProve(req.Headers)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	proofToBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	return &rpc.BlockHeaderResponse{
+		Proof:   proofToBytes,
+		Witness: witnessBytes,
+	}, nil
+
 }
 
 func (w *LocalWorker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("local worker BeaconHeaderFinalityUpdateProve prove")
+	proof, err := w.circuit.BeaconHeaderFinalityUpdateProve(req.GenesisSCSSZRoot, req.RecursiveProof, req.RecursiveWitness,
+		req.OuterProof, req.OuterWitness, req.FinalityUpdate, req.ScUpdate)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	proofToBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	return &rpc.BlockHeaderFinalityResponse{
+		Proof:   proofToBytes,
+		Witness: witnessBytes,
+	}, nil
 }
 
 func (w *LocalWorker) Id() string {
@@ -114,11 +152,27 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 	}, nil
 }
 
-func (w *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+func (w *LocalWorker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	logger.Debug("gen redeem Proof")
-	time.Sleep(10 * time.Second)
-	return rpc.RedeemResponse{
-		Proof: common.ZkProof([]byte("redeem Proof")),
+	proof, err := w.circuit.RedeemProve(req.TxProof, req.TxWitness, req.BhProof, req.BhWitness, req.BhfProof, req.BhfWitness,
+		req.BeginId, req.EndId, req.GenesisScRoot, req.CurrentSCSSZRoot, req.TxVarBytes, req.ReceiptVarBytes)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, fmt.Errorf("gen redeem proof error: %v", err)
+	}
+	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
+	if err != nil {
+		logger.Error("TxInEth2Prove error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("TxInEth2Prove error: %v", err)
+		return nil, err
+	}
+	return &rpc.RedeemResponse{
+		Proof:   proofSolBytes,
+		Witness: witnessBytes,
 	}, nil
 }
 
@@ -185,28 +239,42 @@ func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	proof, err := w.circuit.UnitProve(req.Period, &update)
+	unitProof, outerProof, err := w.circuit.UnitProve(req.Period, &update)
 	if err != nil {
 		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
 	logger.Debug("complete unit prove %v", req.Period)
-	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	proofBytes, err := circuits.ProofToBytes(unitProof.Proof)
 	if err != nil {
 		logger.Error("proof to bytes error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	witnessBytes, err := circuits.WitnessToBytes(unitProof.Wit)
 	if err != nil {
 		logger.Error("witness to bytes error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
+
+	outerProofBytes, err := circuits.ProofToBytes(outerProof.Proof)
+	if err != nil {
+		logger.Error("proof to bytes error %v", err)
+		return rpc.SyncCommUnitsResponse{}, err
+	}
+	outerWitnessBytes, err := circuits.WitnessToBytes(outerProof.Wit)
+	if err != nil {
+		logger.Error("witness to bytes error %v", err)
+		return rpc.SyncCommUnitsResponse{}, err
+	}
+
 	return rpc.SyncCommUnitsResponse{
-		Version:   req.Version,
-		Period:    req.Period,
-		ProofType: common.SyncComUnitType,
-		Proof:     proofBytes,
-		Witness:   witnessBytes,
+		Version:      req.Version,
+		Period:       req.Period,
+		ProofType:    common.SyncComUnitType,
+		Proof:        proofBytes,
+		Witness:      witnessBytes,
+		OuterProof:   outerProofBytes,
+		OuterWitness: outerWitnessBytes,
 	}, nil
 
 }
@@ -308,7 +376,7 @@ func (w *Worker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, e
 	return w.client.GenDepositProof(req)
 }
 
-func (w *Worker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+func (w *Worker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	return w.GenRedeemProof(req)
 }
 

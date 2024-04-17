@@ -22,7 +22,7 @@ type IProof interface {
 	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
 	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
 
-	GenRedeemProof(req RedeemRequest) (RedeemResponse, error)
+	GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error)
 	TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error)
 	BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error)
 	BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error)

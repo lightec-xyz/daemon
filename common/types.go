@@ -17,8 +17,9 @@ type TaskResponse struct {
 }
 
 type SubmitProof struct {
-	Data *ZkProofResponse
-	Id   string
+	Data     []*ZkProofResponse
+	WorkerId string
+	Id       string
 }
 
 // todo
@@ -31,6 +32,7 @@ type ZkProofRequest struct {
 	ReqType ZkProofType
 	Data    interface{}
 	Period  uint64
+	Slot    uint64
 	TxHash  string
 
 	Status     ProofStatus

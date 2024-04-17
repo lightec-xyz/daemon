@@ -33,8 +33,8 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 	syncCommitResp := make(chan *common.ZkProofResponse)
 	fetchDataResp := make(chan FetchDataResponse)
 
-	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
-	fileStore, err := NewFileStore(cfg.DataDir, cfg.BeaconSlotHeight, genesisPeriod)
+	genesisPeriod := uint64(cfg.BeaconSlotHeight) / common.SlotPerPeriod
+	fileStore, err := NewFileStore(cfg.DataDir, cfg.BeaconSlotHeight)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -81,7 +81,7 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		exitSignal:    exitSignal,
 		enableSyncCom: true,
 		enableTx:      false,
-		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
+		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
 		manager:       NewWrapperManger(manager, proofRequest, 1*time.Minute),
 	}
 	return daemon, nil

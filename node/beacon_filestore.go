@@ -34,19 +34,22 @@ type storeProof struct {
 
 const (
 	LatestPeriodKey = "latest"
-	LatestSlotKey   = "latestSlot"
+	LatestSlotKey   = "latestFinalitySlot"
 	GenesisRawData  = "genesisRaw"
 	GenesisProofKey = "genesisProof"
 )
 
 const (
-	PeriodDir    = "period"
-	GenesisDir   = "genesis"
-	UpdateDir    = "update"
-	UnitDir      = "unit"
-	RecursiveDir = "recursive"
-	BhfUpdate    = "bhfUpdate"
-	Tx           = "txes"
+	PeriodDir      = "period"
+	GenesisDir     = "genesis"
+	UpdateDir      = "update"
+	UnitDir        = "unit"
+	RecursiveDir   = "recursive"
+	BhfUpdate      = "bhfUpdate"
+	BlockHeader    = "blockHeader"
+	Outer          = "outer"
+	Tx             = "txes"
+	FinalityUpdate = "finalityUpdate"
 )
 
 // todo refactor
@@ -57,14 +60,18 @@ type FileStore struct {
 	genesisDir    string
 	updateDir     string
 	unitDir       string
+	outerDir      string
 	recursiveDir  string
+	finalityDir   string
 	txDir         string
 	bhfUpdateDir  string
+	blockHeader   string
 	genesisPeriod uint64
 	genesisSlot   uint64
 }
 
-func NewFileStore(dataDir string, genesisSlot, genesisPeriod uint64) (*FileStore, error) {
+func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
+	genesisPeriod := genesisSlot / common.SlotPerPeriod
 
 	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
 	// todo
@@ -125,8 +132,37 @@ func NewFileStore(dataDir string, genesisSlot, genesisPeriod uint64) (*FileStore
 		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
 
+	blockHeaderDir := fmt.Sprintf("%s/%s", dataDir, BlockHeader)
+	ok, err = dirNotExistsAndCreate(blockHeaderDir)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
+	}
+
 	txDir := fmt.Sprintf("%s/%s", dataDir, Tx)
 	ok, err = dirNotExistsAndCreate(txDir)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
+	}
+	OuterDir := fmt.Sprintf("%s/%s", dataDir, Outer)
+	ok, err = dirNotExistsAndCreate(OuterDir)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
+	}
+
+	finalityUpdateDir := fmt.Sprintf("%s/%s", dataDir, FinalityUpdate)
+	ok, err = dirNotExistsAndCreate(finalityUpdateDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
 		return nil, err
@@ -141,6 +177,9 @@ func NewFileStore(dataDir string, genesisSlot, genesisPeriod uint64) (*FileStore
 		genesisDir:    genesisDir,
 		unitDir:       unitDir,
 		bhfUpdateDir:  bhfuDir,
+		outerDir:      OuterDir,
+		blockHeader:   blockHeaderDir,
+		finalityDir:   finalityUpdateDir,
 		txDir:         txDir,
 		recursiveDir:  recursiveDir,
 		genesisPeriod: genesisPeriod,
@@ -148,10 +187,113 @@ func NewFileStore(dataDir string, genesisSlot, genesisPeriod uint64) (*FileStore
 	}, nil
 }
 
+func (f *FileStore) StoreFinalityUpdate(slot uint64, data interface{}) error {
+	return f.InsertData(FinalityUpdate, parseKey(slot), data)
+}
+
+func (f *FileStore) CheckFinalityUpdate(slot uint64) (bool, error) {
+	return f.CheckStorageKey(FinalityUpdate, parseKey(slot))
+}
+
+func (f *FileStore) GetFinalityUpdate(slot uint64, value interface{}) (bool, error) {
+	exists, err := f.CheckFinalityUpdate(slot)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	return true, f.getObj(FinalityUpdate, parseKey(slot), value)
+}
+
+func (f *FileStore) StoreOuterProof(period uint64, proof, witness []byte) error {
+	return f.InsertData(Outer, parseKey(period), storeProof{
+		Period:    period,
+		ProofType: common.UnitOuter,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
+	})
+}
+
+func (f *FileStore) CheckOuterProof(period uint64) (bool, error) {
+	return f.CheckStorageKey(Outer, parseKey(period))
+}
+
+func (f *FileStore) GetOuterProof(period uint64) (*StoreProof, bool, error) {
+	exists, err := f.CheckOuterProof(period)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	proof, err := f.GetObj(Outer, parseKey(period))
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
+}
+
+func (f *FileStore) StoreTxProof(hash string, proof, witness []byte) error {
+	return f.InsertData(Tx, hash, storeProof{
+		Hash:      hash,
+		ProofType: common.TxInEth2,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
+	})
+}
+
+func (f *FileStore) CheckTxProof(hash string) (bool, error) {
+	return f.CheckStorageKey(Tx, hash)
+}
+
+func (f *FileStore) GetTxProof(hash string) (*StoreProof, bool, error) {
+	exists, err := f.CheckTxProof(hash)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	proof, err := f.GetObj(Tx, hash)
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
+}
+
+func (f *FileStore) StoreBlockHeaderProof(slot uint64, proof, witness []byte) error {
+	return f.InsertData(BlockHeader, parseKey(slot), storeProof{
+		Period:    slot,
+		ProofType: common.BlockHeaderFinalityType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
+	})
+}
+
+func (f *FileStore) CheckBlockHeaderProof(slot uint64) (bool, error) {
+	return f.CheckStorageKey(BlockHeader, parseKey(slot))
+}
+
+func (f *FileStore) GetBlockHeaderProof(slot uint64) (*StoreProof, bool, error) {
+	exists, err := f.CheckBlockHeaderProof(slot)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	proof, err := f.GetObj(BlockHeader, parseKey(slot))
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
+}
+
 func (f *FileStore) StoreBhfUpdateProof(slot uint64, proof, witness []byte) error {
 	return f.InsertData(BhfUpdate, parseKey(slot), storeProof{
 		Period:    slot,
-		ProofType: common.BhfUpdate,
+		ProofType: common.BlockHeaderFinalityType,
 		Proof:     hex.EncodeToString(proof),
 		Witness:   hex.EncodeToString(witness),
 	})
@@ -367,57 +509,6 @@ func (f *FileStore) GetLatestPeriod() (uint64, bool, error) {
 	return period, true, nil
 }
 
-func (f *FileStore) StoreTxInEth2Proof(hash string, data interface{}) error {
-	key := fmt.Sprintf("%s/txInEth2", hash)
-	return f.InsertData(Tx, key, data)
-}
-
-func (f *FileStore) StoreCheckPointFinalityProve(hash string, data interface{}) error {
-	key := fmt.Sprintf("%s/checkPointFinality", hash)
-	return f.InsertData(Tx, key, data)
-}
-
-func (f *FileStore) TxBlockIsParentOfCheckPointProve(hash string, data interface{}) error {
-	key := fmt.Sprintf("%s/txBlockIsParentOfCheckPoint", hash)
-	return f.InsertData(Tx, key, data)
-}
-
-func (f *FileStore) GetTxInEth2Proof(hash string, value interface{}) (bool, error) {
-	key := fmt.Sprintf("%s/txInEth2", hash)
-	exists, err := f.CheckStorageKey(Tx, key)
-	if err != nil {
-		return false, err
-	}
-	if !exists {
-		return false, nil
-	}
-	return true, f.getObj(Tx, key, value)
-}
-
-func (f *FileStore) GetCheckPointFinalityProve(hash string, value interface{}) (bool, error) {
-	key := fmt.Sprintf("%s/checkPointFinality", hash)
-	exists, err := f.CheckStorageKey(Tx, key)
-	if err != nil {
-		return false, err
-	}
-	if !exists {
-		return false, nil
-	}
-	return true, f.getObj(Tx, key, value)
-}
-
-func (f *FileStore) GetTxBlockIsParentOfCheckPointProve(hash string, value interface{}) (bool, error) {
-	key := fmt.Sprintf("%s/txBlockIsParentOfCheckPoint", hash)
-	exists, err := f.CheckStorageKey(Tx, key)
-	if err != nil {
-		return false, err
-	}
-	if !exists {
-		return false, nil
-	}
-	return true, f.getObj(Tx, key, value)
-}
-
 func (f *FileStore) txDirCheckOrCreate(hash string) error {
 	txHashDir := fmt.Sprintf("%s/%s", f.txDir, hash)
 	exists, err := fileExists(txHashDir)
@@ -592,6 +683,8 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 		return fmt.Sprintf("%s/%s", f.txDir, key), nil
 	case BhfUpdate:
 		return fmt.Sprintf("%s/%s", f.bhfUpdateDir, key), nil
+	case BlockHeader:
+		return fmt.Sprintf("%s/%s", f.blockHeader, key), nil
 	default:
 		return "", fmt.Errorf("no find table: %v", table)
 	}

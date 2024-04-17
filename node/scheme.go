@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	ProofPrefix         = "p_" // p_ + hash
-	TxPrefix            = "t_" // t_ + hash
-	DestChainHashPrefix = "d_" // d_ + hash
-	UnGenProofPrefix    = "u_" // u_ + hash
-
+	ProofPrefix              = "p_"  // p_ + hash
+	TxPrefix                 = "t_"  // t_ + hash
+	DestChainHashPrefix      = "d_"  // d_ + hash
+	UnGenProofPrefix         = "u_"  // u_ + hash
+	UnBlockHeaderProofPrefix = "uh_" //
 )
 
 var (
@@ -74,4 +74,8 @@ func DbDestId(txId string) string {
 func DbUnGenProofId(chain ChainType, txId string) string {
 	pTxID := fmt.Sprintf("%s%d_%s", UnGenProofPrefix, chain, trimOx(txId))
 	return pTxID
+}
+
+func DbTxBlockHeightKey(height int64) string {
+	return fmt.Sprintf("%s%d", UnBlockHeaderProofPrefix, height)
 }

@@ -51,10 +51,10 @@ func (h *Handler) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, 
 	}, nil
 }
 
-func (h *Handler) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+func (h *Handler) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	logger.Debug("gen redeem proof")
 	time.Sleep(10 * time.Second)
-	return rpc.RedeemResponse{
+	return &rpc.RedeemResponse{
 		Proof: common.ZkProof([]byte("redeem proof")),
 	}, nil
 }

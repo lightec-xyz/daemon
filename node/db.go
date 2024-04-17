@@ -181,6 +181,19 @@ func WriteEthereumTx(store store.IStore, txes []DbTx) error {
 	return nil
 }
 
+func WriteTxBlock(store store.IStore, height int64) error {
+	err := store.PutObj(DbTxBlockHeightKey(height), nil)
+	if err != nil {
+		logger.Error("put block tx error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func DelTxBlock(store store.IStore, height int64) error {
+	return store.DeleteObj(DbTxBlockHeightKey(height))
+}
+
 func WriteUnGenProof(store store.IStore, chain ChainType, txList []string) error {
 	batch := store.Batch()
 	for _, txHash := range txList {
@@ -197,42 +210,27 @@ func WriteUnGenProof(store store.IStore, chain ChainType, txList []string) error
 	}
 	return nil
 }
-
-func ReadAllUnGenProof(store store.IStore) ([]common.ZkProofRequest, error) {
-	panic(store)
-	//var txIds []string
-	//var requests []ProofRequest
-	//iterator := store.Iterator([]byte(UnGenProofPrefix), nil)
-	//defer iterator.Release()
-	//for iterator.Next() {
-	//	txIds = append(txIds, getTxId(string(iterator.Key())))
-	//}
-	//err := iterator.Error()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for _, txId := range txIds {
-	//	id, chainType, err := parseUnGenProofId(txId)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	var tx DbTx
-	//	err = store.getObj(DbTxId(id), &tx)
-	//	if err != nil {
-	//		logger.Error("get ungen Proof error:%v", err)
-	//		return nil, err
-	//	}
-	//	var req ProofRequest
-	//	if chainType == Bitcoin {
-	//		req = NewDepositProofParam(tx.TxHash, tx.EthAddr, tx.Amount, tx.Utxo)
-	//	} else if chainType == Ethereum {
-	//		req = NewRedeemProofParam(tx.TxHash, tx.BtcTxId, tx.Inputs, tx.Outputs)
-	//	} else {
-	//		return nil, fmt.Errorf("unknown chain type:%v", chainType)
-	//	}
-	//	requests = append(requests, req)
-	//}
-	//return requests, nil
+func ReadAllUnGenProofIds(store store.IStore) ([]string, error) {
+	var txIds []string
+	iterator := store.Iterator([]byte(UnGenProofPrefix), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		txIds = append(txIds, getTxId(string(iterator.Key())))
+	}
+	err := iterator.Error()
+	if err != nil {
+		logger.Error("read ungen Proof error:%v", err)
+		return nil, err
+	}
+	for _, txId := range txIds {
+		id, _, err := parseUnGenProofId(txId)
+		if err != nil {
+			logger.Error("parse ungen Proof error:%v", err)
+			return nil, err
+		}
+		txIds = append(txIds, id)
+	}
+	return txIds, nil
 }
 
 func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) error {
@@ -257,6 +255,7 @@ func getTxId(key string) string {
 	return txId
 }
 
+// todo
 func parseUnGenProofId(key string) (string, ChainType, error) {
 	splits := strings.Split(key, "_")
 	if len(splits) != 3 {

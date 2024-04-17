@@ -39,13 +39,13 @@ func (p *ProofClient) GenDepositProof(req DepositRequest) (DepositResponse, erro
 	return response, nil
 }
 
-func (p *ProofClient) GenRedeemProof(req RedeemRequest) (RedeemResponse, error) {
+func (p *ProofClient) GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error) {
 	response := RedeemResponse{}
 	err := p.call(&response, "zkbtc_genRedeemProof", req)
 	if err != nil {
-		return response, err
+		return nil, err
 	}
-	return response, nil
+	return &response, nil
 }
 
 func (p *ProofClient) GenVerifyProof(req VerifyRequest) (VerifyResponse, error) {

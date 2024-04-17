@@ -173,14 +173,37 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("batch write error: %v %v", index, err)
 			return err
 		}
-		zkProofRequests, err := toRedeemZkProofRequest(requests)
+		txInEth2Request, err := toTxInEth2Request(requests)
 		if err != nil {
 			logger.Error("to redeem zk Proof request error: %v %v", index, err)
 			return err
 		}
-		e.proofRequest <- zkProofRequests
+		if len(txInEth2Request) > 0 {
+			// todo
+			blockHeaderProveRequest, err := e.getBlockHeaderProveRequest(uint64(index))
+			if err != nil {
+				logger.Error("get block header prove request error: %v %v", index, err)
+				return err
+			}
+			var zkProofRequests []*dcommon.ZkProofRequest
+			zkProofRequests = append(zkProofRequests, blockHeaderProveRequest)
+			zkProofRequests = append(zkProofRequests, txInEth2Request...)
+			e.proofRequest <- zkProofRequests
+
+		}
+
 	}
 	return nil
+}
+
+func (e *EthereumAgent) getBlockHeaderProveRequest(index uint64) (*dcommon.ZkProofRequest, error) {
+	// todo
+	logger.Debug("get block header prove request: %v", index)
+	zkProofRequest := dcommon.ZkProofRequest{
+		ReqType: dcommon.BlockHeaderFinalityType,
+		Period:  index,
+	}
+	return &zkProofRequest, nil
 }
 
 func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
@@ -509,7 +532,52 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 }
 
 func (e *EthereumAgent) CheckState() error {
+	logger.Debug("ethereum check state ...")
+	txIds, err := ReadAllUnGenProofIds(e.store)
+	if err != nil {
+		logger.Error("read all ungen proof ids error: %v", err)
+		return err
+	}
+	for _, txId := range txIds {
+		exists, err := e.fileStore.CheckTxProof(txId)
+		if err != nil {
+			logger.Error("check tx proof error: %v", err)
+			return err
+		}
+		if !exists {
+			// todo cache
+			err := DeleteUnGenProof(e.store, Ethereum, txId)
+			if err != nil {
+				logger.Error("delete ungen proof error: %v", err)
+				return err
+			}
+			continue
+		}
+	}
+	// todo
+	for _, txId := range txIds {
+		txReceipt, err := e.ethClient.TransactionReceipt(context.Background(), common.HexToHash(txId))
+		if err != nil {
+			logger.Error("get tx receipt error: %v", err)
+			return err
+		}
+		blockNumber := txReceipt.BlockNumber
+		exists, err := e.fileStore.CheckBhfUpdateProof(blockNumber.Uint64())
+		if err != nil {
+			logger.Error("check bhf update proof error: %v", err)
+			return err
+		}
+		if !exists {
+			// todo
+		}
+	}
+	// todo
+
 	return nil
+}
+
+func (e *EthereumAgent) getRedeemRequestData() (interface{}, bool, error) {
+	panic(e)
 }
 
 func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status dcommon.ProofStatus) error {

@@ -251,31 +251,36 @@ func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
 	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
 }
 
-func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
+func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, *common.Proof, error) {
 	// todo
 	logger.Debug("current zk circuit unit prove")
 	if c.debug {
 		logger.Warn("current zk circuit unit prove is debug mode,skip prove")
-		return debugProof()
+		proof, err := debugProof()
+		if err != nil {
+			logger.Error("debug proof error:%v", err)
+			return nil, nil, err
+		}
+		return proof, proof, err
 	}
 	logger.Warn("really do unit prove now: %v", period)
 	subDir := fmt.Sprintf("sc%d", period)
 	err := innerProve(c.Cfg.DataDir, subDir, update)
 	if err != nil {
 		logger.Error("inner prove error:%v", err)
-		return nil, err
+		return nil, nil, err
 	}
-	err = outerProve(c.Cfg.DataDir, subDir, update)
+	outerProof, err := outerProve(c.Cfg.DataDir, subDir, update)
 	if err != nil {
 		logger.Error("outer prove error:%v", err)
-		return nil, err
+		return nil, nil, err
 	}
-	proof, err := unitProv(c.Cfg.DataDir, subDir, update)
+	unitProof, err := unitProv(c.Cfg.DataDir, subDir, update)
 	if err != nil {
 		logger.Error("unit prove error:%v", err)
-		return nil, err
+		return nil, nil, err
 	}
-	return proof, nil
+	return unitProof, outerProof, nil
 }
 
 func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness []byte,
@@ -402,22 +407,22 @@ func unitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo
 	return proofs, nil
 }
 
-func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
+func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
 	outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
 	outer := unit.NewOuter(&outerCfg)
 	err := outer.Load()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	proofs, err := outer.Prove(update)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = outer.Save(proofs)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return proofs, nil
 }
 
 func innerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
@@ -473,16 +478,23 @@ func debugProof() (*common.Proof, error) {
 	if err != nil {
 		return nil, err
 	}
-	//proofBytes, err := hex.DecodeString("201c5d2f7f746c025582d4bf687c821d46ef2cf7d79b18a648731132aad3b1402b171c26a4b247cb749babdd443cf916774a4b74e85e3ea9ba19f4ee43638dd7032c6ea702809b843263e19d4b97cfdf2471a74a127b56ad581473c6df3d0f472d2eea103495c5e856bf5aee8b3270bd9adab84209338b6f09f51cf39a365c351ada496af014c9abf7276d854ea0d6ea6a36e090d0a45b9069f81fcb6f9fbd73032bb31aa39995a864d98c440a77b8950847066150f0e94f066054bae18704811680a1a766672149d412d5b60c57b31433f897942bf7216aa3aaf1642e4992e60c007447583c5ce87e207476241fcca408417aeff488f7165f60bce73ce7e12a171f8927ca72e68714e0a80c89f833fdbdf895cbe94e6e6892cd474d1964970d2313ad60cffff9450d1f9724fc0bb68d81f031a09209406232d5f4d7dfb4c15e262822a536f433d56b461c812916ecf692a979a0246fc8de7de0d3092c7e7a8e283342712db0f2db4ad60551e8e110799ea7bafd37990658473c9e447f93cd8809bb45473b7d249831878bd88381c76e3695ab957ff876f5fb75c3091ae7a2c82877b98e4aaca1ae32064360f9ad05d0f1595d5613a416ec544192309b8ed61b21ef0de29b4706bb0f0e91a82945168ebbe619b6987e92790a9920444de540e0264525ca3ac9f4de4a8409226e52bb18ce38d837c700f7aee5a907b45a0b5fcb06c9f5d06cb0a8558e239b09f28c90de463dc2c9d12cb985d938cca3e4cd459825bbe0d37f3de8e6a212a181cb3f5b25320afbe17a1aab305bd55e0fdaaf4a851d0cc3ae31c567fb9b466e9049b9db84936191b9cfa7f709e269c40982cfb5ca001915a0707f2a0484a92cc9befdf16e5213972d39e1cb7b2cf421159f2836c21941febd827e29c1b669181c00a9cee546cb1ee5eb391d6841f4dff4d5acc455058d495e2a39d5fc9a1a1902c7b539c791f7c72301391bac7a127a5dadbb289c16851ed31eb91037cb6f61b8d9628af08983cf94273b7425a0a96995103c95ee267b2a4d36a83faafde99eaa295de72cf58defd0e9482d4979dec70aa10e4fe506a0ab76dbb2ae094f758e74aa34d7c433fcc70bc88c3f12a878881ff6c0fee81f759700345b16aea15f43ee6ab7b3803c4d149b667ae8570d21783e1cc294dc06b40f01e8d5a42ecd7f6d50bf0b3209054a2acf7d27791754445a87a1baace024f3b5db24c273a368285f93531bba3693df99680cb56079117d301988dc2731087738b148b8626517c5768a6ad37eeb6a29c3f83145b14572cf46e29aae0660")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//buffer := bytes.NewBuffer(proofBytes)
+	witnessByts, err := hex.DecodeString("000000180000000000000018000000000000000000000000000000000000000000000000bc4d9a773a304f7c000000000000000000000000000000000000000000000000c879892de7b1130b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004d13e6221265d5470000000000000000000000000000000000000000000000000a9a955cdf54319900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bd806aa2440faf3a00000000000000000000000000000000000000000000000056bb0ec865d27e9800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fba8545ab164e9ef0000000000000000000000000000000000000000000000000653e66962364b88000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007e1da36c41365c0d000000000000000000000000000000000000000000000000942a5884da9b98da00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000061ae6bd87e134e80000000000000000000000000000000000000000000000002085a29e1cf057bb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	if err != nil {
+		return nil, err
+	}
+	_, err = w.ReadFrom(bytes.NewReader(witnessByts))
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := hex.DecodeString("d05f24ef1d3e8b59ba060b4141b1048b0199ed002c0a313c03b87f8e51e24aabd01a1fb0eaee9473970eeecaf7c3c850b57afe3386641bcc6cc18581b003abeacf557f98fc31079075dccf75f355221a018edd7bf5054fdbd280f3c61f537be6e3cba22a1f3ba940149f4f251195cea82b6559344ae7d6d40e600655cf591561cc8422fbc1ba2929de9488315e5d23d717e8c9048d534d3569a358f57eddfcb5dfa8e221f4104d063048df28114ac4ab5a7883245b55901367b972b4ead270c0a6550b7c6c44fd672a5b88ed8d153cf50eb6247d2bf48794ecb3803a2017e967d3553de5efb7ca588f31ed43ce43f198619d6eecc1203970caab1f46123b8b520000000805994c4caf545b0998b1cd70a2778274a35f5b8a2d1c64344b7b119b62f990232164704f0f9cd6e2ea6de50ca2694790cbd6c5db0a14ac6d4462f0563f5d42e120e2fa2be493efd68b25a793957779ab2af40f2b0422e18ba72bdd57196c81b026b9f7955a08ee21bea6045e64eeca6cf7e7504b290960e5ecd58b1919ced66625c08a8c391b0763abbcd3f5ef0509d445ec02f3b11db660796ae1d02f47f0b91bdf22f73b1b9fb3e7a8264523bc016164aea7770b7f47223a4c449833f9324b217ce713ec851098916ce7b9349ee7bfc63095e19644ce496e8cdd542d0703aa0723b8b49eae51db612335d883c26d2013663ef4c3fb8ed734afeef30bd38e19a5415f3c287648a2160c32b1176ffd043d27fa50614843649306d814b9f198a70cfa4c03f0f487ad2a8cd3f0d3be71cccc00d237eba86e4f9d5ed91cfc0da7f500000001840fdac67c39e3ccf5363c17dca27f6118bdc2dd629e07885be3778401fe566c")
+	if err != nil {
+		return nil, err
+	}
 	proof := &plonk_bn254.Proof{}
-	//_, err = proof.WriteTo(buffer)
-	//if err != nil {
-	//	return nil, err
-	//}
+	_, err = proof.ReadFrom(bytes.NewReader(proofBytes))
+	if err != nil {
+		return nil, err
+	}
 	return &common.Proof{
 		Proof: proof,
 		Wit:   w,

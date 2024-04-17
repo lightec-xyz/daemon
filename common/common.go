@@ -2,7 +2,9 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
+	"reflect"
 )
 
 func Uuid() (string, error) {
@@ -26,5 +28,19 @@ func objToJson(obj interface{}) string {
 		return "error obj to josn"
 	}
 	return string(ojbBytes)
+}
 
+func ParseObj(src, dst interface{}) error {
+	if reflect.ValueOf(dst).Kind() != reflect.Ptr {
+		return fmt.Errorf("dst must be a pointer")
+	}
+	srcBytes, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(srcBytes, dst)
+	if err != nil {
+		return err
+	}
+	return nil
 }

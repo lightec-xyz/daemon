@@ -26,8 +26,9 @@ var err error
 var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
-// var endpoint = "https://1rpc.io/holesky"
-var endpoint = "http://127.0.0.1:8970"
+var endpoint = "https://1rpc.io/holesky"
+
+// var endpoint = "http://127.0.0.1:8970"
 var zkBridgeAddr = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"
 var zkBtcAddr = "0x5898953ff9c1c11a8a6bc578bd6c93aabcd1f083"
 
@@ -287,4 +288,13 @@ func TestClient_Demo(t *testing.T) {
 	ids := TxIdsToFixedIds([]string{"adddd", "dsdsfsd"})
 	t.Log(ids)
 
+}
+
+func TestGetTrancaction(t *testing.T) {
+	hash := ethcommon.HexToHash("0x9bd7ff0aa08611a2077189fcefb5095eda2e5d28d175cde410540ecc4ec2283b")
+	tx, err := client.TransactionReceipt(context.Background(), hash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(tx.BlockNumber)
 }

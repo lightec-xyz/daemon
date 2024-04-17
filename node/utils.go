@@ -106,7 +106,7 @@ func toUpdateZkProofRequest(redeemTxes []Transaction) ([]*common.ZkProofRequest,
 	return result, nil
 }
 
-func toRedeemZkProofRequest(list []RedeemProofParam) ([]*common.ZkProofRequest, error) {
+func toTxInEth2Request(list []RedeemProofParam) ([]*common.ZkProofRequest, error) {
 	var result []*common.ZkProofRequest
 	for _, item := range list {
 		result = append(result, common.NewZkProofRequest(common.TxInEth2, item, 0, item.TxHash))

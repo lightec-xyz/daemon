@@ -38,7 +38,7 @@ func (t *TaskManager) AddTask(resp *common.ZkProofResponse) {
 
 func (t *TaskManager) Check() error {
 	t.queue.Iterator(func(value *common.ZkProofResponse) error {
-		logger.Info("task check", value.Id())
+		logger.Info("task check %v", value.Id())
 		switch value.ZkProofType {
 		case common.TxInEth2:
 			_ = t.MintZkBtcRequest(value)

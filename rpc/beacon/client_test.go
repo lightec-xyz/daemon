@@ -16,7 +16,7 @@ func init() {
 }
 
 func TestClient(t *testing.T) {
-	latestSyncPeriod, err := client.GetLatestSyncPeriod()
+	latestSyncPeriod, err := client.GetFinalizedSyncPeriod()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,4 +69,18 @@ func TestClient_RetrieveBeaconHeaders(t *testing.T) {
 	for _, header := range headers {
 		t.Log(header.ParentRoot)
 	}
+}
+
+func TestClient_GetFinalityUpdate(t *testing.T) {
+	slot, err := client.GetLatestFinalizedSlot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(slot)
+	t.Log(slot / 8192)
+	update, err := client.GetFinalityUpdate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(update.Data)
 }

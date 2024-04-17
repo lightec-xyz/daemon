@@ -151,11 +151,13 @@ type SyncCommUnitsRequest struct {
 }
 
 type SyncCommUnitsResponse struct {
-	Version   string             `json:"version"`
-	Period    uint64             `json:"period"`
-	ProofType common.ZkProofType `json:"proofType"`
-	Proof     common.ZkProof     `json:"proof"`
-	Witness   []byte             `json:"witness"`
+	Version      string             `json:"version"`
+	Period       uint64             `json:"period"`
+	ProofType    common.ZkProofType `json:"proofType"`
+	Proof        common.ZkProof     `json:"proof"`
+	Witness      []byte             `json:"witness"`
+	OuterProof   []byte             `json:"outerProof"`
+	OuterWitness []byte             `json:"outerWitness"`
 }
 
 type SyncCommRecursiveRequest struct {

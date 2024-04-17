@@ -4,6 +4,8 @@ package common
 
 const BeaconHeaderSlot = 32 // todo
 
+const SlotPerPeriod = 8192
+
 const (
 	ZkDebugEnv     = "ZkDebug"
 	ZkParameterDir = "ZkParameterDir"
@@ -49,8 +51,9 @@ const (
 	SyncComGenesisType
 	SyncComUnitType
 	SyncComRecursiveType
-	BhfUpdate //BeaconHeaderFinalityUpdate
-	BeaconHeader
+	BlockHeaderFinalityType //BeaconHeaderFinalityUpdate
+	UnitOuter
+	BlockHeaderType
 )
 
 func (zkpr *ZkProofType) String() string {
@@ -69,8 +72,12 @@ func (zkpr *ZkProofType) String() string {
 		return "SyncComRecursiveType"
 	case TxInEth2:
 		return "TxInEth2"
-	case BhfUpdate:
-		return "BhfUpdate"
+	case UnitOuter:
+		return "UnitOuter"
+	case BlockHeaderFinalityType:
+		return "BlockHeaderFinalityType"
+	case BlockHeaderType:
+		return "BlockHeaderType"
 	default:
 		return ""
 	}
