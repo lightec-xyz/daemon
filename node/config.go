@@ -222,6 +222,11 @@ func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind
 		RpcPort:           rpcport,
 		BeaconUrl:         beaconUrl,
 		BeaconSlotHeight:  initSlot,
+		BtcUrl:            "https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
+		EthUrl:            "https://ethereum-holesky-rpc.publicnode.com",
+		EthPrivateKey:     "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
+		ZkBridgeAddr:      "0x8e4f5a8f3e24a279d8ed39e868f698130777fded",
+		ZkBtcAddr:         "0xbf3041e37be70a58920a6fd776662b50323021c9",
 	}, nil
 
 }

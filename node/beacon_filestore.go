@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -685,31 +686,34 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 		return fmt.Sprintf("%s/%s", f.bhfUpdateDir, key), nil
 	case BlockHeader:
 		return fmt.Sprintf("%s/%s", f.blockHeader, key), nil
+	case FinalityUpdate:
+		return fmt.Sprintf("%s/%s", f.finalityDir, key), nil
 	default:
 		return "", fmt.Errorf("no find table: %v", table)
 	}
 }
 
+// todo
 func (f *FileStore) NeedGenBhfUpdateIndex() ([]uint64, error) {
-	latestSlot, ok, err := f.GetLatestSlot()
+	finalityUpdateFiles, err := traverseFile(f.finalityDir)
 	if err != nil {
-		logger.Error("get latest slot error:%v", err)
+		logger.Error("traverse file error:%v", err)
 		return nil, err
 	}
-	if !ok {
-		return nil, fmt.Errorf("get latest slot error")
-	}
-	if latestSlot <= f.genesisSlot {
-		return nil, nil
-	}
-	files, err := traverseFile(f.bhfUpdateDir)
+	bhfUpdterFiles, err := traverseFile(f.bhfUpdateDir)
 	if err != nil {
+		logger.Error("traverse file error:%v", err)
 		return nil, err
 	}
 	var recoverFile []uint64
-	for index := f.genesisSlot + common.BeaconHeaderSlot; index <= latestSlot; index = index + common.BeaconHeaderSlot {
-		if _, ok := files[fmt.Sprintf("%d", index)]; !ok {
-			recoverFile = append(recoverFile, index)
+	for key, _ := range finalityUpdateFiles {
+		if _, ok := bhfUpdterFiles[key]; !ok {
+			index, err := strconv.ParseInt(key, 10, 64)
+			if err != nil {
+				logger.Error("parse index error:%v", err)
+				return nil, err
+			}
+			recoverFile = append(recoverFile, uint64(index))
 		}
 	}
 	return recoverFile, nil
@@ -798,12 +802,12 @@ func traverseFile(path string) (map[string]string, error) {
 			return err
 		}
 		if !info.IsDir() {
-			filePath, err := getFileName(info.Name())
+			fileName, err := getFileName(info.Name())
 			if err != nil {
 				return err
 			}
-			if numberPattern.MatchString(filePath) {
-				files[filePath] = path
+			if numberPattern.MatchString(fileName) {
+				files[fileName] = path
 			}
 		}
 		return nil

@@ -80,6 +80,9 @@ func (bc *BeaconCache) DeleteGenesis() {
 func (bc *BeaconCache) DeleteUnit(period uint64) {
 	bc.unitProof.Delete(period)
 }
+func (bc *BeaconCache) DeleteBhfUpdate(period uint64) {
+	bc.bhfUpdate.Delete(period)
+}
 
 func (bc *BeaconCache) DeleteRecursive(period uint64) {
 	bc.recursiveProof.Delete(period)

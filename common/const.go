@@ -2,9 +2,10 @@ package common
 
 // env
 
-const BeaconHeaderSlot = 32 // todo
-
-const SlotPerPeriod = 8192
+const (
+	BeaconHeaderSlot = 32
+	SlotPerPeriod    = 8192
+)
 
 const (
 	ZkDebugEnv     = "ZkDebug"

@@ -377,6 +377,7 @@ func (b *BeaconAgent) CheckState() error {
 		return err
 	}
 	for _, index := range bhfUpdateIndexes {
+		logger.Info("need to update block header finality: %v", index)
 		err := b.tryProofRequest(index, common.BlockHeaderFinalityType)
 		if err != nil {
 			logger.Error(err.Error())
@@ -400,7 +401,14 @@ func (b *BeaconAgent) CheckBeaconHeaderFinalityProof() error {
 		logger.Error("parse slot error: %v", finalityUpdate.Data.FinalizedHeader.Slot)
 		return fmt.Errorf("parse slot error: %v", finalityUpdate.Data.FinalizedHeader.Slot)
 	}
+
 	finalizedSlot := slotBig.Uint64()
+	// todo
+	err = b.fileStore.StoreLatestSlot(slotBig.Uint64())
+	if err != nil {
+		logger.Error("store latest slot error: %v", err)
+		return err
+	}
 	exists, err := b.fileStore.CheckFinalityUpdate(finalizedSlot)
 	if err != nil {
 		logger.Error("check finality proof error: %v", err)
@@ -872,6 +880,8 @@ func (b *BeaconAgent) deleteCacheProofReqStatus(reqType common.ZkProofType, peri
 		b.stateCache.DeleteUnit(period)
 	case common.SyncComRecursiveType:
 		b.stateCache.DeleteRecursive(period)
+	case common.BlockHeaderFinalityType:
+		b.stateCache.DeleteBhfUpdate(period)
 	default:
 		logger.Error("delete cache request status never should happen: %v %v", reqType, period)
 		return
@@ -896,6 +906,7 @@ func (b *BeaconAgent) Stop() {
 }
 
 func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
+	logger.Info("get bhf update data: %v", slot)
 	genesisId, ok, err := b.GetSyncCommitRootID(b.genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
@@ -923,10 +934,15 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		logger.Warn("no find outer proof: %v", slot)
 		return nil, false, nil
 	}
-	currentFinalityUpdate, err := b.beaconClient.GetFinalityUpdate()
+	var currentFinalityUpdate structs.LightClientUpdateWithVersion
+	exists, err := b.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("get finality update error: %v %v", slot, err)
 		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find finality update: %v", slot)
+		return nil, false, nil
 	}
 	currentSyncCommitUpdate, ok, err := b.GetUnitData(period)
 	if err != nil {

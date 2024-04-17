@@ -6,6 +6,8 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
 	"time"
@@ -75,12 +77,29 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	keyStore := NewKeyStore(cfg.EthPrivateKey)
+	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcNetwork)
+	if err != nil {
+		logger.Error("new btc btcClient error:%v", err)
+		return nil, err
+	}
+	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
+	if err != nil {
+		logger.Error("new eth btcClient error:%v", err)
+		return nil, err
+	}
+	taskManager, err := NewTaskManager(keyStore, ethClient, btcClient)
+	if err != nil {
+		logger.Error("new taskManager error:%v", err)
+		return nil, err
+	}
 	daemon := &Daemon{
 		nodeConfig:    cfg,
 		server:        server,
 		exitSignal:    exitSignal,
 		enableSyncCom: true,
 		enableTx:      false,
+		taskManager:   taskManager,
 		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
 		manager:       NewWrapperManger(manager, proofRequest, 1*time.Minute),
 	}
