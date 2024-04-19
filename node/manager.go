@@ -212,17 +212,14 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		zkbProofResponse := NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Wit)
 		result = append(result, zkbProofResponse)
 	case common.TxInEth2:
-		var redeemParam RedeemProofParam
-		err := ParseObj(request.Data, &redeemParam)
+		// todo
+		var txInEth2Req rpc.TxInEth2ProveRequest
+		err := common.ParseObj(request.Data, &txInEth2Req)
 		if err != nil {
+			logger.Error("parse txInEth2 Proof param error:%v", err)
 			return nil, fmt.Errorf("not txInEth2 Proof param")
 		}
-		txInEth2Req := &rpc.TxInEth2ProveRequest{
-			Version: redeemParam.Version,
-			TxHash:  request.TxHash,
-			TxData:  redeemParam.TxData,
-		}
-		proofResponse, err := worker.TxInEth2Prove(txInEth2Req)
+		proofResponse, err := worker.TxInEth2Prove(&txInEth2Req)
 		if err != nil {
 			logger.Error("gen redeem Proof error:%v", err)
 			return nil, err
@@ -230,13 +227,12 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		zkbProofResponse := NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 		result = append(result, zkbProofResponse)
 	case common.RedeemTxType:
-		var redeemParam RedeemProofParam
-		err := ParseObj(request.Data, &redeemParam)
+		// todo
+		var redeemRpcRequest rpc.RedeemRequest
+		err := common.ParseObj(request.Data, &redeemRpcRequest)
 		if err != nil {
+			logger.Error("parse redeem Proof param error:%v", err)
 			return nil, fmt.Errorf("not redeem Proof param")
-		}
-		redeemRpcRequest := rpc.RedeemRequest{
-			Version: redeemParam.Version,
 		}
 		proofResponse, err := worker.GenRedeemProof(&redeemRpcRequest)
 		if err != nil {
@@ -328,7 +324,12 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 
 	case common.BlockHeaderType:
 		// todo
-		blockHeaderRequest := rpc.BlockHeaderRequest{}
+		var blockHeaderRequest rpc.BlockHeaderRequest
+		err := common.ParseObj(request.Data, &blockHeaderRequest)
+		if err != nil {
+			logger.Error("not block header Proof param")
+			return nil, fmt.Errorf("not block header Proof param")
+		}
 		response, err := worker.BlockHeaderProve(&blockHeaderRequest)
 		if err != nil {
 			logger.Error("gen block header Proof error:%v", err)
@@ -338,7 +339,11 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		result = append(result, zkbProofResponse)
 	case common.BlockHeaderFinalityType:
 		// todo
-		finalityRequest := rpc.BlockHeaderFinalityRequest{}
+		var finalityRequest rpc.BlockHeaderFinalityRequest
+		err := common.ParseObj(request.Data, &finalityRequest)
+		if err != nil {
+			return nil, fmt.Errorf("not block header finality Proof param")
+		}
 		response, err := worker.BlockHeaderFinalityProve(&finalityRequest)
 		if err != nil {
 			logger.Error("gen block header finality Proof error:%v", err)

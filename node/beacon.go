@@ -377,7 +377,7 @@ func (b *BeaconAgent) CheckState() error {
 		return err
 	}
 	for _, index := range bhfUpdateIndexes {
-		//logger.Info("need to update block header finality: %v", index)
+		logger.Info("need to update block header finality: %v", index)
 		err := b.tryProofRequest(index, common.BlockHeaderFinalityType)
 		if err != nil {
 			logger.Error(err.Error())
@@ -919,21 +919,21 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	//logger.Debug("get bhf update data: %v", period)
 	recursiveProof, ok, err := b.fileStore.GetRecursiveProof(period)
 	if err != nil {
-		logger.Error("get recursive proof error: %v %v", slot, err)
+		logger.Error("get recursive proof error: %v %v", period, err)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("no find recursive proof: %v", slot)
+		logger.Warn("no find recursive proof: %v", period)
 		return nil, false, nil
 	}
 
 	outerProof, ok, err := b.fileStore.GetOuterProof(period)
 	if err != nil {
-		logger.Error("get outer proof error: %v %v", slot, err)
+		logger.Error("get outer proof error: %v %v", period, err)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("no find outer proof: %v", slot)
+		logger.Warn("no find outer proof: %v", period)
 		return nil, false, nil
 	}
 	var currentFinalityUpdate structs.LightClientUpdateWithVersion

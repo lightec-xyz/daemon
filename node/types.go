@@ -3,7 +3,11 @@ package node
 import (
 	"bytes"
 	"fmt"
+	"github.com/consensys/gnark/frontend"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
+	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"strconv"
 
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
@@ -17,22 +21,30 @@ type DepositProofParam struct {
 	BlockHash string
 }
 
+type VerifyProofParam struct {
+	Version   string
+	TxHash    string
+	BlockHash string
+}
+
 type TxInEth2Param struct {
 	Version string
 	TxHash  string
 	TxData  *ethblock.TxInEth2ProofData
 }
 
-type RedeemProofParam struct {
-	Version string
-	TxHash  string
-	TxData  *ethblock.TxInEth2ProofData
+type BeaconHeaderParam struct {
+	Index   uint64
+	Headers proverType.BeaconHeaderChain
 }
 
-type VerifyProofParam struct {
-	Version   string
-	TxHash    string
-	BlockHash string
+type RedeemProofParam struct {
+	TxHash  string
+	Version string
+	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness, BeginId, EndId, GenesisScRoot,
+	CurrentSCSSZRoot []byte
+	TxVar      *[tx.MaxTxUint128Len]frontend.Variable
+	ReceiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable
 }
 
 type GenesisProofParam struct {
@@ -70,6 +82,14 @@ type RecursiveProofParam struct {
 	RelayId       []byte
 	EndId         []byte
 	RecursiveFp   []byte
+}
+
+type FinalityBeaconHeaderParam struct {
+	GenesisSCSSZRoot string
+	RecursiveProof, RecursiveWitness, OuterProof,
+	OuterWitness []byte
+	FinalityUpdate *proverType.FinalityUpdate
+	ScUpdate       *proverType.SyncCommitteeUpdate
 }
 
 type FetchType int

@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/circuits"
 	dcommon "github.com/lightec-xyz/daemon/common"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
@@ -320,12 +319,7 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			if submitted {
 				redeemTxProof = NewRedeemProof(redeemTx.TxHash, dcommon.ProofSuccess)
 			} else {
-				// Todo
-				txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, redeemTx.TxHash)
-				if err != nil {
-					return nil, nil, nil, nil, err
-				}
-				requests = append(requests, NewRedeemProofParam(redeemTx.TxHash, txData))
+				requests = append(requests, NewRedeemProofParam(redeemTx.TxHash, nil))
 				redeemTxProof = NewRedeemProof(redeemTx.TxHash, dcommon.ProofDefault)
 			}
 			proofs = append(proofs, redeemTxProof)
@@ -476,7 +470,14 @@ func (e *EthereumAgent) CheckState() error {
 				logger.Error("try proof request error: %v", err)
 				return err
 			}
+			continue
 		}
+		err = e.tryProofRequest(dcommon.RedeemTxType, 0, txHash)
+		if err != nil {
+			logger.Error("try proof request error: %v", err)
+			return err
+		}
+
 	}
 
 	return nil
@@ -528,16 +529,19 @@ func (e *EthereumAgent) tryProofRequest(zkType dcommon.ZkProofType, index uint64
 	return nil
 }
 
-func (e *EthereumAgent) getTxInEth2Data(txHash string) (*ethblock.TxInEth2ProofData, bool, error) {
+func (e *EthereumAgent) getTxInEth2Data(txHash string) (*TxInEth2Param, bool, error) {
 	txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, txHash)
 	if err != nil {
 		logger.Error("get tx data error: %v", err)
 		return nil, false, err
 	}
-	return txData, true, nil
+	return &TxInEth2Param{
+		TxHash: txHash,
+		TxData: txData,
+	}, true, nil
 }
 
-func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (interface{}, bool, error) {
+func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*BeaconHeaderParam, bool, error) {
 	// todo
 	finalitySlot := dcommon.GetNearTxSlot(index)
 	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, finalitySlot)
@@ -545,10 +549,13 @@ func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (interface{}, bo
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
 	}
-	return beaconBlockHeaders, true, nil
+	return &BeaconHeaderParam{
+		Index:   index,
+		Headers: beaconBlockHeaders,
+	}, true, nil
 }
 
-func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (interface{}, bool, error) {
+func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (*RedeemProofParam, bool, error) {
 	txProof, ok, err := e.fileStore.GetTxProof(txHash)
 	if err != nil {
 		logger.Error("get tx proof error: %v", err)
@@ -604,7 +611,8 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (inter
 		logger.Error("get tx and receipt error: %v", err)
 		return nil, false, err
 	}
-	redeemRequest := rpc.RedeemRequest{
+	redeemRequest := RedeemProofParam{
+		TxHash:           txHash,
 		TxProof:          txProof.Proof,
 		TxWitness:        txProof.Witness,
 		BhProof:          blockHeaderProof.Proof,
@@ -752,7 +760,6 @@ func (e *EthereumAgent) Name() string {
 func NewRedeemProofParam(txId string, txData *ethblock.TxInEth2ProofData) RedeemProofParam {
 	return RedeemProofParam{
 		TxHash: txId,
-		TxData: txData,
 	}
 }
 
