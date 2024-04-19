@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/circuits"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"reflect"
 	"sync"
@@ -67,8 +68,16 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth
 }
 
 func (w *LocalWorker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
-	logger.Debug("local worker block header prove %v", req.Headers.BeginSlot)
-	proof, err := w.circuit.BeaconHeaderProve(req.Headers)
+	logger.Debug("local worker block header prove %v", req.BeginSlot)
+
+	var header proverType.BeaconHeaderChain
+	err := common.ParseObj(req, &header)
+	if err != nil {
+		logger.Error("deep copy error %v", err)
+		return nil, err
+	}
+	logger.Debug("len: %v", len(header.MiddleBeaconHeaders))
+	proof, err := w.circuit.BeaconHeaderProve(header)
 	if err != nil {
 		logger.Error("BlockHeaderProve error: %v", err)
 		return nil, err

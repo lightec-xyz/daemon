@@ -34,8 +34,12 @@ type TxInEth2Param struct {
 }
 
 type BeaconHeaderParam struct {
-	Index   uint64
-	Headers proverType.BeaconHeaderChain
+	Index     uint64
+	BeginSlot uint64
+	BeginRoot string
+	EndSlot   uint64
+	EndRoot   string
+	Headers   []*structs.BeaconBlockHeader
 }
 
 type RedeemProofParam struct {

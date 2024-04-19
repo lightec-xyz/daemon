@@ -64,7 +64,12 @@ type TxInEth2ProveResponse struct {
 }
 
 type BlockHeaderRequest struct {
-	Headers proverType.BeaconHeaderChain
+	Index     uint64
+	BeginSlot uint64
+	BeginRoot string
+	EndSlot   uint64
+	EndRoot   string
+	Headers   []*structs.BeaconBlockHeader
 }
 
 type BlockHeaderResponse struct {
