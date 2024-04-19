@@ -209,7 +209,7 @@ func (b *BeaconAgent) checkRequest(index uint64, reqType common.ZkProofType) (bo
 	case common.SyncComRecursiveType:
 		return index >= b.genesisPeriod+2, nil
 	case common.BlockHeaderFinalityType:
-		return index >= b.genesisSlot, nil
+		return index%32 == 0, nil
 	default:
 		return false, fmt.Errorf("check request status never should happen: %v %v", index, reqType)
 	}
@@ -834,7 +834,9 @@ func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	// todo
 	logger.Info("beacon Proof response type: %v, Period: %v", resp.ZkProofType.String(), resp.Period)
 	index := resp.Period
-	b.deleteCacheProofReqStatus(resp.ZkProofType, resp.Period)
+	if resp.ZkProofType != common.UnitOuter {
+		b.deleteCacheProofReqStatus(resp.ZkProofType, resp.Period)
+	}
 	switch resp.ZkProofType {
 	case common.SyncComGenesisType:
 		err := b.fileStore.StoreGenesisProof(resp.Proof, resp.Witness)

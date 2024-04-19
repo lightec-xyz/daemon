@@ -190,17 +190,25 @@ func (e *EthereumAgent) ScanBlock() error {
 func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
 	logger.Info(" ethereumAgent receive proof response: %v %v %v %x", resp.ZkProofType.String(),
 		resp.Period, resp.TxHash, resp.Proof)
-	hexProof := hex.EncodeToString(resp.Proof)
-	err := e.updateRedeemProof(resp.TxHash, hexProof, resp.Status)
+	err := StoreZkProof(e.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
 	if err != nil {
-		logger.Error("update Proof error:%v", err)
+		logger.Error("store zk proof error:%v", err)
 		return err
 	}
-	_, err = RedeemBtcTx(e.btcClient, resp.TxHash, resp.Proof)
-	if err != nil {
-		logger.Error("redeem btc tx error:%v", err)
-		e.task.AddTask(resp)
-		return err
+	proofId := dcommon.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
+	e.stateCache.DeleteZkRequest(proofId)
+	if resp.ZkProofType == dcommon.RedeemTxType {
+		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
+		if err != nil {
+			logger.Error("update Proof error:%v", err)
+			return err
+		}
+		_, err = RedeemBtcTx(e.btcClient, resp.TxHash, resp.Proof)
+		if err != nil {
+			logger.Error("redeem btc tx error:%v", err)
+			e.task.AddTask(resp)
+			return err
+		}
 	}
 	return nil
 }
@@ -671,7 +679,7 @@ func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, t
 		}
 		return true, nil
 	case dcommon.BlockHeaderType:
-		latestSlot, ok, err := e.fileStore.GetLatestSlot()
+		latestFinalizedSlot, ok, err := e.fileStore.GetLatestSlot()
 		if err != nil {
 			logger.Error("get latest slot error: %v", err)
 			return false, err
@@ -679,12 +687,14 @@ func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, t
 		if !ok {
 			return false, nil
 		}
-		if index > latestSlot {
+		nearFinalitySlot := dcommon.GetNearTxSlot(index)
+		if nearFinalitySlot < latestFinalizedSlot {
 			return false, nil
 		}
 		return true, nil
 
 	case dcommon.RedeemTxType:
+		// todo
 		return true, nil
 
 	default:
@@ -713,7 +723,6 @@ func (e *EthereumAgent) getBlockHeaderRoot(slot uint64) ([]byte, error) {
 }
 
 func (e *EthereumAgent) sendZkProofRequest(requests ...*dcommon.ZkProofRequest) error {
-
 	e.proofRequest <- requests
 	for _, req := range requests {
 		logger.Info("send request: %v", req.Id())

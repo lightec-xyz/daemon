@@ -34,3 +34,7 @@ func (cs *CacheState) GetZkRequest(key interface{}) (*common.ZkProofRequest, boo
 	}
 	return req, true
 }
+
+func (cs *CacheState) DeleteZkRequest(key interface{}) {
+	cs.requests.Delete(key)
+}

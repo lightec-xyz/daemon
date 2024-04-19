@@ -740,14 +740,14 @@ func (f *FileStore) NeedGenBhfUpdateIndex() ([]uint64, error) {
 		logger.Error("traverse file error:%v", err)
 		return nil, err
 	}
-	bhfUpdterFiles, err := traverseFile(f.bhfUpdateDir)
+	bhfUpdataProofFiles, err := traverseFile(f.bhfUpdateDir)
 	if err != nil {
 		logger.Error("traverse file error:%v", err)
 		return nil, err
 	}
 	var recoverFile []uint64
 	for key, _ := range finalityUpdateFiles {
-		if _, ok := bhfUpdterFiles[key]; !ok {
+		if _, ok := bhfUpdataProofFiles[key]; !ok {
 			index, err := strconv.ParseInt(key, 10, 64)
 			if err != nil {
 				logger.Error("parse index error:%v", err)

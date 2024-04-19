@@ -30,6 +30,19 @@ func CheckProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, t
 	}
 }
 
+func StoreZkProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, txHash string, proof, witness []byte) error {
+	switch zkType {
+	case common.TxInEth2:
+		return fileStore.StoreTxProof(txHash, proof, witness)
+	case common.BlockHeaderType:
+		return fileStore.StoreBlockHeaderProof(index, proof, witness)
+	case common.RedeemTxType:
+		return fileStore.StoreRedeemProof(txHash, proof, witness)
+	default:
+		return fmt.Errorf("unSupport now  proof type: %v", zkType)
+	}
+}
+
 // todo refactor
 
 func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interface{}, error) {
