@@ -72,7 +72,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 }
 
 func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness, beginId, endId, genesisScRoot,
-	currentSCSSZRoot, txVarBytes, receiptVarBytes []byte) (*common.Proof, error) {
+	currentSCSSZRoot []byte, txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*common.Proof, error) {
 	//todo
 	logger.Debug("current zk circuit RedeemProve")
 	if c.debug {
@@ -132,20 +132,10 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("get genesis scssz root error:%v", err)
 		return nil, err
 	}
-	txVar, err := GetTxVar(txVarBytes)
-	if err != nil {
-		logger.Error("get tx var error:%v", err)
-		return nil, err
-	}
-	receiptVar, err := GetReceiptVar(receiptVarBytes)
-	if err != nil {
-		logger.Error("get receipt var error:%v", err)
-		return nil, err
-	}
 
 	proof, err := redeem.Prove(c.Cfg.DataDir, txVk, txInEth2Proof, txInEth2Witness, bhVk, blockHeaderProof, blockHeaderWitness,
-		bhfVk, blockHeaderFinalityProof, blockHeaderFinalityWitness, beginId, endId, genesisSCSSZRoot, currentSCSSZRoot, txVar,
-		receiptVar)
+		bhfVk, blockHeaderFinalityProof, blockHeaderFinalityWitness, beginId, endId, genesisSCSSZRoot, currentSCSSZRoot, *txVar,
+		*receiptVar)
 	if err != nil {
 		logger.Error("redeem prove error:%v", err)
 		return nil, err

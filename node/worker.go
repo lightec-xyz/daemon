@@ -155,7 +155,7 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 func (w *LocalWorker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	logger.Debug("gen redeem Proof")
 	proof, err := w.circuit.RedeemProve(req.TxProof, req.TxWitness, req.BhProof, req.BhWitness, req.BhfProof, req.BhfWitness,
-		req.BeginId, req.EndId, req.GenesisScRoot, req.CurrentSCSSZRoot, req.TxVarBytes, req.ReceiptVarBytes)
+		req.BeginId, req.EndId, req.GenesisScRoot, req.CurrentSCSSZRoot, req.TxVar, req.ReceiptVar)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, fmt.Errorf("gen redeem proof error: %v", err)
