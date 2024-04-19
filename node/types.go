@@ -151,12 +151,14 @@ type Transaction struct {
 }
 
 type Proof struct {
-	TxHash    string             `json:"txId"`
+	TxHash    string             `json:"txHash"`
 	ProofType common.ZkProofType `json:"type"`
 	Status    int                `json:"status"`
 	Proof     string             `json:"Proof"`
 }
 
-// PreProofRequest todo
-type PreProofRequest struct {
+// todo
+type UnGenPreProof struct {
+	TxId      string
+	ChainType ChainType
 }

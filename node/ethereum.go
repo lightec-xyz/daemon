@@ -6,10 +6,15 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/lightec-xyz/daemon/circuits"
 	dcommon "github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
+	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
+	"github.com/lightec-xyz/reLight/circuits/utils"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
 	"strings"
 	"time"
@@ -30,8 +35,10 @@ type EthereumAgent struct {
 	ethClient        *ethrpc.Client
 	apiClient        *apiclient.Client // todo temporary use
 	oasisClient      *oasis.Client     // todo temporary use
+	beaconClient     *beacon.Client
 	store            store.IStore
 	memoryStore      store.IStore
+	stateCache       *CacheState
 	fileStore        *FileStore
 	blockTime        time.Duration
 	taskManager      *TaskManager
@@ -43,13 +50,13 @@ type EthereumAgent struct {
 	logAddrFilter    EthAddrFilter
 	privateKeys      []*btcec.PrivateKey //todo just test
 	initStartHeight  int64
-	ethSubmitAddress string
 	autoSubmit       bool
 	task             *TaskManager
+	genesisPeriod    uint64
 }
 
-func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileStore, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, proofRequest chan []*dcommon.ZkProofRequest, task *TaskManager) (IAgent, error) {
+func NewEthereumAgent(cfg NodeConfig, genesisPeriod uint64, fileStore *FileStore, store, memoryStore store.IStore, beaClient *apiclient.Client,
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, proofRequest chan []*dcommon.ZkProofRequest, task *TaskManager) (IAgent, error) {
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -64,9 +71,11 @@ func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileSto
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
 		ethClient:        ethClient,
+		beaconClient:     beaconClient,
 		store:            store,
 		fileStore:        fileStore,
 		memoryStore:      memoryStore,
+		genesisPeriod:    genesisPeriod,
 		blockTime:        cfg.EthScanBlockTime,
 		proofRequest:     proofRequest,
 		exitSign:         make(chan struct{}, 1),
@@ -75,10 +84,10 @@ func NewEthereumAgent(cfg NodeConfig, submitTxEthAddr string, fileStore *FileSto
 		btcNetwork:       btctx.NetWork(cfg.BtcNetwork),
 		privateKeys:      privateKeys,
 		initStartHeight:  cfg.EthInitHeight,
-		ethSubmitAddress: submitTxEthAddr,
 		autoSubmit:       cfg.AutoSubmit,
 		logAddrFilter:    cfg.EthAddrFilter,
 		task:             task,
+		stateCache:       NewCacheState(),
 	}, nil
 }
 
@@ -173,24 +182,6 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("batch write error: %v %v", index, err)
 			return err
 		}
-		txInEth2Request, err := toTxInEth2Request(requests)
-		if err != nil {
-			logger.Error("to redeem zk Proof request error: %v %v", index, err)
-			return err
-		}
-		if len(txInEth2Request) > 0 {
-			// todo
-			blockHeaderProveRequest, err := e.getBlockHeaderProveRequest(uint64(index))
-			if err != nil {
-				logger.Error("get block header prove request error: %v %v", index, err)
-				return err
-			}
-			var zkProofRequests []*dcommon.ZkProofRequest
-			zkProofRequests = append(zkProofRequests, blockHeaderProveRequest)
-			zkProofRequests = append(zkProofRequests, txInEth2Request...)
-			e.proofRequest <- zkProofRequests
-
-		}
 
 	}
 	return nil
@@ -221,14 +212,6 @@ func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
 		e.task.AddTask(resp)
 		return err
 	}
-	// todo
-	//if e.autoSubmit {
-	//	_, err := e.taskManager.RedeemBtcRequest(resp.TxHash, nil, nil, nil)
-	//	if err != nil {
-	//		logger.Error("submit redeem request error:%v", err)
-	//		return err
-	//	}
-	//}
 	return nil
 }
 
@@ -442,142 +425,370 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 }
 
-// todo refactor
-
-func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interface{}, error) {
-	ethTxHash := common.HexToHash(txHash)
-	zkBridgeAddr, zkBtcAddr := "0x8e4f5a8f3e24a279d8ed39e868f698130777fded", "0xbf3041e37be70a58920a6fd776662b50323021c9"
-	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
-	if err != nil {
-		logger.Error("new eth client error:%v", err)
-		return nil, err
-	}
-	ethTx, _, err := ec.TransactionByHash(context.Background(), ethTxHash)
-	if err != nil {
-		logger.Error("get eth tx error:%v", err)
-		return nil, err
-	}
-	receipt, err := ec.TransactionReceipt(context.Background(), ethTxHash)
-	if err != nil {
-		logger.Error("get eth tx receipt error:%v", err)
-		return nil, err
-	}
-
-	btcRawTx, _, err := ethereum.DecodeRedeemLog(receipt.Logs[3].Data)
-	if err != nil {
-		logger.Error("decode redeem log error:%v", err)
-		return nil, err
-	}
-
-	logger.Info("btcRawTx: %v\n", hexutil.Encode(btcRawTx))
-
-	rawTx, rawReceipt := ethereum.GetRawTxAndReceipt(ethTx, receipt)
-	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
-	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
-
-	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
-	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
-	if err != nil {
-		logger.Error("new client error:%v", err)
-		return nil, err
-	}
-
-	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proof)
-	if err != nil {
-		logger.Error("sign btc tx error:%v", err)
-		return nil, err
-	}
-
-	transaction := btctx.NewMultiTransactionBuilder()
-	err = transaction.Deserialize(btcRawTx)
-	if err != nil {
-		logger.Error("deserialize btc tx error:%v", err)
-		return nil, err
-	}
-
-	multiSigScript, err := ec.GetMultiSigScript()
-	if err != nil {
-		logger.Error("get multi sig script error:%v", err)
-		return nil, err
-	}
-
-	nTotal, nRequred := 3, 2
-	transaction.AddMultiScript(multiSigScript, nRequred, nTotal)
-
-	err = transaction.MergeSignature(sigs[:nRequred])
-	if err != nil {
-		logger.Error("merge signature error:%v", err)
-		return nil, err
-	}
-
-	btxTx, err := transaction.Serialize()
-	if err != nil {
-		logger.Error("serialize btc tx error:%v", err)
-		return nil, err
-	}
-	txHex := hex.EncodeToString(btxTx)
-	logger.Info("btx Tx: %v\n", txHex)
-	TxHash, err := btcClient.Sendrawtransaction(txHex)
-	if err != nil {
-		logger.Error("send btc tx error:%v", err)
-		// todo  just test
-		_, err = bitcoin.BroadcastTx(txHex)
-		if err != nil {
-			logger.Error("broadcast btc tx error:%v", err)
-			return "", err
-		}
-	}
-	logger.Info("send redeem btc tx: %v", transaction.TxHash())
-	return TxHash, nil
-}
-
 func (e *EthereumAgent) CheckState() error {
 	logger.Debug("ethereum check state ...")
-	txIds, err := ReadAllUnGenProofIds(e.store)
+	unGenProofs, err := ReadAllUnGenProofIds(e.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
 		return err
 	}
-	for _, txId := range txIds {
-		exists, err := e.fileStore.CheckTxProof(txId)
+
+	// todo
+	finalizedSlot, ok, err := e.fileStore.GetLatestSlot()
+	if err != nil {
+		logger.Error("get latest slot error: %v", err)
+		return err
+	}
+	if !ok {
+		logger.Warn("no find latest slot")
+		return nil
+	}
+
+	for _, unGenProof := range unGenProofs {
+		exists, err := e.fileStore.CheckTxProof(unGenProof.TxId)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
 			return err
 		}
 		if !exists {
-			// todo cache
-			err := DeleteUnGenProof(e.store, Ethereum, txId)
+			// todo
+			err := DeleteUnGenProof(e.store, Ethereum, unGenProof.TxId)
 			if err != nil {
 				logger.Error("delete ungen proof error: %v", err)
 				return err
 			}
+			logger.Debug("delete ungen proof tx: %v", unGenProof.TxId)
 			continue
 		}
-	}
-	// todo
-	for _, txId := range txIds {
-		txReceipt, err := e.ethClient.TransactionReceipt(context.Background(), common.HexToHash(txId))
+		receipt, err := e.ethClient.TransactionReceipt(context.Background(), common.HexToHash(unGenProof.TxId))
 		if err != nil {
 			logger.Error("get tx receipt error: %v", err)
 			return err
 		}
-		blockNumber := txReceipt.BlockNumber
-		exists, err := e.fileStore.CheckBhfUpdateProof(blockNumber.Uint64())
+		// todo
+		txSlot, err := dcommon.GetSlot(receipt.BlockNumber.Int64())
 		if err != nil {
-			logger.Error("check bhf update proof error: %v", err)
+			logger.Error("get slot error: %v", err)
 			return err
 		}
-		if !exists {
-			// todo
+		if txSlot <= finalizedSlot {
+			logger.Warn("%v tx slot %v less than finalized slot %v", unGenProof.TxId, txSlot, finalizedSlot)
+			continue
 		}
-	}
-	// todo
 
+		// todo
+		txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, unGenProof.TxId)
+		if err != nil {
+			logger.Error("get tx data error: %v", err)
+			return err
+		}
+		request := dcommon.NewZkProofRequest(dcommon.TxInEth2, txData, 0, unGenProof.TxId)
+		e.proofRequest <- []*dcommon.ZkProofRequest{
+			request,
+		}
+
+		exists, err = e.fileStore.CheckBlockHeaderProof(txSlot)
+		if err != nil {
+			logger.Error("check block header proof error: %v", err)
+			return err
+		}
+		if exists {
+			continue
+		}
+		// beaconHeader
+		headers, err := e.beaconClient.RetrieveBeaconHeaders(txSlot, finalizedSlot)
+		if err != nil {
+			logger.Error("")
+			return err
+		}
+		blockHeaderProofRequest := dcommon.NewZkProofRequest(dcommon.BlockHeaderType, headers, 0, unGenProof.TxId)
+		e.proofRequest <- []*dcommon.ZkProofRequest{
+			blockHeaderProofRequest,
+		}
+
+	}
+
+	return nil
+
+}
+
+func (e *EthereumAgent) tryProofRequest(zkType dcommon.ZkProofType, index uint64, txHash string) error {
+	proofId := dcommon.NewProofId(zkType, index, txHash)
+	exists := e.stateCache.CheckZkRequest(proofId)
+	if exists {
+		logger.Debug("proof request exists: %v", proofId)
+		return nil
+	}
+	match, err := e.checkRequest(zkType, index, txHash)
+	if err != nil {
+		logger.Error("check request error: %v", err)
+		return err
+	}
+	if !match {
+		logger.Debug("proof request not match: %v", proofId)
+		return nil
+	}
+	exists, err = CheckProof(e.fileStore, zkType, index, txHash)
+	if err != nil {
+		logger.Error("check proof error: %v", err)
+		return err
+	}
+	if exists {
+		logger.Error("proof exists: %v", proofId)
+		return nil
+	}
+	data, ok, err := e.getRequestProofData(zkType, index, txHash)
+	if err != nil {
+		logger.Error("get request proof data error: %v", err)
+		return err
+	}
+	if !ok {
+		logger.Debug("proof request data not prepared: %v", proofId)
+		return nil
+	}
+	proofRequest := dcommon.NewZkProofRequest(zkType, data, index, txHash)
+	err = e.sendZkProofRequest(proofRequest)
+	if err != nil {
+		logger.Error("send zk proof request error: %v", err)
+		return err
+	}
+	logger.Info("success send zk proof request: %v", proofId)
 	return nil
 }
 
-func (e *EthereumAgent) getRedeemRequestData() (interface{}, bool, error) {
-	panic(e)
+func (e *EthereumAgent) getTxInEth2Data(txHash string) (*ethblock.TxInEth2ProofData, bool, error) {
+	txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, txHash)
+	if err != nil {
+		logger.Error("get tx data error: %v", err)
+		return nil, false, err
+	}
+	return txData, true, nil
+}
+
+func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (interface{}, bool, error) {
+	txProof, ok, err := e.fileStore.GetTxProof(txHash)
+	if err != nil {
+		logger.Error("get tx proof error: %v", err)
+		return nil, false, err
+	}
+	if !ok {
+		logger.Debug("proof request data not prepared: %v", txHash)
+		return nil, false, nil
+	}
+	blockHeaderProof, ok, err := e.fileStore.GetBlockHeaderProof(index)
+	if err != nil {
+		logger.Error("get block header proof error: %v", err)
+		return nil, false, err
+	}
+	if !ok {
+		logger.Debug("proof request data not prepared: %v", index)
+		return nil, false, nil
+	}
+	bhfUpdateProof, ok, err := e.fileStore.GetBhfUpdateProof(index)
+	if err != nil {
+		logger.Error("get bhf update proof error: %v", err)
+		return nil, false, err
+	}
+	if !ok {
+		logger.Debug("proof request data not prepared: %v", index)
+		return nil, false, nil
+	}
+	genesisRoot, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
+	if err != nil {
+		logger.Error("get genesis root error: %v", err)
+		return nil, false, err
+	}
+	beginID, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
+	if err != nil {
+		logger.Error("get begin id error: %v", err)
+		return nil, false, err
+	}
+	endId, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
+	if err != nil {
+		logger.Error("get end id error: %v", err)
+		return nil, false, err
+	}
+	currentRoot, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
+	if err != nil {
+		logger.Error("get current root error: %v", err)
+		return nil, false, err
+	}
+
+	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(e.ethClient.Client, txHash)
+	if err != nil {
+		logger.Error("get tx and receipt error: %v", err)
+		return nil, false, err
+	}
+	redeemRequest := rpc.RedeemRequest{
+		TxProof:          txProof.Proof,
+		TxWitness:        txProof.Witness,
+		BhProof:          blockHeaderProof.Proof,
+		BhWitness:        blockHeaderProof.Witness,
+		BhfProof:         bhfUpdateProof.Proof,
+		BhfWitness:       bhfUpdateProof.Witness,
+		GenesisScRoot:    genesisRoot,
+		BeginId:          beginID,
+		EndId:            endId,
+		CurrentSCSSZRoot: currentRoot,
+		TxVar:            txVar,
+		ReceiptVar:       receiptVar,
+	}
+	return &redeemRequest, true, nil
+
+}
+
+func (e *EthereumAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
+	var currentPeriodUpdate structs.LightClientUpdateWithVersion
+	exists, err := e.fileStore.GetUpdate(period, &currentPeriodUpdate)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find %v period update Data, send new update request", period)
+		return nil, false, nil
+	}
+	// todo
+	var update utils.LightClientUpdateInfo
+	err = ParseObj(currentPeriodUpdate, &update)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if e.genesisPeriod == period {
+		var genesisData structs.LightClientBootstrapResponse
+		genesisExists, err := e.fileStore.GetBootstrap(&genesisData)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		if !genesisExists {
+			logger.Warn("no find genesis update Data, send new update request")
+			return nil, false, nil
+		}
+		// todo
+		var genesisCommittee utils.SyncCommittee
+		err = ParseObj(genesisData.Data.CurrentSyncCommittee, &genesisCommittee)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		update.CurrentSyncCommittee = &genesisCommittee
+	} else {
+		prePeriod := period - 1
+		if prePeriod < e.genesisPeriod {
+			logger.Error("should never happen: %v", prePeriod)
+			return nil, false, nil
+		}
+		var preUpdateData structs.LightClientUpdateWithVersion
+		preUpdateExists, err := e.fileStore.GetUpdate(prePeriod, &preUpdateData)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		if !preUpdateExists {
+			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
+			return nil, false, nil
+		}
+		// todo
+		var currentSyncCommittee utils.SyncCommittee
+		err = ParseObj(preUpdateData.Data.NextSyncCommittee, &currentSyncCommittee)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		update.CurrentSyncCommittee = &currentSyncCommittee
+	}
+	rootId, err := circuits.SyncCommitRoot(&update)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	return rootId, true, nil
+
+}
+
+func (e *EthereumAgent) getBlockHeaderRequestData(zkType dcommon.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
+	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, index+32)
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	return beaconBlockHeaders, true, nil
+}
+
+func (e *EthereumAgent) getRequestProofData(zkType dcommon.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
+	switch zkType {
+	case dcommon.TxInEth2:
+		return e.getTxInEth2Data(txHash)
+	case dcommon.BlockHeaderType:
+		return e.getBlockHeaderRequestData(zkType, index, txHash)
+	case dcommon.RedeemTxType:
+		return e.getRedeemRequestData(index, txHash)
+	default:
+		return nil, false, fmt.Errorf("never should happen: %v", zkType)
+	}
+}
+
+func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, txHash string) (bool, error) {
+	switch zkType {
+	case dcommon.TxInEth2:
+		finalizedSlot, ok, err := e.fileStore.GetLatestSlot()
+		if err != nil {
+			logger.Error("get latest slot error: %v", err)
+			return false, err
+		}
+		if !ok {
+			logger.Warn("no find latest slot")
+			return false, nil
+		}
+		receipt, err := e.ethClient.TransactionReceipt(context.Background(), common.HexToHash(txHash))
+		if err != nil {
+			logger.Error("get tx receipt error: %v", err)
+			return false, err
+		}
+		// todo
+		txSlot, err := dcommon.GetSlot(receipt.BlockNumber.Int64())
+		if err != nil {
+			logger.Error("get slot error: %v", err)
+			return false, err
+		}
+		if txSlot <= finalizedSlot {
+			logger.Warn("%v tx slot %v less than finalized slot %v", txHash, txSlot, finalizedSlot)
+			return false, nil
+		}
+		return true, nil
+	case dcommon.BlockHeaderType:
+		latestSlot, ok, err := e.fileStore.GetLatestSlot()
+		if err != nil {
+			logger.Error("get latest slot error: %v", err)
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+		if index < latestSlot {
+			return false, nil
+		}
+		return true, nil
+
+	case dcommon.RedeemTxType:
+		return true, nil
+
+	default:
+		return false, fmt.Errorf("invalid zkType: %v", zkType)
+
+	}
+}
+
+func (e *EthereumAgent) sendZkProofRequest(requests ...*dcommon.ZkProofRequest) error {
+
+	e.proofRequest <- requests
+	for _, req := range requests {
+		logger.Info("send request: %v", req.Id())
+		e.stateCache.StoreZkRequest(req.Id(), req)
+	}
+	return nil
 }
 
 func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status dcommon.ProofStatus) error {

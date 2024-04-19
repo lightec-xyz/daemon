@@ -210,27 +210,35 @@ func WriteUnGenProof(store store.IStore, chain ChainType, txList []string) error
 	}
 	return nil
 }
-func ReadAllUnGenProofIds(store store.IStore) ([]string, error) {
-	var txIds []string
-	iterator := store.Iterator([]byte(UnGenProofPrefix), nil)
+
+// todo
+
+func ReadAllUnGenProofIds(store store.IStore, chainType ChainType) ([]UnGenPreProof, error) {
+	var keys []string
+	queryPrefix := fmt.Sprintf("%s%d", UnGenProofPrefix, chainType)
+	iterator := store.Iterator([]byte(queryPrefix), nil)
 	defer iterator.Release()
 	for iterator.Next() {
-		txIds = append(txIds, getTxId(string(iterator.Key())))
+		keys = append(keys, string(iterator.Key()))
 	}
 	err := iterator.Error()
 	if err != nil {
 		logger.Error("read ungen Proof error:%v", err)
 		return nil, err
 	}
-	for _, txId := range txIds {
-		id, _, err := parseUnGenProofId(txId)
+	var unGenPreProofs []UnGenPreProof
+	for _, key := range keys {
+		id, chain, err := parseUnGenProofId(key)
 		if err != nil {
 			logger.Error("parse ungen Proof error:%v", err)
 			return nil, err
 		}
-		txIds = append(txIds, id)
+		unGenPreProofs = append(unGenPreProofs, UnGenPreProof{
+			ChainType: chain,
+			TxId:      id,
+		})
 	}
-	return txIds, nil
+	return unGenPreProofs, nil
 }
 
 func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) error {

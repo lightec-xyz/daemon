@@ -8,6 +8,8 @@ const (
 	GenesisStateKey = "genesisStateKey"
 )
 
+// todo
+
 type BeaconCache struct {
 	fetchData      *sync.Map
 	genesisProof   *sync.Map

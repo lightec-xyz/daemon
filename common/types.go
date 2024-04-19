@@ -28,7 +28,7 @@ const ZkProofLength = 928
 type ZkProof []byte
 
 type ZkProofRequest struct {
-	Id      string // todo
+	ZkId    string // todo
 	ReqType ZkProofType
 	Data    interface{}
 	Period  uint64
@@ -44,7 +44,7 @@ type ZkProofRequest struct {
 
 func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
-		Id:         NewProofId(reqType, period, txHash), // todo
+		ZkId:       NewProofId(reqType, period, txHash), // todo
 		ReqType:    reqType,
 		Data:       data,
 		Period:     period,
@@ -52,6 +52,10 @@ func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txH
 		Status:     ProofDefault,
 		CreateTime: time.Now(),
 	}
+}
+
+func (zk *ZkProofRequest) Id() string {
+	return zk.ZkId
 }
 
 func (r *ZkProofRequest) String() string {

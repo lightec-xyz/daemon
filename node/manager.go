@@ -98,7 +98,7 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 	m.proofQueue.Remove(element)
 	logger.Info("get proof request:%v %v", request.ReqType.String(), request.Period)
 	request.StartTime = time.Now()
-	m.pendingQueue.Push(request.Id, request)
+	m.pendingQueue.Push(request.ZkId, request)
 	return request, true, nil
 }
 

@@ -8,6 +8,31 @@ import (
 	"testing"
 )
 
+func initStore() store.IStore {
+	dbPath := "testdb"
+	db, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func TestWriteUnGenProof(t *testing.T) {
+	store := initStore()
+	err := WriteUnGenProof(store, Bitcoin, []string{"sdfsdfsdf", "2sdfsdfsd"})
+	assert.Nil(t, err)
+	ids, err := ReadAllUnGenProofIds(store, Bitcoin)
+	assert.Nil(t, err)
+	t.Log(ids)
+	for _, item := range ids {
+		err := DeleteUnGenProof(store, Bitcoin, item.TxId)
+		assert.Nil(t, err)
+	}
+	ids, err = ReadAllUnGenProofIds(store, Bitcoin)
+	assert.Nil(t, err)
+	t.Log(ids)
+}
+
 func TestDb_Mock(t *testing.T) {
 	dbPath := "testdb"
 	file, err := os.Stat(dbPath)

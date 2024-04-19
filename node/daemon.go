@@ -145,7 +145,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg, submitTxEthAddr, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, proofRequest, taskManager)
+	ethAgent, err := NewEthereumAgent(cfg, genesisPeriod, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, proofRequest, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

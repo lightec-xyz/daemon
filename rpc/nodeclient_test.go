@@ -29,8 +29,8 @@ func TestNodeClient_GetTask(t *testing.T) {
 
 func TestNodeClient_SubmitProof(t *testing.T) {
 	result, err := nodeClient.SubmitProof(common.SubmitProof{
-		Data: common.ZkProofResponse{
-			ProofStr: "sdsdfsdf",
+		Data: []*common.ZkProofResponse{
+			{},
 		},
 	})
 	if err != nil {

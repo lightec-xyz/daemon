@@ -51,6 +51,7 @@ const (
 	Outer          = "outer"
 	Tx             = "txes"
 	FinalityUpdate = "finalityUpdate"
+	Redeem         = "redeem"
 )
 
 // todo refactor
@@ -66,6 +67,7 @@ type FileStore struct {
 	finalityDir   string
 	txDir         string
 	bhfUpdateDir  string
+	redeem        string
 	blockHeader   string
 	genesisPeriod uint64
 	genesisSlot   uint64
@@ -171,6 +173,15 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	if !ok {
 		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
+	redeemDir := fmt.Sprintf("%s/%s", dataDir, Redeem)
+	ok, err = dirNotExistsAndCreate(redeemDir)
+	if err != nil {
+		logger.Error("create dir error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("create dir error:%v %v", "redeem", err)
+	}
 	return &FileStore{
 		dataDir:       dataDir,
 		periodDir:     periodDataDir,
@@ -182,10 +193,39 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 		blockHeader:   blockHeaderDir,
 		finalityDir:   finalityUpdateDir,
 		txDir:         txDir,
+		redeem:        redeemDir,
 		recursiveDir:  recursiveDir,
 		genesisPeriod: genesisPeriod,
 		genesisSlot:   genesisSlot,
 	}, nil
+}
+
+func (f *FileStore) StoreRedeemProof(hash string, proof, witness []byte) error {
+	return f.InsertData(Redeem, getRedeemKey(hash), storeProof{
+		Hash:      hash,
+		ProofType: common.RedeemTxType,
+		Proof:     hex.EncodeToString(proof),
+		Witness:   hex.EncodeToString(witness),
+	})
+}
+
+func (f *FileStore) CheckRedeemProof(hash string) (bool, error) {
+	return f.CheckStorageKey(Redeem, getRedeemKey(hash))
+}
+
+func (f *FileStore) GetRedeemProof(hash string) (*StoreProof, bool, error) {
+	exists, err := f.CheckTxProof(hash)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	proof, err := f.GetObj(Redeem, getRedeemKey(hash))
+	if err != nil {
+		return nil, false, err
+	}
+	return proof, true, nil
 }
 
 func (f *FileStore) StoreFinalityUpdate(slot uint64, data interface{}) error {
@@ -236,7 +276,7 @@ func (f *FileStore) GetOuterProof(period uint64) (*StoreProof, bool, error) {
 }
 
 func (f *FileStore) StoreTxProof(hash string, proof, witness []byte) error {
-	return f.InsertData(Tx, hash, storeProof{
+	return f.InsertData(Tx, getTxKey(hash), storeProof{
 		Hash:      hash,
 		ProofType: common.TxInEth2,
 		Proof:     hex.EncodeToString(proof),
@@ -245,7 +285,7 @@ func (f *FileStore) StoreTxProof(hash string, proof, witness []byte) error {
 }
 
 func (f *FileStore) CheckTxProof(hash string) (bool, error) {
-	return f.CheckStorageKey(Tx, hash)
+	return f.CheckStorageKey(Tx, getTxKey(hash))
 }
 
 func (f *FileStore) GetTxProof(hash string) (*StoreProof, bool, error) {
@@ -256,7 +296,7 @@ func (f *FileStore) GetTxProof(hash string) (*StoreProof, bool, error) {
 	if !exists {
 		return nil, false, nil
 	}
-	proof, err := f.GetObj(Tx, hash)
+	proof, err := f.GetObj(Tx, getTxKey(hash))
 	if err != nil {
 		return nil, false, err
 	}
@@ -793,6 +833,15 @@ func (f *FileStore) NeedGenRecProofIndexes() ([]uint64, error) {
 	return recoverFile, nil
 }
 
+func (f *FileStore) getTxKey(key string) (string, error) {
+	index, err := strconv.ParseInt(key, 10, 64)
+	if err != nil {
+		logger.Error("parse index error:%v", err)
+		return "", err
+	}
+	return fmt.Sprintf("%d", index), nil
+}
+
 var numberPattern = regexp.MustCompile(`^\d+$`)
 
 func traverseFile(path string) (map[string]string, error) {
@@ -902,4 +951,12 @@ func dirNotExistsAndCreate(path string) (bool, error) {
 }
 func parseKey(key interface{}) string {
 	return fmt.Sprintf("%v", key)
+}
+
+func getTxKey(hash string) string {
+	return fmt.Sprintf("%s/%s", hash, "tx")
+}
+
+func getRedeemKey(hash string) string {
+	return fmt.Sprintf("%s/%s", hash, "redeem")
 }

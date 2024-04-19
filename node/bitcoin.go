@@ -165,16 +165,6 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Info("success send btc deposit proof request: %v", len(zkProofRequest))
 		}
 
-		//if len(redeemTxes) > 0 {
-		//	// todo
-		//	if b.autoSubmit {
-		//		_, err = b.taskManager.UpdateUtxoRequest(txesToTxIds(redeemTxes), "")
-		//		if err != nil {
-		//			logger.Error("update utxo error: %v %v", index, err)
-		//			return err
-		//		}
-		//	}
-		//}
 	}
 	return nil
 }
