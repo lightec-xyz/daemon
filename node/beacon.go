@@ -160,7 +160,7 @@ func (b *BeaconAgent) tryProofRequest(index uint64, reqType common.ZkProofType) 
 	if !ok {
 		return nil
 	}
-	logger.Debug("beacon check and new Proof request: %v %v", index, reqType.String())
+	//	logger.Debug("beacon check and new Proof request: %v %v", index, reqType.String())
 	proofExists, err := b.CheckProofExists(index, reqType)
 	if err != nil {
 		logger.Error(err.Error())
@@ -377,7 +377,7 @@ func (b *BeaconAgent) CheckState() error {
 		return err
 	}
 	for _, index := range bhfUpdateIndexes {
-		logger.Info("need to update block header finality: %v", index)
+		//logger.Info("need to update block header finality: %v", index)
 		err := b.tryProofRequest(index, common.BlockHeaderFinalityType)
 		if err != nil {
 			logger.Error(err.Error())
@@ -908,7 +908,7 @@ func (b *BeaconAgent) Stop() {
 }
 
 func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
-	logger.Info("get bhf update data: %v", slot)
+	//logger.Debug("get bhf update data: %v", slot)
 	genesisId, ok, err := b.GetSyncCommitRootID(b.genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
@@ -916,7 +916,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	}
 	// todo
 	period := slot / 8192
-	logger.Info("get bhf update data: %v", period)
+	//logger.Debug("get bhf update data: %v", period)
 	recursiveProof, ok, err := b.fileStore.GetRecursiveProof(period)
 	if err != nil {
 		logger.Error("get recursive proof error: %v %v", slot, err)

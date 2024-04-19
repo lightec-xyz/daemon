@@ -227,8 +227,7 @@ func (d *Daemon) Run() error {
 		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
 		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
-		go doTimerTask("beacon-checkFinalityUpdate", d.beaconAgent.checkFinalityUpdateTime,
-			d.beaconAgent.node.CheckBeaconHeaderFinalityProof, d.exitSignal)
+		//go doTimerTask("beacon-checkFinalityUpdate", d.beaconAgent.checkFinalityUpdateTime, d.beaconAgent.node.CheckBeaconHeaderFinalityProof, d.exitSignal)
 
 	}
 
