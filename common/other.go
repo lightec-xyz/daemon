@@ -1,9 +1,6 @@
 package common
 
 import (
-	"context"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/provers/utils"
 	"math/big"
 )
@@ -23,15 +20,11 @@ func GetSlot(blockNumber int64) (uint64, error) {
 	return slotBig.Uint64(), nil
 }
 
-func GetSlotByHash(client *ethereum.Client, hash string) (uint64, error) {
-	txHash := common.HexToHash(hash)
-	receipt, err := client.TransactionReceipt(context.Background(), txHash)
-	if err != nil {
-		return 0, err
+func GetNearTxSlot(slot uint64) uint64 {
+	tmp := slot % 32
+	if tmp == 0 {
+		return slot
 	}
-	slot, err := GetSlot(receipt.BlockNumber.Int64())
-	if err != nil {
-		return 0, err
-	}
-	return slot, nil
+	c := slot - tmp
+	return c + 32
 }

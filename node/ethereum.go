@@ -452,7 +452,7 @@ func (e *EthereumAgent) CheckState() error {
 			}
 		}
 		// todo
-		slot, err := dcommon.GetSlotByHash(e.ethClient, txHash)
+		slot, err := e.GetSlotByHash(txHash)
 		if err != nil {
 			logger.Error("get slot error: %v", err)
 			return err
@@ -531,7 +531,8 @@ func (e *EthereumAgent) getTxInEth2Data(txHash string) (*ethblock.TxInEth2ProofD
 
 func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (interface{}, bool, error) {
 	// todo
-	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, index+35)
+	finalitySlot := dcommon.GetNearTxSlot(index)
+	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, finalitySlot)
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
@@ -558,7 +559,8 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (inter
 		logger.Debug("proof request data not prepared: %v", index)
 		return nil, false, nil
 	}
-	bhfUpdateProof, ok, err := e.fileStore.GetBhfUpdateProof(index)
+	finalitySlot := dcommon.GetNearTxSlot(index)
+	bhfUpdateProof, ok, err := e.fileStore.GetBhfUpdateProof(finalitySlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
 		return nil, false, err
@@ -572,17 +574,18 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (inter
 		logger.Error("get genesis root error: %v", err)
 		return nil, false, err
 	}
-	beginID, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
+	beginID, err := e.getBlockHeaderRoot(index)
 	if err != nil {
 		logger.Error("get begin id error: %v", err)
 		return nil, false, err
 	}
-	endId, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
+	endId, err := e.getBlockHeaderRoot(finalitySlot)
 	if err != nil {
 		logger.Error("get end id error: %v", err)
 		return nil, false, err
 	}
-	currentRoot, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
+	period := index / 8192
+	currentRoot, ok, err := e.GetSyncCommitRootID(period)
 	if err != nil {
 		logger.Error("get current root error: %v", err)
 		return nil, false, err
@@ -609,6 +612,21 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (inter
 	}
 	return &redeemRequest, true, nil
 
+}
+
+// todo
+
+func (e *EthereumAgent) GetSlotByHash(hash string) (uint64, error) {
+	txHash := common.HexToHash(hash)
+	receipt, err := e.ethClient.TransactionReceipt(context.Background(), txHash)
+	if err != nil {
+		return 0, err
+	}
+	slot, err := dcommon.GetSlot(receipt.BlockNumber.Int64())
+	if err != nil {
+		return 0, err
+	}
+	return slot, nil
 }
 
 func (e *EthereumAgent) getRequestProofData(zkType dcommon.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
@@ -661,7 +679,7 @@ func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, t
 		if !ok {
 			return false, nil
 		}
-		if index < latestSlot {
+		if index > latestSlot {
 			return false, nil
 		}
 		return true, nil
@@ -673,6 +691,25 @@ func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, t
 		return false, fmt.Errorf("invalid zkType: %v", zkType)
 
 	}
+}
+
+func (e *EthereumAgent) getBlockHeaderRoot(slot uint64) ([]byte, error) {
+	response, err := e.beaconClient.BeaconHeaderBySlot(slot)
+	if err != nil {
+		logger.Error("get block header root error: %v", err)
+		return nil, err
+	}
+	consensus, err := response.Data.Header.Message.ToConsensus()
+	if err != nil {
+		logger.Error("to consensus error: %v", err)
+		return nil, err
+	}
+	treeRoot, err := consensus.HashTreeRoot()
+	if err != nil {
+		logger.Error("hash tree root error: %v", err)
+		return nil, err
+	}
+	return treeRoot[0:], nil
 }
 
 func (e *EthereumAgent) sendZkProofRequest(requests ...*dcommon.ZkProofRequest) error {

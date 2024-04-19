@@ -1,8 +1,6 @@
 package common
 
 import (
-	"container/list"
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -21,11 +19,8 @@ func TestDemo001(t *testing.T) {
 }
 
 func TestDemo(t *testing.T) {
-	myList := list.New()
-	myList.PushBack("Hello")
-	myList.PushBack("Go")
-	myList.PushBack("World")
-	for element := myList.Front(); element != nil; element = element.Next() {
-		fmt.Println(element.Value)
-	}
+	t.Log(GetNearTxSlot(63))
+	t.Log(GetNearTxSlot(64))
+	t.Log(GetNearTxSlot(65))
+
 }
