@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prysmaticlabs/prysm/v5/container/slice"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -114,22 +115,20 @@ func (c *Client) GetLightClientUpdates(start uint64, count uint64) ([]structs.Li
 	return updates, nil
 }
 
-func (c *Client) BeaconHeaderBySlot(slot uint64) (*structs.GetBlockHeadersResponse, error) {
-	result := &structs.GetBlockHeadersResponse{}
-	param := Param{}
-	param.Add("slot", fmt.Sprintf("%v", slot))
-	err := c.get("/eth/v1/beacon/headers", param, result)
+func (c *Client) BeaconHeaderBySlot(slot uint64) (*structs.GetBlockHeaderResponse, error) {
+	result := &structs.GetBlockHeaderResponse{}
+	path := fmt.Sprintf("/eth/v1/beacon/headers/%v", slot)
+	err := c.get(path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (c *Client) BeaconHeaderByRoot(root string) (*structs.GetBlockHeadersResponse, error) {
-	result := &structs.GetBlockHeadersResponse{}
-	param := Param{}
-	param.Add("parent_root", root)
-	err := c.get("/eth/v1/beacon/headers", param, result)
+func (c *Client) BeaconHeaderByRoot(root string) (*structs.GetBlockHeaderResponse, error) {
+	result := &structs.GetBlockHeaderResponse{}
+	path := fmt.Sprintf("/eth/v1/beacon/headers/%v", root)
+	err := c.get(path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -147,24 +146,42 @@ func (c *Client) GetFinalityUpdate() (*structs.LightClientUpdateWithVersion, err
 
 func (c *Client) RetrieveBeaconHeaders(start, end uint64) ([]*structs.BeaconBlockHeader, error) {
 	// todo
-	var result []*structs.BeaconBlockHeader
-	for index := end; index > 0; index-- {
-		blockHeadersResponse, err := c.BeaconHeaderBySlot(index)
+	headers := make([]*structs.BeaconBlockHeader, 0)
+	response, err := c.BeaconHeaderBySlot(end)
+	if err != nil {
+		return nil, err
+	}
+	header := response.Data.Header.Message
+	headers = append(headers, header)
+	slot, ok := big.NewInt(0).SetString(header.Slot, 10)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse slot")
+	}
+	if slot.Int64() == int64(start) {
+		return headers, nil
+	}
+	found := false
+	for i := end; i > start; {
+		response, err = c.BeaconHeaderByRoot(header.ParentRoot)
 		if err != nil {
-			if strings.Contains(err.Error(), "No blocks found") {
-				continue
-			}
 			return nil, err
 		}
-		if len(blockHeadersResponse.Data) == 0 {
-			continue
+		header = response.Data.Header.Message
+		slot, ok = big.NewInt(0).SetString(header.Slot, 10)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse slot")
 		}
-		result = append(result, blockHeadersResponse.Data[0].Header.Message)
-		if len(result) == 32 {
-			return result, nil
+		headers = append(headers, header)
+		i = slot.Uint64()
+		if i == start {
+			found = true
 		}
 	}
-	return result, nil
+	if found {
+		return slice.Reverse(headers), nil
+	}
+	return nil, fmt.Errorf("failed to %v headers", start)
+
 }
 
 func (c *Client) get(path string, param Param, value interface{}, headers ...Header) error {

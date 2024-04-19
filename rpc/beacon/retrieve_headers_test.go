@@ -113,7 +113,7 @@ func RetrieveBeaconHeaders(ctx context.Context, uri string, start, end int) ([]s
 		if err != nil {
 			return nil, err
 		}
-
+		fmt.Println(header.ParentRoot)
 		slot, ok = big.NewInt(0).SetString(header.Slot, 10)
 		if !ok {
 			return nil, fmt.Errorf("failed to parse slot")
@@ -129,6 +129,15 @@ func RetrieveBeaconHeaders(ctx context.Context, uri string, start, end int) ([]s
 		return slice.Reverse(headers), nil
 	}
 	return nil, fmt.Errorf("failed to %v headers", start)
+}
+
+func TestDemo(t *testing.T) {
+	ctx := context.Background()
+	headers, err := RetrieveBeaconHeaders(ctx, "http://127.0.0.1:9870", 1467484, 1467584)
+	if err != nil {
+		t.Errorf("failed to retrieve headers: %v", err)
+	}
+	t.Log(headers)
 }
 
 func TestRetrieveBeaconHeaders(t *testing.T) {

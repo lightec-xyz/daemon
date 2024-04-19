@@ -60,8 +60,9 @@ func TestClient_RetrieveBeaconHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log(latestSlot)
 	latestSlot = latestSlot - 1
-	headers, err := client.RetrieveBeaconHeaders(latestSlot-100, latestSlot)
+	headers, err := client.RetrieveBeaconHeaders(latestSlot-2000, latestSlot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,4 +84,18 @@ func TestClient_GetFinalityUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(update.Data)
+}
+
+func TestClient_GetBeaconHeaders(t *testing.T) {
+	result, err := client.BeaconHeaderBySlot(9192)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(result)
+	headers, err := client.GetBeaconHeaders(9192)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(headers)
+
 }

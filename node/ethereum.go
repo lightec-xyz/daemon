@@ -187,16 +187,6 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *EthereumAgent) getBlockHeaderProveRequest(index uint64) (*dcommon.ZkProofRequest, error) {
-	// todo
-	logger.Debug("get block header prove request: %v", index)
-	zkProofRequest := dcommon.ZkProofRequest{
-		ReqType: dcommon.BlockHeaderFinalityType,
-		Period:  index,
-	}
-	return &zkProofRequest, nil
-}
-
 func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
 	logger.Info(" ethereumAgent receive proof response: %v %v %v %x", resp.ZkProofType.String(),
 		resp.Period, resp.TxHash, resp.Proof)
@@ -519,6 +509,15 @@ func (e *EthereumAgent) tryProofRequest(zkType dcommon.ZkProofType, index uint64
 		logger.Debug("proof request exists: %v", proofId)
 		return nil
 	}
+	exists, err := CheckProof(e.fileStore, zkType, index, txHash)
+	if err != nil {
+		logger.Error("check proof error: %v", err)
+		return err
+	}
+	if exists {
+		logger.Error("proof exists: %v", proofId)
+		return nil
+	}
 	match, err := e.checkRequest(zkType, index, txHash)
 	if err != nil {
 		logger.Error("check request error: %v", err)
@@ -528,15 +527,7 @@ func (e *EthereumAgent) tryProofRequest(zkType dcommon.ZkProofType, index uint64
 		logger.Debug("proof request not match: %v", proofId)
 		return nil
 	}
-	exists, err = CheckProof(e.fileStore, zkType, index, txHash)
-	if err != nil {
-		logger.Error("check proof error: %v", err)
-		return err
-	}
-	if exists {
-		logger.Error("proof exists: %v", proofId)
-		return nil
-	}
+
 	data, ok, err := e.getRequestProofData(zkType, index, txHash)
 	if err != nil {
 		logger.Error("get request proof data error: %v", err)
@@ -634,77 +625,6 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (inter
 		ReceiptVar:       receiptVar,
 	}
 	return &redeemRequest, true, nil
-
-}
-
-func (e *EthereumAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
-	var currentPeriodUpdate structs.LightClientUpdateWithVersion
-	exists, err := e.fileStore.GetUpdate(period, &currentPeriodUpdate)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !exists {
-		logger.Warn("no find %v period update Data, send new update request", period)
-		return nil, false, nil
-	}
-	// todo
-	var update utils.LightClientUpdateInfo
-	err = ParseObj(currentPeriodUpdate, &update)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if e.genesisPeriod == period {
-		var genesisData structs.LightClientBootstrapResponse
-		genesisExists, err := e.fileStore.GetBootstrap(&genesisData)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
-		if !genesisExists {
-			logger.Warn("no find genesis update Data, send new update request")
-			return nil, false, nil
-		}
-		// todo
-		var genesisCommittee utils.SyncCommittee
-		err = ParseObj(genesisData.Data.CurrentSyncCommittee, &genesisCommittee)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
-		update.CurrentSyncCommittee = &genesisCommittee
-	} else {
-		prePeriod := period - 1
-		if prePeriod < e.genesisPeriod {
-			logger.Error("should never happen: %v", prePeriod)
-			return nil, false, nil
-		}
-		var preUpdateData structs.LightClientUpdateWithVersion
-		preUpdateExists, err := e.fileStore.GetUpdate(prePeriod, &preUpdateData)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
-		if !preUpdateExists {
-			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
-			return nil, false, nil
-		}
-		// todo
-		var currentSyncCommittee utils.SyncCommittee
-		err = ParseObj(preUpdateData.Data.NextSyncCommittee, &currentSyncCommittee)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
-		update.CurrentSyncCommittee = &currentSyncCommittee
-	}
-	rootId, err := circuits.SyncCommitRoot(&update)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	return rootId, true, nil
 
 }
 
@@ -839,4 +759,76 @@ func NewRedeemEthTx(txHash string, btcTxId string, inputs []Utxo, outputs []TxOu
 		TxType:    RedeemTx,
 		BtcTxId:   btcTxId,
 	}
+}
+
+// todo
+func (e *EthereumAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
+	var currentPeriodUpdate structs.LightClientUpdateWithVersion
+	exists, err := e.fileStore.GetUpdate(period, &currentPeriodUpdate)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find %v period update Data, send new update request", period)
+		return nil, false, nil
+	}
+	// todo
+	var update utils.LightClientUpdateInfo
+	err = ParseObj(currentPeriodUpdate, &update)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if e.genesisPeriod == period {
+		var genesisData structs.LightClientBootstrapResponse
+		genesisExists, err := e.fileStore.GetBootstrap(&genesisData)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		if !genesisExists {
+			logger.Warn("no find genesis update Data, send new update request")
+			return nil, false, nil
+		}
+		// todo
+		var genesisCommittee utils.SyncCommittee
+		err = ParseObj(genesisData.Data.CurrentSyncCommittee, &genesisCommittee)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		update.CurrentSyncCommittee = &genesisCommittee
+	} else {
+		prePeriod := period - 1
+		if prePeriod < e.genesisPeriod {
+			logger.Error("should never happen: %v", prePeriod)
+			return nil, false, nil
+		}
+		var preUpdateData structs.LightClientUpdateWithVersion
+		preUpdateExists, err := e.fileStore.GetUpdate(prePeriod, &preUpdateData)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		if !preUpdateExists {
+			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
+			return nil, false, nil
+		}
+		// todo
+		var currentSyncCommittee utils.SyncCommittee
+		err = ParseObj(preUpdateData.Data.NextSyncCommittee, &currentSyncCommittee)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		update.CurrentSyncCommittee = &currentSyncCommittee
+	}
+	rootId, err := circuits.SyncCommitRoot(&update)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	return rootId, true, nil
+
 }
