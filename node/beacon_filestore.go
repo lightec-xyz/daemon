@@ -718,6 +718,8 @@ func (f *FileStore) generateStoreKey(table, key string) (string, error) {
 		return fmt.Sprintf("%s/%s", f.updateDir, key), nil
 	case UnitDir:
 		return fmt.Sprintf("%s/%s", f.unitDir, key), nil
+	case Outer:
+		return fmt.Sprintf("%s/%s", f.outerDir, key), nil
 	case RecursiveDir:
 		return fmt.Sprintf("%s/%s", f.recursiveDir, key), nil
 	case Tx:
