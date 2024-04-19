@@ -69,15 +69,21 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth
 
 func (w *LocalWorker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
 	logger.Debug("local worker block header prove %v", req.BeginSlot)
-
-	var header proverType.BeaconHeaderChain
-	err := common.ParseObj(req, &header)
+	var middleHeader []*proverType.BeaconHeader
+	err := common.ParseObj(req.Headers, &middleHeader)
 	if err != nil {
 		logger.Error("deep copy error %v", err)
 		return nil, err
 	}
-	logger.Debug("len: %v", len(header.MiddleBeaconHeaders))
-	proof, err := w.circuit.BeaconHeaderProve(header)
+	headers := proverType.BeaconHeaderChain{
+		BeginSlot:           req.BeginSlot,
+		EndSlot:             req.EndSlot,
+		BeginRoot:           req.BeginRoot,
+		EndRoot:             req.EndRoot,
+		MiddleBeaconHeaders: middleHeader,
+	}
+	logger.Debug("len: %v", len(headers.MiddleBeaconHeaders))
+	proof, err := w.circuit.BeaconHeaderProve(headers)
 	if err != nil {
 		logger.Error("BlockHeaderProve error: %v", err)
 		return nil, err
