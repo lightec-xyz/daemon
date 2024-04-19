@@ -422,80 +422,53 @@ func (e *EthereumAgent) CheckState() error {
 		logger.Error("read all ungen proof ids error: %v", err)
 		return err
 	}
-
-	// todo
-	finalizedSlot, ok, err := e.fileStore.GetLatestSlot()
-	if err != nil {
-		logger.Error("get latest slot error: %v", err)
-		return err
-	}
-	if !ok {
-		logger.Warn("no find latest slot")
-		return nil
-	}
-
 	for _, unGenProof := range unGenProofs {
-		exists, err := e.fileStore.CheckTxProof(unGenProof.TxId)
+		txHash := unGenProof.TxId
+		exists, err := e.fileStore.CheckRedeemProof(txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
 			return err
 		}
 		if !exists {
 			// todo
-			err := DeleteUnGenProof(e.store, Ethereum, unGenProof.TxId)
+			err := DeleteUnGenProof(e.store, Ethereum, txHash)
 			if err != nil {
 				logger.Error("delete ungen proof error: %v", err)
 				return err
 			}
-			logger.Debug("delete ungen proof tx: %v", unGenProof.TxId)
+			logger.Debug("delete ungen proof tx: %v", txHash)
 			continue
 		}
-		receipt, err := e.ethClient.TransactionReceipt(context.Background(), common.HexToHash(unGenProof.TxId))
+		exists, err = e.fileStore.CheckTxProof(txHash)
 		if err != nil {
-			logger.Error("get tx receipt error: %v", err)
+			logger.Error("check tx proof error: %v", err)
 			return err
 		}
+		if !exists {
+			err := e.tryProofRequest(dcommon.TxInEth2, 0, txHash)
+			if err != nil {
+				logger.Error("try proof request error: %v", err)
+				return err
+			}
+		}
 		// todo
-		txSlot, err := dcommon.GetSlot(receipt.BlockNumber.Int64())
+		slot, err := dcommon.GetSlotByHash(e.ethClient, txHash)
 		if err != nil {
 			logger.Error("get slot error: %v", err)
 			return err
 		}
-		if txSlot <= finalizedSlot {
-			logger.Warn("%v tx slot %v less than finalized slot %v", unGenProof.TxId, txSlot, finalizedSlot)
-			continue
-		}
-
-		// todo
-		txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, unGenProof.TxId)
-		if err != nil {
-			logger.Error("get tx data error: %v", err)
-			return err
-		}
-		request := dcommon.NewZkProofRequest(dcommon.TxInEth2, txData, 0, unGenProof.TxId)
-		e.proofRequest <- []*dcommon.ZkProofRequest{
-			request,
-		}
-
-		exists, err = e.fileStore.CheckBlockHeaderProof(txSlot)
+		exists, err = e.fileStore.CheckBlockHeaderProof(slot)
 		if err != nil {
 			logger.Error("check block header proof error: %v", err)
 			return err
 		}
-		if exists {
-			continue
+		if !exists {
+			err := e.tryProofRequest(dcommon.BlockHeaderType, slot, txHash)
+			if err != nil {
+				logger.Error("try proof request error: %v", err)
+				return err
+			}
 		}
-		// beaconHeader
-		headers, err := e.beaconClient.RetrieveBeaconHeaders(txSlot, finalizedSlot)
-		if err != nil {
-			logger.Error("")
-			return err
-		}
-		blockHeaderProofRequest := dcommon.NewZkProofRequest(dcommon.BlockHeaderType, headers, 0, unGenProof.TxId)
-		e.proofRequest <- []*dcommon.ZkProofRequest{
-			blockHeaderProofRequest,
-		}
-
 	}
 
 	return nil
@@ -554,6 +527,16 @@ func (e *EthereumAgent) getTxInEth2Data(txHash string) (*ethblock.TxInEth2ProofD
 		return nil, false, err
 	}
 	return txData, true, nil
+}
+
+func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (interface{}, bool, error) {
+	// todo
+	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, index+35)
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	return beaconBlockHeaders, true, nil
 }
 
 func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (interface{}, bool, error) {
@@ -628,21 +611,12 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (inter
 
 }
 
-func (e *EthereumAgent) getBlockHeaderRequestData(zkType dcommon.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
-	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, index+32)
-	if err != nil {
-		logger.Error("get beacon block headers error: %v", err)
-		return nil, false, err
-	}
-	return beaconBlockHeaders, true, nil
-}
-
 func (e *EthereumAgent) getRequestProofData(zkType dcommon.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
 	switch zkType {
 	case dcommon.TxInEth2:
 		return e.getTxInEth2Data(txHash)
 	case dcommon.BlockHeaderType:
-		return e.getBlockHeaderRequestData(zkType, index, txHash)
+		return e.getBlockHeaderRequestData(index)
 	case dcommon.RedeemTxType:
 		return e.getRedeemRequestData(index, txHash)
 	default:
