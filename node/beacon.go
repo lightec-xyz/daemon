@@ -963,6 +963,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
+	finalUpdate.Version = currentFinalityUpdate.Version
 	var currentSyncCommittee proverType.SyncCommittee
 	err = common.ParseObj(currentSyncCommitUpdate.CurrentSyncCommittee, &currentSyncCommittee)
 	if err != nil {
