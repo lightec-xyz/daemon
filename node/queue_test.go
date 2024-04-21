@@ -1,6 +1,9 @@
 package node
 
-import "testing"
+import (
+	"github.com/lightec-xyz/daemon/common"
+	"testing"
+)
 
 func TestQueue(t *testing.T) {
 
@@ -17,5 +20,23 @@ func TestQueue(t *testing.T) {
 		t.Log(front.Value)
 		//queue.Remove(front)
 	}
+}
 
+func TestArrayQueue(t *testing.T) {
+	arrayQueue := NewArrayQueue()
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 10})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 5})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 1})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 8})
+
+	request, ok := arrayQueue.Pop()
+	if !ok {
+		t.Fatal(err)
+	}
+	t.Logf("pop result: %v \n", request.Weight)
+	arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
+		t.Log(value.Weight)
+		return nil
+	})
 }

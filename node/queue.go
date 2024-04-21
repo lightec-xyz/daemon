@@ -4,8 +4,11 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"sort"
 	"sync"
 )
+
+//Todo abstract queue
 
 type Queue struct {
 	list     *list.List
@@ -81,7 +84,7 @@ func (sl *Queue) Iterator(fn func(value *list.Element) error) {
 	}
 }
 
-// PendingQueue Todo abstract it
+// PendingQueue
 type PendingQueue struct {
 	list *sync.Map
 }
@@ -124,6 +127,57 @@ func (q *PendingQueue) Iterator(fn func(value *common.ZkProofRequest) error) {
 		}
 		return true
 	})
+}
+
+type ArrayQueue struct {
+	list []*common.ZkProofRequest
+	lock sync.Mutex
+}
+
+func NewArrayQueue() *ArrayQueue {
+	return &ArrayQueue{
+		list: make([]*common.ZkProofRequest, 0),
+	}
+}
+
+func (aq *ArrayQueue) Push(value *common.ZkProofRequest) {
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	aq.list = append(aq.list, value)
+}
+func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	if len(aq.list) == 0 {
+		return nil, false
+	}
+	aq.sortList()
+	value := aq.list[0]
+	aq.list = aq.list[1:]
+	return value, true
+}
+
+func (aq *ArrayQueue) sortList() {
+	sort.Slice(aq.list, func(i, j int) bool {
+		return aq.list[i].Weight > aq.list[j].Weight
+	})
+}
+
+func (aq *ArrayQueue) Iterator(fn func(index int, value *common.ZkProofRequest) error) {
+	// todo
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	for index, value := range aq.list {
+		err := fn(index, value)
+		if err != nil {
+			return
+		}
+	}
+}
+func (aq *ArrayQueue) Len() int {
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	return len(aq.list)
 }
 
 // SubmitQueue todo
