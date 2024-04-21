@@ -110,17 +110,17 @@ func (w *LocalWorker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityReque
 	proof, err := w.circuit.BeaconHeaderFinalityUpdateProve(req.GenesisSCSSZRoot, req.RecursiveProof, req.RecursiveWitness,
 		req.OuterProof, req.OuterWitness, req.FinalityUpdate, req.ScUpdate)
 	if err != nil {
-		logger.Error("BlockHeaderProve error: %v", err)
+		logger.Error("BeaconHeaderFinalityUpdateProve error: %v", err)
 		return nil, err
 	}
 	proofToBytes, err := circuits.ProofToBytes(proof.Proof)
 	if err != nil {
-		logger.Error("BlockHeaderProve error: %v", err)
+		logger.Error("BeaconHeaderFinalityUpdateProve error: %v", err)
 		return nil, err
 	}
 	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
 	if err != nil {
-		logger.Error("BlockHeaderProve error: %v", err)
+		logger.Error("BeaconHeaderFinalityUpdateProve error: %v", err)
 		return nil, err
 	}
 	return &rpc.BlockHeaderFinalityResponse{
