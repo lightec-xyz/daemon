@@ -958,33 +958,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	}
 	finalUpdate.Version = currentFinalityUpdate.Version
 
-	var preFinalityUpdate structs.LightClientUpdateWithVersion
-	exists, err = b.fileStore.GetFinalityUpdate(slot-32, &preFinalityUpdate)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	if !exists {
-		logger.Warn("no find pre finality update: %v", slot-32)
-		return nil, false, nil
-	}
-
-	var cur proverType.SyncCommittee
-	err = common.ParseObj(preFinalityUpdate.Data.NextSyncCommittee, &cur)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-	finalUpdate.CurrentSyncCommittee = &cur
-
 	currentSyncCommitUpdate, ok, err := b.GetUnitData(period)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, false, err
-	}
-
-	var currentSyncCommittee proverType.SyncCommittee
-	err = common.ParseObj(currentSyncCommitUpdate.CurrentSyncCommittee, &currentSyncCommittee)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
