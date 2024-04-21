@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -761,6 +762,9 @@ func (f *FileStore) NeedGenBhfUpdateIndex() ([]uint64, error) {
 			recoverFile = append(recoverFile, uint64(index))
 		}
 	}
+	sort.Slice(recoverFile, func(i, j int) bool {
+		return recoverFile[i] < recoverFile[j]
+	})
 	return recoverFile, nil
 
 }

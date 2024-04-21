@@ -914,6 +914,11 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
+	if !ok {
+		logger.Warn("get %v period genesis commitId no find", b.genesisPeriod)
+		return nil, false, nil
+	}
+
 	// todo
 	period := slot / 8192
 	//logger.Debug("get bhf update data: %v", period)
