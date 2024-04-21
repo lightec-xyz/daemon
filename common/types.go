@@ -36,7 +36,7 @@ type ZkProofRequest struct {
 	TxHash  string
 
 	Status     ProofStatus
-	Weight     int // todo
+	Weight     ProofWeight // todo
 	CreateTime time.Time
 	StartTime  time.Time
 	EndTime    time.Time
@@ -49,6 +49,7 @@ func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txH
 		Data:       data,
 		Period:     period,
 		TxHash:     txHash,
+		Weight:     reqType.Weight(),
 		Status:     ProofDefault,
 		CreateTime: time.Now(),
 	}

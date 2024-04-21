@@ -42,6 +42,16 @@ const (
 	Cluster Mode = "cluster"
 )
 
+type ProofWeight int
+
+const (
+	WeightDefault ProofWeight = iota
+	WeightLow
+	WeightMedium
+	WeightHigh
+	Highest
+)
+
 type ZkProofType int
 
 const (
@@ -57,8 +67,8 @@ const (
 	BlockHeaderType
 )
 
-func (zkpr *ZkProofType) String() string {
-	switch *zkpr {
+func (zkpt *ZkProofType) String() string {
+	switch *zkpt {
 	case DepositTxType:
 		return "DepositTxType"
 	case RedeemTxType:
@@ -81,5 +91,17 @@ func (zkpr *ZkProofType) String() string {
 		return "BlockHeaderType"
 	default:
 		return ""
+	}
+}
+
+func (zkpt *ZkProofType) Weight() ProofWeight {
+	// todo
+	switch *zkpt {
+	case BlockHeaderFinalityType | SyncComGenesisType:
+		return Highest
+	case SyncComUnitType | SyncComRecursiveType:
+		return WeightHigh
+	default:
+		return WeightDefault
 	}
 }
