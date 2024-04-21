@@ -937,7 +937,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		return nil, false, nil
 	}
 	var currentFinalityUpdate structs.LightClientUpdateWithVersion
-	exists, err := b.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate.Data)
+	exists, err := b.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
 	if err != nil {
 		logger.Error("get finality update error: %v %v", slot, err)
 		return nil, false, err
@@ -953,7 +953,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	}
 
 	var finalUpdate proverType.FinalityUpdate
-	err = common.ParseObj(finalUpdate, &currentFinalityUpdate)
+	err = common.ParseObj(currentFinalityUpdate.Data, &finalUpdate)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err

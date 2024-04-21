@@ -114,6 +114,7 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	return nil
 }
 
+// todo
 func (m *manager) DistributeRequest() error {
 	if m.proofQueue.Len() == 0 {
 		time.Sleep(2 * time.Second)
