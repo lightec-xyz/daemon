@@ -756,7 +756,7 @@ func (f *FileStore) NeedGenBhfUpdateIndex() ([]uint64, error) {
 				logger.Error("parse index error:%v", err)
 				return nil, err
 			}
-			if uint64(index) < f.genesisSlot {
+			if uint64(index) < (f.genesisPeriod+2)*8192 {
 				continue
 			}
 			recoverFile = append(recoverFile, uint64(index))
