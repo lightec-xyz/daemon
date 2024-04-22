@@ -209,7 +209,7 @@ func (b *BeaconAgent) checkRequest(index uint64, reqType common.ZkProofType) (bo
 	case common.SyncComRecursiveType:
 		return index >= b.genesisPeriod+2, nil
 	case common.BlockHeaderFinalityType:
-		return index%32 == 0, nil
+		return index >= b.genesisSlot, nil
 	default:
 		return false, fmt.Errorf("check request status never should happen: %v %v", index, reqType)
 	}
@@ -908,7 +908,7 @@ func (b *BeaconAgent) Stop() {
 }
 
 func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
-	//logger.Debug("get bhf update data: %v", slot)
+	logger.Debug("get bhf update data: %v", slot)
 	genesisId, ok, err := b.GetSyncCommitRootID(b.genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
@@ -920,7 +920,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	}
 	// todo
 	period := slot / 8192
-	//logger.Debug("get bhf update data: %v", period)
+	logger.Debug("get bhf update data: %v", period)
 	recursiveProof, ok, err := b.fileStore.GetRecursiveProof(period)
 	if err != nil {
 		logger.Error("get recursive proof error: %v %v", period, err)
@@ -962,6 +962,10 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
+	}
+	if !ok {
+		logger.Error("no find sync committee update: %v", period)
+		return nil, false, nil
 	}
 
 	var scUpdate proverType.SyncCommitteeUpdate

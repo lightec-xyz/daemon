@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -345,6 +346,11 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		if err != nil {
 			return nil, fmt.Errorf("not block header finality Proof param")
 		}
+		reqBytes, err := json.Marshal(finalityRequest)
+		if err != nil {
+			return nil, fmt.Errorf("not block header finality Proof param")
+		}
+		fmt.Println(string(reqBytes))
 		response, err := worker.BlockHeaderFinalityProve(&finalityRequest)
 		if err != nil {
 			logger.Error("gen block header finality Proof error:%v", err)
