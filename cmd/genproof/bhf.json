@@ -1,0 +1,21 @@
+{
+  "genesis_sc_root": "",
+  "recursive_proof": "",
+  "recursive_witness": "",
+  "outer_proof": "",
+  "outer_witness": "",
+  "finality_update": {
+    "version": "",
+    "attested_header": null,
+    "finalized_header": null,
+    "finality_branch": null,
+    "sync_aggregate": null,
+    "signature_slot": ""
+  },
+  "sc_update": {
+    "version": "",
+    "attested_header": null,
+    "sync_aggregate": null,
+    "signature_slot": ""
+  }
+}
