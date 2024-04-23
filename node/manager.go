@@ -136,6 +136,7 @@ func (m *manager) DistributeRequest() error {
 			for {
 				if count >= 1 {
 					// todo
+					logger.Error("gen Proof error:%v %v %v", req.ReqType.String(), req.Index, count)
 					//m.proofQueue.Push(request)
 					return
 				}
