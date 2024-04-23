@@ -132,19 +132,25 @@ func (m *manager) DistributeRequest() error {
 		worker.AddReqNum()
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
 			logger.Debug("worker %v start generate Proof type: %v Index: %v", worker.Id(), req.ReqType.String(), req.Index)
-			zkProofResponse, err := WorkerGenProof(worker, req)
-			if err != nil {
-				logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.ReqType.String(), req.Index, err)
-				//  take fail request to queue again
-				m.proofQueue.Push(request)
-				logger.Info("add Proof request type: %v ,Index: %v to queue again", req.ReqType.String(), req.Index)
-				return
+			count := 0
+			for {
+				if count >= 1 {
+					// todo
+					//m.proofQueue.Push(request)
+					return
+				}
+				count++
+				zkProofResponse, err := WorkerGenProof(worker, req)
+				if err != nil {
+					logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.ReqType.String(), req.Index, err)
+					continue
+				}
+				logger.Debug("complete generate Proof type: %v Index: %v", req.ReqType.String(), req.Index)
+				for _, item := range zkProofResponse {
+					chaResp <- item
+				}
 			}
-			logger.Debug("complete generate Proof type: %v Index: %v", req.ReqType.String(), req.Index)
-			// todo
-			for _, item := range zkProofResponse {
-				chaResp <- item
-			}
+
 		}(request, chanResponse)
 		return nil
 	})
