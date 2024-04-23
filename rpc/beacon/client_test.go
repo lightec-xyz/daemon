@@ -40,7 +40,7 @@ func TestClient(t *testing.T) {
 }
 
 func TestClient_Bootstrap(t *testing.T) {
-	bootstrap, err := client.Bootstrap(177 * 8192)
+	bootstrap, err := client.Bootstrap(178 * 8192)
 	if err != nil {
 		t.Fatal(err)
 	}

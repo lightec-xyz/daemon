@@ -756,7 +756,7 @@ func (f *FileStore) NeedGenBhfUpdateIndex() ([]uint64, error) {
 				logger.Error("parse index error:%v", err)
 				return nil, err
 			}
-			if uint64(index) < (f.genesisPeriod+2)*8192 {
+			if uint64(index) < (f.genesisPeriod+3)*8192 {
 				continue
 			}
 			recoverFile = append(recoverFile, uint64(index))
@@ -834,7 +834,7 @@ func (f *FileStore) NeedGenRecProofIndexes() ([]uint64, error) {
 		return nil, err
 	}
 	var recoverFile []uint64
-	for index := f.genesisPeriod; index <= latestPeriod; index++ {
+	for index := f.genesisPeriod + 3; index <= latestPeriod; index++ {
 		if _, ok := files[fmt.Sprintf("%d", index)]; !ok {
 			recoverFile = append(recoverFile, index)
 		}
