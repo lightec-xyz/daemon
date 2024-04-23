@@ -21,20 +21,25 @@ var bhfCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  `./genproof bhf --paramFile <paramFile> --datadir <datadir>`,
 	Run: func(cmd *cobra.Command, args []string) {
-		data, err := os.ReadFile(paramFile)
+		paramPath, err := cmd.Flags().GetString("paramPath")
 		if err != nil {
-			fmt.Printf("read config error: %v %v \n", paramFile, err)
+			fmt.Printf("get paramPath error: %v \n", err)
+			return
+		}
+		data, err := os.ReadFile(paramPath)
+		if err != nil {
+			fmt.Printf("read config error: %v %v \n", paramPath, err)
 			return
 		}
 		var param BhfParam
 		err = json.Unmarshal(data, &param)
 		if err != nil {
-			fmt.Printf("unmarshal config error: %v %v \n", paramFile, err)
+			fmt.Printf("unmarshal config error: %v %v \n", paramPath, err)
 			return
 		}
 		proof, err := BhfProve(param, datadir)
 		if err != nil {
-			fmt.Printf("gen proof error: %v %v \n", paramFile, err)
+			fmt.Printf("gen proof error: %v %v \n", paramPath, err)
 			return
 		}
 		fmt.Printf("success generate bhf proof: %v \n", proof)
@@ -43,6 +48,7 @@ var bhfCmd = &cobra.Command{
 }
 
 func init() {
+	bhfCmd.Flags().String("paramPath", "", "param file path")
 	rootCmd.AddCommand(bhfCmd)
 }
 

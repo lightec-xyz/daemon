@@ -387,6 +387,13 @@ func (c *Circuit) UpdateChangeProve(txId, blockHash string) (*reLightCommon.Proo
 }
 
 func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
+	ok, err := common.VerifyLightClientUpdate(update)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("verify light client update error")
+	}
 	return utils.SyncCommitRoot(update)
 }
 
