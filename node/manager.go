@@ -107,6 +107,7 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 
 // todo
 func (m *manager) DistributeRequest() error {
+	logger.Debug("proofQueue len:%v", m.proofQueue.Len())
 	if m.proofQueue.Len() == 0 {
 		time.Sleep(2 * time.Second)
 		return nil
@@ -164,6 +165,7 @@ func (m *manager) DistributeRequest() error {
 		time.Sleep(10 * time.Second)
 		return nil
 	}
+
 	time.Sleep(2 * time.Second)
 	return nil
 }

@@ -338,7 +338,7 @@ func (b *BeaconAgent) CheckState() error {
 		if b.stateCache.CheckUnit(index) {
 			continue
 		}
-		//logger.Warn("need unit proof: %v", index)
+		logger.Warn("need unit proof: %v", index)
 		err := b.tryProofRequest(index, common.SyncComUnitType)
 		if err != nil {
 			logger.Error(err.Error())

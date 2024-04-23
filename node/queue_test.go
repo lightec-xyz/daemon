@@ -29,14 +29,16 @@ func TestArrayQueue(t *testing.T) {
 	arrayQueue.Push(&common.ZkProofRequest{Weight: 1})
 	arrayQueue.Push(&common.ZkProofRequest{Weight: 7})
 	arrayQueue.Push(&common.ZkProofRequest{Weight: 8})
-
+	t.Logf("lenghth: %v \n", arrayQueue.Len())
 	request, ok := arrayQueue.Pop()
 	if !ok {
 		t.Fatal(err)
 	}
+	t.Logf("lenghth: %v \n", arrayQueue.Len())
 	t.Logf("pop result: %v \n", request.Weight)
 	arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
 		t.Log(value.Weight)
 		return nil
 	})
+	t.Logf("lenghth: %v \n", arrayQueue.Len())
 }

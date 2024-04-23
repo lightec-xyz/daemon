@@ -31,7 +31,7 @@ func GetSyncCommitUpdate(fileStore *FileStore, period uint64) (*utils.LightClien
 		return nil, false, nil
 	}
 	var update utils.LightClientUpdateInfo
-	err = ParseObj(currentPeriodUpdate.Data, &update)
+	err = common.ParseObj(currentPeriodUpdate.Data, &update)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
