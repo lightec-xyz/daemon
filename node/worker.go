@@ -107,6 +107,12 @@ func (w *LocalWorker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockH
 
 func (w *LocalWorker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
 	logger.Debug("local worker BeaconHeaderFinalityUpdateProve prove")
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("not block header finality Proof param")
+	}
+	// todo
+	fmt.Printf("bhfReq: %v\n", string(reqBytes))
 	proof, err := w.circuit.BeaconHeaderFinalityUpdateProve(req.GenesisSCSSZRoot, req.RecursiveProof, req.RecursiveWitness,
 		req.OuterProof, req.OuterWitness, req.FinalityUpdate, req.ScUpdate)
 	if err != nil {

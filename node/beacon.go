@@ -466,11 +466,12 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 	}
 	// todo
 	var update utils.LightClientUpdateInfo
-	err = ParseObj(currentPeriodUpdate, &update)
+	err = ParseObj(currentPeriodUpdate.Data, &update)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
+	update.Version = currentPeriodUpdate.Version
 	if b.genesisPeriod == period {
 		var genesisData structs.LightClientBootstrapResponse
 		genesisExists, err := b.fileStore.GetBootstrap(&genesisData)

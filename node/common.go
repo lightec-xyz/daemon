@@ -13,9 +13,76 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
+	"github.com/lightec-xyz/reLight/circuits/utils"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"os"
 	"time"
 )
+
+func GetSyncCommitUpdate(fileStore *FileStore, period uint64) (*utils.LightClientUpdateInfo, bool, error) {
+	var currentPeriodUpdate structs.LightClientUpdateWithVersion
+	exists, err := fileStore.GetUpdate(period, &currentPeriodUpdate)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find %v period update Data, send new update request", period)
+		return nil, false, nil
+	}
+	var update utils.LightClientUpdateInfo
+	err = ParseObj(currentPeriodUpdate.Data, &update)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if fileStore.GetGenesisPeriod() == period {
+		var genesisData structs.LightClientBootstrapResponse
+		genesisExists, err := fileStore.GetBootstrap(&genesisData)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		if !genesisExists {
+			logger.Warn("no find genesis update Data, send new update request")
+			return nil, false, nil
+		}
+		// todo
+		var genesisCommittee utils.SyncCommittee
+		err = common.ParseObj(genesisData.Data.CurrentSyncCommittee, &genesisCommittee)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		update.CurrentSyncCommittee = &genesisCommittee
+	} else {
+		prePeriod := period - 1
+		if prePeriod < fileStore.GetGenesisPeriod() {
+			logger.Error("should never happen: %v", prePeriod)
+			return nil, false, nil
+		}
+		var preUpdateData structs.LightClientUpdateWithVersion
+		preUpdateExists, err := fileStore.GetUpdate(prePeriod, &preUpdateData)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		if !preUpdateExists {
+			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
+			return nil, false, nil
+		}
+		// todo
+		var currentSyncCommittee utils.SyncCommittee
+		err = common.ParseObj(preUpdateData.Data.NextSyncCommittee, &currentSyncCommittee)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, false, err
+		}
+		update.CurrentSyncCommittee = &currentSyncCommittee
+	}
+	return &update, true, nil
+
+}
 
 func CheckProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
 	switch zkType {

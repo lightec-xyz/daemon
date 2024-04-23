@@ -74,6 +74,10 @@ type FileStore struct {
 	genesisSlot   uint64
 }
 
+func (f *FileStore) GetGenesisPeriod() uint64 {
+	return f.genesisPeriod
+}
+
 func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	genesisPeriod := genesisSlot / common.SlotPerPeriod
 
