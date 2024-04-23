@@ -142,15 +142,15 @@ func (m *manager) DistributeRequest() error {
 				count++
 				zkProofResponse, err := WorkerGenProof(worker, req)
 				if err != nil {
-					logger.Error("worker %v gen Proof error:%v %v %v", worker.Id(), req.ReqType.String(), req.Index, err)
+					logger.Error("worker %v gen Proof error:%v %v %v %v", worker.Id(), req.ReqType.String(), req.Index, count, err)
 					continue
 				}
-				logger.Debug("complete generate Proof type: %v Index: %v", req.ReqType.String(), req.Index)
 				for _, item := range zkProofResponse {
 					chaResp <- item
+					logger.Debug("complete generate Proof type: %v Index: %v", item.ZkProofType.String(), item.Period)
 				}
+				return
 			}
-
 		}(request, chanResponse)
 		return nil
 	})
