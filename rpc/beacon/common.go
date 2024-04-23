@@ -466,10 +466,9 @@ func buildLightClientUpdateWithProof(ctx context.Context, update *structs.LightC
 		NextSyncCommitteeBranch: update.NextSyncCommitteeBranch,
 		SignatureSlot:           update.SignatureSlot,
 	}, nil
-
 }
 
-func verifyLightClientUpdateInfo(update *LightClientUpdateInfo) (bool, error) {
+func VerifyLightClientUpdateInfo(update *LightClientUpdateInfo) (bool, error) {
 	/*
 		holesky, Bellatrix: 0700000069b7d97441dbd33e5ee5b4cb8fc8b08d6a58a7274b6e6daf19ef4ca7
 		holesky,Capella: 0700000017e2dad36f1d3595152042a9ad23430197557e2e7e82bc7f7fc72972

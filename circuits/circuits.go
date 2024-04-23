@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/consensys/gnark/frontend"
+	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
 	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
@@ -23,11 +24,9 @@ import (
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
-	dCom "github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
-	"github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
@@ -55,7 +54,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	recursiveConfig := recursive.NewRecursiveConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	var zkDebug bool
 	var err error
-	zkDebugEnv := os.Getenv(dCom.ZkDebugEnv)
+	zkDebugEnv := os.Getenv(common.ZkDebugEnv)
 	if zkDebugEnv != "" {
 		zkDebug, err = strconv.ParseBool(zkDebugEnv)
 		if err != nil {
@@ -72,7 +71,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 }
 
 func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness, beginId, endId, genesisScRoot,
-	currentSCSSZRoot []byte, txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*common.Proof, error) {
+	currentSCSSZRoot []byte, txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*reLightCommon.Proof, error) {
 	//todo
 	logger.Debug("current zk circuit RedeemProve")
 	if c.debug {
@@ -140,15 +139,24 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("redeem prove error:%v", err)
 		return nil, err
 	}
-	return &common.Proof{ // todo
+	return &reLightCommon.Proof{ // todo
 		Proof: proof.Proof,
 		Wit:   proof.Wit,
 	}, nil
 }
 
 func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recursiveProof, recursiveWitness, outerProof,
-	outerWitness []byte, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*common.Proof, error) {
+	outerWitness []byte, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
 	// todo
+	ok, err := common.VerifyLightClientUpdate(scUpdate)
+	if err != nil {
+		logger.Error("verify light client update error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		logger.Error("verify light client update error")
+		return nil, fmt.Errorf("verify light client update error")
+	}
 	logger.Debug("current zk circuit BeaconHeaderFinalityUpdateProve")
 	if c.debug {
 		logger.Warn("current zk circuit BeaconHeaderFinalityUpdateProve prove is debug,skip prove")
@@ -191,13 +199,13 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 		logger.Error("beacon header finality update prove error:%v", err)
 		return nil, err
 	}
-	return &common.Proof{ // todo
+	return &reLightCommon.Proof{ // todo
 		Proof: proof.Proof,
 		Wit:   proof.Wit,
 	}, nil
 }
 
-func (c *Circuit) BeaconHeaderProve(header proverType.BeaconHeaderChain) (*common.Proof, error) {
+func (c *Circuit) BeaconHeaderProve(header proverType.BeaconHeaderChain) (*reLightCommon.Proof, error) {
 	//todo
 	logger.Debug("current zk circuit BeaconHeaderProve")
 	if c.debug {
@@ -209,13 +217,13 @@ func (c *Circuit) BeaconHeaderProve(header proverType.BeaconHeaderChain) (*commo
 		logger.Error("beacon header prove error:%v %v %v", header.BeginSlot, header.EndSlot, err)
 		return nil, err
 	}
-	return &common.Proof{ // todo
+	return &reLightCommon.Proof{ // todo
 		Proof: proof.Proof,
 		Wit:   proof.Wit,
 	}, nil
 }
 
-func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
+func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit TxInEth2Prove")
 	if c.debug {
 		logger.Warn("current zk circuit TxInEth2Prove prove is debug,skip prove")
@@ -226,13 +234,13 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proo
 		logger.Error(err.Error())
 		return nil, err
 	}
-	return &common.Proof{ // todo
+	return &reLightCommon.Proof{ // todo
 		Proof: proof.Proof,
 		Wit:   proof.Wit,
 	}, err
 }
 
-func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
+func (c *Circuit) DepositProve(txId, blockHash string) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit DepositProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
@@ -241,9 +249,18 @@ func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
 	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
 }
 
-func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, *common.Proof, error) {
+func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*reLightCommon.Proof, *reLightCommon.Proof, error) {
 	// todo
 	logger.Debug("current zk circuit unit prove")
+	ok, err := common.VerifyLightClientUpdate(update)
+	if err != nil {
+		logger.Error("verify light client update error:%v", err)
+		return nil, nil, err
+	}
+	if !ok {
+		logger.Error("verify light client update error")
+		return nil, nil, fmt.Errorf("verify light client update error")
+	}
 	if c.debug {
 		logger.Warn("current zk circuit unit prove is debug mode,skip prove")
 		proof, err := debugProof()
@@ -255,7 +272,7 @@ func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) 
 	}
 	logger.Warn("really do unit prove now: %v", period)
 	subDir := fmt.Sprintf("sc%d", period)
-	err := innerProve(c.Cfg.DataDir, subDir, update)
+	err = innerProve(c.Cfg.DataDir, subDir, update)
 	if err != nil {
 		logger.Error("inner prove error:%v", err)
 		return nil, nil, err
@@ -274,7 +291,7 @@ func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) 
 }
 
 func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness []byte,
-	beginId, relayId, endId []byte) (*common.Proof, error) {
+	beginId, relayId, endId []byte) (*reLightCommon.Proof, error) {
 	logger.Debug("recursive prove request data choice:%v", choice)
 	if c.debug {
 		logger.Warn("current zk circuit recursive prove is debug mode,skip prove")
@@ -319,7 +336,7 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 }
 
 func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,
-	genesisId, firstId, secondId []byte) (*common.Proof, error) {
+	genesisId, firstId, secondId []byte) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit syncCommittee genesis prove")
 	if c.debug {
 		logger.Warn("current zk circuit genesis prove is debug mode,skip prove")
@@ -360,7 +377,7 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	return proof, err
 }
 
-func (c *Circuit) UpdateChangeProve(txId, blockHash string) (*common.Proof, error) {
+func (c *Circuit) UpdateChangeProve(txId, blockHash string) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit UpdateChangeProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
@@ -383,7 +400,7 @@ func ParseProof(proof []byte) (native_plonk.Proof, error) {
 	return &bn254Proof, nil
 }
 
-func unitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
+func unitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*reLightCommon.Proof, error) {
 	unitCfg := unit.NewUnitConfig(dataDir, "", subDir)
 	unit := unit.NewUnit(unitCfg)
 	err := unit.Load()
@@ -397,7 +414,7 @@ func unitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo
 	return proofs, nil
 }
 
-func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
+func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*reLightCommon.Proof, error) {
 	outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
 	outer := unit.NewOuter(&outerCfg)
 	err := outer.Load()
@@ -460,7 +477,7 @@ type CircuitConfig struct {
 	Debug   bool
 }
 
-func debugProof() (*common.Proof, error) {
+func debugProof() (*reLightCommon.Proof, error) {
 	// todo only just local debug
 	time.Sleep(15 * time.Second)
 	field := ecc.BN254.ScalarField()
@@ -485,7 +502,7 @@ func debugProof() (*common.Proof, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &common.Proof{
+	return &reLightCommon.Proof{
 		Proof: proof,
 		Wit:   w,
 	}, nil
