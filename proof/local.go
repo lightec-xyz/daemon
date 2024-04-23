@@ -69,16 +69,16 @@ func (l *Local) Run() error {
 			for {
 				count = count + 1
 				if count > 10 {
-					logger.Error("retry gen proof too much time,stop generate this proof now: %v %v %v", request.Period, request.TxHash, request.ReqType.String())
+					logger.Error("retry gen proof too much time,stop generate this proof now: %v %v %v", request.Index, request.TxHash, request.ReqType.String())
 					return
 				}
-				logger.Info("worker %v start generate Proof type: %v Period: %v", l.worker.Id(), request.ReqType.String(), request.Period)
+				logger.Info("worker %v start generate Proof type: %v Index: %v", l.worker.Id(), request.ReqType.String(), request.Index)
 				proof, err := node.WorkerGenProof(l.worker, request)
 				if err != nil {
 					logger.Error("worker gen proof error:%v", err)
 					continue
 				}
-				logger.Info("complete generate Proof type: %v Period: %v", request.ReqType.String(), request.Period)
+				logger.Info("complete generate Proof type: %v Index: %v", request.ReqType.String(), request.Index)
 				submitProof := common.SubmitProof{Id: common.MustUUID(), WorkerId: l.Id, Data: proof}
 				_, err = l.client.SubmitProof(submitProof)
 				if err != nil {
@@ -87,7 +87,7 @@ func (l *Local) Run() error {
 					// todo check again
 					return
 				}
-				logger.Info("submit proof to daemon type: %v Period: %v,txHash: %v", request.ReqType.String(), request.Period, request.TxHash)
+				logger.Info("submit proof to daemon type: %v Index: %v,txHash: %v", request.ReqType.String(), request.Index, request.TxHash)
 				return
 			}
 		}(requestResp.Request)

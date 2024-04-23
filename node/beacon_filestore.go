@@ -545,7 +545,7 @@ func (f *FileStore) GetLatestPeriod() (uint64, bool, error) {
 	var period uint64
 	err = f.getObj(PeriodDir, LatestPeriodKey, &period)
 	if err != nil {
-		logger.Error("get latest Period error:%v", err)
+		logger.Error("get latest Index error:%v", err)
 		return 0, false, err
 	}
 	return period, true, nil

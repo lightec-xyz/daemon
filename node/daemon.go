@@ -315,7 +315,7 @@ func NewWorkers(workers []WorkerConfig) ([]rpc.IWorker, error) {
 
 type WrapperBeacon struct {
 	node                    IBeaconAgent
-	scanPeriodTime          time.Duration // get node Period
+	scanPeriodTime          time.Duration // get node Index
 	checkDataTime           time.Duration
 	checkFinalityUpdateTime time.Duration // check finality update time
 	proofResponse           chan *common.ZkProofResponse

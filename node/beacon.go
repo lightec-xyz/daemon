@@ -63,14 +63,14 @@ func (b *BeaconAgent) Init() error {
 	go b.beaconFetch.Fetch()
 	_, exists, err := b.fileStore.GetLatestPeriod()
 	if err != nil {
-		logger.Error("check latest Period error: %v", err)
+		logger.Error("check latest Index error: %v", err)
 		return err
 	}
 	if !exists {
 		logger.Warn("no find latest period, store %v period to db", b.genesisPeriod)
 		err := b.fileStore.StoreLatestPeriod(b.genesisPeriod)
 		if err != nil {
-			logger.Error("store latest Period error: %v", err)
+			logger.Error("store latest Index error: %v", err)
 			return err
 		}
 	}
@@ -110,14 +110,14 @@ func (b *BeaconAgent) Init() error {
 }
 
 func (b *BeaconAgent) ScanSyncPeriod() error {
-	logger.Debug("beacon scan sync Period")
+	logger.Debug("beacon scan sync Index")
 	currentPeriod, ok, err := b.fileStore.GetLatestPeriod()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("get latest Period error")
+		return fmt.Errorf("get latest Index error")
 	}
 	latestSyncPeriod, err := b.beaconClient.GetFinalizedSyncPeriod()
 	if err != nil {
@@ -125,12 +125,12 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 		return err
 	}
 	latestSyncPeriod = latestSyncPeriod - 1
-	logger.Info("current Period: %d, latest sync Period: %d", currentPeriod, latestSyncPeriod)
+	logger.Info("current Index: %d, latest sync Index: %d", currentPeriod, latestSyncPeriod)
 	if currentPeriod >= latestSyncPeriod {
 		return nil
 	}
 	for index := currentPeriod; index <= latestSyncPeriod; index++ {
-		logger.Debug("beacon scan Period: %d", index)
+		logger.Debug("beacon scan Index: %d", index)
 		for {
 			canAddRequest := b.beaconFetch.canNewRequest()
 			if canAddRequest {
@@ -428,7 +428,7 @@ func (b *BeaconAgent) CheckBeaconHeaderFinalityProof() error {
 }
 
 func (b *BeaconAgent) FetchDataResponse(req FetchDataResponse) error {
-	logger.Debug("beacon fetch response fetchType: %v, Period: %v", req.UpdateType.String(), req.period)
+	logger.Debug("beacon fetch response fetchType: %v, Index: %v", req.UpdateType.String(), req.period)
 	switch req.UpdateType {
 	// todo
 	case GenesisUpdateType:
@@ -832,7 +832,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 
 func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	// todo
-	logger.Info("beacon Proof response type: %v, Period: %v", resp.ZkProofType.String(), resp.Period)
+	logger.Info("beacon Proof response type: %v, Index: %v", resp.ZkProofType.String(), resp.Period)
 	index := resp.Period
 	if resp.ZkProofType != common.UnitOuter {
 		b.deleteCacheProofReqStatus(resp.ZkProofType, resp.Period)

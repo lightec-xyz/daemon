@@ -113,7 +113,7 @@ func (bf *BeaconFetch) fetch() error {
 	}
 	bf.fetchQueue.Remove(element)
 	bf.currentReqNums.Add(1)
-	logger.Debug("get fetch request Period:%v,type:%v,fetch Data now", request.period, request.UpdateType.String())
+	logger.Debug("get fetch request Index:%v,type:%v,fetch Data now", request.period, request.UpdateType.String())
 	if request.UpdateType == GenesisUpdateType {
 		go func() {
 			err := bf.getBootStrap()

@@ -37,7 +37,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 	response.CanGen = true
 	response.Request = zkProofRequest
 	logger.Info("worker: %v get task: type:%v hash:%v:period:%v", request.Id, zkProofRequest.ReqType.String(),
-		zkProofRequest.TxHash, zkProofRequest.Period)
+		zkProofRequest.TxHash, zkProofRequest.Index)
 	return &response, nil
 }
 

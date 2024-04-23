@@ -31,8 +31,7 @@ type ZkProofRequest struct {
 	ZkId    string // todo
 	ReqType ZkProofType
 	Data    interface{}
-	Period  uint64
-	Slot    uint64
+	Index   uint64
 	TxHash  string
 
 	Status     ProofStatus
@@ -47,7 +46,7 @@ func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txH
 		ZkId:       NewProofId(reqType, period, txHash), // todo
 		ReqType:    reqType,
 		Data:       data,
-		Period:     period,
+		Index:      period,
 		TxHash:     txHash,
 		Weight:     reqType.Weight(),
 		Status:     ProofDefault,
@@ -60,7 +59,7 @@ func (zk *ZkProofRequest) Id() string {
 }
 
 func (r *ZkProofRequest) String() string {
-	return fmt.Sprintf("ZkProofRequest{ReqType:%v,Period:%v,Data:%v}", r.ReqType, r.Period, r.Data)
+	return fmt.Sprintf("ZkProofRequest{ReqType:%v,Index:%v,Data:%v}", r.ReqType, r.Index, r.Data)
 }
 
 type ZkProofResponse struct {
@@ -77,7 +76,7 @@ func (zkp *ZkProofResponse) Id() string {
 }
 
 func (zkResp *ZkProofResponse) String() string {
-	return fmt.Sprintf("ZkProofType:%v Period:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
+	return fmt.Sprintf("ZkProofType:%v Index:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
 }
 
 func NewProofId(reqType ZkProofType, period uint64, txHash string) string {
