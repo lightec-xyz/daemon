@@ -109,13 +109,13 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 func (m *manager) DistributeRequest() error {
 	logger.Debug("proofQueue len:%v", m.proofQueue.Len())
 	if m.proofQueue.Len() == 0 {
-		time.Sleep(2 * time.Second)
+		time.Sleep(10 * time.Second)
 		return nil
 	}
 	request, ok := m.proofQueue.Pop()
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 		return nil
 	}
 	proofSubmitted, err := m.CheckProofStatus(request)
@@ -157,16 +157,17 @@ func (m *manager) DistributeRequest() error {
 	})
 	if err != nil {
 		logger.Error("find best worker error:%v", err)
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Second)
 		return err
 	}
 	if !find {
 		//logger.Warn(" no find best worker to gen Proof")
+		m.proofQueue.Push(request)
 		time.Sleep(10 * time.Second)
 		return nil
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(10 * time.Second)
 	return nil
 }
 
