@@ -207,7 +207,7 @@ func (b *BeaconAgent) checkRequest(index uint64, reqType common.ZkProofType) (bo
 	case common.SyncComUnitType:
 		return index >= b.genesisPeriod, nil
 	case common.SyncComRecursiveType:
-		return index >= b.genesisPeriod+3, nil
+		return index >= b.genesisPeriod+2, nil
 	case common.BlockHeaderFinalityType:
 		return index >= b.genesisSlot, nil
 	default:
@@ -672,10 +672,10 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*UnitProofParam, bool, error) 
 }
 
 func (b *BeaconAgent) GetRecursiveData(period uint64) (interface{}, bool, error) {
-	if period == b.genesisPeriod+3 {
+	if period == b.genesisPeriod+2 {
 		// todo should  start from  (genesis+1) period
 		return b.getRecursiveGenesisData(period)
-	} else if period > b.genesisPeriod+3 {
+	} else if period > b.genesisPeriod+2 {
 		// todo should start from (genesis+2) period
 		return b.getRecursiveData(period)
 	}
