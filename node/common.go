@@ -339,6 +339,7 @@ func GetSyncCommitUpdate(fileStore *FileStore, period uint64) (*utils.LightClien
 		logger.Error(err.Error())
 		return nil, false, err
 	}
+	update.Version = currentPeriodUpdate.Version
 	if fileStore.GetGenesisPeriod() == period {
 		var genesisData structs.LightClientBootstrapResponse
 		genesisExists, err := fileStore.GetBootstrap(&genesisData)
