@@ -336,6 +336,9 @@ func (b *BeaconAgent) CheckState() error {
 		if index < b.genesisPeriod {
 			continue
 		}
+		if index > 163 {
+			continue
+		}
 		if b.stateCache.CheckUnit(index) {
 			continue
 		}
@@ -949,7 +952,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		return nil, false, nil
 	}
 	outerPeriod := period + 1
-	logger.Debug("get bhf update data slot: %v,recPeriod: %v,outPeriod", slot, period, outerPeriod)
+	logger.Debug("get bhf update data slot: %v,recPeriod: %v,outPeriod %v", slot, period, outerPeriod)
 	outerProof, ok, err := b.fileStore.GetOuterProof(outerPeriod)
 	if err != nil {
 		logger.Error("get outer proof error: %v %v", outerPeriod, err)
