@@ -22,7 +22,7 @@ var genCmd = &cobra.Command{
 			fmt.Printf("new local proof error: %v \n", err)
 			return
 		}
-		err = localProof.GenProof(proofType, paramPath, index)
+		err = localProof.GenProof(proofType, index)
 		if err != nil {
 			fmt.Printf("gen proof error: %v \n", err)
 			return
@@ -68,9 +68,24 @@ func NewLocalProof(genesisSlot uint64, datadir, setupDir string) (*LocalProof, e
 
 }
 
-func (lp *LocalProof) GenProof(proofType, paramPath string, index uint64) error {
-	panic("unSupport now")
-	proofResponses, err := node.WorkerGenProof(lp.worker, nil)
+func (lp *LocalProof) GenProof(proofType string, index uint64) error {
+	zkProofType, err := getZkProofType(proofType)
+	if err != nil {
+		logger.Error("get zk proof type error:%v", err)
+		return err
+	}
+	data, ok, err := GetProofRequestData(lp.fileStore, zkProofType, index)
+	if err != nil {
+		logger.Error("get proof request data error:%v", err)
+		return err
+	}
+	if !ok {
+		logger.Error("proof request data not found")
+		return nil
+	}
+	logger.Info("start gen proof: %v %v", zkProofType.String(), index)
+	zkProofRequest := common.NewZkProofRequest(zkProofType, data, index, "")
+	proofResponses, err := node.WorkerGenProof(lp.worker, zkProofRequest)
 	if err != nil {
 		logger.Error("worker gen proof error:%v", err)
 		return err
@@ -81,11 +96,13 @@ func (lp *LocalProof) GenProof(proofType, paramPath string, index uint64) error 
 			logger.Error("store zk proof error:%v", err)
 			return err
 		}
+		logger.Info("success store proof: %v %v", resp.ZkProofType.String(), resp.Period)
 	}
 	return nil
 }
 
-func (lp *LocalProof) GetProofRequestData(fileStore *node.FileStore, proofType common.ZkProofType, index uint64) (interface{}, bool, error) {
+func GetProofRequestData(fileStore *node.FileStore, proofType common.ZkProofType, index uint64) (interface{}, bool, error) {
+	genesisPeriod := fileStore.GetGenesisPeriod()
 	switch proofType {
 	case common.SyncComUnitType:
 		update, ok, err := node.GetSyncCommitUpdate(fileStore, index)
@@ -95,10 +112,53 @@ func (lp *LocalProof) GetProofRequestData(fileStore *node.FileStore, proofType c
 		}
 		return update, ok, nil
 	case common.SyncComGenesisType:
-		return nil, false, fmt.Errorf("unSupport now  proof type: %v", proofType)
+		data, ok, err := node.GetGenesisData(fileStore)
+		if err != nil {
+			logger.Error("get genesis data error:%v", err)
+			return nil, false, err
+		}
+		return data, ok, nil
 	case common.SyncComRecursiveType:
-		return nil, false, fmt.Errorf("unSupport now  proof type: %v", proofType)
+		if index == genesisPeriod {
+			data, ok, err := node.GetRecursiveGenesisData(fileStore, index)
+			if err != nil {
+				logger.Error("get recursive genesis data error:%v", err)
+				return nil, false, err
+			}
+			return data, ok, nil
+		} else if index == genesisPeriod+1 {
+			data, ok, err := node.GetRecursiveData(fileStore, index)
+			if err != nil {
+				logger.Error("get recursive data error:%v", err)
+				return nil, false, err
+			}
+			return data, ok, nil
+		}
+	case common.BlockHeaderFinalityType:
+		data, ok, err := node.GetBhfUpdateData(fileStore, index)
+		if err != nil {
+			logger.Error("get bhf update data error:%v", err)
+			return nil, false, err
+		}
+		return data, ok, nil
 	default:
 		return nil, false, fmt.Errorf("unSupport now  proof type: %v", proofType)
 	}
+	return nil, false, fmt.Errorf("never reach here")
+}
+
+func getZkProofType(proofType string) (common.ZkProofType, error) {
+	switch proofType {
+	case "SyncComUnitType":
+		return common.SyncComUnitType, nil
+	case "SyncComGenesisType":
+		return common.SyncComGenesisType, nil
+	case "SyncComRecursiveType":
+		return common.SyncComRecursiveType, nil
+	case "BlockHeaderFinalityType":
+		return common.BlockHeaderFinalityType, nil
+	default:
+		return 0, fmt.Errorf("unSupport now  proof type: %v", proofType)
+	}
+
 }

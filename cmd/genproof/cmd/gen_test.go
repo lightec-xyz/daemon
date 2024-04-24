@@ -1,26 +1,19 @@
 package cmd
 
 import (
-	"github.com/lightec-xyz/daemon/circuits"
-	"github.com/lightec-xyz/daemon/node"
+	"fmt"
 	"testing"
 )
 
-func TestBhfProve(t *testing.T) {
-	fileStore, err := node.NewFileStore("/Users/red/lworkspace/lightec/daemon/node/test", 176*8192)
+func TestGenProof(t *testing.T) {
+	localProof, err := NewLocalProof(genesisSlot, "", "")
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("new local proof error: %v \n", err)
+		return
 	}
-	syncCommitUpdate, ok, err := node.GetSyncCommitUpdate(fileStore, 177)
+	err = localProof.GenProof(proofType, index)
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("gen proof error: %v \n", err)
+		return
 	}
-	if !ok {
-		t.Fatal("no find sync commit update")
-	}
-	rootId, err := circuits.SyncCommitRoot(syncCommitUpdate)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("%x", rootId)
 }

@@ -6,18 +6,321 @@ import (
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"os"
+	"strconv"
 	"time"
 )
+
+func GetBhfUpdateData(fileStore *FileStore, slot uint64) (interface{}, bool, error) {
+	logger.Debug("get bhf update data: %v", slot)
+	genesisPeriod := fileStore.GetGenesisPeriod()
+	var currentFinalityUpdate structs.LightClientUpdateWithVersion
+	exists, err := fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
+	if err != nil {
+		logger.Error("get finality update error: %v %v", slot, err)
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find finality update: %v", slot)
+		return nil, false, nil
+	}
+
+	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period genesis commitId no find", genesisPeriod)
+		return nil, false, nil
+	}
+	// todo
+	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	period := (attestedSlot / 8192)
+	logger.Debug("get bhf update data slot: %v,period: %v", slot, period)
+	recursiveProof, ok, err := fileStore.GetRecursiveProof(period)
+	if err != nil {
+		logger.Error("get recursive proof error: %v %v", period, err)
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("no find recursive proof: %v", period)
+		return nil, false, nil
+	}
+
+	outerProof, ok, err := fileStore.GetOuterProof(period)
+	if err != nil {
+		logger.Error("get outer proof error: %v %v", period, err)
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("no find outer proof: %v", period)
+		return nil, false, nil
+	}
+
+	var finalUpdate proverType.FinalityUpdate
+	err = common.ParseObj(currentFinalityUpdate.Data, &finalUpdate)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	finalUpdate.Version = currentFinalityUpdate.Version
+
+	currentSyncCommitUpdate, ok, err := GetSyncCommitUpdate(fileStore, period)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Error("no find sync committee update: %v", period)
+		return nil, false, nil
+	}
+
+	var scUpdate proverType.SyncCommitteeUpdate
+	err = common.ParseObj(currentSyncCommitUpdate, &scUpdate)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	request := rpc.BlockHeaderFinalityRequest{
+		GenesisSCSSZRoot: fmt.Sprintf("%x", genesisId),
+		RecursiveProof:   recursiveProof.Proof,
+		RecursiveWitness: recursiveProof.Witness,
+		OuterProof:       outerProof.Proof,
+		OuterWitness:     outerProof.Witness,
+		FinalityUpdate:   &finalUpdate,
+		ScUpdate:         &scUpdate,
+	}
+	return &request, true, nil
+
+}
+
+func GetRecursiveData(fileStore *FileStore, period uint64) (interface{}, bool, error) {
+	//todo
+	genesisPeriod := fileStore.GetGenesisPeriod()
+	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period genesis commitId no find", genesisPeriod)
+		return nil, false, nil
+	}
+	relayId, ok, err := GetSyncCommitRootId(fileStore, period)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period relay commitId no find", period)
+		return nil, false, nil
+	}
+	endPeriod := period + 1
+	endId, ok, err := GetSyncCommitRootId(fileStore, endPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period end commitId no find", endPeriod)
+		return nil, false, nil
+	}
+	secondProof, exists, err := fileStore.GetUnitProof(period)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find %v unit proof Data, send new proof request", period)
+		return nil, false, nil
+	}
+
+	prePeriod := period - 1
+	firstProof, exists, err := fileStore.GetRecursiveProof(prePeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find %v period recursive Data, send new proof request", prePeriod)
+		return nil, false, nil
+	}
+	return &RecursiveProofParam{
+		Choice:        "recursive",
+		FirstProof:    firstProof.Proof,
+		FirstWitness:  firstProof.Witness,
+		SecondProof:   secondProof.Proof,
+		SecondWitness: secondProof.Witness,
+		BeginId:       genesisId,
+		RelayId:       relayId,
+		EndId:         endId,
+	}, true, nil
+}
+
+func GetRecursiveGenesisData(fileStore *FileStore, period uint64) (interface{}, bool, error) {
+	genesisPeriod := fileStore.GetGenesisPeriod()
+	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period genesis commitId no find", genesisPeriod)
+		return nil, false, nil
+	}
+	relayPeriod := period
+	relayId, ok, err := GetSyncCommitRootId(fileStore, relayPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v  period relay commitId no find ", relayPeriod)
+		return nil, false, nil
+	}
+	endPeriod := relayPeriod + 1
+	endId, ok, err := GetSyncCommitRootId(fileStore, endPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period end commitId no find", endPeriod)
+		return nil, false, nil
+	}
+
+	fistProof, firstExists, err := fileStore.GetGenesisProof()
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !firstExists {
+		logger.Warn("no find genesis proof ,start new proof request")
+		return nil, false, nil
+	}
+	secondProof, secondExists, err := fileStore.GetUnitProof(relayPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !secondExists {
+		logger.Warn("no find %v period unit proof , send new proof request", relayPeriod)
+		return nil, false, nil
+	}
+	return &RecursiveProofParam{
+		Choice:        "genesis",
+		FirstProof:    fistProof.Proof,
+		FirstWitness:  fistProof.Witness,
+		SecondProof:   secondProof.Proof,
+		SecondWitness: secondProof.Witness,
+		BeginId:       genesisId,
+		RelayId:       relayId,
+		EndId:         endId,
+	}, true, nil
+
+}
+
+func GetGenesisData(fileStore *FileStore) (*GenesisProofParam, bool, error) {
+	genesisPeriod := fileStore.GetGenesisPeriod()
+	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period genesis commitId  no find", genesisPeriod)
+		return nil, false, nil
+	}
+
+	nextPeriod := genesisPeriod + 1
+	firstId, ok, err := GetSyncCommitRootId(fileStore, nextPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period first commitId no find", nextPeriod)
+		return nil, false, nil
+	}
+	secondPeriod := nextPeriod + 1
+	secondId, ok, err := GetSyncCommitRootId(fileStore, secondPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		logger.Warn("get %v period second commitId no find", secondPeriod)
+		return nil, false, nil
+	}
+
+	firstProof, exists, err := fileStore.GetUnitProof(genesisPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("get genesis Data,first proof not exists: %v period", genesisPeriod)
+		return nil, false, nil
+	}
+	logger.Info("get genesis first proof: %v", genesisPeriod)
+
+	secondProof, exists, err := fileStore.GetUnitProof(nextPeriod)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+
+	if !exists {
+		logger.Warn("get genesis Data,second proof not exists: %v period", nextPeriod)
+		return nil, false, nil
+	}
+	logger.Info("get genesis second proof: %v", nextPeriod)
+	genesisProofParam := &GenesisProofParam{
+		FirstProof:    firstProof.Proof,
+		FirstWitness:  firstProof.Witness,
+		SecondProof:   secondProof.Proof,
+		SecondWitness: secondProof.Witness,
+		GenesisId:     genesisId,
+		FirstId:       firstId,
+		SecondId:      secondId,
+	}
+	return genesisProofParam, true, nil
+
+}
+
+func GetSyncCommitRootId(fileStore *FileStore, period uint64) ([]byte, bool, error) {
+	update, ok, err := GetSyncCommitUpdate(fileStore, period)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	syncCommitRoot, err := circuits.SyncCommitRoot(update)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	return syncCommitRoot, true, nil
+}
 
 func GetSyncCommitUpdate(fileStore *FileStore, period uint64) (*utils.LightClientUpdateInfo, bool, error) {
 	var currentPeriodUpdate structs.LightClientUpdateWithVersion
