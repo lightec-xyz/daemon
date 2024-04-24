@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -17,6 +18,7 @@ var genCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("datadir: %v,setupdir: %v,genesisPeriod: %v \n", datadir, setupDir, genesisSlot)
 		localProof, err := NewLocalProof(genesisSlot, datadir, setupDir)
 		if err != nil {
 			fmt.Printf("new local proof error: %v \n", err)
@@ -45,6 +47,7 @@ type LocalProof struct {
 	genesisPeriod uint64
 	genesisSlot   uint64
 	fileStore     *node.FileStore
+	dataDir       string
 	worker        rpc.IWorker
 }
 
@@ -64,6 +67,7 @@ func NewLocalProof(genesisSlot uint64, datadir, setupDir string) (*LocalProof, e
 		genesisSlot:   genesisSlot,
 		fileStore:     fileStore,
 		worker:        worker,
+		dataDir:       datadir,
 	}, nil
 
 }
@@ -85,6 +89,11 @@ func (lp *LocalProof) GenProof(proofType string, index uint64) error {
 	}
 	logger.Info("start gen proof: %v %v", zkProofType.String(), index)
 	zkProofRequest := common.NewZkProofRequest(zkProofType, data, index, "")
+	err = lp.SaveRequest(zkProofRequest)
+	if err != nil {
+		logger.Error("save request error:%v", err)
+		return err
+	}
 	proofResponses, err := node.WorkerGenProof(lp.worker, zkProofRequest)
 	if err != nil {
 		logger.Error("worker gen proof error:%v", err)
@@ -97,6 +106,21 @@ func (lp *LocalProof) GenProof(proofType string, index uint64) error {
 			return err
 		}
 		logger.Info("success store proof: %v %v", resp.ZkProofType.String(), resp.Period)
+	}
+	return nil
+}
+
+func (lp *LocalProof) SaveRequest(req *common.ZkProofRequest) error {
+	path := fmt.Sprintf("%s/reqData/%v", lp.dataDir, req.Id())
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		logger.Error("json marshal error:%v", err)
+		return err
+	}
+	err = common.WriteFile(path, reqBytes)
+	if err != nil {
+		logger.Error("write file error:%v", err)
+		return err
 	}
 	return nil
 }
@@ -119,14 +143,14 @@ func GetProofRequestData(fileStore *node.FileStore, proofType common.ZkProofType
 		}
 		return data, ok, nil
 	case common.SyncComRecursiveType:
-		if index == genesisPeriod {
+		if index == genesisPeriod+2 {
 			data, ok, err := node.GetRecursiveGenesisData(fileStore, index)
 			if err != nil {
 				logger.Error("get recursive genesis data error:%v", err)
 				return nil, false, err
 			}
 			return data, ok, nil
-		} else if index == genesisPeriod+1 {
+		} else if index > genesisPeriod+2 {
 			data, ok, err := node.GetRecursiveData(fileStore, index)
 			if err != nil {
 				logger.Error("get recursive data error:%v", err)
@@ -160,5 +184,4 @@ func getZkProofType(proofType string) (common.ZkProofType, error) {
 	default:
 		return 0, fmt.Errorf("unSupport now  proof type: %v", proofType)
 	}
-
 }

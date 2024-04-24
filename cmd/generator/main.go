@@ -1,6 +1,6 @@
 package main
 
-import "github.com/lightec-xyz/daemon/cmd/proof/cmd"
+import "github.com/lightec-xyz/daemon/cmd/generator/cmd"
 
 func main() {
 	cmd.Execute()
