@@ -78,6 +78,10 @@ func (f *FileStore) GetGenesisPeriod() uint64 {
 	return f.genesisPeriod
 }
 
+func (f *FileStore) RootPath() string {
+	return f.dataDir
+}
+
 func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	genesisPeriod := genesisSlot / common.SlotPerPeriod
 
