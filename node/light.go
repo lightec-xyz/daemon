@@ -64,7 +64,8 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 		workers = append(workers, localWorker)
 	}
 	schedule := NewSchedule(workers)
-	manager, err := NewManager(nil, nil, btcProofResp, ethProofResp, syncCommitResp, storeDb, memoryStore, schedule)
+	manager, err := NewManager(nil, nil, btcProofResp, ethProofResp, syncCommitResp,
+		storeDb, memoryStore, schedule, fileStore)
 	if err != nil {
 		logger.Error("new manager error: %v", err)
 		return nil, err

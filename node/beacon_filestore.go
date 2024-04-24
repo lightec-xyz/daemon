@@ -209,6 +209,21 @@ func NewFileStore(datadir string, genesisSlot uint64) (*FileStore, error) {
 	}, nil
 }
 
+func (f *FileStore) StoreRequest(request *common.ZkProofRequest) error {
+	path := fmt.Sprintf("%s/request/%v.json", f.dataDir, request.Id())
+	reqBytes, err := json.Marshal(request)
+	if err != nil {
+		logger.Error("marshal request error:%v", err)
+		return err
+	}
+	err = common.WriteFile(path, reqBytes)
+	if err != nil {
+		logger.Error("write request error:%v", err)
+		return err
+	}
+	return nil
+}
+
 func (f *FileStore) StoreRedeemProof(hash string, proof, witness []byte) error {
 	return f.InsertData(Redeem, getRedeemKey(hash), storeProof{
 		Hash:      hash,

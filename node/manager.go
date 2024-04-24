@@ -16,6 +16,7 @@ type manager struct {
 	proofQueue     *ArrayQueue
 	pendingQueue   *PendingQueue
 	schedule       *Schedule
+	fileStore      *FileStore
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
 	store          store.IStore
@@ -26,13 +27,15 @@ type manager struct {
 	lock           sync.Mutex
 }
 
-func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse, store, memory store.IStore, schedule *Schedule) (IManager, error) {
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
+	store, memory store.IStore, schedule *Schedule, fileStore *FileStore) (IManager, error) {
 	return &manager{
 		proofQueue:     NewArrayQueue(),
 		pendingQueue:   NewPendingQueue(),
 		schedule:       schedule,
 		store:          store,
 		memory:         memory,
+		fileStore:      fileStore,
 		btcProofResp:   btcProofResp,
 		ethProofResp:   ethProofResp,
 		syncCommitResp: syncCommitteeProofResp,
@@ -132,6 +135,11 @@ func (m *manager) DistributeRequest() error {
 		worker.AddReqNum()
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
 			logger.Debug("worker %v start generate Proof type: %v Index: %v", worker.Id(), req.ReqType.String(), req.Index)
+			err := m.fileStore.StoreRequest(req)
+			if err != nil {
+				logger.Error("store Proof error:%v %v %v", req.ReqType.String(), req.Index, err)
+				return
+			}
 			count := 0
 			for {
 				if count >= 1 {
