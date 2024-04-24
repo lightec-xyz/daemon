@@ -111,7 +111,7 @@ func (lp *LocalProof) GenProof(proofType string, index uint64) error {
 }
 
 func (lp *LocalProof) SaveRequest(req *common.ZkProofRequest) error {
-	path := fmt.Sprintf("%s/reqData/%v", lp.dataDir, req.Id())
+	path := fmt.Sprintf("%s/reqData/%v.json", lp.fileStore.RootPath(), req.Id())
 	reqBytes, err := json.Marshal(req)
 	if err != nil {
 		logger.Error("json marshal error:%v", err)
