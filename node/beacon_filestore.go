@@ -82,12 +82,12 @@ func (f *FileStore) RootPath() string {
 	return f.dataDir
 }
 
-func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
+func NewFileStore(datadir string, genesisSlot uint64) (*FileStore, error) {
 	genesisPeriod := genesisSlot / common.SlotPerPeriod
 
-	dataDir = fmt.Sprintf("%s/%s", dataDir, "proofData")
+	rootDir := fmt.Sprintf("%s/%s", datadir, "proofData")
 	// todo
-	periodDataDir := fmt.Sprintf("%s/%s", dataDir, PeriodDir)
+	periodDataDir := fmt.Sprintf("%s/%s", rootDir, PeriodDir)
 	ok, err := dirNotExistsAndCreate(periodDataDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -97,7 +97,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir %v error", periodDataDir)
 	}
 
-	updateDataDir := fmt.Sprintf("%s/%s", dataDir, UpdateDir)
+	updateDataDir := fmt.Sprintf("%s/%s", rootDir, UpdateDir)
 	ok, err = dirNotExistsAndCreate(updateDataDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -106,7 +106,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	if !ok {
 		return nil, fmt.Errorf("create dir error: %v %v", "update", err)
 	}
-	genesisDir := fmt.Sprintf("%s/%s", dataDir, GenesisDir)
+	genesisDir := fmt.Sprintf("%s/%s", rootDir, GenesisDir)
 	ok, err = dirNotExistsAndCreate(genesisDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -115,7 +115,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	if !ok {
 		return nil, fmt.Errorf("create dir error:%v %v", "genesis", err)
 	}
-	unitDir := fmt.Sprintf("%s/%s", dataDir, UnitDir)
+	unitDir := fmt.Sprintf("%s/%s", rootDir, UnitDir)
 	ok, err = dirNotExistsAndCreate(unitDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -124,7 +124,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	if !ok {
 		return nil, fmt.Errorf("create dir error:%v %v", "unit", err)
 	}
-	recursiveDir := fmt.Sprintf("%s/%s", dataDir, RecursiveDir)
+	recursiveDir := fmt.Sprintf("%s/%s", rootDir, RecursiveDir)
 	ok, err = dirNotExistsAndCreate(recursiveDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -134,7 +134,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "recursive", err)
 	}
 
-	bhfuDir := fmt.Sprintf("%s/%s", dataDir, BhfUpdate)
+	bhfuDir := fmt.Sprintf("%s/%s", rootDir, BhfUpdate)
 	ok, err = dirNotExistsAndCreate(bhfuDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -144,7 +144,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
 
-	blockHeaderDir := fmt.Sprintf("%s/%s", dataDir, BlockHeader)
+	blockHeaderDir := fmt.Sprintf("%s/%s", rootDir, BlockHeader)
 	ok, err = dirNotExistsAndCreate(blockHeaderDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -154,7 +154,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
 
-	txDir := fmt.Sprintf("%s/%s", dataDir, Tx)
+	txDir := fmt.Sprintf("%s/%s", rootDir, Tx)
 	ok, err = dirNotExistsAndCreate(txDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -163,7 +163,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	if !ok {
 		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
-	OuterDir := fmt.Sprintf("%s/%s", dataDir, Outer)
+	OuterDir := fmt.Sprintf("%s/%s", rootDir, Outer)
 	ok, err = dirNotExistsAndCreate(OuterDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -173,7 +173,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
 
-	finalityUpdateDir := fmt.Sprintf("%s/%s", dataDir, FinalityUpdate)
+	finalityUpdateDir := fmt.Sprintf("%s/%s", rootDir, FinalityUpdate)
 	ok, err = dirNotExistsAndCreate(finalityUpdateDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -182,7 +182,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 	if !ok {
 		return nil, fmt.Errorf("create dir error:%v %v", "tx", err)
 	}
-	redeemDir := fmt.Sprintf("%s/%s", dataDir, Redeem)
+	redeemDir := fmt.Sprintf("%s/%s", rootDir, Redeem)
 	ok, err = dirNotExistsAndCreate(redeemDir)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
@@ -192,7 +192,7 @@ func NewFileStore(dataDir string, genesisSlot uint64) (*FileStore, error) {
 		return nil, fmt.Errorf("create dir error:%v %v", "redeem", err)
 	}
 	return &FileStore{
-		dataDir:       dataDir,
+		dataDir:       rootDir,
 		periodDir:     periodDataDir,
 		updateDir:     updateDataDir,
 		genesisDir:    genesisDir,
