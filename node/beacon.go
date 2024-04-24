@@ -938,8 +938,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		logger.Error(err.Error())
 		return nil, false, err
 	}
-	period := (attestedSlot / 8192)
-	logger.Debug("get bhf update data slot: %v,period: %v", slot, period)
+	period := (attestedSlot / 8192) - 1
 	recursiveProof, ok, err := b.fileStore.GetRecursiveProof(period)
 	if err != nil {
 		logger.Error("get recursive proof error: %v %v", period, err)
@@ -950,6 +949,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		return nil, false, nil
 	}
 	outerPeriod := period + 1
+	logger.Debug("get bhf update data slot: %v,recPeriod: %v,outPeriod", slot, period, outerPeriod)
 	outerProof, ok, err := b.fileStore.GetOuterProof(outerPeriod)
 	if err != nil {
 		logger.Error("get outer proof error: %v %v", outerPeriod, err)
