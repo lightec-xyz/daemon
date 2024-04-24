@@ -949,14 +949,14 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		logger.Warn("no find recursive proof: %v", period)
 		return nil, false, nil
 	}
-
-	outerProof, ok, err := b.fileStore.GetOuterProof(period)
+	outerPeriod := period + 1
+	outerProof, ok, err := b.fileStore.GetOuterProof(outerPeriod)
 	if err != nil {
-		logger.Error("get outer proof error: %v %v", period, err)
+		logger.Error("get outer proof error: %v %v", outerPeriod, err)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("no find outer proof: %v", period)
+		logger.Warn("no find outer proof: %v", outerPeriod)
 		return nil, false, nil
 	}
 
