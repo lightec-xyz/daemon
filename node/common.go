@@ -99,6 +99,14 @@ func CheckProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, t
 
 func StoreZkProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, txHash string, proof, witness []byte) error {
 	switch zkType {
+	case common.SyncComUnitType:
+		return fileStore.StoreUnitProof(index, proof, witness)
+	case common.SyncComGenesisType:
+		return fileStore.StoreGenesisProof(proof, witness)
+	case common.SyncComRecursiveType:
+		return fileStore.StoreRecursiveProof(index, proof, witness)
+	case common.BlockHeaderFinalityType:
+		return fileStore.StoreBhfUpdateProof(index, proof, witness)
 	case common.TxInEth2:
 		return fileStore.StoreTxProof(txHash, proof, witness)
 	case common.BlockHeaderType:

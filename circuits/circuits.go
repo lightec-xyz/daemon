@@ -519,21 +519,6 @@ func GetGenesisSCSSZRoot(root []byte) ([2]frontend.Variable, error) {
 	panic(root)
 }
 
-func GetTxVar(data []byte) ([tx.MaxTxUint128Len]frontend.Variable, error) {
-	panic(data)
-}
-
-func GetReceiptVar(data []byte) ([receipt.MaxReceiptUint128Len]frontend.Variable, error) {
-	panic(data)
-}
-
-func ProofToHexSol(proof native_plonk.Proof) (string, error) {
-	_proof := proof.(*plonk_bn254.Proof)
-	proofStr := hex.EncodeToString(_proof.MarshalSolidity())
-	return proofStr, nil
-
-}
-
 func ProofToSolBytes(proof native_plonk.Proof) ([]byte, error) {
 	_proof, ok := proof.(*plonk_bn254.Proof)
 	if !ok {

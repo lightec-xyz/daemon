@@ -1,3 +1,3 @@
 
 
-    ./genproof bhf --datadir <path> --param ./data/bhf.json
+    ./genproof gen --datadir <path> --setupDir <path> --param ./data/bhf.json --index 100

@@ -48,7 +48,7 @@ func ParseObj(src, dst interface{}) error {
 }
 
 func WriteFile(path string, data []byte) error {
-	err := DirCheckOrCreate(path)
+	err := CheckOrCreateDir(path)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func WriteFile(path string, data []byte) error {
 	}
 	return nil
 }
-func DirCheckOrCreate(path string) error {
+func CheckOrCreateDir(path string) error {
 	dir := filepath.Dir(path)
 	_, err := os.Stat(dir)
 	if err != nil {

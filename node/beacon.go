@@ -6,6 +6,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"math/big"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -910,6 +911,18 @@ func (b *BeaconAgent) Stop() {
 
 func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	logger.Debug("get bhf update data: %v", slot)
+
+	var currentFinalityUpdate structs.LightClientUpdateWithVersion
+	exists, err := b.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
+	if err != nil {
+		logger.Error("get finality update error: %v %v", slot, err)
+		return nil, false, err
+	}
+	if !exists {
+		logger.Warn("no find finality update: %v", slot)
+		return nil, false, nil
+	}
+
 	genesisId, ok, err := b.GetSyncCommitRootID(b.genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
@@ -920,8 +933,13 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		return nil, false, nil
 	}
 	// todo
-	period := (slot / 8192) - 1
-	logger.Debug("get bhf update data: %v", period)
+	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, false, err
+	}
+	period := (attestedSlot / 8192) - 1
+	logger.Debug("get bhf update data slot: %v,period: %v", slot, period)
 	recursiveProof, ok, err := b.fileStore.GetRecursiveProof(period)
 	if err != nil {
 		logger.Error("get recursive proof error: %v %v", period, err)
@@ -941,16 +959,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		logger.Warn("no find outer proof: %v", period)
 		return nil, false, nil
 	}
-	var currentFinalityUpdate structs.LightClientUpdateWithVersion
-	exists, err := b.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
-	if err != nil {
-		logger.Error("get finality update error: %v %v", slot, err)
-		return nil, false, err
-	}
-	if !exists {
-		logger.Warn("no find finality update: %v", slot)
-		return nil, false, nil
-	}
+
 	var finalUpdate proverType.FinalityUpdate
 	err = common.ParseObj(currentFinalityUpdate.Data, &finalUpdate)
 	if err != nil {
