@@ -971,7 +971,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 	}
 	finalUpdate.Version = currentFinalityUpdate.Version
 
-	currentSyncCommitUpdate, ok, err := b.GetUnitData(period)
+	currentSyncCommitUpdate, ok, err := b.GetUnitData(outerPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
