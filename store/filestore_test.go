@@ -5,7 +5,7 @@ import (
 )
 
 func TestNewFileStore(t *testing.T) {
-	fileStore, err := NewFileStore("test", "unit", "json")
+	fileStore, err := NewFileStore("test")
 	if err != nil {
 		t.Error(err)
 	}

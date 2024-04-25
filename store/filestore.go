@@ -137,10 +137,14 @@ func (fs *FileStore) CheckExists(name string) (bool, error) {
 }
 
 func (fs *FileStore) GetFilePath(name string) string {
-	if fs.Suffix != "" {
-		return fmt.Sprintf("%s/%s_%s.%s", fs.Path, fs.Prefix, name, fs.Suffix)
+	path := fmt.Sprintf("%s/", fs.Path)
+	if fs.Prefix != "" {
+		path = fmt.Sprintf("%s%s_", path, fs.Prefix)
 	}
-	return fmt.Sprintf("%s/%s_%s", fs.Path, fs.Prefix, name)
+	if fs.Suffix != "" {
+		return fmt.Sprintf("%s%s.%s", path, name, fs.Suffix)
+	}
+	return fmt.Sprintf("%s%s", path, name)
 }
 
 func (fs *FileStore) RootPath() string {
