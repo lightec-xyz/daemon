@@ -158,7 +158,7 @@ func GetProofRequestData(fileStore *node.FileStore, proofType common.ZkProofType
 			}
 			return data, ok, nil
 		}
-	case common.BlockHeaderFinalityType:
+	case common.BeaconHeaderFinalityType:
 		data, ok, err := node.GetBhfUpdateData(fileStore, index)
 		if err != nil {
 			logger.Error("get bhf update data error:%v", err)
@@ -179,8 +179,8 @@ func getZkProofType(proofType string) (common.ZkProofType, error) {
 		return common.SyncComGenesisType, nil
 	case "SyncComRecursiveType":
 		return common.SyncComRecursiveType, nil
-	case "BlockHeaderFinalityType":
-		return common.BlockHeaderFinalityType, nil
+	case "BeaconHeaderFinalityType":
+		return common.BeaconHeaderFinalityType, nil
 	default:
 		return 0, fmt.Errorf("unSupport now  proof type: %v", proofType)
 	}

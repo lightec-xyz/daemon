@@ -169,6 +169,9 @@ func (fs *FileStorage) CheckBootstrap() (bool, error) {
 func (fs *FileStorage) StoreOuterProof(period uint64, proof, witness []byte) error {
 	return fs.Store(OuterTable, parseKey(period), newStoreProof(common.UnitOuter, period, "", proof, witness))
 }
+func (fs *FileStorage) CheckOuterProof(period uint64) (bool, error) {
+	return fs.Check(OuterTable, parseKey(period))
+}
 
 func (fs *FileStorage) GetOuterProof(period uint64) (*StoreProof, bool, error) {
 	var storeProof StoreProof

@@ -394,6 +394,8 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64,
 		return fileStore.CheckGenesisProof()
 	case common.SyncComUnitType:
 		return fileStore.CheckUnitProof(index)
+	case common.UnitOuter:
+		return fileStore.CheckOuterProof(index)
 	case common.SyncComRecursiveType:
 		return fileStore.CheckRecursiveProof(index)
 	case common.BeaconHeaderFinalityType:
@@ -405,7 +407,7 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64,
 	case common.RedeemTxType:
 		return fileStore.CheckRedeemProof(txHash)
 	default:
-		return false, fmt.Errorf("unSupport now  proof type: %v", zkType)
+		return false, fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
 }
 
@@ -413,6 +415,8 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 	switch zkType {
 	case common.SyncComUnitType:
 		return fileStore.StoreUnitProof(index, proof, witness)
+	case common.UnitOuter:
+		return fileStore.StoreOuterProof(index, proof, witness)
 	case common.SyncComGenesisType:
 		return fileStore.StoreGenesisProof(index, proof, witness)
 	case common.SyncComRecursiveType:
@@ -426,7 +430,7 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 	case common.RedeemTxType:
 		return fileStore.StoreRedeemProof(txHash, proof, witness)
 	default:
-		return fmt.Errorf("unSupport now  proof type: %v", zkType)
+		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
 }
 
