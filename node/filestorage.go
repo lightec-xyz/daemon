@@ -447,7 +447,7 @@ func (fs *FileStorage) NeedGenBhfUpdateIndex() ([]uint64, error) {
 }
 
 func CreateFileStore(root, name string) (*store.FileStore, error) {
-	path := fmt.Sprintf("%s/%s", root, name)
+	path := fmt.Sprintf("%s/%s/", root, name)
 	fileStore, err := store.NewFileStore(path)
 	if err != nil {
 		logger.Error("create file store error %v %v %v", root, name, err)

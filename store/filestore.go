@@ -174,7 +174,7 @@ func (fs *FileStore) AllIndexes() (map[uint64]string, error) {
 func (fs *FileStore) AllFiles() (map[string]string, error) {
 	files, err := traverseFile(fs.Path)
 	if err != nil {
-		logger.Error("traverse file error:%v", err)
+		logger.Error("traverse file error:%v %v", fs.Path, err)
 		return nil, err
 	}
 	return files, nil
