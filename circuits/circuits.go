@@ -70,7 +70,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	}, nil
 }
 
-func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness, beginId, endId, genesisScRoot,
+func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot,
 	currentSCSSZRoot []byte, txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*reLightCommon.Proof, error) {
 	//todo
 	logger.Debug("current zk circuit RedeemProve")
@@ -84,12 +84,12 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		return nil, err
 	}
 
-	txInEth2Proof, err := ParseProof(txProof)
+	txInEth2Proof, err := HexToProof(txProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	txInEth2Witness, err := ParseWitness(txWitness)
+	txInEth2Witness, err := HexToWitness(txWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -100,12 +100,12 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("read vk error:%v", err)
 		return nil, err
 	}
-	blockHeaderProof, err := ParseProof(bhProof)
+	blockHeaderProof, err := HexToProof(bhProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	blockHeaderWitness, err := ParseWitness(bhWitness)
+	blockHeaderWitness, err := HexToWitness(bhWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -115,13 +115,13 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("read vk error:%v", err)
 		return nil, err
 	}
-	blockHeaderFinalityProof, err := ParseProof(bhfProof)
+	blockHeaderFinalityProof, err := HexToProof(bhfProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
 
-	blockHeaderFinalityWitness, err := ParseWitness(bhfWitness)
+	blockHeaderFinalityWitness, err := HexToWitness(bhfWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -146,7 +146,7 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 }
 
 func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recursiveProof, recursiveWitness, outerProof,
-	outerWitness []byte, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
+	outerWitness string, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
 	// todo
 	ok, err := common.VerifyLightClientUpdate(scUpdate)
 	if err != nil {
@@ -167,12 +167,12 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 		logger.Error("read vk error:%v", err)
 		return nil, err
 	}
-	scRecursiveProof, err := ParseProof(recursiveProof)
+	scRecursiveProof, err := HexToProof(recursiveProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	scRecursiveWitness, err := ParseWitness(recursiveWitness)
+	scRecursiveWitness, err := HexToWitness(recursiveWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -182,12 +182,12 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 		logger.Error("read vk error:%v", err)
 		return nil, err
 	}
-	scOuterProof, err := ParseProof(outerProof)
+	scOuterProof, err := HexToProof(outerProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	scOuterWitness, err := ParseWitness(outerWitness)
+	scOuterWitness, err := HexToWitness(outerWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -290,7 +290,7 @@ func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) 
 	return unitProof, outerProof, nil
 }
 
-func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness []byte,
+func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness string,
 	beginId, relayId, endId []byte) (*reLightCommon.Proof, error) {
 	logger.Debug("recursive prove request data choice:%v", choice)
 	if c.debug {
@@ -300,22 +300,22 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 	if !(choice == "genesis" || choice == "recursive") {
 		return nil, fmt.Errorf("invalid choice: %s", choice)
 	}
-	firstPr, err := ParseProof(firstProof)
+	firstPr, err := HexToProof(firstProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	secondPr, err := ParseProof(secondProof)
+	secondPr, err := HexToProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	firstWit, err := ParseWitness(firstWitness)
+	firstWit, err := HexToWitness(firstWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	secondWit, err := ParseWitness(secondWitness)
+	secondWit, err := HexToWitness(secondWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -335,29 +335,29 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 	return proof, err
 }
 
-func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,
+func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness string,
 	genesisId, firstId, secondId []byte) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit syncCommittee genesis prove")
 	if c.debug {
 		logger.Warn("current zk circuit genesis prove is debug mode,skip prove")
 		return debugProof()
 	}
-	firstPf, err := ParseProof(firstProof)
+	firstPf, err := HexToProof(firstProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	secondPf, err := ParseProof(secondProof)
+	secondPf, err := HexToProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	firstWit, err := ParseWitness(firstWitness)
+	firstWit, err := HexToWitness(firstWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	secondWit, err := ParseWitness(secondWitness)
+	secondWit, err := HexToWitness(secondWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -395,16 +395,6 @@ func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
 		return nil, fmt.Errorf("verify light client update error")
 	}
 	return utils.SyncCommitRoot(update)
-}
-
-func ParseProof(proof []byte) (native_plonk.Proof, error) {
-	reader := bytes.NewReader(proof)
-	var bn254Proof plonk_bn254.Proof
-	_, err := bn254Proof.ReadFrom(reader)
-	if err != nil {
-		return nil, err
-	}
-	return &bn254Proof, nil
 }
 
 func unitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*reLightCommon.Proof, error) {
@@ -547,4 +537,41 @@ func WitnessToBytes(witness witness.Witness) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func HexToWitness(witness string) (witness.Witness, error) {
+	witnessBytes, err := HexToBytes(witness)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWitness(witnessBytes)
+}
+
+func ParseProof(proof []byte) (native_plonk.Proof, error) {
+	reader := bytes.NewReader(proof)
+	var bn254Proof plonk_bn254.Proof
+	_, err := bn254Proof.ReadFrom(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &bn254Proof, nil
+}
+
+func HexToProof(proof string) (native_plonk.Proof, error) {
+	proofBytes, err := HexToBytes(proof)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProof(proofBytes)
+}
+
+func HexToBytes(data string) ([]byte, error) {
+	if data[0:2] == "0x" {
+		data = data[2:]
+	}
+	bytes, err := hex.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
 }

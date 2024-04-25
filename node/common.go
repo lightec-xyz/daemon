@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-func GetBhfUpdateData(fileStore *FileStore, slot uint64) (interface{}, bool, error) {
+func GetBhfUpdateData(fileStore *FileStorage, slot uint64) (interface{}, bool, error) {
 	logger.Debug("get bhf update data: %v", slot)
 	genesisPeriod := fileStore.GetGenesisPeriod()
 	var currentFinalityUpdate structs.LightClientUpdateWithVersion
@@ -111,7 +111,7 @@ func GetBhfUpdateData(fileStore *FileStore, slot uint64) (interface{}, bool, err
 
 }
 
-func GetRecursiveData(fileStore *FileStore, period uint64) (interface{}, bool, error) {
+func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool, error) {
 	//todo
 	genesisPeriod := fileStore.GetGenesisPeriod()
 	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
@@ -162,7 +162,7 @@ func GetRecursiveData(fileStore *FileStore, period uint64) (interface{}, bool, e
 		logger.Warn("no find %v period recursive Data, send new proof request", prePeriod)
 		return nil, false, nil
 	}
-	return &RecursiveProofParam{
+	return &rpc.SyncCommRecursiveRequest{
 		Choice:        "recursive",
 		FirstProof:    firstProof.Proof,
 		FirstWitness:  firstProof.Witness,
@@ -174,7 +174,7 @@ func GetRecursiveData(fileStore *FileStore, period uint64) (interface{}, bool, e
 	}, true, nil
 }
 
-func GetRecursiveGenesisData(fileStore *FileStore, period uint64) (interface{}, bool, error) {
+func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}, bool, error) {
 	genesisPeriod := fileStore.GetGenesisPeriod()
 	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
 	if err != nil {
@@ -224,7 +224,7 @@ func GetRecursiveGenesisData(fileStore *FileStore, period uint64) (interface{}, 
 		logger.Warn("no find %v period unit proof , send new proof request", relayPeriod)
 		return nil, false, nil
 	}
-	return &RecursiveProofParam{
+	return &rpc.SyncCommRecursiveRequest{
 		Choice:        "genesis",
 		FirstProof:    fistProof.Proof,
 		FirstWitness:  fistProof.Witness,
@@ -237,7 +237,7 @@ func GetRecursiveGenesisData(fileStore *FileStore, period uint64) (interface{}, 
 
 }
 
-func GetGenesisData(fileStore *FileStore) (*GenesisProofParam, bool, error) {
+func GetGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, error) {
 	genesisPeriod := fileStore.GetGenesisPeriod()
 	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
 	if err != nil {
@@ -292,20 +292,20 @@ func GetGenesisData(fileStore *FileStore) (*GenesisProofParam, bool, error) {
 		return nil, false, nil
 	}
 	logger.Info("get genesis second proof: %v", nextPeriod)
-	genesisProofParam := &GenesisProofParam{
+	genesisProofParam := &rpc.SyncCommGenesisRequest{
 		FirstProof:    firstProof.Proof,
 		FirstWitness:  firstProof.Witness,
 		SecondProof:   secondProof.Proof,
 		SecondWitness: secondProof.Witness,
-		GenesisId:     genesisId,
-		FirstId:       firstId,
-		SecondId:      secondId,
+		GenesisID:     genesisId,
+		FirstID:       firstId,
+		SecondID:      secondId,
 	}
 	return genesisProofParam, true, nil
 
 }
 
-func GetSyncCommitRootId(fileStore *FileStore, period uint64) ([]byte, bool, error) {
+func GetSyncCommitRootId(fileStore *FileStorage, period uint64) ([]byte, bool, error) {
 	update, ok, err := GetSyncCommitUpdate(fileStore, period)
 	if err != nil {
 		logger.Error(err.Error())
@@ -322,7 +322,7 @@ func GetSyncCommitRootId(fileStore *FileStore, period uint64) ([]byte, bool, err
 	return syncCommitRoot, true, nil
 }
 
-func GetSyncCommitUpdate(fileStore *FileStore, period uint64) (*utils.LightClientUpdateInfo, bool, error) {
+func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.LightClientUpdateInfo, bool, error) {
 	var currentPeriodUpdate structs.LightClientUpdateWithVersion
 	exists, err := fileStore.GetUpdate(period, &currentPeriodUpdate)
 	if err != nil {
@@ -388,12 +388,20 @@ func GetSyncCommitUpdate(fileStore *FileStore, period uint64) (*utils.LightClien
 
 }
 
-func CheckProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
+func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
 	switch zkType {
+	case common.SyncComGenesisType:
+		return fileStore.CheckGenesisProof()
+	case common.SyncComUnitType:
+		return fileStore.CheckUnitProof(index)
+	case common.SyncComRecursiveType:
+		return fileStore.CheckRecursiveProof(index)
+	case common.BeaconHeaderFinalityType:
+		return fileStore.CheckBhfProof(index)
 	case common.TxInEth2:
 		return fileStore.CheckTxProof(txHash)
-	case common.BlockHeaderType:
-		return fileStore.CheckBlockHeaderProof(index)
+	case common.BeaconHeaderType:
+		return fileStore.CheckBeaconHeaderProof(index)
 	case common.RedeemTxType:
 		return fileStore.CheckRedeemProof(txHash)
 	default:
@@ -401,20 +409,20 @@ func CheckProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, t
 	}
 }
 
-func StoreZkProof(fileStore *FileStore, zkType common.ZkProofType, index uint64, txHash string, proof, witness []byte) error {
+func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string, proof, witness []byte) error {
 	switch zkType {
 	case common.SyncComUnitType:
 		return fileStore.StoreUnitProof(index, proof, witness)
 	case common.SyncComGenesisType:
-		return fileStore.StoreGenesisProof(proof, witness)
+		return fileStore.StoreGenesisProof(index, proof, witness)
 	case common.SyncComRecursiveType:
 		return fileStore.StoreRecursiveProof(index, proof, witness)
-	case common.BlockHeaderFinalityType:
-		return fileStore.StoreBhfUpdateProof(index, proof, witness)
+	case common.BeaconHeaderFinalityType:
+		return fileStore.StoreBhfProof(index, proof, witness)
 	case common.TxInEth2:
 		return fileStore.StoreTxProof(txHash, proof, witness)
-	case common.BlockHeaderType:
-		return fileStore.StoreBlockHeaderProof(index, proof, witness)
+	case common.BeaconHeaderType:
+		return fileStore.StoreBeaconHeaderProof(index, proof, witness)
 	case common.RedeemTxType:
 		return fileStore.StoreRedeemProof(txHash, proof, witness)
 	default:

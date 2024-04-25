@@ -79,7 +79,7 @@ type BlockHeaderResponse struct {
 type BlockHeaderFinalityRequest struct {
 	GenesisSCSSZRoot string
 	RecursiveProof, RecursiveWitness, OuterProof,
-	OuterWitness []byte
+	OuterWitness string
 	FinalityUpdate *proverType.FinalityUpdate
 	ScUpdate       *proverType.SyncCommitteeUpdate
 }
@@ -102,8 +102,9 @@ type DepositResponse struct {
 }
 
 type RedeemRequest struct {
-	Version string
-	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness, BeginId, EndId, GenesisScRoot,
+	Version                                                      string
+	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness string
+	BeginId, EndId, GenesisScRoot,
 	CurrentSCSSZRoot []byte
 	TxVar      *[tx.MaxTxUint128Len]frontend.Variable
 	ReceiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable
@@ -127,16 +128,16 @@ type VerifyResponse struct {
 }
 
 type SyncCommGenesisRequest struct {
-	Period        uint64 `json:"period"`
-	Version       string `json:"version"`
-	FirstProof    []byte `json:"firstProof"`
-	FirstWitness  []byte
-	SecondProof   []byte
-	SecondWitness []byte
-	GenesisID     []byte
-	FirstID       []byte
-	SecondID      []byte
-	RecursiveFp   []byte
+	Period  uint64 `json:"period"`
+	Version string `json:"version"`
+	FirstProof,
+	FirstWitness,
+	SecondProof,
+	SecondWitness string
+	GenesisID   []byte
+	FirstID     []byte
+	SecondID    []byte
+	RecursiveFp []byte
 }
 
 type SyncCommGenesisResponse struct {
@@ -171,17 +172,17 @@ type SyncCommUnitsResponse struct {
 }
 
 type SyncCommRecursiveRequest struct {
-	Period        uint64
-	Version       string
-	Choice        string `json:"choice"`
-	FirstProof    []byte
-	FirstWitness  []byte
-	SecondProof   []byte
-	SecondWitness []byte
-	BeginId       []byte
-	RelayId       []byte
-	EndId         []byte
-	RecursiveFp   []byte
+	Period  uint64
+	Version string
+	Choice  string `json:"choice"`
+	FirstProof,
+	FirstWitness,
+	SecondProof,
+	SecondWitness string
+	BeginId,
+	RelayId,
+	EndId,
+	RecursiveFp []byte
 }
 
 type SyncCommRecursiveResponse struct {

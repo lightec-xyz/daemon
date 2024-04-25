@@ -21,7 +21,7 @@ var _ IBeaconAgent = (*BeaconAgent)(nil)
 
 type BeaconAgent struct {
 	beaconClient   *beacon.Client
-	fileStore      *FileStore
+	fileStore      *FileStorage
 	zkProofRequest chan []*common.ZkProofRequest
 	name           string
 	genesisPeriod  uint64
@@ -33,7 +33,7 @@ type BeaconAgent struct {
 }
 
 func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []*common.ZkProofRequest,
-	fileStore *FileStore, genesisSlot, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
+	fileStore *FileStorage, genesisSlot, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
 
 	logger.Info("init beacon slot: %v, period: %v", cfg.BeaconSlotHeight, genesisPeriod)
 	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconSlotHeight, fetchDataResp)
@@ -62,27 +62,27 @@ func (b *BeaconAgent) Init() error {
 	logger.Info("beacon agent init")
 	// todo
 	go b.beaconFetch.Fetch()
-	_, exists, err := b.fileStore.GetLatestPeriod()
+	_, exists, err := b.fileStore.GetPeriod()
 	if err != nil {
 		logger.Error("check latest Index error: %v", err)
 		return err
 	}
 	if !exists {
 		logger.Warn("no find latest period, store %v period to db", b.genesisPeriod)
-		err := b.fileStore.StoreLatestPeriod(b.genesisPeriod)
+		err := b.fileStore.StorePeriod(b.genesisPeriod)
 		if err != nil {
 			logger.Error("store latest Index error: %v", err)
 			return err
 		}
 	}
-	_, exists, err = b.fileStore.GetLatestSlot()
+	_, exists, err = b.fileStore.GetSlot()
 	if err != nil {
 		logger.Error("check latest Slot error: %v", err)
 		return err
 	}
 	if !exists {
 		logger.Warn("no find latest slot, store %v slot to db", b.genesisSlot)
-		err := b.fileStore.StoreLatestSlot(b.genesisSlot)
+		err := b.fileStore.StoreSlot(b.genesisSlot)
 		if err != nil {
 			logger.Error("store latest Slot error: %v", err)
 			return err
@@ -112,7 +112,7 @@ func (b *BeaconAgent) Init() error {
 
 func (b *BeaconAgent) ScanSyncPeriod() error {
 	logger.Debug("beacon scan sync Index")
-	currentPeriod, ok, err := b.fileStore.GetLatestPeriod()
+	currentPeriod, ok, err := b.fileStore.GetPeriod()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -136,7 +136,7 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 			canAddRequest := b.beaconFetch.canNewRequest()
 			if canAddRequest {
 				b.beaconFetch.NewUpdateRequest(index)
-				err := b.fileStore.StoreLatestPeriod(index)
+				err := b.fileStore.StorePeriod(index)
 				if err != nil {
 					logger.Error(err.Error())
 					return err
@@ -209,7 +209,7 @@ func (b *BeaconAgent) checkRequest(index uint64, reqType common.ZkProofType) (bo
 		return index >= b.genesisPeriod, nil
 	case common.SyncComRecursiveType:
 		return index >= b.genesisPeriod+2, nil
-	case common.BlockHeaderFinalityType:
+	case common.BeaconHeaderFinalityType:
 		return index >= b.genesisSlot, nil
 	default:
 		return false, fmt.Errorf("check request status never should happen: %v %v", index, reqType)
@@ -224,7 +224,7 @@ func (b *BeaconAgent) CheckProofRequestStatus(index uint64, reqType common.ZkPro
 		return b.stateCache.CheckUnit(index), nil
 	case common.SyncComRecursiveType:
 		return b.stateCache.CheckRecursive(index), nil
-	case common.BlockHeaderFinalityType:
+	case common.BeaconHeaderFinalityType:
 		return b.stateCache.CheckBhfUpdate(index), nil
 	default:
 		return false, fmt.Errorf("check request status never should happen: %v %v", index, reqType)
@@ -240,7 +240,7 @@ func (b *BeaconAgent) cacheProofRequestStatus(index uint64, reqType common.ZkPro
 		return b.stateCache.StoreUnit(index)
 	case common.SyncComRecursiveType:
 		return b.stateCache.StoreRecursive(index)
-	case common.BlockHeaderFinalityType:
+	case common.BeaconHeaderFinalityType:
 		return b.stateCache.StoreBhfUpdate(index)
 	default:
 		return fmt.Errorf("cache request status never should happen: %v %v", index, reqType)
@@ -270,7 +270,7 @@ func (b *BeaconAgent) prepareProofRequestData(index uint64, reqType common.ZkPro
 			return nil, false, err
 		}
 		return data, prepared, nil
-	case common.BlockHeaderFinalityType:
+	case common.BeaconHeaderFinalityType:
 		data, prepared, err = b.GetBhfUpdateData(index)
 		if err != nil {
 			logger.Error(err.Error())
@@ -291,8 +291,8 @@ func (b *BeaconAgent) CheckProofExists(index uint64, reqType common.ZkProofType)
 		return b.fileStore.CheckUnitProof(index)
 	case common.SyncComRecursiveType:
 		return b.fileStore.CheckRecursiveProof(index)
-	case common.BlockHeaderFinalityType:
-		return b.fileStore.CheckBhfUpdateProof(index)
+	case common.BeaconHeaderFinalityType:
+		return b.fileStore.CheckBhfProof(index)
 	default:
 		logger.Error("check Proof exists never should happen : %v %v", index, reqType)
 		return false, fmt.Errorf("check Proof exists never should happen : %v %v", index, reqType)
@@ -382,7 +382,7 @@ func (b *BeaconAgent) CheckState() error {
 	}
 	for _, index := range bhfUpdateIndexes {
 		logger.Info("need to update block header finality: %v", index)
-		err := b.tryProofRequest(index, common.BlockHeaderFinalityType)
+		err := b.tryProofRequest(index, common.BeaconHeaderFinalityType)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
@@ -408,7 +408,7 @@ func (b *BeaconAgent) CheckBeaconHeaderFinalityProof() error {
 
 	finalizedSlot := slotBig.Uint64()
 	// todo
-	err = b.fileStore.StoreLatestSlot(slotBig.Uint64())
+	err = b.fileStore.StoreSlot(slotBig.Uint64())
 	if err != nil {
 		logger.Error("store latest slot error: %v", err)
 		return err
@@ -587,29 +587,24 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 
 	if !exists {
 		logger.Warn("get genesis Data,second proof not exists: %v period", nextPeriod)
-		//err := b.tryProofRequest(nextPeriod, SyncComUnitType)
-		//if err != nil {
-		//	logger.Error(err.Error())
-		//	return nil, false, err
-		//}
 		return nil, false, nil
 	}
 	logger.Info("get genesis second proof: %v", nextPeriod)
 
-	genesisProofParam := &GenesisProofParam{
+	genesisProofParam := &rpc.SyncCommGenesisRequest{
 		FirstProof:    firstProof.Proof,
 		FirstWitness:  firstProof.Witness,
 		SecondProof:   secondProof.Proof,
 		SecondWitness: secondProof.Witness,
-		GenesisId:     genesisId,
-		FirstId:       firstId,
-		SecondId:      secondId,
+		GenesisID:     genesisId,
+		FirstID:       firstId,
+		SecondID:      secondId,
 	}
 	return genesisProofParam, true, nil
 
 }
 
-func (b *BeaconAgent) GetUnitData(period uint64) (*UnitProofParam, bool, error) {
+func (b *BeaconAgent) GetUnitData(period uint64) (*rpc.SyncCommUnitsRequest, bool, error) {
 	var currentPeriodUpdate structs.LightClientUpdateWithVersion
 	exists, err := b.fileStore.GetUpdate(period, &currentPeriodUpdate)
 	if err != nil {
@@ -633,7 +628,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*UnitProofParam, bool, error) 
 			b.beaconFetch.BootStrapRequest()
 			return nil, false, nil
 		}
-		return &UnitProofParam{
+		return &rpc.SyncCommUnitsRequest{
 			Version:                 currentPeriodUpdate.Version,
 			AttestedHeader:          currentPeriodUpdate.Data.AttestedHeader,
 			CurrentSyncCommittee:    genesisData.Data.CurrentSyncCommittee, // todo
@@ -661,7 +656,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*UnitProofParam, bool, error) 
 			b.beaconFetch.NewUpdateRequest(prePeriod)
 			return nil, false, nil
 		}
-		return &UnitProofParam{
+		return &rpc.SyncCommUnitsRequest{
 			Version:                 currentPeriodUpdate.Version,
 			AttestedHeader:          currentPeriodUpdate.Data.AttestedHeader,
 			CurrentSyncCommittee:    perUpdateData.Data.NextSyncCommittee, // TODO
@@ -725,11 +720,6 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 	}
 	if !exists {
 		logger.Warn("no find %v unit proof Data, send new proof request", period)
-		//err := b.tryProofRequest(period, SyncComUnitType)
-		//if err != nil {
-		//	logger.Error(err.Error())
-		//	return nil, false, err
-		//}
 		return nil, false, nil
 	}
 
@@ -741,15 +731,10 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 	}
 	if !exists {
 		logger.Warn("no find %v period recursive Data, send new proof request", prePeriod)
-		//err := b.tryProofRequest(prePeriod, SyncComRecursiveType)
-		//if err != nil {
-		//	logger.Error(err.Error())
-		//	return nil, false, err
-		//}
 		return nil, false, nil
 	}
 
-	return &RecursiveProofParam{
+	return &rpc.SyncCommRecursiveRequest{
 		Choice:        "recursive",
 		FirstProof:    firstProof.Proof,
 		FirstWitness:  firstProof.Witness,
@@ -822,7 +807,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		return nil, false, nil
 	}
 
-	return &RecursiveProofParam{
+	return &rpc.SyncCommRecursiveRequest{
 		Choice:        "genesis",
 		FirstProof:    fistProof.Proof,
 		FirstWitness:  fistProof.Witness,
@@ -842,39 +827,10 @@ func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	if resp.ZkProofType != common.UnitOuter {
 		b.deleteCacheProofReqStatus(resp.ZkProofType, resp.Period)
 	}
-	switch resp.ZkProofType {
-	case common.SyncComGenesisType:
-		err := b.fileStore.StoreGenesisProof(resp.Proof, resp.Witness)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	case common.SyncComUnitType:
-		err := b.fileStore.StoreUnitProof(index, resp.Proof, resp.Witness)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	case common.SyncComRecursiveType:
-		err := b.fileStore.StoreRecursiveProof(index, resp.Proof, resp.Witness)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	case common.BlockHeaderFinalityType:
-		err := b.fileStore.StoreBhfUpdateProof(index, resp.Proof, resp.Witness)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	case common.UnitOuter:
-		err := b.fileStore.StoreOuterProof(index, resp.Proof, resp.Witness)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	default:
-		return fmt.Errorf("never should happen")
+	err := StoreZkProof(b.fileStore, resp.ZkProofType, index, resp.TxHash, resp.Proof, resp.Witness)
+	if err != nil {
+		logger.Error("store proof error: %v", err)
+		return err
 	}
 	return nil
 }
@@ -887,7 +843,7 @@ func (b *BeaconAgent) deleteCacheProofReqStatus(reqType common.ZkProofType, peri
 		b.stateCache.DeleteUnit(period)
 	case common.SyncComRecursiveType:
 		b.stateCache.DeleteRecursive(period)
-	case common.BlockHeaderFinalityType:
+	case common.BeaconHeaderFinalityType:
 		b.stateCache.DeleteBhfUpdate(period)
 	default:
 		logger.Error("delete cache request status never should happen: %v %v", reqType, period)

@@ -32,7 +32,7 @@ func TestArrayQueue(t *testing.T) {
 	t.Logf("lenghth: %v \n", arrayQueue.Len())
 	request, ok := arrayQueue.Pop()
 	if !ok {
-		t.Fatal(err)
+		t.Fatal("")
 	}
 	t.Logf("lenghth: %v \n", arrayQueue.Len())
 	t.Logf("pop result: %v \n", request.Weight)

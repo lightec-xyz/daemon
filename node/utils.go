@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/rpc"
 	"math/big"
 	"strings"
 )
@@ -92,7 +93,11 @@ func redeemToTxHashList(txs []RedeemProofParam) []string {
 func toDepositZkProofRequest(list []DepositProofParam) ([]*common.ZkProofRequest, error) {
 	var result []*common.ZkProofRequest
 	for _, item := range list {
-		result = append(result, common.NewZkProofRequest(common.DepositTxType, item, 0, item.TxHash))
+		data := rpc.DepositRequest{
+			TxHash:    item.TxHash,
+			BlockHash: item.BlockHash,
+		}
+		result = append(result, common.NewZkProofRequest(common.DepositTxType, data, 0, item.TxHash))
 	}
 	return result, nil
 }
@@ -100,7 +105,7 @@ func toDepositZkProofRequest(list []DepositProofParam) ([]*common.ZkProofRequest
 func toUpdateZkProofRequest(redeemTxes []Transaction) ([]*common.ZkProofRequest, error) {
 	var result []*common.ZkProofRequest
 	for _, item := range redeemTxes {
-		data := VerifyProofParam{TxHash: item.TxHash, BlockHash: item.BlockHash}
+		data := rpc.VerifyRequest{TxHash: item.TxHash, BlockHash: item.BlockHash}
 		result = append(result, common.NewZkProofRequest(common.VerifyTxType, data, 0, item.TxHash))
 	}
 	return result, nil

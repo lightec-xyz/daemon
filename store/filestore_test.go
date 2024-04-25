@@ -1,14 +1,16 @@
 package store
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestNewFileStore(t *testing.T) {
-	fileStore, err := NewFileStore("test")
+	fileStore, err := NewFileStore("test", "unit", "json")
 	if err != nil {
 		t.Error(err)
 	}
-	fileName := "name01"
-	fileData := "sdfasdfsdfds"
+	fileName := "10"
+	fileData := "{}"
 
 	exists, err := fileStore.CheckExists(fileName)
 	if err != nil {
@@ -41,4 +43,18 @@ func TestNewFileStore(t *testing.T) {
 		t.Error(err)
 	}
 	t.Log(exists, result2)
+	files, err := fileStore.AllFiles()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(files)
+	indexes, err := fileStore.AllIndexes()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(indexes)
+}
+
+func TestDemo(t *testing.T) {
+
 }

@@ -16,7 +16,7 @@ type manager struct {
 	proofQueue     *ArrayQueue
 	pendingQueue   *PendingQueue
 	schedule       *Schedule
-	fileStore      *FileStore
+	fileStore      *FileStorage
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
 	store          store.IStore
@@ -28,7 +28,7 @@ type manager struct {
 }
 
 func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
-	store, memory store.IStore, schedule *Schedule, fileStore *FileStore) (IManager, error) {
+	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage) (IManager, error) {
 	return &manager{
 		proofQueue:     NewArrayQueue(),
 		pendingQueue:   NewPendingQueue(),
@@ -184,15 +184,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 	var result []*common.ZkProofResponse
 	switch request.ReqType {
 	case common.DepositTxType:
-		var depositParam DepositProofParam
-		err := ParseObj(request.Data, &depositParam)
+		var depositRpcRequest rpc.DepositRequest
+		err := common.ParseObj(request.Data, &depositRpcRequest)
 		if err != nil {
 			return nil, fmt.Errorf("not deposit Proof param")
-		}
-		depositRpcRequest := rpc.DepositRequest{
-			Version:   depositParam.Version,
-			TxHash:    request.TxHash,
-			BlockHash: depositParam.BlockHash,
 		}
 		proofResponse, err := worker.GenDepositProof(depositRpcRequest)
 		if err != nil {
@@ -202,15 +197,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		zkbProofResponse := NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 		result = append(result, zkbProofResponse)
 	case common.VerifyTxType:
-		var verifyProofParam VerifyProofParam
-		err := ParseObj(request.Data, &verifyProofParam)
+		var verifyRpcRequest rpc.VerifyRequest
+		err := common.ParseObj(request.Data, &verifyRpcRequest)
 		if err != nil {
 			return nil, fmt.Errorf("not verify Proof param")
-		}
-		verifyRpcRequest := rpc.VerifyRequest{
-			Version:   verifyProofParam.Version,
-			TxHash:    verifyProofParam.TxHash,
-			BlockHash: verifyProofParam.BlockHash,
 		}
 		proofResponse, err := worker.GenVerifyProof(verifyRpcRequest)
 		if err != nil {
@@ -250,22 +240,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		zkbProofResponse := NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 		result = append(result, zkbProofResponse)
 	case common.SyncComGenesisType:
-		var genesisReq GenesisProofParam
-		err := ParseObj(request.Data, &genesisReq)
+		var genesisRpcRequest rpc.SyncCommGenesisRequest
+		err := common.ParseObj(request.Data, &genesisRpcRequest)
 		if err != nil {
 			return nil, fmt.Errorf("not genesis Proof param")
-		}
-		genesisRpcRequest := rpc.SyncCommGenesisRequest{
-			Version:       genesisReq.Version,
-			Period:        request.Index,
-			FirstProof:    genesisReq.FirstProof,
-			FirstWitness:  genesisReq.FirstWitness,
-			SecondProof:   genesisReq.SecondProof,
-			SecondWitness: genesisReq.SecondWitness,
-			GenesisID:     genesisReq.GenesisId,
-			FirstID:       genesisReq.FirstId,
-			SecondID:      genesisReq.SecondId,
-			RecursiveFp:   genesisReq.RecursiveFp,
 		}
 		proofResponse, err := worker.GenSyncCommGenesisProof(genesisRpcRequest)
 		if err != nil {
@@ -276,22 +254,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		result = append(result, zkbProofResponse)
 
 	case common.SyncComUnitType:
-		var unitParam UnitProofParam
-		err := ParseObj(request.Data, &unitParam)
+		var commUnitsRequest rpc.SyncCommUnitsRequest
+		err := common.ParseObj(request.Data, &commUnitsRequest)
 		if err != nil {
 			return nil, fmt.Errorf("not sync comm unit Proof param")
-		}
-		commUnitsRequest := rpc.SyncCommUnitsRequest{
-			Version:                 unitParam.Version,
-			Period:                  request.Index,
-			AttestedHeader:          unitParam.AttestedHeader,
-			CurrentSyncCommittee:    unitParam.CurrentSyncCommittee,
-			SyncAggregate:           unitParam.SyncAggregate,
-			NextSyncCommittee:       unitParam.NextSyncCommittee,
-			NextSyncCommitteeBranch: unitParam.NextSyncCommitteeBranch,
-			FinalizedHeader:         unitParam.FinalizedHeader,
-			FinalityBranch:          unitParam.FinalityBranch,
-			SignatureSlot:           unitParam.SignatureSlot,
 		}
 		proofResponse, err := worker.GenSyncCommitUnitProof(commUnitsRequest)
 		if err != nil {
@@ -304,23 +270,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		result = append(result, zkbProofResponse)
 		result = append(result, outerProof)
 	case common.SyncComRecursiveType:
-		var recursiveParam RecursiveProofParam
-		err := ParseObj(request.Data, &recursiveParam)
+		var recursiveRequest rpc.SyncCommRecursiveRequest
+		err := common.ParseObj(request.Data, &recursiveRequest)
 		if err != nil {
 			return nil, fmt.Errorf("not sync comm recursive Proof param")
-		}
-		recursiveRequest := rpc.SyncCommRecursiveRequest{
-			Version:       recursiveParam.Version,
-			Period:        request.Index,
-			Choice:        recursiveParam.Choice,
-			FirstProof:    recursiveParam.FirstProof,
-			FirstWitness:  recursiveParam.FirstWitness,
-			SecondProof:   recursiveParam.SecondProof,
-			SecondWitness: recursiveParam.SecondWitness,
-			BeginId:       recursiveParam.BeginId,
-			RelayId:       recursiveParam.RelayId,
-			EndId:         recursiveParam.EndId,
-			RecursiveFp:   recursiveParam.RecursiveFp,
 		}
 		proofResponse, err := worker.GenSyncCommRecursiveProof(recursiveRequest)
 		if err != nil {
@@ -330,7 +283,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, proofResponse.Proof, proofResponse.Witness)
 		result = append(result, zkbProofResponse)
 
-	case common.BlockHeaderType:
+	case common.BeaconHeaderType:
 		// todo
 		var blockHeaderRequest rpc.BlockHeaderRequest
 		err := common.ParseObj(request.Data, &blockHeaderRequest)
@@ -345,7 +298,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		}
 		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, response.Proof, response.Witness)
 		result = append(result, zkbProofResponse)
-	case common.BlockHeaderFinalityType:
+	case common.BeaconHeaderFinalityType:
 		// todo
 		var finalityRequest rpc.BlockHeaderFinalityRequest
 		err := common.ParseObj(request.Data, &finalityRequest)
@@ -376,9 +329,9 @@ func (m *manager) getChanResponse(reqType common.ZkProofType) chan *common.ZkPro
 	switch reqType {
 	case common.DepositTxType, common.VerifyTxType:
 		return m.btcProofResp
-	case common.RedeemTxType, common.TxInEth2, common.BlockHeaderType: // todo
+	case common.RedeemTxType, common.TxInEth2, common.BeaconHeaderType: // todo
 		return m.ethProofResp
-	case common.SyncComGenesisType, common.SyncComUnitType, common.SyncComRecursiveType, common.BlockHeaderFinalityType:
+	case common.SyncComGenesisType, common.SyncComUnitType, common.SyncComRecursiveType, common.BeaconHeaderFinalityType:
 		return m.syncCommitResp
 	default:
 		logger.Error("never should happen Proof type:%v", reqType)

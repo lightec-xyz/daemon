@@ -36,7 +36,7 @@ func NewRecursiveLightDaemon(cfg NodeConfig) (*Daemon, error) {
 	fetchDataResp := make(chan FetchDataResponse)
 
 	genesisPeriod := uint64(cfg.BeaconSlotHeight) / common.SlotPerPeriod
-	fileStore, err := NewFileStore(cfg.DataDir, cfg.BeaconSlotHeight)
+	fileStore, err := NewFileStorage(cfg.DataDir, cfg.BeaconSlotHeight)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

@@ -62,9 +62,9 @@ const (
 	SyncComGenesisType
 	SyncComUnitType
 	SyncComRecursiveType
-	BlockHeaderFinalityType //BeaconHeaderFinalityUpdate
+	BeaconHeaderFinalityType //BeaconHeaderFinalityUpdate
 	UnitOuter
-	BlockHeaderType
+	BeaconHeaderType
 )
 
 func (zkpt *ZkProofType) String() string {
@@ -85,10 +85,10 @@ func (zkpt *ZkProofType) String() string {
 		return "TxInEth2"
 	case UnitOuter:
 		return "UnitOuter"
-	case BlockHeaderFinalityType:
-		return "BlockHeaderFinalityType"
-	case BlockHeaderType:
-		return "BlockHeaderType"
+	case BeaconHeaderFinalityType:
+		return "BeaconHeaderFinalityType"
+	case BeaconHeaderType:
+		return "BeaconHeaderType"
 	default:
 		return ""
 	}
@@ -99,7 +99,7 @@ func (zkpt *ZkProofType) Weight() ProofWeight {
 	switch *zkpt {
 	case SyncComRecursiveType, SyncComGenesisType:
 		return Highest
-	case BlockHeaderFinalityType:
+	case BeaconHeaderFinalityType:
 		return WeightHigh
 	case SyncComUnitType:
 		return WeightMedium

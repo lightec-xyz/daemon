@@ -19,7 +19,7 @@ type BeaconFetch struct {
 	beaconClient       *beacon.Client
 	currentReqNums     *atomic.Int64
 	fetchRequest       chan FetchRequest
-	fileStore          *FileStore
+	fileStore          *FileStorage
 	exit               chan struct{}
 	fetchProofResponse chan FetchDataResponse
 	genesisSyncPeriod  uint64
@@ -29,7 +29,7 @@ type BeaconFetch struct {
 	lock               *sync.Mutex
 }
 
-func NewBeaconFetch(client *beacon.Client, fileStore *FileStore, genesisSlot uint64, fetchDataResp chan FetchDataResponse) (*BeaconFetch, error) {
+func NewBeaconFetch(client *beacon.Client, fileStore *FileStorage, genesisSlot uint64, fetchDataResp chan FetchDataResponse) (*BeaconFetch, error) {
 	maxReqNums := &atomic.Int64{}
 	maxReqNums.Store(0)
 	return &BeaconFetch{
@@ -194,7 +194,7 @@ func (bf *BeaconFetch) getBootStrap() error {
 		logger.Error("get bootstrap error:%v %v", bf.genesisSyncPeriod, err)
 		return err
 	}
-	err = bf.fileStore.StoreBootstrap(bootStrap)
+	err = bf.fileStore.StoreBootStrap(bootStrap)
 	if err != nil {
 		// todo
 		logger.Error("store genesis update error:%v %v", bf.genesisSyncPeriod, err)

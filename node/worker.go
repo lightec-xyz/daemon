@@ -113,6 +113,7 @@ func (w *LocalWorker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityReque
 	}
 	// todo
 	fmt.Printf("bhfReq: %v\n", string(reqBytes))
+
 	proof, err := w.circuit.BeaconHeaderFinalityUpdateProve(req.GenesisSCSSZRoot, req.RecursiveProof, req.RecursiveWitness,
 		req.OuterProof, req.OuterWitness, req.FinalityUpdate, req.ScUpdate)
 	if err != nil {
