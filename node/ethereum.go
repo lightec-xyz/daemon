@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/circuits"
-	dcommon "github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
@@ -43,7 +43,7 @@ type EthereumAgent struct {
 	blockTime        time.Duration
 	taskManager      *TaskManager
 	whiteList        map[string]bool
-	proofRequest     chan []*dcommon.ZkProofRequest
+	proofRequest     chan []*common.ZkProofRequest
 	exitSign         chan struct{}
 	multiAddressInfo MultiAddressInfo
 	btcNetwork       btctx.NetWork
@@ -56,7 +56,7 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg NodeConfig, genesisPeriod uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, proofRequest chan []*dcommon.ZkProofRequest, task *TaskManager) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
 	var privateKeys []*btcec.PrivateKey
 	for _, secret := range cfg.BtcPrivateKeys {
 		hexPriv, err := hex.DecodeString(secret)
@@ -187,7 +187,7 @@ func (e *EthereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
+func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info(" ethereumAgent receive proof response: %v %v %v %x", resp.ZkProofType.String(),
 		resp.Period, resp.TxHash, resp.Proof)
 	err := StoreZkProof(e.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
@@ -195,9 +195,9 @@ func (e *EthereumAgent) ProofResponse(resp *dcommon.ZkProofResponse) error {
 		logger.Error("store zk proof error:%v", err)
 		return err
 	}
-	proofId := dcommon.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
+	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
 	e.stateCache.DeleteZkRequest(proofId)
-	if resp.ZkProofType == dcommon.RedeemTxType {
+	if resp.ZkProofType == common.RedeemTxType {
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
 			logger.Error("update Proof error:%v", err)
@@ -318,10 +318,10 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			}
 			var redeemTxProof Proof
 			if submitted {
-				redeemTxProof = NewRedeemProof(redeemTx.TxHash, dcommon.ProofSuccess)
+				redeemTxProof = NewRedeemProof(redeemTx.TxHash, common.ProofSuccess)
 			} else {
 				requests = append(requests, NewRedeemProofParam(redeemTx.TxHash, nil))
-				redeemTxProof = NewRedeemProof(redeemTx.TxHash, dcommon.ProofDefault)
+				redeemTxProof = NewRedeemProof(redeemTx.TxHash, common.ProofDefault)
 			}
 			proofs = append(proofs, redeemTxProof)
 			redeemTxes = append(redeemTxes, redeemTx)
@@ -427,13 +427,14 @@ func (e *EthereumAgent) CheckState() error {
 	}
 	for _, unGenProof := range unGenProofs {
 		txHash := unGenProof.TxId
-		exists, err := e.fileStore.CheckRedeemProof(txHash)
+		logger.Debug("start check redeem proof tx: %v", txHash)
+		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
 			return err
 		}
 		if !exists {
-			// todo
+			logger.Debug("redeem proof exist now,delete cache: %v", txHash)
 			err := DeleteUnGenProof(e.store, Ethereum, txHash)
 			if err != nil {
 				logger.Error("delete ungen proof error: %v", err)
@@ -442,38 +443,38 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Debug("delete ungen proof tx: %v", txHash)
 			continue
 		}
-		exists, err = e.fileStore.CheckTxProof(txHash)
+		exists, err = CheckProof(e.fileStore, common.TxInEth2, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
 			return err
 		}
 		if !exists {
-			err := e.tryProofRequest(dcommon.TxInEth2, 0, txHash)
+			err := e.tryProofRequest(common.TxInEth2, 0, txHash)
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
 			}
 		}
 		// todo
-		slot, err := e.GetSlotByHash(txHash)
+		txSlot, err := e.GetSlotByHash(txHash)
 		if err != nil {
-			logger.Error("get slot error: %v", err)
+			logger.Error("get txSlot error: %v", err)
 			return err
 		}
-		exists, err = e.fileStore.CheckBeaconHeaderProof(slot)
+		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, "")
 		if err != nil {
 			logger.Error("check block header proof error: %v", err)
 			return err
 		}
 		if !exists {
-			err := e.tryProofRequest(dcommon.BeaconHeaderType, slot, txHash)
+			err := e.tryProofRequest(common.BeaconHeaderType, txSlot, txHash)
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
 			}
 			continue
 		}
-		err = e.tryProofRequest(dcommon.RedeemTxType, 0, txHash)
+		err = e.tryProofRequest(common.RedeemTxType, txSlot, txHash)
 		if err != nil {
 			logger.Error("try proof request error: %v", err)
 			return err
@@ -485,8 +486,8 @@ func (e *EthereumAgent) CheckState() error {
 
 }
 
-func (e *EthereumAgent) tryProofRequest(zkType dcommon.ZkProofType, index uint64, txHash string) error {
-	proofId := dcommon.NewProofId(zkType, index, txHash)
+func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64, txHash string) error {
+	proofId := common.NewProofId(zkType, index, txHash)
 	exists := e.stateCache.CheckZkRequest(proofId)
 	if exists {
 		logger.Debug("proof request exists: %v", proofId)
@@ -520,7 +521,7 @@ func (e *EthereumAgent) tryProofRequest(zkType dcommon.ZkProofType, index uint64
 		logger.Debug("proof request data not prepared: %v", proofId)
 		return nil
 	}
-	proofRequest := dcommon.NewZkProofRequest(zkType, data, index, txHash)
+	proofRequest := common.NewZkProofRequest(zkType, data, index, txHash)
 	err = e.sendZkProofRequest(proofRequest)
 	if err != nil {
 		logger.Error("send zk proof request error: %v", err)
@@ -530,33 +531,68 @@ func (e *EthereumAgent) tryProofRequest(zkType dcommon.ZkProofType, index uint64
 	return nil
 }
 
-func (e *EthereumAgent) getTxInEth2Data(txHash string) (*TxInEth2Param, bool, error) {
+func (e *EthereumAgent) getTxInEth2Data(txHash string) (*rpc.TxInEth2ProveRequest, bool, error) {
 	txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, txHash)
 	if err != nil {
 		logger.Error("get tx data error: %v", err)
 		return nil, false, err
 	}
-	return &TxInEth2Param{
+	return &rpc.TxInEth2ProveRequest{
 		TxHash: txHash,
 		TxData: txData,
 	}, true, nil
 }
 
-func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*BeaconHeaderParam, bool, error) {
+func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*rpc.BlockHeaderRequest, bool, error) {
 	// todo
-	finalitySlot := dcommon.GetNearTxSlot(index)
-	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, finalitySlot)
+	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(index)
+	if err != nil {
+		logger.Error("get finalized slot error: %v", err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	logger.Debug("get beaconHeader %v ~ %v", index, finalizedSlot)
+	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
 	}
-	return &BeaconHeaderParam{
-		Index:   index,
-		Headers: beaconBlockHeaders,
+	if len(beaconBlockHeaders) == 0 {
+		return nil, false, fmt.Errorf("never should happen %v", index)
+	}
+	beginHeader, err := beaconBlockHeaders[0].ToConsensus()
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	beginRoot, err := beginHeader.HashTreeRoot()
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	endHeader, err := beaconBlockHeaders[len(beaconBlockHeaders)-1].ToConsensus()
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	endRoot, err := endHeader.HashTreeRoot()
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	return &rpc.BlockHeaderRequest{
+		Index:     index,
+		BeginSlot: index,
+		EndSlot:   finalizedSlot,
+		BeginRoot: hex.EncodeToString(beginRoot[0:]),
+		EndRoot:   hex.EncodeToString(endRoot[0:]),
+		Headers:   beaconBlockHeaders,
 	}, true, nil
 }
 
-func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (*rpc.RedeemRequest, bool, error) {
+func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (*rpc.RedeemRequest, bool, error) {
 	txProof, ok, err := e.fileStore.GetTxProof(txHash)
 	if err != nil {
 		logger.Error("get tx proof error: %v", err)
@@ -566,41 +602,52 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (*rpc.
 		logger.Debug("proof request data not prepared: %v", txHash)
 		return nil, false, nil
 	}
-	blockHeaderProof, ok, err := e.fileStore.GetBeaconHeaderProof(index)
+	blockHeaderProof, ok, err := e.fileStore.GetBeaconHeaderProof(txSlot)
 	if err != nil {
 		logger.Error("get block header proof error: %v", err)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Debug("proof request data not prepared: %v", index)
+		logger.Debug("proof request data not prepared: %v", txSlot)
 		return nil, false, nil
 	}
-	finalitySlot := dcommon.GetNearTxSlot(index)
-	bhfUpdateProof, ok, err := e.fileStore.GetBhfProof(finalitySlot)
+	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Debug("proof request data not prepared: %v", index)
+		logger.Debug("proof request data not prepared: %v", txSlot)
 		return nil, false, nil
 	}
+	bhfProof, ok, err := e.fileStore.GetBhfProof(finalizedSlot)
+	if err != nil {
+		logger.Error("get bhf update proof error: %v", err)
+		return nil, false, err
+	}
+
 	genesisRoot, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
 	if err != nil {
 		logger.Error("get genesis root error: %v", err)
 		return nil, false, err
 	}
-	beginID, err := e.getBlockHeaderRoot(index)
+	var finalityUpdate *structs.LightClientUpdateWithVersion
+	ok, err = e.fileStore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
 	if err != nil {
-		logger.Error("get begin id error: %v", err)
+		logger.Error("get finality update error: %v", err)
 		return nil, false, err
 	}
-	endId, err := e.getBlockHeaderRoot(finalitySlot)
+	if !ok {
+		logger.Warn("no find finality update %v", finalizedSlot)
+		return nil, false, nil
+	}
+
+	attestedSlot, err := strconv.ParseUint(finalityUpdate.Data.AttestedHeader.Slot, 10, 64)
 	if err != nil {
-		logger.Error("get end id error: %v", err)
+		logger.Error("parse slot error: %v", err)
 		return nil, false, err
 	}
-	period := index / 8192
+	period := attestedSlot / common.SlotPerPeriod
 	currentRoot, ok, err := e.GetSyncCommitRootID(period)
 	if err != nil {
 		logger.Error("get current root error: %v", err)
@@ -617,8 +664,8 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (*rpc.
 		TxWitness:        txProof.Witness,
 		BhProof:          blockHeaderProof.Proof,
 		BhWitness:        blockHeaderProof.Witness,
-		BhfProof:         bhfUpdateProof.Proof,
-		BhfWitness:       bhfUpdateProof.Witness,
+		BhfProof:         bhfProof.Proof,
+		BhfWitness:       bhfProof.Witness,
 		GenesisScRoot:    genesisRoot,
 		BeginId:          beginID,
 		EndId:            endId,
@@ -633,35 +680,35 @@ func (e *EthereumAgent) getRedeemRequestData(index uint64, txHash string) (*rpc.
 // todo
 
 func (e *EthereumAgent) GetSlotByHash(hash string) (uint64, error) {
-	txHash := common.HexToHash(hash)
+	txHash := ethCommon.HexToHash(hash)
 	receipt, err := e.ethClient.TransactionReceipt(context.Background(), txHash)
 	if err != nil {
 		return 0, err
 	}
-	slot, err := dcommon.GetSlot(receipt.BlockNumber.Int64())
+	slot, err := common.GetSlot(receipt.BlockNumber.Int64())
 	if err != nil {
 		return 0, err
 	}
 	return slot, nil
 }
 
-func (e *EthereumAgent) getRequestProofData(zkType dcommon.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
+func (e *EthereumAgent) getRequestProofData(zkType common.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
 	switch zkType {
-	case dcommon.TxInEth2:
+	case common.TxInEth2:
 		return e.getTxInEth2Data(txHash)
-	case dcommon.BeaconHeaderType:
+	case common.BeaconHeaderType:
 		return e.getBlockHeaderRequestData(index)
-	case dcommon.RedeemTxType:
+	case common.RedeemTxType:
 		return e.getRedeemRequestData(index, txHash)
 	default:
 		return nil, false, fmt.Errorf("never should happen: %v", zkType)
 	}
 }
 
-func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, txHash string) (bool, error) {
+func (e *EthereumAgent) checkRequest(zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
 	switch zkType {
-	case dcommon.TxInEth2:
-		finalizedSlot, ok, err := e.fileStore.GetSlot()
+	case common.TxInEth2:
+		finalizedSlot, ok, err := e.fileStore.GetFinalizedSlot()
 		if err != nil {
 			logger.Error("get latest slot error: %v", err)
 			return false, err
@@ -670,24 +717,25 @@ func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, t
 			logger.Warn("no find latest slot")
 			return false, nil
 		}
-		receipt, err := e.ethClient.TransactionReceipt(context.Background(), common.HexToHash(txHash))
+		receipt, err := e.ethClient.TransactionReceipt(context.Background(), ethCommon.HexToHash(txHash))
 		if err != nil {
 			logger.Error("get tx receipt error: %v", err)
 			return false, err
 		}
-		// todo
-		txSlot, err := dcommon.GetSlot(receipt.BlockNumber.Int64())
+		txSlot, err := common.GetSlot(receipt.BlockNumber.Int64())
 		if err != nil {
 			logger.Error("get slot error: %v", err)
 			return false, err
 		}
-		if txSlot <= finalizedSlot {
+		// todo
+		if txSlot < finalizedSlot {
 			logger.Warn("%v tx slot %v less than finalized slot %v", txHash, txSlot, finalizedSlot)
 			return false, nil
 		}
 		return true, nil
-	case dcommon.BeaconHeaderType:
-		latestFinalizedSlot, ok, err := e.fileStore.GetSlot()
+	case common.BeaconHeaderType:
+		// todo
+		_, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(index)
 		if err != nil {
 			logger.Error("get latest slot error: %v", err)
 			return false, err
@@ -695,13 +743,9 @@ func (e *EthereumAgent) checkRequest(zkType dcommon.ZkProofType, index uint64, t
 		if !ok {
 			return false, nil
 		}
-		nearFinalitySlot := dcommon.GetNearTxSlot(index)
-		if nearFinalitySlot < latestFinalizedSlot {
-			return false, nil
-		}
 		return true, nil
 
-	case dcommon.RedeemTxType:
+	case common.RedeemTxType:
 		// todo
 		return true, nil
 
@@ -730,7 +774,7 @@ func (e *EthereumAgent) getBlockHeaderRoot(slot uint64) ([]byte, error) {
 	return treeRoot[0:], nil
 }
 
-func (e *EthereumAgent) sendZkProofRequest(requests ...*dcommon.ZkProofRequest) error {
+func (e *EthereumAgent) sendZkProofRequest(requests ...*common.ZkProofRequest) error {
 	e.proofRequest <- requests
 	for _, req := range requests {
 		logger.Info("send request: %v", req.Id())
@@ -739,9 +783,9 @@ func (e *EthereumAgent) sendZkProofRequest(requests ...*dcommon.ZkProofRequest) 
 	return nil
 }
 
-func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status dcommon.ProofStatus) error {
+func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status common.ProofStatus) error {
 	logger.Debug("update Redeem Proof status: %v %v %v", txId, proof, status)
-	err := UpdateProof(e.store, txId, proof, dcommon.RedeemTxType, status)
+	err := UpdateProof(e.store, txId, proof, common.RedeemTxType, status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", txId, err)
 		return err
@@ -763,10 +807,10 @@ func NewRedeemProofParam(txId string, txData *ethblock.TxInEth2ProofData) Redeem
 	}
 }
 
-func NewRedeemProof(txId string, status dcommon.ProofStatus) Proof {
+func NewRedeemProof(txId string, status common.ProofStatus) Proof {
 	return Proof{
 		TxHash:    txId,
-		ProofType: dcommon.TxInEth2,
+		ProofType: common.TxInEth2,
 		Status:    int(status),
 	}
 }

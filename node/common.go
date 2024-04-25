@@ -23,6 +23,52 @@ import (
 	"time"
 )
 
+func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
+	switch zkType {
+	case common.SyncComGenesisType:
+		return fileStore.CheckGenesisProof()
+	case common.SyncComUnitType:
+		return fileStore.CheckUnitProof(index)
+	case common.UnitOuter:
+		return fileStore.CheckOuterProof(index)
+	case common.SyncComRecursiveType:
+		return fileStore.CheckRecursiveProof(index)
+	case common.BeaconHeaderFinalityType:
+		return fileStore.CheckBhfProof(index)
+	case common.TxInEth2:
+		return fileStore.CheckTxProof(txHash)
+	case common.BeaconHeaderType:
+		return fileStore.CheckBeaconHeaderProof(index)
+	case common.RedeemTxType:
+		return fileStore.CheckRedeemProof(txHash)
+	default:
+		return false, fmt.Errorf("unSupport now  proof type: %v", zkType.String())
+	}
+}
+
+func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string, proof, witness []byte) error {
+	switch zkType {
+	case common.SyncComUnitType:
+		return fileStore.StoreUnitProof(index, proof, witness)
+	case common.UnitOuter:
+		return fileStore.StoreOuterProof(index, proof, witness)
+	case common.SyncComGenesisType:
+		return fileStore.StoreGenesisProof(index, proof, witness)
+	case common.SyncComRecursiveType:
+		return fileStore.StoreRecursiveProof(index, proof, witness)
+	case common.BeaconHeaderFinalityType:
+		return fileStore.StoreBhfProof(index, proof, witness)
+	case common.TxInEth2:
+		return fileStore.StoreTxProof(txHash, proof, witness)
+	case common.BeaconHeaderType:
+		return fileStore.StoreBeaconHeaderProof(index, proof, witness)
+	case common.RedeemTxType:
+		return fileStore.StoreRedeemProof(txHash, proof, witness)
+	default:
+		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
+	}
+}
+
 func GetBhfUpdateData(fileStore *FileStorage, slot uint64) (interface{}, bool, error) {
 	logger.Debug("get bhf update data: %v", slot)
 	genesisPeriod := fileStore.GetGenesisPeriod()
@@ -386,52 +432,6 @@ func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.LightCli
 	}
 	return &update, true, nil
 
-}
-
-func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
-	switch zkType {
-	case common.SyncComGenesisType:
-		return fileStore.CheckGenesisProof()
-	case common.SyncComUnitType:
-		return fileStore.CheckUnitProof(index)
-	case common.UnitOuter:
-		return fileStore.CheckOuterProof(index)
-	case common.SyncComRecursiveType:
-		return fileStore.CheckRecursiveProof(index)
-	case common.BeaconHeaderFinalityType:
-		return fileStore.CheckBhfProof(index)
-	case common.TxInEth2:
-		return fileStore.CheckTxProof(txHash)
-	case common.BeaconHeaderType:
-		return fileStore.CheckBeaconHeaderProof(index)
-	case common.RedeemTxType:
-		return fileStore.CheckRedeemProof(txHash)
-	default:
-		return false, fmt.Errorf("unSupport now  proof type: %v", zkType.String())
-	}
-}
-
-func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string, proof, witness []byte) error {
-	switch zkType {
-	case common.SyncComUnitType:
-		return fileStore.StoreUnitProof(index, proof, witness)
-	case common.UnitOuter:
-		return fileStore.StoreOuterProof(index, proof, witness)
-	case common.SyncComGenesisType:
-		return fileStore.StoreGenesisProof(index, proof, witness)
-	case common.SyncComRecursiveType:
-		return fileStore.StoreRecursiveProof(index, proof, witness)
-	case common.BeaconHeaderFinalityType:
-		return fileStore.StoreBhfProof(index, proof, witness)
-	case common.TxInEth2:
-		return fileStore.StoreTxProof(txHash, proof, witness)
-	case common.BeaconHeaderType:
-		return fileStore.StoreBeaconHeaderProof(index, proof, witness)
-	case common.RedeemTxType:
-		return fileStore.StoreRedeemProof(txHash, proof, witness)
-	default:
-		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
-	}
 }
 
 // todo refactor

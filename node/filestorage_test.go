@@ -7,13 +7,9 @@ func TestFileStorage(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = fileStore.StorePeriod(100)
+	finalizedSlot, err := fileStore.GetNearTxSlotFinalizedSlot(130)
 	if err != nil {
 		t.Error(err)
 	}
-	indexes, err := fileStore.NeedUpdateIndexes()
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(indexes)
+	t.Log(finalizedSlot)
 }

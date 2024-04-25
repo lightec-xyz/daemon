@@ -130,11 +130,11 @@ func (fs *FileStorage) GetPeriod() (uint64, bool, error) {
 	return period, exists, nil
 }
 
-func (fs *FileStorage) StoreSlot(slot uint64) error {
+func (fs *FileStorage) StoreFinalizedSlot(slot uint64) error {
 	return fs.Store(PeriodTable, LatestSlotKey, slot)
 }
 
-func (fs *FileStorage) GetSlot() (uint64, bool, error) {
+func (fs *FileStorage) GetFinalizedSlot() (uint64, bool, error) {
 	var slot uint64
 	exists, err := fs.Get(PeriodTable, LatestSlotKey, &slot)
 	if err != nil {
@@ -330,6 +330,37 @@ func newStoreProof(proofType common.ZkProofType, period uint64, txHash string, p
 		Witness:   hex.EncodeToString(witness), // todo
 	}
 }
+
+func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, error) {
+	finalizedStore, ok := fs.GetFileStore(FinalityTable)
+	if !ok {
+		logger.Error("get file store error %v", FinalityTable)
+		return 0, false, fmt.Errorf("get file store error %v", FinalityTable)
+	}
+	indexes, err := finalizedStore.AllIndexes()
+	if err != nil {
+		logger.Error("get update indexes error:%v", err)
+		return 0, false, err
+	}
+	// todo
+	var tmpIndexes []uint64
+	for key, _ := range indexes {
+		tmpIndexes = append(tmpIndexes, key)
+	}
+	sort.Slice(tmpIndexes, func(i, j int) bool {
+		return tmpIndexes[i] < tmpIndexes[j]
+	})
+	var finalizedSlot uint64
+	for _, index := range tmpIndexes {
+		if index >= txSlot {
+			finalizedSlot = index
+			break
+		}
+	}
+	return finalizedSlot, finalizedSlot == 0, nil
+
+}
+
 func (fs *FileStorage) NeedUpdateIndexes() ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(UpdateTable)
 	if !ok {

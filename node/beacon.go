@@ -75,14 +75,14 @@ func (b *BeaconAgent) Init() error {
 			return err
 		}
 	}
-	_, exists, err = b.fileStore.GetSlot()
+	_, exists, err = b.fileStore.GetFinalizedSlot()
 	if err != nil {
 		logger.Error("check latest Slot error: %v", err)
 		return err
 	}
 	if !exists {
 		logger.Warn("no find latest slot, store %v slot to db", b.genesisSlot)
-		err := b.fileStore.StoreSlot(b.genesisSlot)
+		err := b.fileStore.StoreFinalizedSlot(b.genesisSlot)
 		if err != nil {
 			logger.Error("store latest Slot error: %v", err)
 			return err
@@ -388,13 +388,12 @@ func (b *BeaconAgent) CheckState() error {
 			return err
 		}
 	}
-
 	return nil
 }
 
-// CheckBeaconHeaderFinalityProof todo need to find best way
-func (b *BeaconAgent) CheckBeaconHeaderFinalityProof() error {
-	logger.Debug("check finality update now")
+// CheckBeaconHeaderFinality todo need to find best way
+func (b *BeaconAgent) CheckBeaconHeaderFinality() error {
+
 	finalityUpdate, err := b.beaconClient.GetFinalityUpdate()
 	if err != nil {
 		logger.Error("get finality proof error: %v", err)
@@ -407,12 +406,14 @@ func (b *BeaconAgent) CheckBeaconHeaderFinalityProof() error {
 	}
 
 	finalizedSlot := slotBig.Uint64()
-	// todo
-	err = b.fileStore.StoreSlot(slotBig.Uint64())
+	err = b.fileStore.StoreFinalizedSlot(finalizedSlot)
 	if err != nil {
 		logger.Error("store latest slot error: %v", err)
 		return err
 	}
+	logger.Debug("check finality update now: %v", finalizedSlot)
+	// todo
+	return nil
 	exists, err := b.fileStore.CheckFinalityUpdate(finalizedSlot)
 	if err != nil {
 		logger.Error("check finality proof error: %v", err)

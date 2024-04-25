@@ -62,7 +62,10 @@ func TestClient_RetrieveBeaconHeaders(t *testing.T) {
 	}
 	t.Log(latestSlot)
 	latestSlot = latestSlot - 1
-	headers, err := client.RetrieveBeaconHeaders(latestSlot-2000, latestSlot)
+	start := latestSlot - 32
+	end := latestSlot
+	t.Log(start, end)
+	headers, err := client.RetrieveBeaconHeaders(start, end)
 	if err != nil {
 		t.Fatal(err)
 	}
