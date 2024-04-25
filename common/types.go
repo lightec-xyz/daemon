@@ -22,9 +22,6 @@ type SubmitProof struct {
 	Id       string
 }
 
-// todo
-const ZkProofLength = 928
-
 type ZkProof []byte
 
 type ZkProofRequest struct {

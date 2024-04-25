@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
@@ -8,6 +9,17 @@ import (
 	"path/filepath"
 	"reflect"
 )
+
+func HexToBytes(data string) ([]byte, error) {
+	if data[0:2] == "0x" {
+		data = data[2:]
+	}
+	bytes, err := hex.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
 
 func Uuid() (string, error) {
 	newV7, err := uuid.NewV7()
