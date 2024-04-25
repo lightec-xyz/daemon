@@ -45,7 +45,7 @@ const (
 type FileStorage struct {
 	RootPath      string
 	FileStoreMap  map[Table]*store.FileStore
-	lock          *sync.Mutex
+	lock          sync.Mutex
 	genesisSlot   uint64
 	genesisPeriod uint64
 }
