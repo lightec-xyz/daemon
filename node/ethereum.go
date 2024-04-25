@@ -562,32 +562,22 @@ func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*rpc.BlockHeade
 	if len(beaconBlockHeaders) == 0 {
 		return nil, false, fmt.Errorf("never should happen %v", index)
 	}
-	beginHeader, err := beaconBlockHeaders[0].ToConsensus()
+	beginSlot, beginRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[0])
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
 	}
-	beginRoot, err := beginHeader.HashTreeRoot()
-	if err != nil {
-		logger.Error("get beacon block headers error: %v", err)
-		return nil, false, err
-	}
-	endHeader, err := beaconBlockHeaders[len(beaconBlockHeaders)-1].ToConsensus()
-	if err != nil {
-		logger.Error("get beacon block headers error: %v", err)
-		return nil, false, err
-	}
-	endRoot, err := endHeader.HashTreeRoot()
+	endSlot, endRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[len(beaconBlockHeaders)-1])
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
 	}
 	return &rpc.BlockHeaderRequest{
 		Index:     index,
-		BeginSlot: index,
-		EndSlot:   finalizedSlot,
-		BeginRoot: hex.EncodeToString(beginRoot[0:]),
-		EndRoot:   hex.EncodeToString(endRoot[0:]),
+		BeginSlot: beginSlot,
+		EndSlot:   endSlot,
+		BeginRoot: hex.EncodeToString(beginRoot),
+		EndRoot:   hex.EncodeToString(endRoot),
 		Headers:   beaconBlockHeaders,
 	}, true, nil
 }
@@ -653,6 +643,11 @@ func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (*rpc
 		logger.Error("get current root error: %v", err)
 		return nil, false, err
 	}
+	beginID, endId, err := e.GetBeaconHeaderId(txSlot, finalizedSlot)
+	if err != nil {
+		logger.Error("get begin and end id error: %v", err)
+		return nil, false, err
+	}
 
 	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(e.ethClient.Client, txHash)
 	if err != nil {
@@ -675,6 +670,28 @@ func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (*rpc
 	}
 	return &redeemRequest, true, nil
 
+}
+
+func (e *EthereumAgent) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, error) {
+	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(start, end)
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, nil, err
+	}
+	if len(beaconBlockHeaders) == 0 {
+		return nil, nil, fmt.Errorf("never should happen %v", start)
+	}
+	_, beginRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[0])
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, nil, err
+	}
+	_, endRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[len(beaconBlockHeaders)-1])
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, nil, err
+	}
+	return beginRoot, endRoot, nil
 }
 
 // todo

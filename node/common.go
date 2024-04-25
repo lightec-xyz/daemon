@@ -18,10 +18,31 @@ import (
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
+	"math/big"
 	"os"
 	"strconv"
 	"time"
 )
+
+func BeaconBlockHeaderToSlotAndRoot(header *structs.BeaconBlockHeader) (uint64, []byte, error) {
+	consensus, err := header.ToConsensus()
+	if err != nil {
+		logger.Error("to consensus error: %v", err)
+		return 0, nil, err
+	}
+	root, err := consensus.HashTreeRoot()
+	if err != nil {
+		logger.Error("hash tree root error: %v", err)
+		return 0, nil, err
+	}
+	slotBig, ok := big.NewInt(0).SetString(header.Slot, 10)
+	if !ok {
+		logger.Error("parse slot error: %v", header.Slot)
+		return 0, nil, fmt.Errorf("parse slot error: %v", header.Slot)
+	}
+	return slotBig.Uint64(), root[0:], nil
+
+}
 
 func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
 	switch zkType {

@@ -506,7 +506,10 @@ func debugProof() (*reLightCommon.Proof, error) {
 }
 
 func GetGenesisSCSSZRoot(root []byte) ([2]frontend.Variable, error) {
-	panic(root)
+	var genesisSCSSZRoot [2]frontend.Variable
+	genesisSCSSZRoot[0] = root[:16]
+	genesisSCSSZRoot[1] = root[16:]
+	return genesisSCSSZRoot, nil
 }
 
 func ProofToSolBytes(proof native_plonk.Proof) ([]byte, error) {
