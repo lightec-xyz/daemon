@@ -139,8 +139,8 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	//// todo
 	params.UseHoleskyNetworkConfig()
 	params.OverrideBeaconConfig(params.HoleskyConfig())
-
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	// todo
+	beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro")
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
