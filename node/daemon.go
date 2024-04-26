@@ -182,8 +182,8 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		agents:        agents,
 		server:        server,
 		nodeConfig:    cfg,
-		enableSyncCom: false, //todo
-		enableTx:      true,  // todo
+		enableSyncCom: cfg.EnableRecursiveAgent, //todo
+		enableTx:      cfg.EnableTxAgent,        // todo
 		exitSignal:    make(chan os.Signal, 1),
 		taskManager:   taskManager,
 		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),

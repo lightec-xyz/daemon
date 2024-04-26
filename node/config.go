@@ -11,16 +11,18 @@ import (
 
 type RunConfig struct {
 	RootConfig
-	BtcUrl            string `json:"btcUrl"`
-	BtcUser           string `json:"btcUser"`
-	BtcPwd            string `json:"btcPwd"`
-	EthUrl            string `json:"ethUrl"`
-	EthPrivateKey     string `json:"ethPrivateKey"`
-	AutoSubmit        bool   `json:"autoSubmit"`
-	EnableLocalWorker bool   `json:"enableLocalWorker"`
-	BeaconUrl         string `json:"beaconUrl"`
-	BtcInitHeight     int64  `json:"btcInitHeight"`
-	EthInitHeight     int64  `json:"ethInitHeight"`
+	BtcUrl               string `json:"btcUrl"`
+	BtcUser              string `json:"btcUser"`
+	BtcPwd               string `json:"btcPwd"`
+	EthUrl               string `json:"ethUrl"`
+	EthPrivateKey        string `json:"ethPrivateKey"`
+	AutoSubmit           bool   `json:"autoSubmit"`
+	EnableLocalWorker    bool   `json:"enableLocalWorker"`
+	BeaconUrl            string `json:"beaconUrl"`
+	BtcInitHeight        int64  `json:"btcInitHeight"`
+	EthInitHeight        int64  `json:"ethInitHeight"`
+	EnableRecursiveAgent bool   `json:"enableRecursiveAgent"`
+	EnableTxAgent        bool   `json:"enableTxAgent"`
 }
 
 func (rc *RunConfig) Check() error {
@@ -65,12 +67,16 @@ type RootConfig struct {
 }
 
 type NodeConfig struct {
-	DataDir           string `json:"datadir"`
-	Network           string `json:"network"`
-	Rpcbind           string `json:"rpcbind"`
-	RpcPort           string `json:"rpcport"`
-	EnableLocalWorker bool   `json:"enableLocalWorker"`
-	EnableGenScProof  bool   `json:"enableGenScProof"`
+	RootConfig
+	RunConfig
+	EnableRecursiveAgent bool   `json:"enableRecursiveAgent"`
+	EnableTxAgent        bool   `json:"enableTxAgent"`
+	DataDir              string `json:"datadir"`
+	Network              string `json:"network"`
+	Rpcbind              string `json:"rpcbind"`
+	RpcPort              string `json:"rpcport"`
+	EnableLocalWorker    bool   `json:"enableLocalWorker"`
+	EnableGenScProof     bool   `json:"enableGenScProof"`
 
 	BtcUrl            string           `json:"btcUrl"`
 	BtcUser           string           `json:"btcUser"`
@@ -131,7 +137,7 @@ func NewConfig(cfg RunConfig) (NodeConfig, error) {
 		return newTestConfig(cfg.EnableLocalWorker, cfg.AutoSubmit, cfg.Datadir, network, cfg.Rpcbind, cfg.Rpcport, cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BeaconUrl,
 			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.HoleskyConfig(), cfg.BtcInitHeight, cfg.EthInitHeight)
 	case Lighteclocal:
-		return newLocalConfig(cfg.EnableLocalWorker, cfg.AutoSubmit, cfg.Datadir, network, cfg.Rpcbind, cfg.Rpcport, cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BeaconUrl,
+		return newLocalConfig(cfg.EnableRecursiveAgent, cfg.EnableTxAgent, cfg.EnableLocalWorker, cfg.AutoSubmit, cfg.Datadir, network, cfg.Rpcbind, cfg.Rpcport, cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BeaconUrl,
 			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.HoleskyConfig(), cfg.BtcInitHeight, cfg.EthInitHeight)
 	default:
 		return NodeConfig{}, fmt.Errorf("unsupport network now: %v", network)
@@ -362,7 +368,7 @@ func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind
 	}, nil
 }
 
-func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
+func newLocalConfig(enableTxAgent, enableRecursiveAgent, enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
 	beaconConfig *beaconconfig.BeaconChainConfig, btcInitHeight, ethInitHeight int64) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
 	if err != nil {
@@ -402,20 +408,22 @@ func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbin
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
-		BtcInitHeight:    btcInitHeight,
-		AutoSubmit:       autoSubmit,
-		BeaconSlotHeight: LocalInitBeaconHeight,
-		BeaconUrl:        beaconUrl,
-		BeaconConfig:     beaconConfig,
-		EthInitHeight:    ethInitHeight,
-		EthUrl:           ethUrl,
-		ZkBridgeAddr:     LocalEthZkBridgeAddress,
-		ZkBtcAddr:        LocalEthZkBtcAddress,
-		EthScanBlockTime: LocalEthScanTime,
-		EthPrivateKey:    ethPrivateKey,
-		LogAddr:          LocalLogAddrs,
-		LogTopic:         LocalLogTopics,
-		MultiAddressInfo: multiSigAddressInfo,
+		BtcInitHeight:        btcInitHeight,
+		AutoSubmit:           autoSubmit,
+		EnableRecursiveAgent: enableRecursiveAgent,
+		EnableTxAgent:        enableTxAgent,
+		BeaconSlotHeight:     LocalInitBeaconHeight,
+		BeaconUrl:            beaconUrl,
+		BeaconConfig:         beaconConfig,
+		EthInitHeight:        ethInitHeight,
+		EthUrl:               ethUrl,
+		ZkBridgeAddr:         LocalEthZkBridgeAddress,
+		ZkBtcAddr:            LocalEthZkBtcAddress,
+		EthScanBlockTime:     LocalEthScanTime,
+		EthPrivateKey:        ethPrivateKey,
+		LogAddr:              LocalLogAddrs,
+		LogTopic:             LocalLogTopics,
+		MultiAddressInfo:     multiSigAddressInfo,
 		EthAddrFilter: EthAddrFilter{
 			LogDepositAddr:      LocalLogDepositAddr,
 			LogRedeemAddr:       LocalLogRedeemAddr,
