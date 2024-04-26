@@ -7,9 +7,12 @@ func TestFileStorage(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	finalizedSlot, err := fileStore.GetNearTxSlotFinalizedSlot(130)
+	finalizedSlot, ok, err := fileStore.GetNearTxSlotFinalizedSlot(130)
 	if err != nil {
 		t.Error(err)
+	}
+	if !ok {
+		t.Fatal("")
 	}
 	t.Log(finalizedSlot)
 }

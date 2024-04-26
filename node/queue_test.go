@@ -31,9 +31,9 @@ func TestArrayQueue(t *testing.T) {
 	arrayQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 5})
 	arrayQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 7})
 	arrayQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 7})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 88})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 10})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 8})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 88})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 10})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 8})
 	arrayQueue.Pop()
 	arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
 		t.Log(value.Weight, value.Index)
