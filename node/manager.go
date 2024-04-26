@@ -226,10 +226,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		result = append(result, zkbProofResponse)
 	case common.RedeemTxType:
 		// todo
-		var redeemRpcRequest rpc.RedeemRequest
-		err := common.ParseObj(request.Data, &redeemRpcRequest)
-		if err != nil {
-			logger.Error("parse redeem Proof param error:%v", err)
+		//var redeemRpcRequest rpc.RedeemRequest
+		redeemRpcRequest, ok := request.Data.(rpc.RedeemRequest)
+		if !ok {
+			logger.Error("parse redeem Proof param error:%v", request.Id())
 			return nil, fmt.Errorf("not redeem Proof param")
 		}
 		proofResponse, err := worker.GenRedeemProof(&redeemRpcRequest)

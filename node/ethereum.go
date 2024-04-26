@@ -588,86 +588,86 @@ func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*rpc.BlockHeade
 	}, true, nil
 }
 
-func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (*rpc.RedeemRequest, bool, error) {
+func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (rpc.RedeemRequest, bool, error) {
 	txProof, ok, err := e.fileStore.GetTxProof(txHash)
 	if err != nil {
 		logger.Error("get tx proof error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txHash)
-		return nil, false, nil
+		return rpc.RedeemRequest{}, false, nil
 	}
 	blockHeaderProof, ok, err := e.fileStore.GetBeaconHeaderProof(txSlot)
 	if err != nil {
 		logger.Error("get block header proof error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txSlot)
-		return nil, false, nil
+		return rpc.RedeemRequest{}, false, nil
 	}
 	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txSlot)
-		return nil, false, nil
+		return rpc.RedeemRequest{}, false, nil
 	}
 	bhfProof, ok, err := e.fileStore.GetBhfProof(finalizedSlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	if !ok {
 		logger.Warn("no find bhf update %v", finalizedSlot)
-		return nil, false, nil
+		return rpc.RedeemRequest{}, false, nil
 	}
 	genesisRoot, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
 	if err != nil {
 		logger.Error("get genesis root error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	if !ok {
 		logger.Warn("no find genesis root %v", e.genesisPeriod)
-		return nil, false, nil
+		return rpc.RedeemRequest{}, false, nil
 	}
 
 	var finalityUpdate *structs.LightClientUpdateWithVersion
 	ok, err = e.fileStore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
 	if err != nil {
 		logger.Error("get finality update error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	if !ok {
 		logger.Warn("no find finality update %v", finalizedSlot)
-		return nil, false, nil
+		return rpc.RedeemRequest{}, false, nil
 	}
 
 	attestedSlot, err := strconv.ParseUint(finalityUpdate.Data.AttestedHeader.Slot, 10, 64)
 	if err != nil {
 		logger.Error("parse slot error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	period := attestedSlot / common.SlotPerPeriod
 	currentRoot, ok, err := e.GetSyncCommitRootID(period)
 	if err != nil {
 		logger.Error("get current root error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
 	beginID, endId, err := e.GetBeaconHeaderId(txSlot, finalizedSlot)
 	if err != nil {
 		logger.Error("get begin and end id error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
-
 	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(e.ethClient.Client, txHash)
 	if err != nil {
 		logger.Error("get tx and receipt error: %v", err)
-		return nil, false, err
+		return rpc.RedeemRequest{}, false, err
 	}
+
 	redeemRequest := rpc.RedeemRequest{
 		TxProof:          txProof.Proof,
 		TxWitness:        txProof.Witness,
@@ -682,7 +682,7 @@ func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (*rpc
 		TxVar:            txVar,
 		ReceiptVar:       receiptVar,
 	}
-	return &redeemRequest, true, nil
+	return redeemRequest, true, nil
 
 }
 
