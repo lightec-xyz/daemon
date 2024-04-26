@@ -621,12 +621,20 @@ func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (*rpc
 		logger.Error("get bhf update proof error: %v", err)
 		return nil, false, err
 	}
-
+	if !ok {
+		logger.Warn("no find bhf update %v", finalizedSlot)
+		return nil, false, nil
+	}
 	genesisRoot, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
 	if err != nil {
 		logger.Error("get genesis root error: %v", err)
 		return nil, false, err
 	}
+	if !ok {
+		logger.Warn("no find genesis root %v", e.genesisPeriod)
+		return nil, false, nil
+	}
+
 	var finalityUpdate *structs.LightClientUpdateWithVersion
 	ok, err = e.fileStore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
 	if err != nil {

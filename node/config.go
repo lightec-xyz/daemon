@@ -21,6 +21,7 @@ type RunConfig struct {
 	BeaconUrl            string `json:"beaconUrl"`
 	BtcInitHeight        int64  `json:"btcInitHeight"`
 	EthInitHeight        int64  `json:"ethInitHeight"`
+	BeaconInitSlot       int64  `json:"beaconInitSlot"`
 	EnableRecursiveAgent bool   `json:"enableRecursiveAgent"`
 	EnableTxAgent        bool   `json:"enableTxAgent"`
 }
@@ -69,27 +70,27 @@ type RootConfig struct {
 type NodeConfig struct {
 	RootConfig
 	RunConfig
-	EnableRecursiveAgent bool   `json:"enableRecursiveAgent"`
-	EnableTxAgent        bool   `json:"enableTxAgent"`
-	DataDir              string `json:"datadir"`
-	Network              string `json:"network"`
-	Rpcbind              string `json:"rpcbind"`
-	RpcPort              string `json:"rpcport"`
-	EnableLocalWorker    bool   `json:"enableLocalWorker"`
-	EnableGenScProof     bool   `json:"enableGenScProof"`
-
-	BtcUrl            string           `json:"btcUrl"`
-	BtcUser           string           `json:"btcUser"`
-	BtcPwd            string           `json:"btcPwd"`
-	BtcNetwork        string           `json:"btcNetwork"`
-	BtcScanBlockTime  time.Duration    `json:"btcBlockTime"`
-	BtcOperatorAddr   string           `json:"btcOperatorAddr"`
-	BtcPrivateKeys    []string         `json:"btcPrivateKeys"`
-	BtcWhiteList      []string         `json:"btcWhiteList"`
-	BtcInitHeight     int64            `json:"btcInitHeight"`
-	MultiAddressInfo  MultiAddressInfo `json:"multiAddressInfo"`
-	GenesisSyncPeriod uint64           `json:"genesisPeriod"`
-	AutoSubmit        bool             `json:"autoSubmit"`
+	EnableRecursiveAgent bool             `json:"enableRecursiveAgent"`
+	EnableTxAgent        bool             `json:"enableTxAgent"`
+	DataDir              string           `json:"datadir"`
+	Network              string           `json:"network"`
+	Rpcbind              string           `json:"rpcbind"`
+	RpcPort              string           `json:"rpcport"`
+	EnableLocalWorker    bool             `json:"enableLocalWorker"`
+	EnableGenScProof     bool             `json:"enableGenScProof"`
+	BeaconInitSlot       int64            `json:"beaconInitSlot"`
+	BtcUrl               string           `json:"btcUrl"`
+	BtcUser              string           `json:"btcUser"`
+	BtcPwd               string           `json:"btcPwd"`
+	BtcNetwork           string           `json:"btcNetwork"`
+	BtcScanBlockTime     time.Duration    `json:"btcBlockTime"`
+	BtcOperatorAddr      string           `json:"btcOperatorAddr"`
+	BtcPrivateKeys       []string         `json:"btcPrivateKeys"`
+	BtcWhiteList         []string         `json:"btcWhiteList"`
+	BtcInitHeight        int64            `json:"btcInitHeight"`
+	MultiAddressInfo     MultiAddressInfo `json:"multiAddressInfo"`
+	GenesisSyncPeriod    uint64           `json:"genesisPeriod"`
+	AutoSubmit           bool             `json:"autoSubmit"`
 
 	//Beacon config
 	BeaconSlotHeight uint64                          `json:"beaconSlotHeight"`
@@ -138,7 +139,7 @@ func NewConfig(cfg RunConfig) (NodeConfig, error) {
 			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.HoleskyConfig(), cfg.BtcInitHeight, cfg.EthInitHeight)
 	case Lighteclocal:
 		return newLocalConfig(cfg.EnableRecursiveAgent, cfg.EnableTxAgent, cfg.EnableLocalWorker, cfg.AutoSubmit, cfg.Datadir, network, cfg.Rpcbind, cfg.Rpcport, cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BeaconUrl,
-			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.HoleskyConfig(), cfg.BtcInitHeight, cfg.EthInitHeight)
+			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.HoleskyConfig(), cfg.BtcInitHeight, cfg.EthInitHeight, cfg.BeaconInitSlot)
 	default:
 		return NodeConfig{}, fmt.Errorf("unsupport network now: %v", network)
 	}
@@ -369,7 +370,7 @@ func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind
 }
 
 func newLocalConfig(enableRecursiveAgent, enableTxAgent, enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
-	beaconConfig *beaconconfig.BeaconChainConfig, btcInitHeight, ethInitHeight int64) (NodeConfig, error) {
+	beaconConfig *beaconconfig.BeaconChainConfig, btcInitHeight, ethInitHeight, beaconInitSlot int64) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
 	if err != nil {
 		logger.Error("hex decode string error: %v", err)
@@ -408,6 +409,7 @@ func newLocalConfig(enableRecursiveAgent, enableTxAgent, enableLocalWorker, auto
 			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
 			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
 		},
+		BeaconInitSlot:       beaconInitSlot,
 		BtcInitHeight:        btcInitHeight,
 		AutoSubmit:           autoSubmit,
 		EnableRecursiveAgent: enableRecursiveAgent,

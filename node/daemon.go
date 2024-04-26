@@ -108,7 +108,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	fetchDataResp := make(chan FetchDataResponse)
 
 	// todo
-	genesisPeriod := uint64(cfg.BeaconSlotHeight) / 8192
+	genesisPeriod := uint64(cfg.BeaconInitSlot) / 8192
 	fileStore, err := NewFileStorage(cfg.DataDir, cfg.BeaconSlotHeight)
 	if err != nil {
 		logger.Error(err.Error())
