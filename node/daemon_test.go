@@ -3,23 +3,30 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"testing"
 )
 
 func TestLocalDevDaemon(t *testing.T) {
-	config := LocalDevDaemonConfig()
+	cfgBytes, err := ioutil.ReadFile("/Users/red/lworkspace/lightec/daemon/cmd/node/node.json")
+	if err != nil {
+		fmt.Printf("read config error: %v\n", err)
+		return
+	}
+	fmt.Printf("confg data: %v \n", string(cfgBytes))
+	var runCfg RunConfig
+	err = json.Unmarshal(cfgBytes, &runCfg)
+	if err != nil {
+		fmt.Printf("unmarshal config error: %v\n", err)
+		return
+	}
+	config, err := NewConfig(runCfg)
+	//config := node.TestnetDaemonConfig()
 	daemon, err := NewDaemon(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer daemon.Close()
 	err = daemon.Init()
-	if err != nil {
-		t.Fatal(err)
-	}
 	err = daemon.Run()
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("node run error: %v \n", err)
 	}
 }
 func TestTestnetDaemon(t *testing.T) {

@@ -877,7 +877,8 @@ func (e *EthereumAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error)
 	}
 	// todo
 	var update utils.LightClientUpdateInfo
-	err = ParseObj(currentPeriodUpdate, &update)
+	update.Version = currentPeriodUpdate.Version
+	err = ParseObj(currentPeriodUpdate.Data, &update)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
