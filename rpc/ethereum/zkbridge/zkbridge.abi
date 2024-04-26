@@ -1,4 +1,4 @@
-[
+  [
     {
       "inputs": [
         {
@@ -34,11 +34,6 @@
         {
           "internalType": "contract EconomicVariationInterface",
           "name": "_variationAddress",
-          "type": "address"
-        },
-        {
-          "internalType": "contract IBtcTxVerifier",
-          "name": "_txVerifier",
           "type": "address"
         }
       ],
@@ -96,17 +91,53 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "depositAmount",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "minDepositAmount",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "name": "InvalidDepositAmount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "changeLockScript",
+          "type": "bytes"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        }
+      ],
+      "name": "InvalidDepositProof",
       "type": "error"
     },
     {
@@ -264,9 +295,9 @@
       "name": "minDepositAmount",
       "outputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -323,9 +354,9 @@
       "name": "totalDepositAmount",
       "outputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -342,19 +373,6 @@
       "name": "transferOwnership",
       "outputs": [],
       "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "txVerifier",
-      "outputs": [
-        {
-          "internalType": "contract IBtcTxVerifier",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -399,19 +417,6 @@
     {
       "inputs": [
         {
-          "internalType": "contract IBtcTxVerifier",
-          "name": "_newVerifier",
-          "type": "address"
-        }
-      ],
-      "name": "updateTxVerifier",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "contract UTXOManagerInterface",
           "name": "_utxoAddress",
           "type": "address"
@@ -435,28 +440,24 @@
     {
       "inputs": [
         {
-          "internalType": "bytes",
-          "name": "rawTx",
-          "type": "bytes"
-        }
-      ],
-      "name": "removeWitness",
-      "outputs": [
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
         {
-          "internalType": "bytes",
-          "name": "",
-          "type": "bytes"
-        }
-      ],
-      "stateMutability": "pure",
-      "type": "function"
-    },
-    {
-      "inputs": [
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
         {
-          "internalType": "bytes",
-          "name": "rawBtcTx",
-          "type": "bytes"
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "receiveAddress",
+          "type": "address"
         },
         {
           "internalType": "bytes",
@@ -472,9 +473,9 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "targetAmount",
-          "type": "uint64"
+          "type": "uint256"
         }
       ],
       "name": "estimateTxWeight",
@@ -491,14 +492,33 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "bytes",
+          "name": "receiveLockScript",
+          "type": "bytes"
+        }
+      ],
+      "name": "checkReceiveLockScript",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
           "name": "redeemAmount",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "btcMinerFee",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
           "internalType": "bytes",
@@ -514,14 +534,14 @@
     {
       "inputs": [
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "userAmount",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
-          "internalType": "uint64",
+          "internalType": "uint256",
           "name": "changeAmount",
-          "type": "uint64"
+          "type": "uint256"
         },
         {
           "internalType": "bytes",
@@ -535,16 +555,16 @@
           "components": [
             {
               "internalType": "uint64",
-              "name": "value",
+              "name": "amount",
               "type": "uint64"
             },
             {
               "internalType": "bytes",
-              "name": "pkScript",
+              "name": "scriptPubKey",
               "type": "bytes"
             }
           ],
-          "internalType": "struct BtcTxLib.TxOut[]",
+          "internalType": "struct UTXOManagerInterface.TxOut[]",
           "name": "",
           "type": "tuple[]"
         }
@@ -568,6 +588,69 @@
       "name": "updateChange",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        }
+      ],
+      "name": "verifyDepositProof",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "proofData",
+          "type": "bytes"
+        }
+      ],
+      "name": "verifyChangeProof",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
       "type": "function"
     },
     {

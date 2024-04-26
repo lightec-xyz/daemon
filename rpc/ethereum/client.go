@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lightec-xyz/daemon/common"
-	"github.com/lightec-xyz/daemon/transaction/ethereum/zkbridge"
+	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 )
 
 // todo
@@ -22,6 +22,7 @@ type Client struct {
 	*ethclient.Client
 	zkBridgeCall *zkbridge.Zkbridge
 	zkBtcCall    *zkbridge.Zkbtc
+	verifyCall   *zkbridge.Verify
 	timeout      time.Duration
 }
 
@@ -40,13 +41,22 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 	if err != nil {
 		return nil, err
 	}
-
+	// todo
+	verifyCall, err := zkbridge.NewVerify(ethcommon.HexToAddress("0x2c11C48Df8C44f90971ee3A8Fa6779CfbDA5321E"), client)
+	if err != nil {
+		return nil, err
+	}
 	return &Client{
 		Client:       client,
 		zkBridgeCall: zkBridgeCall,
 		zkBtcCall:    zkBtcCall,
+		verifyCall:   verifyCall,
 		timeout:      15 * time.Second,
 	}, nil
+}
+
+func (c *Client) Verify(proof, wit string) (uint64, error) {
+	panic(proof)
 }
 
 func (c *Client) CheckDepositProof(txId string) (bool, error) {

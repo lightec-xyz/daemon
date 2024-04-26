@@ -467,7 +467,7 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Error("get txSlot error: %v", err)
 			return err
 		}
-		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, txHash)
+		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, "")
 		if err != nil {
 			logger.Error("check block header proof error: %v", err)
 			return err
@@ -667,7 +667,6 @@ func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (rpc.
 		logger.Error("get tx and receipt error: %v", err)
 		return rpc.RedeemRequest{}, false, err
 	}
-
 	redeemRequest := rpc.RedeemRequest{
 		TxProof:          txProof.Proof,
 		TxWitness:        txProof.Witness,
