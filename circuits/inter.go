@@ -19,7 +19,7 @@ type ICircuit interface {
 	// todo only container rededm tx, we should need generate prof
 	BeaconHeaderProve(header proverType.BeaconHeaderChain) (*common.Proof, error)
 	// todo submit to eth contract proof
-	RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot, currentSCSSZRoot []byte,
+	RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot, currentSCSSZRoot string,
 		txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*common.Proof, error)
 	DepositProve(txId, blockHash string) (*common.Proof, error)
 	GenesisProve(firstProof, secondProof, firstWitness, secondWitness string,

@@ -71,7 +71,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 }
 
 func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot,
-	currentSCSSZRoot []byte, txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*reLightCommon.Proof, error) {
+	currentSCSSZRoot string, txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*reLightCommon.Proof, error) {
 	//todo
 	logger.Debug("current zk circuit RedeemProve")
 	if c.debug {
@@ -131,9 +131,23 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("get genesis scssz root error:%v", err)
 		return nil, err
 	}
-
+	beginIdBytes, err := HexToBytes(beginId)
+	if err != nil {
+		logger.Error("decode begin id error:%v", err)
+		return nil, err
+	}
+	endIdBytes, err := HexToBytes(endId)
+	if err != nil {
+		logger.Error("decode begin id error:%v", err)
+		return nil, err
+	}
+	curScRootBytes, err := HexToBytes(currentSCSSZRoot)
+	if err != nil {
+		logger.Error("decode current scssz root error:%v", err)
+		return nil, err
+	}
 	proof, err := redeem.Prove(c.Cfg.DataDir, txVk, txInEth2Proof, txInEth2Witness, bhVk, blockHeaderProof, blockHeaderWitness,
-		bhfVk, blockHeaderFinalityProof, blockHeaderFinalityWitness, beginId, endId, genesisSCSSZRoot, currentSCSSZRoot, *txVar,
+		bhfVk, blockHeaderFinalityProof, blockHeaderFinalityWitness, beginIdBytes, endIdBytes, genesisSCSSZRoot, curScRootBytes, *txVar,
 		*receiptVar)
 	if err != nil {
 		logger.Error("redeem prove error:%v", err)
@@ -505,10 +519,14 @@ func debugProof() (*reLightCommon.Proof, error) {
 	}, nil
 }
 
-func GetGenesisSCSSZRoot(root []byte) ([2]frontend.Variable, error) {
+func GetGenesisSCSSZRoot(root string) ([2]frontend.Variable, error) {
+	hexBytes, err := HexToBytes(root)
+	if err != nil {
+		return [2]frontend.Variable{}, err
+	}
 	var genesisSCSSZRoot [2]frontend.Variable
-	genesisSCSSZRoot[0] = root[:16]
-	genesisSCSSZRoot[1] = root[16:]
+	genesisSCSSZRoot[0] = hexBytes[:16]
+	genesisSCSSZRoot[1] = hexBytes[16:]
 	return genesisSCSSZRoot, nil
 }
 

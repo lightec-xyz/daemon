@@ -105,7 +105,7 @@ type RedeemRequest struct {
 	Version                                                      string
 	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness string
 	BeginId, EndId, GenesisScRoot,
-	CurrentSCSSZRoot []byte
+	CurrentSCSSZRoot string
 	TxVar      *[tx.MaxTxUint128Len]frontend.Variable
 	ReceiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable
 }
