@@ -368,7 +368,7 @@ func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind
 	}, nil
 }
 
-func newLocalConfig(enableTxAgent, enableRecursiveAgent, enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
+func newLocalConfig(enableRecursiveAgent, enableTxAgent, enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
 	beaconConfig *beaconconfig.BeaconChainConfig, btcInitHeight, ethInitHeight int64) (NodeConfig, error) {
 	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
 	if err != nil {
