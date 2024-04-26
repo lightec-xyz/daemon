@@ -5,29 +5,27 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec/v2"
 	ethCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
+	"github.com/lightec-xyz/daemon/store"
+	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
+	"github.com/lightec-xyz/daemon/transaction/ethereum"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc/bitcoin"
-	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
-	"github.com/lightec-xyz/daemon/store"
-	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
-	"github.com/lightec-xyz/daemon/transaction/ethereum"
-	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 )
 
 type EthereumAgent struct {
@@ -40,7 +38,6 @@ type EthereumAgent struct {
 	memoryStore      store.IStore
 	stateCache       *CacheState
 	fileStore        *FileStorage
-	blockTime        time.Duration
 	taskManager      *TaskManager
 	whiteList        map[string]bool
 	proofRequest     chan []*common.ZkProofRequest
@@ -55,18 +52,8 @@ type EthereumAgent struct {
 	genesisPeriod    uint64
 }
 
-func NewEthereumAgent(cfg NodeConfig, genesisPeriod uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
+func NewEthereumAgent(cfg Config, genesisPeriod uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
 	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
-	var privateKeys []*btcec.PrivateKey
-	for _, secret := range cfg.BtcPrivateKeys {
-		hexPriv, err := hex.DecodeString(secret)
-		if err != nil {
-			logger.Error("decode private key error:%v", err)
-			return nil, err
-		}
-		privKey, _ := btcec.PrivKeyFromBytes(hexPriv)
-		privateKeys = append(privateKeys, privKey)
-	}
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
@@ -76,13 +63,10 @@ func NewEthereumAgent(cfg NodeConfig, genesisPeriod uint64, fileStore *FileStora
 		fileStore:        fileStore,
 		memoryStore:      memoryStore,
 		genesisPeriod:    genesisPeriod,
-		blockTime:        cfg.EthScanBlockTime,
 		proofRequest:     proofRequest,
 		exitSign:         make(chan struct{}, 1),
 		whiteList:        make(map[string]bool),
 		multiAddressInfo: cfg.MultiAddressInfo,
-		btcNetwork:       btctx.NetWork(cfg.BtcNetwork),
-		privateKeys:      privateKeys,
 		initStartHeight:  cfg.EthInitHeight,
 		autoSubmit:       cfg.AutoSubmit,
 		logAddrFilter:    cfg.EthAddrFilter,

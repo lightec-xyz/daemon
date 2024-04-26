@@ -70,7 +70,6 @@ const (
 	LocalBtcMultiSigPublic2 = "03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22"
 	LocalBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
 	LocalBtcMultiNRequired  = 2
-	LocalBtcNetwork         = btctx.RegTest
 	LocalBtcScanTime        = 15 * time.Second
 	LocalEthScanTime        = 5 * time.Second
 
@@ -88,9 +87,6 @@ const (
 	LocalTopicDepositAddr = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
 	LocalTopicRedeemAddr  = "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"
 )
-
-var LocalLogAddrs = []string{LocalLogDepositAddr, LocalLogRedeemAddr}
-var LocalLogTopics = []string{LocalTopicDepositAddr, LocalTopicRedeemAddr}
 
 // ***********************************************************
 

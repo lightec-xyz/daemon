@@ -55,18 +55,18 @@ type IManager interface {
 }
 
 type Daemon struct {
-	agents        []*WrapperAgent
-	beaconAgent   *WrapperBeacon
-	server        *rpc.Server
-	nodeConfig    NodeConfig
-	exitSignal    chan os.Signal
-	manager       *WrapperManger
-	taskManager   *TaskManager // todo
-	enableSyncCom bool         // true ,Only enable the function of generating recursive proofs
-	enableTx      bool
+	agents         []*WrapperAgent
+	beaconAgent    *WrapperBeacon
+	server         *rpc.Server
+	nodeConfig     Config
+	exitSignal     chan os.Signal
+	manager        *WrapperManger
+	taskManager    *TaskManager // todo
+	disableSyncCom bool         // true ,Only enable the function of generating recursive proofs
+	disableTx      bool
 }
 
-func NewDaemon(cfg NodeConfig) (*Daemon, error) {
+func NewDaemon(cfg Config) (*Daemon, error) {
 	var submitTxEthAddr string
 	var err error
 	if cfg.AutoSubmit {
@@ -78,7 +78,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Info("ethereum submit address:%v", submitTxEthAddr)
 	}
 
-	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcNetwork)
+	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
@@ -93,7 +93,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
-	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
+	dbPath := fmt.Sprintf("%s/%s", cfg.Datadir, cfg.Network)
 	logger.Info("dbPath:%s", dbPath)
 	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
@@ -108,14 +108,14 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	fetchDataResp := make(chan FetchDataResponse)
 
 	// todo
-	genesisPeriod := uint64(cfg.BeaconInitSlot) / 8192
-	fileStore, err := NewFileStorage(cfg.DataDir, cfg.BeaconSlotHeight)
+	beaconInitSlot := cfg.BeaconInitSlot
+	genesisPeriod := beaconInitSlot / 8192
+	fileStore, err := NewFileStorage(cfg.Datadir, beaconInitSlot)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, cfg.BeaconSlotHeight, genesisPeriod, fetchDataResp)
+	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, beaconInitSlot, genesisPeriod, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -134,7 +134,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanBlockTime, 1*time.Minute, btcProofResp))
+	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp))
 
 	//// todo
 	params.UseHoleskyNetworkConfig()
@@ -150,7 +150,7 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanBlockTime, 1*time.Minute, ethProofResp))
+	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
@@ -173,21 +173,21 @@ func NewDaemon(cfg NodeConfig) (*Daemon, error) {
 	exitSignal := make(chan os.Signal, 1)
 
 	rpcHandler := NewHandler(manager, storeDb, memoryStore, schedule, exitSignal)
-	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.RpcPort), rpcHandler)
+	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 	daemon := &Daemon{
-		agents:        agents,
-		server:        server,
-		nodeConfig:    cfg,
-		enableSyncCom: cfg.EnableRecursiveAgent, //todo
-		enableTx:      cfg.EnableTxAgent,        // todo
-		exitSignal:    make(chan os.Signal, 1),
-		taskManager:   taskManager,
-		beaconAgent:   NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
-		manager:       NewWrapperManger(manager, proofRequest, 1*time.Minute),
+		agents:         agents,
+		server:         server,
+		nodeConfig:     cfg,
+		disableSyncCom: cfg.DisableRecursiveAgent, //todo
+		disableTx:      cfg.DisableTxAgent,        // todo
+		exitSignal:     make(chan os.Signal, 1),
+		taskManager:    taskManager,
+		beaconAgent:    NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
+		manager:        NewWrapperManger(manager, proofRequest, 1*time.Minute),
 	}
 	return daemon, nil
 }
@@ -198,7 +198,7 @@ func (d *Daemon) Init() error {
 		logger.Error("manager init error %v", err)
 		return err
 	}
-	if d.enableTx {
+	if d.disableTx {
 		for _, agent := range d.agents {
 			if err := agent.node.Init(); err != nil {
 				logger.Error("%v:init agent error %v", agent.node.Name(), err)
@@ -206,7 +206,7 @@ func (d *Daemon) Init() error {
 			}
 		}
 	}
-	if d.enableSyncCom {
+	if d.disableSyncCom {
 		err = d.beaconAgent.node.Init()
 		if err != nil {
 			logger.Error("node agent init error %v", err)
@@ -222,7 +222,7 @@ func (d *Daemon) Run() error {
 	// rpc server
 	go d.server.Run()
 
-	if d.enableSyncCom {
+	if d.disableSyncCom {
 		// syncCommit proof
 		go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
@@ -240,7 +240,7 @@ func (d *Daemon) Run() error {
 	go doTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
 	go doTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
 
-	if d.enableTx {
+	if d.disableTx {
 		//tx Proof
 		for _, agent := range d.agents {
 			name := fmt.Sprintf("%s-submitProof", agent.node.Name())
@@ -275,7 +275,7 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
-	if d.enableTx {
+	if d.disableTx {
 		for _, agent := range d.agents {
 			if err := agent.node.Close(); err != nil {
 				logger.Error("%v:close agent error %v", agent.node.Name(), err)
@@ -287,7 +287,7 @@ func (d *Daemon) Close() error {
 		logger.Error("rpc server shutdown error:%v", err)
 	}
 	d.manager.manager.Close()
-	if d.enableSyncCom {
+	if d.disableSyncCom {
 		err = d.beaconAgent.node.Close()
 		if err != nil {
 			logger.Error("node agent close error:%v", err)

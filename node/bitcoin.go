@@ -3,10 +3,6 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strings"
-	"time"
-
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -14,6 +10,8 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"math/big"
+	"strings"
 )
 
 type BitcoinAgent struct {
@@ -21,7 +19,6 @@ type BitcoinAgent struct {
 	ethClient            *ethereum.Client
 	store                store.IStore
 	memoryStore          store.IStore
-	blockTime            time.Duration
 	proofRequest         chan<- []*common.ZkProofRequest
 	checkProofHeightNums int64
 	taskManager          *TaskManager
@@ -31,19 +28,17 @@ type BitcoinAgent struct {
 	keyStore             *KeyStore
 	minDepositValue      float64
 	initStartHeight      int64
-	autoSubmit           bool
 	exitSign             chan struct{}
 	task                 *TaskManager
 }
 
-func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client,
+func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client,
 	ethClient *ethereum.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:            btcClient,
 		ethClient:            ethClient,
 		store:                store,
 		memoryStore:          memoryStore,
-		blockTime:            cfg.BtcScanBlockTime,
 		operatorAddr:         cfg.BtcOperatorAddr,
 		proofRequest:         requests,
 		checkProofHeightNums: 100, // todo
@@ -52,7 +47,6 @@ func NewBitcoinAgent(cfg NodeConfig, submitTxEthAddr string, store, memoryStore 
 		submitTxEthAddr:      submitTxEthAddr,
 		exitSign:             make(chan struct{}, 1),
 		initStartHeight:      cfg.BtcInitHeight,
-		autoSubmit:           cfg.AutoSubmit,
 		task:                 task,
 	}, nil
 }

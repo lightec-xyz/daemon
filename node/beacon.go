@@ -32,11 +32,9 @@ type BeaconAgent struct {
 	currentPeriod  *atomic.Uint64
 }
 
-func NewBeaconAgent(cfg NodeConfig, beaconClient *beacon.Client, zkProofReq chan []*common.ZkProofRequest,
+func NewBeaconAgent(cfg Config, beaconClient *beacon.Client, zkProofReq chan []*common.ZkProofRequest,
 	fileStore *FileStorage, genesisSlot, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
-
-	logger.Info("init beacon slot: %v, period: %v", cfg.BeaconSlotHeight, genesisPeriod)
-	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconSlotHeight, fetchDataResp)
+	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconInitSlot, fetchDataResp)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
