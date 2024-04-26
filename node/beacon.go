@@ -7,7 +7,6 @@ import (
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"math/big"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/lightec-xyz/daemon/circuits"
@@ -28,8 +27,6 @@ type BeaconAgent struct {
 	genesisSlot    uint64
 	beaconFetch    *BeaconFetch
 	stateCache     *BeaconCache
-	cacheQueue     *Queue
-	currentPeriod  *atomic.Uint64
 }
 
 func NewBeaconAgent(cfg Config, beaconClient *beacon.Client, zkProofReq chan []*common.ZkProofRequest,
@@ -39,8 +36,6 @@ func NewBeaconAgent(cfg Config, beaconClient *beacon.Client, zkProofReq chan []*
 		logger.Error(err.Error())
 		return nil, err
 	}
-	currentPeriod := &atomic.Uint64{}
-	currentPeriod.Store(genesisPeriod)
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,
@@ -50,8 +45,6 @@ func NewBeaconAgent(cfg Config, beaconClient *beacon.Client, zkProofReq chan []*
 		zkProofRequest: zkProofReq,
 		genesisPeriod:  genesisPeriod,
 		genesisSlot:    genesisSlot,
-		cacheQueue:     NewQueue(),
-		currentPeriod:  currentPeriod,
 	}
 	return beaconAgent, nil
 }
@@ -60,12 +53,12 @@ func (b *BeaconAgent) Init() error {
 	logger.Info("beacon agent init")
 	// todo
 	go b.beaconFetch.Fetch()
-	_, exists, err := b.fileStore.GetPeriod()
+	latestPeriod, exists, err := b.fileStore.GetPeriod()
 	if err != nil {
 		logger.Error("check latest Index error: %v", err)
 		return err
 	}
-	if !exists {
+	if !exists || latestPeriod < b.genesisPeriod {
 		logger.Warn("no find latest period, store %v period to db", b.genesisPeriod)
 		err := b.fileStore.StorePeriod(b.genesisPeriod)
 		if err != nil {
@@ -73,12 +66,12 @@ func (b *BeaconAgent) Init() error {
 			return err
 		}
 	}
-	_, exists, err = b.fileStore.GetFinalizedSlot()
+	latestSlot, exists, err := b.fileStore.GetFinalizedSlot()
 	if err != nil {
 		logger.Error("check latest Slot error: %v", err)
 		return err
 	}
-	if !exists {
+	if !exists || latestSlot < b.genesisSlot {
 		logger.Warn("no find latest slot, store %v slot to db", b.genesisSlot)
 		err := b.fileStore.StoreFinalizedSlot(b.genesisSlot)
 		if err != nil {
@@ -139,7 +132,6 @@ func (b *BeaconAgent) ScanSyncPeriod() error {
 					logger.Error(err.Error())
 					return err
 				}
-				b.currentPeriod.Store(index)
 				break
 			} else {
 				time.Sleep(10 * time.Second)
@@ -432,24 +424,23 @@ func (b *BeaconAgent) CheckBeaconHeaderFinality() error {
 
 func (b *BeaconAgent) FetchDataResponse(req FetchDataResponse) error {
 	logger.Debug("beacon fetch response fetchType: %v, Index: %v", req.UpdateType.String(), req.period)
-	switch req.UpdateType {
-	// todo
-	case GenesisUpdateType:
-		err := b.tryProofRequest(req.period, common.SyncComUnitType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	case PeriodUpdateType:
-		err := b.tryProofRequest(req.period, common.SyncComUnitType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	default:
-		return fmt.Errorf("never should happen : %v %v", req.period, req.UpdateType)
-	}
-
+	//switch req.UpdateType {
+	//// todo
+	//case GenesisUpdateType:
+	//	err := b.tryProofRequest(req.period, common.SyncComUnitType)
+	//	if err != nil {
+	//		logger.Error(err.Error())
+	//		return err
+	//	}
+	//case PeriodUpdateType:
+	//	err := b.tryProofRequest(req.period, common.SyncComUnitType)
+	//	if err != nil {
+	//		logger.Error(err.Error())
+	//		return err
+	//	}
+	//default:
+	//	return fmt.Errorf("never should happen : %v %v", req.period, req.UpdateType)
+	//}
 	return nil
 }
 

@@ -55,6 +55,7 @@ func NewFileStorage(rootPath string, genesisSlot uint64) (*FileStorage, error) {
 		FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable}
 	fileStoreMap := make(map[Table]*store.FileStore)
 	path := fmt.Sprintf("%s/proofData", rootPath) // todo
+	logger.Info("fileStorage path: %v", path)
 	for _, key := range fileDirs {
 		fileStore, err := CreateFileStore(path, string(key))
 		if err != nil {

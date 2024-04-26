@@ -15,59 +15,47 @@ import (
 )
 
 type BitcoinAgent struct {
-	btcClient            *bitcoin.Client
-	ethClient            *ethereum.Client
-	store                store.IStore
-	memoryStore          store.IStore
-	proofRequest         chan<- []*common.ZkProofRequest
-	checkProofHeightNums int64
-	taskManager          *TaskManager
-	whiteList            map[string]bool // todo
-	operatorAddr         string
-	submitTxEthAddr      string
-	keyStore             *KeyStore
-	minDepositValue      float64
-	initStartHeight      int64
-	exitSign             chan struct{}
-	task                 *TaskManager
+	btcClient       *bitcoin.Client
+	ethClient       *ethereum.Client
+	store           store.IStore
+	memoryStore     store.IStore
+	proofRequest    chan<- []*common.ZkProofRequest
+	taskManager     *TaskManager
+	operatorAddr    string
+	submitTxEthAddr string
+	keyStore        *KeyStore
+	minDepositValue float64
+	initHeight      int64
+	task            *TaskManager
 }
 
 func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client,
 	ethClient *ethereum.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
 	return &BitcoinAgent{
-		btcClient:            btcClient,
-		ethClient:            ethClient,
-		store:                store,
-		memoryStore:          memoryStore,
-		operatorAddr:         cfg.BtcOperatorAddr,
-		proofRequest:         requests,
-		checkProofHeightNums: 100, // todo
-		minDepositValue:      0,   // todo
-		keyStore:             keyStore,
-		submitTxEthAddr:      submitTxEthAddr,
-		exitSign:             make(chan struct{}, 1),
-		initStartHeight:      cfg.BtcInitHeight,
-		task:                 task,
+		btcClient:       btcClient,
+		ethClient:       ethClient,
+		store:           store,
+		memoryStore:     memoryStore,
+		operatorAddr:    cfg.BtcOperatorAddr,
+		proofRequest:    requests,
+		minDepositValue: 0, // todo
+		keyStore:        keyStore,
+		submitTxEthAddr: submitTxEthAddr,
+		initHeight:      cfg.BtcInitHeight,
+		task:            task,
 	}, nil
 }
 
 func (b *BitcoinAgent) Init() error {
 	logger.Info("bitcoin agent init now")
-	exists, err := CheckBitcoinHeight(b.store)
+	height, exists, err := ReadBitcoinHeight(b.store)
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
 		return err
 	}
-	if exists {
-		logger.Debug("bitcoin agent check uncompleted generate Proof tx")
-		err := b.checkUnGenerateProof()
-		if err != nil {
-			logger.Error("check uncompleted generate Proof tx error:%v", err)
-			return err
-		}
-	} else {
-		logger.Debug("init btc current height: %v", b.initStartHeight)
-		err := WriteBitcoinHeight(b.store, b.initStartHeight)
+	if !exists || height < b.initHeight {
+		logger.Debug("init btc current height: %v", b.initHeight)
+		err := WriteBitcoinHeight(b.store, b.initHeight)
 		if err != nil {
 			logger.Error("put init btc current height error:%v", err)
 			return err
@@ -89,20 +77,16 @@ func (b *BitcoinAgent) checkUnGenerateProof() error {
 	return nil
 }
 
-func (b *BitcoinAgent) getCurrentHeight() (int64, error) {
-	return ReadBitcoinHeight(b.store)
-
-}
-
 func (b *BitcoinAgent) ScanBlock() error {
 	logger.Debug("bitcoin scan block ...")
-	curHeight, err := b.getCurrentHeight()
+	curHeight, ok, err := ReadBitcoinHeight(b.store)
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
 		return err
 	}
-	if curHeight < b.initStartHeight {
-		curHeight = b.initStartHeight
+	if !ok {
+		logger.Error("never should happen")
+		return fmt.Errorf("no btc current height")
 	}
 	blockCount, err := b.btcClient.GetBlockCount()
 	if err != nil {

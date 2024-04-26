@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec/v2"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/circuits"
@@ -15,7 +14,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
-	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
@@ -32,22 +30,16 @@ type EthereumAgent struct {
 	btcClient        *bitcoin.Client
 	ethClient        *ethrpc.Client
 	apiClient        *apiclient.Client // todo temporary use
-	oasisClient      *oasis.Client     // todo temporary use
 	beaconClient     *beacon.Client
 	store            store.IStore
 	memoryStore      store.IStore
 	stateCache       *CacheState
 	fileStore        *FileStorage
 	taskManager      *TaskManager
-	whiteList        map[string]bool
 	proofRequest     chan []*common.ZkProofRequest
-	exitSign         chan struct{}
 	multiAddressInfo MultiAddressInfo
-	btcNetwork       btctx.NetWork
 	logAddrFilter    EthAddrFilter
-	privateKeys      []*btcec.PrivateKey //todo just test
-	initStartHeight  int64
-	autoSubmit       bool
+	initHeight       int64
 	task             *TaskManager
 	genesisPeriod    uint64
 }
@@ -64,11 +56,8 @@ func NewEthereumAgent(cfg Config, genesisPeriod uint64, fileStore *FileStorage, 
 		memoryStore:      memoryStore,
 		genesisPeriod:    genesisPeriod,
 		proofRequest:     proofRequest,
-		exitSign:         make(chan struct{}, 1),
-		whiteList:        make(map[string]bool),
 		multiAddressInfo: cfg.MultiAddressInfo,
-		initStartHeight:  cfg.EthInitHeight,
-		autoSubmit:       cfg.AutoSubmit,
+		initHeight:       cfg.EthInitHeight,
 		logAddrFilter:    cfg.EthAddrFilter,
 		task:             task,
 		stateCache:       NewCacheState(),
@@ -77,21 +66,14 @@ func NewEthereumAgent(cfg Config, genesisPeriod uint64, fileStore *FileStorage, 
 
 func (e *EthereumAgent) Init() error {
 	logger.Info("init ethereum agent")
-	exists, err := CheckEthereumHeight(e.store)
+	height, exists, err := ReadEthereumHeight(e.store)
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
 		return err
 	}
-	if exists {
-		logger.Debug("ethereum agent check uncompleted generate Proof tx")
-		err := e.checkUnGenerateProof()
-		if err != nil {
-			logger.Error("check uncompleted generate Proof tx error:%v", err)
-			return err
-		}
-	} else {
-		logger.Debug("init eth current height: %v", e.initStartHeight)
-		err := WriteEthereumHeight(e.store, e.initStartHeight)
+	if !exists || height < e.initHeight {
+		logger.Debug("init eth current height: %v", e.initHeight)
+		err := WriteEthereumHeight(e.store, e.initHeight)
 		if err != nil {
 			logger.Error("put eth current height error:%v", err)
 			return err
@@ -117,18 +99,14 @@ func (e *EthereumAgent) checkUnGenerateProof() error {
 	return nil
 }
 
-func (e *EthereumAgent) getEthHeight() (int64, error) {
-	return ReadEthereumHeight(e.store)
-}
-
 func (e *EthereumAgent) ScanBlock() error {
-	ethHeight, err := e.getEthHeight()
+	ethHeight, ok, err := ReadEthereumHeight(e.store)
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
 		return err
 	}
-	if ethHeight < e.initStartHeight {
-		ethHeight = e.initStartHeight
+	if !ok {
+		return fmt.Errorf("never should happen")
 	}
 	blockNumber, err := e.ethClient.BlockNumber(context.Background())
 	if err != nil {
@@ -809,7 +787,6 @@ func (e *EthereumAgent) updateRedeemProof(txId string, proof string, status comm
 }
 
 func (e *EthereumAgent) Close() error {
-	close(e.exitSign)
 	return nil
 }
 func (e *EthereumAgent) Name() string {

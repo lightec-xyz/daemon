@@ -30,7 +30,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 	}
 	var response common.TaskResponse
 	if !ok {
-		logger.Warn("workerId: %v ,server maybe no new proof task", request.Id)
+		logger.Warn("workerId: %v ,rpcServer maybe no new proof task", request.Id)
 		response.CanGen = false
 		return &response, nil
 	}

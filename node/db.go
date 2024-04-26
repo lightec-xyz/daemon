@@ -14,14 +14,21 @@ func WriteBitcoinHeight(store store.IStore, height int64) error {
 	return store.PutObj(btcCurHeightKey, height)
 }
 
-func ReadBitcoinHeight(store store.IStore) (int64, error) {
+func ReadBitcoinHeight(store store.IStore) (int64, bool, error) {
+	exists, err := CheckBitcoinHeight(store)
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
 	var height int64
-	err := store.GetObj(btcCurHeightKey, &height)
+	err = store.GetObj(btcCurHeightKey, &height)
 	if err != nil {
 		logger.Error("get btc current height error:%v", err)
-		return 0, err
+		return 0, false, err
 	}
-	return height, nil
+	return height, true, nil
 }
 
 func CheckBitcoinHeight(store store.IStore) (bool, error) {
@@ -119,14 +126,22 @@ func WriteEthereumHeight(store store.IStore, height int64) error {
 	return store.PutObj(ethCurHeightKey, height)
 }
 
-func ReadEthereumHeight(store store.IStore) (int64, error) {
-	var height int64
-	err := store.GetObj(ethCurHeightKey, &height)
+func ReadEthereumHeight(store store.IStore) (int64, bool, error) {
+	exists, err := CheckEthereumHeight(store)
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
-		return 0, err
+		return 0, false, err
 	}
-	return height, nil
+	if !exists {
+		return 0, false, nil
+	}
+	var height int64
+	err = store.GetObj(ethCurHeightKey, &height)
+	if err != nil {
+		logger.Error("get eth current height error:%v", err)
+		return 0, false, err
+	}
+	return height, true, nil
 }
 
 func CheckEthereumHeight(store store.IStore) (bool, error) {
