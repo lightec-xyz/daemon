@@ -357,7 +357,7 @@ func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, 
 			break
 		}
 	}
-	return finalizedSlot, finalizedSlot == 0, nil
+	return finalizedSlot, finalizedSlot != 0, nil
 
 }
 

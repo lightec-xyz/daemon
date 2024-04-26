@@ -1,0 +1,34 @@
+{
+  "version": "deneb",
+  "data": {
+    "version": "deneb",
+    "attested_header": {
+      "slot": "1315449",
+      "proposer_index": "893361",
+      "parent_root": "0x3317d9681ab82f276b61cc5600d11bafb7e88686e1a695746d59c276a20e6aeb",
+      "state_root": "0x30be9f3f35e66fe301d5cbb5c6c7a5627d27de90a5d3fa97304ef6534f5f971e",
+      "body_root": "0xfd0c80bdfe8ea5ed09781cf5717352868b7d5e2eae50be3398bc2f95e945006a"
+    },
+    "finalized_header": {
+      "slot": "1315360",
+      "proposer_index": "431977",
+      "parent_root": "0x44516665e98d85f0aa7e90a9ce437ea44bda17acaf85b2733209ee8c26ca1cec",
+      "state_root": "0x07d228b35b5f0c14dc2b84d41f6c53e3d49ebcf04e21d7efe0a6cfeede2c16c6",
+      "body_root": "0x410ee3c8cc4267f9586e35dbe87e00f7aeb9b04db649df323ac845ef86e49d0f"
+    },
+    "sync_aggregate": {
+      "sync_committee_bits": "0xffdafffffffefff7bfffff6eff7ffdf79dbffdfbfffffffffefff7fffbff7fffbfffffff7fd7f7fffffffbfffdfffeffffb7fffffffffffdf7dbfffdfffffffc",
+      "sync_committee_signature": "0xad58e4a4ed0c852274233f8c498dd5e5960a5c3ddea1d67a47bef3c296f9c5751dbbbac19fa6cc1f9e41f3c65f2d1fce135b4092a8a6e6eb056556308b2ca01fe08a21637ae084263bd187d6d7aab7c81cc8a2475f0d06d0711155653fd2c68d"
+    },
+    "finality_branch": [
+      "0x91a0000000000000000000000000000000000000000000000000000000000000",
+      "0x2af125531c2139e70b652cc38ebdfc15a82b47354a563615338205294043f06f",
+      "0xdd1e7c7285b40786cff0e329525983fb22d5ff2dbeb93168500b053cee4e76c1",
+      "0xe09a42714a26f1b386c682d54d137969a39a3de9d02e0f665adeb66fa0ec48ba",
+      "0x2c19e1c6f0c42c6338d50275d40f8235e8a37ead97851417856f1e47f713c18a",
+      "0x4dc1f31a9dc13219786a3d1c18d92c601832e37959a4043b3f21b8c9e788610c"
+    ],
+    "signature_slot": "1315450"
+  }
+}
+

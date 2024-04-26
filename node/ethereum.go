@@ -467,7 +467,7 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Error("get txSlot error: %v", err)
 			return err
 		}
-		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, "")
+		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, txHash)
 		if err != nil {
 			logger.Error("check block header proof error: %v", err)
 			return err
