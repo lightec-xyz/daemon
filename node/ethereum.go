@@ -439,7 +439,7 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Error("check tx proof error: %v", err)
 			return err
 		}
-		if !exists {
+		if exists {
 			logger.Debug("redeem proof exist now,delete cache: %v", txHash)
 			err := DeleteUnGenProof(e.store, Ethereum, txHash)
 			if err != nil {
