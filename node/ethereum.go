@@ -584,7 +584,7 @@ func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*rpc.BlockHeade
 		EndSlot:   endSlot,
 		BeginRoot: hex.EncodeToString(beginRoot),
 		EndRoot:   hex.EncodeToString(endRoot),
-		Headers:   beaconBlockHeaders,
+		Headers:   beaconBlockHeaders[1:],
 	}, true, nil
 }
 
