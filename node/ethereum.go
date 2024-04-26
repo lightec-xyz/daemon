@@ -662,6 +662,7 @@ func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (rpc.
 		logger.Error("get begin and end id error: %v", err)
 		return rpc.RedeemRequest{}, false, err
 	}
+	// todo need cache
 	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(e.ethClient.Client, txHash)
 	if err != nil {
 		logger.Error("get tx and receipt error: %v", err)
