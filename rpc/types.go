@@ -77,6 +77,7 @@ type BlockHeaderResponse struct {
 	Witness []byte
 }
 type BlockHeaderFinalityRequest struct {
+	Index            uint64
 	GenesisSCSSZRoot string
 	RecursiveProof, RecursiveWitness, OuterProof,
 	OuterWitness string
@@ -102,6 +103,7 @@ type DepositResponse struct {
 }
 
 type RedeemRequest struct {
+	TxHash                                                       string
 	Version                                                      string
 	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness string
 	BeginId, EndId, GenesisScRoot,

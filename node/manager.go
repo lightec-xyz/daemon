@@ -156,6 +156,7 @@ func (m *manager) DistributeRequest() error {
 		time.Sleep(10 * time.Second)
 		return nil
 	}
+	time.Sleep(3 * time.Second)
 	return nil
 }
 

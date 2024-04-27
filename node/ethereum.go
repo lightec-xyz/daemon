@@ -631,6 +631,7 @@ func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (rpc.
 		return rpc.RedeemRequest{}, false, err
 	}
 	redeemRequest := rpc.RedeemRequest{
+		TxHash:           txHash,
 		TxProof:          txProof.Proof,
 		TxWitness:        txProof.Witness,
 		BhProof:          blockHeaderProof.Proof,

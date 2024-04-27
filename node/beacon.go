@@ -616,6 +616,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*rpc.SyncCommUnitsRequest, boo
 			return nil, false, nil
 		}
 		return &rpc.SyncCommUnitsRequest{
+			Period:                  period,
 			Version:                 currentPeriodUpdate.Version,
 			AttestedHeader:          currentPeriodUpdate.Data.AttestedHeader,
 			CurrentSyncCommittee:    genesisData.Data.CurrentSyncCommittee, // todo
@@ -644,6 +645,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*rpc.SyncCommUnitsRequest, boo
 			return nil, false, nil
 		}
 		return &rpc.SyncCommUnitsRequest{
+			Period:                  period,
 			Version:                 currentPeriodUpdate.Version,
 			AttestedHeader:          currentPeriodUpdate.Data.AttestedHeader,
 			CurrentSyncCommittee:    perUpdateData.Data.NextSyncCommittee, // TODO
@@ -931,6 +933,7 @@ func (b *BeaconAgent) GetBhfUpdateData(slot uint64) (interface{}, bool, error) {
 		return nil, false, err
 	}
 	request := rpc.BlockHeaderFinalityRequest{
+		Index:            slot,
 		GenesisSCSSZRoot: fmt.Sprintf("%x", genesisId),
 		RecursiveProof:   recursiveProof.Proof,
 		RecursiveWitness: recursiveProof.Witness,
