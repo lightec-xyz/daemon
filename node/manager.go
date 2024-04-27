@@ -136,8 +136,9 @@ func (m *manager) DistributeRequest() error {
 					continue
 				}
 				for _, item := range zkProofResponse {
-					chaResp <- item
 					logger.Debug("complete generate Proof type: %v Index: %v", item.ZkProofType.String(), item.Period)
+					chaResp <- item
+					logger.Debug("chan send -- %v", item.Id())
 				}
 				return
 			}
