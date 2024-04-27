@@ -376,7 +376,7 @@ func (b *BitcoinAgent) Close() error {
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
-	return "Bitcoin Agent"
+	return "bitcoinAgent"
 }
 
 func CheckDepositDestHash(store store.IStore, ethClient *ethereum.Client, txId string) (bool, error) {

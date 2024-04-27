@@ -722,10 +722,10 @@ func (e *EthereumAgent) checkRequest(zkType common.ZkProofType, index uint64, tx
 		}
 		// todo
 		if txSlot < finalizedSlot {
-			logger.Warn("%v tx slot %v less than finalized slot %v", txHash, txSlot, finalizedSlot)
-			return false, nil
+			return true, nil
 		}
-		return true, nil
+		logger.Warn("%v tx slot %v less than finalized slot %v", txHash, txSlot, finalizedSlot)
+		return false, nil
 	case common.BeaconHeaderType:
 		// todo
 		_, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(index)
@@ -790,7 +790,7 @@ func (e *EthereumAgent) Close() error {
 	return nil
 }
 func (e *EthereumAgent) Name() string {
-	return "Ethereum WrapperAgent"
+	return "ethereumAgent"
 }
 
 func NewRedeemProofParam(txId string, txData *ethblock.TxInEth2ProofData) RedeemProofParam {

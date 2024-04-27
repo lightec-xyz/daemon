@@ -77,7 +77,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		logger.Info("ethereum submit address:%v", submitTxEthAddr)
 	}
-	logger.Info("beacon genesis period: %v", cfg.GenesisSyncPeriod)
+	logger.Info("beacon genesis period: %v, slot:%v", cfg.GenesisSyncPeriod, cfg.BeaconInitSlot)
 
 	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
@@ -148,7 +148,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 10*time.Minute, ethProofResp))
+	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {

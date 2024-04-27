@@ -52,7 +52,10 @@ func TestDb_Mock(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, true, after)
 	var bitcoinHeight int64
-	bitcoinHeight, err = ReadBitcoinHeight(db)
+	bitcoinHeight, ok, err := ReadBitcoinHeight(db)
+	if !ok {
+		panic("")
+	}
 	assert.Nil(t, err)
 	assert.Equal(t, int64(100), bitcoinHeight)
 	var txes []DbTx
