@@ -164,7 +164,7 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		return err
 	}
 	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
-	e.stateCache.DeleteZkRequest(proofId)
+	e.stateCache.Delete(proofId)
 	if resp.ZkProofType == common.RedeemTxType {
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
@@ -456,7 +456,7 @@ func (e *EthereumAgent) CheckState() error {
 
 func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64, txHash string) error {
 	proofId := common.NewProofId(zkType, index, txHash)
-	exists := e.stateCache.CheckZkRequest(proofId)
+	exists := e.stateCache.Check(proofId)
 	if exists {
 		logger.Debug("proof request exists: %v", proofId)
 		return nil
@@ -771,7 +771,7 @@ func (e *EthereumAgent) sendZkProofRequest(requests ...*common.ZkProofRequest) e
 	e.proofRequest <- requests
 	for _, req := range requests {
 		logger.Info("send request: %v", req.Id())
-		e.stateCache.StoreZkRequest(req.Id(), req)
+		e.stateCache.Store(req.Id(), req)
 	}
 	return nil
 }

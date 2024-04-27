@@ -15,15 +15,15 @@ func NewCacheState() *CacheState {
 	}
 }
 
-func (cs *CacheState) StoreZkRequest(key, value interface{}) {
+func (cs *CacheState) Store(key, value interface{}) {
 	cs.requests.Store(key, value)
 }
 
-func (cs *CacheState) CheckZkRequest(key interface{}) bool {
+func (cs *CacheState) Check(key interface{}) bool {
 	_, ok := cs.requests.Load(key)
 	return ok
 }
-func (cs *CacheState) GetZkRequest(key interface{}) (*common.ZkProofRequest, bool) {
+func (cs *CacheState) Get(key interface{}) (*common.ZkProofRequest, bool) {
 	value, ok := cs.requests.Load(key)
 	if !ok {
 		return nil, false
@@ -35,6 +35,6 @@ func (cs *CacheState) GetZkRequest(key interface{}) (*common.ZkProofRequest, boo
 	return req, true
 }
 
-func (cs *CacheState) DeleteZkRequest(key interface{}) {
+func (cs *CacheState) Delete(key interface{}) {
 	cs.requests.Delete(key)
 }
