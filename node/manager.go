@@ -89,20 +89,22 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 
 // todo
 func (m *manager) DistributeRequest() error {
-	logger.Debug("proofQueue len:%v", m.proofQueue.Len())
-	if m.proofQueue.Len() == 0 {
+	request, ok, err := m.GetProofRequest()
+	if err != nil {
+		logger.Error("get Proof request error:%v", err)
 		time.Sleep(10 * time.Second)
-		return nil
+		return err
 	}
-	request, ok := m.proofQueue.Pop()
 	if !ok {
-		logger.Error("should never happen,parse Proof request error")
+		logger.Warn("current queue is empty")
 		time.Sleep(10 * time.Second)
 		return nil
 	}
 	proofSubmitted, err := m.CheckProofStatus(request)
 	if err != nil {
 		logger.Error("check Proof error:%v", err)
+		m.CacheRequest(request)
+		time.Sleep(10 * time.Second)
 		return err
 	}
 	if proofSubmitted {
@@ -144,18 +146,23 @@ func (m *manager) DistributeRequest() error {
 	})
 	if err != nil {
 		logger.Error("find best worker error:%v", err)
+		m.CacheRequest(request)
 		time.Sleep(10 * time.Second)
 		return err
 	}
 	if !find {
 		//logger.Warn(" no find best worker to gen Proof")
-		m.proofQueue.Push(request)
+		m.CacheRequest(request)
 		time.Sleep(10 * time.Second)
 		return nil
 	}
-
-	time.Sleep(10 * time.Second)
 	return nil
+}
+
+// todo
+func (m *manager) CacheRequest(request *common.ZkProofRequest) {
+	m.proofQueue.Push(request)
+	m.pendingQueue.Delete(request.Id())
 }
 
 func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*common.ZkProofResponse, error) {
@@ -334,6 +341,7 @@ func (m *manager) CheckPendingRequest() error {
 		if currentTime.Sub(request.StartTime).Hours() >= 3 { // todo
 			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
 			m.proofQueue.Push(request)
+			m.pendingQueue.Delete(request.Id())
 		}
 		return nil
 	})

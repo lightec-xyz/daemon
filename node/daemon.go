@@ -64,6 +64,7 @@ type Daemon struct {
 	taskManager       *TaskManager // todo
 	disableRecurAgent bool         // true ,Only enable the function of generating recursive proofs
 	disableTxAgent    bool
+	enableLocal       bool
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
@@ -182,6 +183,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		nodeConfig:        cfg,
 		disableRecurAgent: cfg.DisableRecursiveAgent,
 		disableTxAgent:    cfg.DisableTxAgent,
+		enableLocal:       cfg.EnableLocalWorker,
 		exitSignal:        exitSignal,
 		taskManager:       taskManager,
 		beaconAgent:       NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
@@ -234,7 +236,9 @@ func (d *Daemon) Run() error {
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)
-	go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
+	if d.enableLocal {
+		go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
+	}
 	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
 
 	if !d.disableTxAgent {
