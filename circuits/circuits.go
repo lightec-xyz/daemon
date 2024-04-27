@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/frontend"
 	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
@@ -14,6 +15,7 @@ import (
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	proverCommon "github.com/lightec-xyz/provers/common"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -595,4 +597,24 @@ func HexToBytes(data string) ([]byte, error) {
 		return nil, err
 	}
 	return bytes, nil
+}
+
+func HexWitnessToBigInts(witness string) ([]*big.Int, error) {
+	wit, err := HexToWitness(witness)
+	if err != nil {
+		return nil, err
+	}
+	list, ok := wit.Vector().(fr.Vector)
+	if !ok {
+		return nil, fmt.Errorf("parse fr vector error")
+	}
+	var bigList []*big.Int
+	for _, item := range list {
+		value, ok := big.NewInt(0).SetString(item.String(), 10)
+		if !ok {
+			return nil, fmt.Errorf("parse big int error")
+		}
+		bigList = append(bigList, value)
+	}
+	return bigList, nil
 }

@@ -2,6 +2,8 @@ package ethereum
 
 import (
 	"context"
+	"encoding/hex"
+	"github.com/lightec-xyz/daemon/circuits"
 	"math/big"
 	"strings"
 	"time"
@@ -55,8 +57,22 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 	}, nil
 }
 
-func (c *Client) Verify(proof, wit string) (uint64, error) {
-	panic(proof)
+func (c *Client) Verify(proof, wit string) (bool, error) {
+	bytes, err := hex.DecodeString(proof)
+	if err != nil {
+		return false, err
+	}
+	// todo
+	bigInts, err := circuits.HexWitnessToBigInts(wit)
+	if err != nil {
+		return false, err
+	}
+	verify, err := c.verifyCall.Verify(nil, bytes, bigInts)
+	if err != nil {
+		return false, err
+	}
+	return verify, nil
+
 }
 
 func (c *Client) CheckDepositProof(txId string) (bool, error) {
