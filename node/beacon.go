@@ -326,9 +326,6 @@ func (b *BeaconAgent) CheckState() error {
 		if index < b.genesisPeriod {
 			continue
 		}
-		if index > 163 {
-			continue
-		}
 		if b.stateCache.CheckUnit(index) {
 			continue
 		}
