@@ -58,6 +58,7 @@ type Fetch struct {
 }
 
 func NewFetch(url, datadir string, genesisPeriod uint64) (*Fetch, error) {
+	fmt.Printf("datadir: %v,beaconUrl: %v,genesisPeriod: %v \n", datadir, url, genesisPeriod)
 	err := logger.InitLogger()
 	if err != nil {
 		return nil, err

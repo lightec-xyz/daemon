@@ -20,6 +20,9 @@ type FileStore struct {
 }
 
 func NewFileStore(path string, opts ...string) (*FileStore, error) {
+	if !strings.HasSuffix(path, "/") {
+		path = fmt.Sprintf("%s/", path)
+	}
 	err := common.CheckOrCreateDir(path)
 	if err != nil {
 		logger.Error("create dir error:%v", err)
