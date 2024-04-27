@@ -39,8 +39,16 @@ func TestClient(t *testing.T) {
 	t.Log(updates)
 }
 
+func TestCliet_GetLatestPeriod(t *testing.T) {
+	period, err := client.GetFinalizedSyncPeriod()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(period)
+}
+
 func TestClient_Bootstrap(t *testing.T) {
-	bootstrap, err := client.Bootstrap(178 * 8192)
+	bootstrap, err := client.Bootstrap(181 * 8192)
 	if err != nil {
 		t.Fatal(err)
 	}

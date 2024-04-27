@@ -45,28 +45,7 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofR
 }
 
 func (m *manager) Init() error {
-	//dbRequests, err := ReadAllUnGenProof(m.store)
-	//if err != nil {
-	//	logger.Error("read un gen Proof error:%v", err)
-	//	return err
-	//}
-	//for _, req := range dbRequests {
-	//	submitted, err := m.CheckProofStatus(req)
-	//	if err != nil {
-	//		logger.Error("check Proof error:%v", err)
-	//		return err
-	//	}
-	//	if !submitted {
-	//		logger.Info("add un gen Proof request:%v", req.FilterLogs())
-	//		m.cacheQueue.PushBack(req)
-	//	} else {
-	//		err := DeleteUnGenProof(m.store, getChainByProofType(req), req.TxHash)
-	//		if err != nil {
-	//			logger.Error("delete un gen Proof error:%v", err)
-	//			return err
-	//		}
-	//	}
-	//}
+
 	return nil
 }
 
