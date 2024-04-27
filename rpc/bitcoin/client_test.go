@@ -35,8 +35,7 @@ func init() {
 	//url := "http://127.0.0.1:8332"
 	user := "lightec"
 	pwd := "Abcd1234"
-	network := "regtest"
-	client, err = NewClient(url, user, pwd, network)
+	client, err = NewClient(url, user, pwd)
 	if err != nil {
 		panic(err)
 	}
