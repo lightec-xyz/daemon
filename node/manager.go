@@ -96,7 +96,7 @@ func (m *manager) DistributeRequest() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("current queue is empty")
+		//logger.Warn("current queue is empty")
 		time.Sleep(10 * time.Second)
 		return nil
 	}
