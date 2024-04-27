@@ -33,7 +33,7 @@ func NewTaskManager(keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bit
 
 func (t *TaskManager) AddTask(resp *common.ZkProofResponse) {
 	logger.Info("add retry task: %v", resp.Id())
-	t.queue.Push(resp.Id(), resp)
+	t.queue.Push(resp)
 }
 
 func (t *TaskManager) Check() error {
@@ -67,6 +67,7 @@ func (t *TaskManager) UpdateUtxoChange(resp *common.ZkProofResponse) error {
 		logger.Error("update utxo error: %v", err)
 		return err
 	}
+	// todo
 	t.queue.Delete(resp.Id())
 	return nil
 }

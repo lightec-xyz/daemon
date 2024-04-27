@@ -41,7 +41,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 	return &response, nil
 }
 
-func (h *Handler) SubmitProof(req common.SubmitProof) (string, error) {
+func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//todo check
 	for _, item := range req.Data {
 		logger.Info("workerId %v,submit proof type:%v period:%v hash:%v", req.WorkerId, item.ZkProofType.String(), item.Period, item.TxHash)

@@ -9,7 +9,7 @@ import (
 )
 
 func initStore() store.IStore {
-	dbPath := "testdb"
+	dbPath := "/Users/red/lworkspace/lightec/daemon/node/test/dbtest"
 	db, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
 		panic(err)

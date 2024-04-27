@@ -1,7 +1,6 @@
 package proof
 
 import (
-	"encoding/json"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,6 +15,7 @@ var _ rpc.IProof = (*Handler)(nil)
 
 type Handler struct {
 	memoryStore store.IStore
+	store       store.IStore
 	maxNums     int // The maximum number of proofs that can be generated at the same time
 	proofs      *sync.Map
 	currentNums atomic.Int64
@@ -113,20 +113,10 @@ func (h *Handler) DelReqNum() {
 	panic("implement me")
 }
 
-func NewHandler(memoryStore store.IStore, max int) *Handler {
+func NewHandler(store, memoryStore store.IStore, max int) *Handler {
 	return &Handler{
 		memoryStore: memoryStore,
+		store:       store,
 		maxNums:     max,
 	}
-}
-func objParse(src, dest interface{}) error {
-	marshal, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(marshal, dest)
-	if err != nil {
-		return err
-	}
-	return nil
 }

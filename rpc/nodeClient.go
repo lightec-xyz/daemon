@@ -25,7 +25,7 @@ func (c *NodeClient) GetTask(request common.TaskRequest) (*common.TaskResponse, 
 	return &result, nil
 }
 
-func (c *NodeClient) SubmitProof(req common.SubmitProof) (string, error) {
+func (c *NodeClient) SubmitProof(req *common.SubmitProof) (string, error) {
 	var result string
 	err := c.call(&result, "zkbtc_submitProof", req)
 	if err != nil {

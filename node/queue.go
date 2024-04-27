@@ -183,7 +183,7 @@ func (aq *ArrayQueue) Len() int {
 	return len(aq.list)
 }
 
-// SubmitQueue todo
+// ProofRespQueue todo
 type SubmitQueue struct {
 	list *sync.Map
 }
@@ -194,8 +194,8 @@ func NewSubmitQueue() *SubmitQueue {
 	}
 }
 
-func (q *SubmitQueue) Push(key string, value *common.ZkProofResponse) {
-	q.list.Store(key, value)
+func (q *SubmitQueue) Push(value *common.ZkProofResponse) {
+	q.list.Store(value.Id, value)
 }
 
 func (q *SubmitQueue) Delete(key string) {
@@ -205,11 +205,11 @@ func (q *SubmitQueue) Delete(key string) {
 func (q *SubmitQueue) Get(key string) (*common.ZkProofResponse, error) {
 	value, ok := q.list.Load(key)
 	if !ok {
-		return nil, fmt.Errorf("not found")
+		return nil, fmt.Errorf("not found: %v", key)
 	}
 	req, ok := value.(*common.ZkProofResponse)
 	if !ok {
-		return nil, fmt.Errorf("parse error")
+		return nil, fmt.Errorf("parse error:%v", key)
 	}
 	return req, nil
 }
@@ -217,6 +217,51 @@ func (q *SubmitQueue) Get(key string) (*common.ZkProofResponse, error) {
 func (q *SubmitQueue) Iterator(fn func(value *common.ZkProofResponse) error) {
 	q.list.Range(func(key, value interface{}) bool {
 		req, ok := value.(*common.ZkProofResponse)
+		if !ok {
+			return false
+		}
+		err := fn(req)
+		if err != nil {
+			return false
+		}
+		return true
+	})
+}
+
+// ProofRespQueue todo
+type ProofRespQueue struct {
+	list *sync.Map
+}
+
+func NewProofRespQueue() *ProofRespQueue {
+	return &ProofRespQueue{
+		list: new(sync.Map),
+	}
+}
+
+func (q *ProofRespQueue) Push(value *common.SubmitProof) {
+	q.list.Store(value.Id, value)
+}
+
+func (q *ProofRespQueue) Delete(key string) {
+	q.list.Delete(key)
+}
+
+func (q *ProofRespQueue) Get(key string) (*common.SubmitProof, error) {
+	value, ok := q.list.Load(key)
+	if !ok {
+		return nil, fmt.Errorf("not found: %v", key)
+	}
+	req, ok := value.(*common.SubmitProof)
+	if !ok {
+		return nil, fmt.Errorf("parse error:%v", key)
+	}
+	return req, nil
+}
+
+func (q *ProofRespQueue) Iterator(fn func(value *common.SubmitProof) error) {
+	q.list.Range(func(key, value interface{}) bool {
+		req, ok := value.(*common.SubmitProof)
 		if !ok {
 			return false
 		}

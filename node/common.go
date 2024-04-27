@@ -544,7 +544,7 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 	return TxHash, nil
 }
 
-func doTask(name string, fn func() error, exit chan os.Signal) {
+func DoTask(name string, fn func() error, exit chan os.Signal) {
 	logger.Info("%v goroutine start ...", name)
 	for {
 		select {
@@ -560,7 +560,7 @@ func doTask(name string, fn func() error, exit chan os.Signal) {
 	}
 }
 
-func doTimerTask(name string, interval time.Duration, fn func() error, exit chan os.Signal) {
+func DoTimerTask(name string, interval time.Duration, fn func() error, exit chan os.Signal) {
 	logger.Info("%v ticker goroutine start ...", name)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

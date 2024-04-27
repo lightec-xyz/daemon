@@ -221,21 +221,21 @@ func (d *Daemon) Run() error {
 
 	if !d.disableRecurAgent {
 		// syncCommit proof
-		go doTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
+		go DoTimerTask("beacon-scanSyncPeriod", d.beaconAgent.scanPeriodTime, d.beaconAgent.node.ScanSyncPeriod, d.exitSignal)
 		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
-		go doTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
-		go doTimerTask("beacon-checkFinalityUpdate", d.beaconAgent.checkFinalityUpdateTime, d.beaconAgent.node.CheckBeaconHeaderFinality, d.exitSignal)
+		go DoTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
+		go DoTimerTask("beacon-checkFinalityUpdate", d.beaconAgent.checkFinalityUpdateTime, d.beaconAgent.node.CheckBeaconHeaderFinality, d.exitSignal)
 
 	}
 
 	// task manager
-	go doTimerTask("task-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
+	go DoTimerTask("task-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)
-	go doTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
-	go doTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
+	go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
+	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
 
 	if !d.disableTxAgent {
 		//tx Proof
@@ -246,10 +246,10 @@ func (d *Daemon) Run() error {
 		//scan block with tx
 		for _, agent := range d.agents {
 			scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
-			go doTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+			go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
 
 			checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
-			go doTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
+			go DoTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
 		}
 
 	}
