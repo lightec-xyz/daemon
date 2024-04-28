@@ -44,6 +44,9 @@ const (
 	VerifyTable       Table = "verify"
 )
 
+var InitStoreTables = []Table{PeriodTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
+	FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable}
+
 type FileStorage struct {
 	RootPath      string
 	FileStoreMap  map[Table]*store.FileStore
@@ -52,13 +55,11 @@ type FileStorage struct {
 	genesisPeriod uint64
 }
 
-func NewFileStorage(rootPath string, genesisSlot uint64) (*FileStorage, error) {
-	var fileDirs = []Table{PeriodTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
-		FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable}
+func NewFileStorage(rootPath string, genesisSlot uint64, tables []Table) (*FileStorage, error) {
 	fileStoreMap := make(map[Table]*store.FileStore)
 	path := fmt.Sprintf("%s/proofData", rootPath) // todo
 	logger.Info("fileStorage path: %v", path)
-	for _, key := range fileDirs {
+	for _, key := range tables {
 		fileStore, err := CreateFileStore(path, string(key))
 		if err != nil {
 			logger.Error("create file store error")
@@ -156,6 +157,18 @@ func (fs *FileStorage) CheckUpdate(period uint64) (bool, error) {
 }
 func (fs *FileStorage) GetUpdate(period uint64, value interface{}) (bool, error) {
 	return fs.Get(UpdateTable, parseKey(period), value)
+}
+
+func (fs *FileStorage) StoreBootStrapBySlot(slot uint64, data interface{}) error {
+	return fs.Store(GenesisTable, parseKey(slot), data)
+}
+
+func (fs *FileStorage) GetBootStrapBySlot(slot uint64, value interface{}) (bool, error) {
+	return fs.Get(GenesisTable, parseKey(slot), value)
+}
+
+func (fs *FileStorage) CheckBootStrapBySlot(slot uint64) (bool, error) {
+	return fs.Check(GenesisTable, parseKey(slot))
 }
 
 func (fs *FileStorage) StoreBootStrap(data interface{}) error {

@@ -1,7 +1,6 @@
 package node
 
 import (
-	"github.com/lightec-xyz/daemon/common"
 	"sync"
 )
 
@@ -23,16 +22,12 @@ func (cs *CacheState) Check(key interface{}) bool {
 	_, ok := cs.requests.Load(key)
 	return ok
 }
-func (cs *CacheState) Get(key interface{}) (*common.ZkProofRequest, bool) {
+func (cs *CacheState) Get(key interface{}) (interface{}, bool) {
 	value, ok := cs.requests.Load(key)
 	if !ok {
 		return nil, false
 	}
-	req, ok := value.(*common.ZkProofRequest)
-	if !ok {
-		return nil, false
-	}
-	return req, true
+	return value, true
 }
 
 func (cs *CacheState) Delete(key interface{}) {

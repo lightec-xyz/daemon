@@ -2,18 +2,16 @@ package node
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/daemon/common"
-	"github.com/lightec-xyz/daemon/rpc"
-	proverType "github.com/lightec-xyz/provers/circuits/types"
-	"math/big"
-	"strconv"
-	"time"
-
 	"github.com/lightec-xyz/daemon/circuits"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
+	"math/big"
+	"strconv"
 )
 
 var _ IBeaconAgent = (*BeaconAgent)(nil)
@@ -25,22 +23,15 @@ type BeaconAgent struct {
 	name           string
 	genesisPeriod  uint64
 	genesisSlot    uint64
-	beaconFetch    *BeaconFetch
 	stateCache     *BeaconCache
 }
 
 func NewBeaconAgent(cfg Config, beaconClient *beacon.Client, zkProofReq chan []*common.ZkProofRequest,
 	fileStore *FileStorage, genesisSlot, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
-	beaconFetch, err := NewBeaconFetch(beaconClient, fileStore, cfg.BeaconInitSlot, fetchDataResp)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,
 		name:           "beaconAgent",
-		beaconFetch:    beaconFetch,
 		stateCache:     NewBeaconCache(),
 		zkProofRequest: zkProofReq,
 		genesisPeriod:  genesisPeriod,
@@ -51,8 +42,6 @@ func NewBeaconAgent(cfg Config, beaconClient *beacon.Client, zkProofReq chan []*
 
 func (b *BeaconAgent) Init() error {
 	logger.Info("beacon agent init")
-	// todo
-	go b.beaconFetch.Fetch()
 	latestPeriod, exists, err := b.fileStore.GetPeriod()
 	if err != nil {
 		logger.Error("check latest Index error: %v", err)
@@ -86,7 +75,6 @@ func (b *BeaconAgent) Init() error {
 	}
 	if !genesisBootStrapExists {
 		logger.Warn("no find genesis update, send request genesis update")
-		b.beaconFetch.BootStrapRequest()
 	}
 	genesisUpdate, err := b.fileStore.CheckUpdate(b.genesisPeriod)
 	if err != nil {
@@ -95,50 +83,9 @@ func (b *BeaconAgent) Init() error {
 	}
 	if !genesisUpdate {
 		logger.Warn("no find %v first period update, send request update", b.genesisPeriod)
-		b.beaconFetch.NewUpdateRequest(b.genesisPeriod)
 	}
 	// todo check Data
 	return err
-}
-
-func (b *BeaconAgent) ScanSyncPeriod() error {
-	logger.Debug("beacon scan sync Index")
-	currentPeriod, ok, err := b.fileStore.GetPeriod()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("get latest Index error")
-	}
-	latestSyncPeriod, err := b.beaconClient.GetFinalizedSyncPeriod()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	latestSyncPeriod = latestSyncPeriod - 1
-	logger.Info("current Index: %d, latest sync Index: %d", currentPeriod, latestSyncPeriod)
-	if currentPeriod >= latestSyncPeriod {
-		return nil
-	}
-	for index := currentPeriod; index <= latestSyncPeriod; index++ {
-		logger.Debug("beacon scan Index: %d", index)
-		for {
-			canAddRequest := b.beaconFetch.canNewRequest()
-			if canAddRequest {
-				b.beaconFetch.NewUpdateRequest(index)
-				err := b.fileStore.StorePeriod(index)
-				if err != nil {
-					logger.Error(err.Error())
-					return err
-				}
-				break
-			} else {
-				time.Sleep(10 * time.Second)
-			}
-		}
-	}
-	return nil
 }
 
 // todo maybe use for  to replace recursive
@@ -313,8 +260,6 @@ func (b *BeaconAgent) CheckState() error {
 		if b.stateCache.CheckFetchData(index) {
 			continue
 		}
-		//logger.Warn("need fetch Data: %v", index)
-		b.beaconFetch.NewUpdateRequest(index)
 	}
 	unitProofIndexes, err := b.fileStore.NeedGenUnitProofIndexes()
 	if err != nil {
@@ -452,7 +397,6 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 	}
 	if !exists {
 		logger.Warn("no find %v period update Data, send new update request", period)
-		b.beaconFetch.NewUpdateRequest(period)
 		return nil, false, nil
 	}
 	// todo
@@ -472,7 +416,6 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		}
 		if !genesisExists {
 			logger.Warn("no find genesis update Data, send new update request")
-			b.beaconFetch.BootStrapRequest()
 			return nil, false, nil
 		}
 		// todo
@@ -497,7 +440,6 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		}
 		if !preUpdateExists {
 			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
-			b.beaconFetch.NewUpdateRequest(prePeriod)
 			return nil, false, nil
 		}
 		// todo
@@ -600,7 +542,6 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*rpc.SyncCommUnitsRequest, boo
 	}
 	if !exists {
 		logger.Warn("no find %v period update Data, send new update request", period)
-		b.beaconFetch.NewUpdateRequest(period)
 		return nil, false, nil
 	}
 	if b.genesisPeriod == period {
@@ -612,7 +553,6 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*rpc.SyncCommUnitsRequest, boo
 		}
 		if !genesisExists {
 			logger.Warn("no find genesis update Data, send new update request")
-			b.beaconFetch.BootStrapRequest()
 			return nil, false, nil
 		}
 		return &rpc.SyncCommUnitsRequest{
@@ -641,7 +581,6 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*rpc.SyncCommUnitsRequest, boo
 		}
 		if !preUpdateExists {
 			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
-			b.beaconFetch.NewUpdateRequest(prePeriod)
 			return nil, false, nil
 		}
 		return &rpc.SyncCommUnitsRequest{
@@ -841,11 +780,7 @@ func (b *BeaconAgent) deleteCacheProofReqStatus(reqType common.ZkProofType, peri
 }
 
 func (b *BeaconAgent) Close() error {
-	err := b.beaconFetch.Close()
-	if err != nil {
-		logger.Error("beacon fetch close error: %v", err)
-		return err
-	}
+
 	return nil
 }
 
