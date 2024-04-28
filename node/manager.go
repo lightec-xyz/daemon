@@ -51,7 +51,7 @@ func (m *manager) Init() error {
 
 func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
-		logger.Info("queue receive gen Proof request:%v %v", req.ReqType.String(), req.Index)
+		logger.Info("queue receive gen Proof request:%v", req.Id())
 		m.proofQueue.Push(req)
 	}
 	return nil
@@ -60,8 +60,8 @@ func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	logger.Warn("current proof queue length: %v", m.proofQueue.Len())
 	if m.proofQueue.Len() == 0 {
-		logger.Warn("current queue is empty")
 		return nil, false, nil
 	}
 	request, ok := m.proofQueue.Pop()
@@ -69,7 +69,7 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 		logger.Error("should never happen,parse Proof request error")
 		return nil, false, fmt.Errorf("parse Proof request error")
 	}
-	logger.Info("get proof request:%v %v", request.ReqType.String(), request.Index)
+	//logger.Info("get proof request:%v %v", request.ReqType.String(), request.Index)
 	request.StartTime = time.Now()
 	m.pendingQueue.Push(request.ZkId, request)
 	return request, true, nil
@@ -157,7 +157,7 @@ func (m *manager) DistributeRequest() error {
 		time.Sleep(10 * time.Second)
 		return nil
 	}
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 	return nil
 }
 

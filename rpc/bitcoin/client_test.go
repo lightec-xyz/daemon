@@ -66,7 +66,7 @@ func TestClient_GetBlockHash(t *testing.T) {
 }
 
 func TestClient_GetBlockTx(t *testing.T) {
-	hash, err := client.GetBlockHash(2586032)
+	hash, err := client.GetBlockHash(2742930)
 	if err != nil {
 		panic(err)
 	}
