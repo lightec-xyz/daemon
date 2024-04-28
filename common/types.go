@@ -80,5 +80,8 @@ func NewProofId(reqType ZkProofType, period uint64, txHash string) string {
 	if txHash == "" {
 		return fmt.Sprintf("%v_%v", reqType.String(), period)
 	}
+	if period == 0 {
+		return fmt.Sprintf("%v_%v", reqType.String(), txHash)
+	}
 	return fmt.Sprintf("%v_%v_%v", reqType.String(), period, txHash)
 }

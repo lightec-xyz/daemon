@@ -62,6 +62,10 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64,
 		return fileStore.CheckBeaconHeaderProof(index)
 	case common.RedeemTxType:
 		return fileStore.CheckRedeemProof(txHash)
+	case common.DepositTxType:
+		return fileStore.CheckDepositProof(txHash)
+	case common.VerifyTxType:
+		return fileStore.CheckVerifyProof(txHash)
 	default:
 		return false, fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
@@ -85,6 +89,10 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 		return fileStore.StoreBeaconHeaderProof(index, proof, witness)
 	case common.RedeemTxType:
 		return fileStore.StoreRedeemProof(txHash, proof, witness)
+	case common.DepositTxType:
+		return fileStore.StoreDepositProof(txHash, proof, witness)
+	case common.VerifyTxType:
+		return fileStore.StoreVerifyProof(txHash, proof, witness)
 	default:
 		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}

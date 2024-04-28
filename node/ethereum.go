@@ -521,6 +521,7 @@ func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*rpc.BlockHeade
 	if !ok {
 		return nil, false, nil
 	}
+
 	logger.Debug("get beaconHeader %v ~ %v", index, finalizedSlot)
 	beaconBlockHeaders, err := e.beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
 	if err != nil {

@@ -115,7 +115,7 @@ func (m *manager) DistributeRequest() error {
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
-			logger.Debug("worker %v start generate Proof type: %v Index: %v", worker.Id(), req.ReqType.String(), req.Index)
+			logger.Debug("worker %v start generate Proof type: %v", worker.Id(), req.Id())
 			err := m.fileStore.StoreRequest(req)
 			if err != nil {
 				logger.Error("store Proof error:%v %v %v", req.ReqType.String(), req.Index, err)
@@ -136,10 +136,11 @@ func (m *manager) DistributeRequest() error {
 					continue
 				}
 				for _, item := range zkProofResponse {
-					logger.Debug("complete generate Proof type: %v Index: %v", item.ZkProofType.String(), item.Period)
+					logger.Debug("complete generate Proof type: %v", item.Id())
 					chaResp <- item
 					logger.Debug("chan send -- %v", item.Id())
 				}
+				m.pendingQueue.Delete(req.Id())
 				return
 			}
 		}(request, chanResponse)

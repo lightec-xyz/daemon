@@ -9,11 +9,11 @@
   "ethUrl": "https://ethereum-holesky-rpc.publicnode.com",
   "beaconUrl": "http://127.0.0.1:9870",
   "ethPrivateKey": "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-  "btcInitHeight": 2585500,
+  "btcInitHeight": 2745077,
   "ethInitHeight": 1298160,
   "enableLocalWorker": true,
   "beaconInitSlot": 1286144,
   "autoSubmit": true,
-  "enableRecursiveAgent": false,
-  "enableTxAgent": true
+  "disableRecursiveAgent": false,
+  "disableTxAgent": true
 }

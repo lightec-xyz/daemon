@@ -40,6 +40,8 @@ const (
 	TxesTable         Table = "txes"
 	RedeemTable       Table = "redeem"
 	RequestTable      Table = "request"
+	DepositTable      Table = "deposit"
+	VerifyTable       Table = "verify"
 )
 
 type FileStorage struct {
@@ -52,7 +54,7 @@ type FileStorage struct {
 
 func NewFileStorage(rootPath string, genesisSlot uint64) (*FileStorage, error) {
 	var fileDirs = []Table{PeriodTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
-		FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable}
+		FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable}
 	fileStoreMap := make(map[Table]*store.FileStore)
 	path := fmt.Sprintf("%s/proofData", rootPath) // todo
 	logger.Info("fileStorage path: %v", path)
@@ -322,6 +324,40 @@ func (fs *FileStorage) GetRedeemProof(txHash string) (*StoreProof, bool, error) 
 	return &storeProof, exist, nil
 }
 
+func (fs *FileStorage) StoreDepositProof(txHash string, proof, witness []byte) error {
+	return fs.Store(DepositTable, txHash, newStoreProof(common.DepositTxType, 0, txHash, proof, witness))
+}
+func (fs *FileStorage) CheckDepositProof(txHash string) (bool, error) {
+	return fs.Check(DepositTable, txHash)
+}
+
+func (fs *FileStorage) GetDepositProof(txHash string) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(DepositTable, txHash, &storeProof)
+	if err != nil {
+		logger.Error("get deposit proof error:%v %v", txHash, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreVerifyProof(txHash string, proof, witness []byte) error {
+	return fs.Store(VerifyTable, txHash, newStoreProof(common.VerifyTxType, 0, txHash, proof, witness))
+}
+func (fs *FileStorage) CheckVerifyProof(txHash string) (bool, error) {
+	return fs.Check(VerifyTable, txHash)
+}
+
+func (fs *FileStorage) GetVerifyProof(txHash string) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(VerifyTable, txHash, &storeProof)
+	if err != nil {
+		logger.Error("get verify proof error:%v %v", txHash, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
 func newStoreProof(proofType common.ZkProofType, period uint64, txHash string, proof, witness []byte) *StoreProof {
 	return &StoreProof{
 		Period:    period,
@@ -358,6 +394,11 @@ func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, 
 			break
 		}
 	}
+	if finalizedSlot-txSlot > 33 {
+		logger.Warn("get txSlot nearest finalized  error slot %v, txSlot %v", finalizedSlot, txSlot)
+		return 0, false, nil
+	}
+
 	return finalizedSlot, finalizedSlot != 0, nil
 
 }

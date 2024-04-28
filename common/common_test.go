@@ -22,5 +22,13 @@ func TestDemo(t *testing.T) {
 	t.Log(GetNearTxSlot(63))
 	t.Log(GetNearTxSlot(64))
 	t.Log(GetNearTxSlot(65))
+}
 
+func TestGetSlot(t *testing.T) {
+	//1531905
+	slot, err := GetSlot(1434666)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(slot)
 }
