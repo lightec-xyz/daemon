@@ -117,7 +117,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	syncCommitResp := make(chan *common.ZkProofResponse)
 	fetchDataResp := make(chan FetchDataResponse)
 
-	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, InitStoreTables)
+	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot)
 	if err != nil {
 		logger.Error("new fileStorage error: %v", err)
 		return nil, err

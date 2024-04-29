@@ -55,10 +55,13 @@ type FileStorage struct {
 	genesisPeriod uint64
 }
 
-func NewFileStorage(rootPath string, genesisSlot uint64, tables []Table) (*FileStorage, error) {
+func NewFileStorage(rootPath string, genesisSlot uint64, tables ...Table) (*FileStorage, error) {
 	fileStoreMap := make(map[Table]*store.FileStore)
 	path := fmt.Sprintf("%s/proofData", rootPath) // todo
 	logger.Info("fileStorage path: %v", path)
+	if tables == nil {
+		tables = InitStoreTables
+	}
 	for _, key := range tables {
 		fileStore, err := CreateFileStore(path, string(key))
 		if err != nil {
