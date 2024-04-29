@@ -6,7 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/lightec-xyz/daemon/common"
-	"github.com/lightec-xyz/daemon/rpc"
 	"math/big"
 	"strings"
 )
@@ -55,7 +54,7 @@ func txesToTxIds(txes []Transaction) []string {
 	return txHashes
 }
 
-func proofsToDbProofs(proofs []Proof) []DbProof {
+func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
 	var dbProofs []DbProof
 	for _, proof := range proofs {
 		dbProofs = append(dbProofs, DbProof{
@@ -75,12 +74,12 @@ func txesToDbTxes(txes []Transaction) []DbTx {
 	return dbtxes
 }
 
-func depositToTxHash(txs []DepositProofParam) []string {
-	var txHashList []string
-	for _, tx := range txs {
-		txHashList = append(txHashList, tx.TxHash)
+func requestsToProofUnGenId(requests []*common.ZkProofRequest) []string {
+	var ids []string
+	for _, req := range requests {
+		ids = append(ids, req.Id())
 	}
-	return txHashList
+	return ids
 }
 
 func redeemToTxHashList(txs []RedeemProofParam) []string {
@@ -89,34 +88,6 @@ func redeemToTxHashList(txs []RedeemProofParam) []string {
 		txHashList = append(txHashList, tx.TxHash)
 	}
 	return txHashList
-}
-func toDepositZkProofRequest(list []DepositProofParam) ([]*common.ZkProofRequest, error) {
-	var result []*common.ZkProofRequest
-	for _, item := range list {
-		data := rpc.DepositRequest{
-			TxHash:    item.TxHash,
-			BlockHash: item.BlockHash,
-		}
-		result = append(result, common.NewZkProofRequest(common.DepositTxType, data, 0, item.TxHash))
-	}
-	return result, nil
-}
-
-func toUpdateZkProofRequest(redeemTxes []Transaction) ([]*common.ZkProofRequest, error) {
-	var result []*common.ZkProofRequest
-	for _, item := range redeemTxes {
-		data := rpc.VerifyRequest{TxHash: item.TxHash, BlockHash: item.BlockHash}
-		result = append(result, common.NewZkProofRequest(common.VerifyTxType, data, 0, item.TxHash))
-	}
-	return result, nil
-}
-
-func toTxInEth2Request(list []RedeemProofParam) ([]*common.ZkProofRequest, error) {
-	var result []*common.ZkProofRequest
-	for _, item := range list {
-		result = append(result, common.NewZkProofRequest(common.TxInEth2, item, 0, item.TxHash))
-	}
-	return result, nil
 }
 
 func NewRat() *big.Rat {

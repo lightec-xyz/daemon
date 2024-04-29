@@ -125,7 +125,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		if index%20 == 0 {
 			logger.Debug("ethereum parse block:%d", index)
 		}
-		redeemTxes, depositTxes, requests, proofs, err := e.parseBlock(index)
+		redeemTxes, depositTxes, requests, err := e.parseBlock(index)
 		if err != nil {
 			logger.Error("eth parse block error: %v %v", index, err)
 			return err
@@ -142,7 +142,7 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("ethereum save transaction error: %v %v", index, err)
 			return err
 		}
-		err = e.saveRedeemData(redeemTxes, proofs, requests)
+		err = e.saveRedeemData(redeemTxes, requests)
 		if err != nil {
 			logger.Error("ethereum save Data error: %v %v", index, err)
 			return err
@@ -220,9 +220,9 @@ func (e *EthereumAgent) saveTransaction(height int64, txes []Transaction) error 
 	return nil
 }
 
-func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, proofs []Proof, requests []RedeemProofParam) error {
+func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, requests []*common.ZkProofRequest) error {
 
-	err := WriteDbProof(e.store, proofsToDbProofs(proofs))
+	err := WriteDbProof(e.store, proofsToDbProofs(requests))
 	if err != nil {
 		logger.Error("put eth current height error:%v", err)
 		return err
@@ -241,7 +241,7 @@ func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, proofs []Proof,
 		}
 	}
 	// cache need to generate redeem proof
-	err = WriteUnGenProof(e.store, Ethereum, redeemToTxHashList(requests))
+	err = WriteUnGenProof(e.store, Ethereum, requestsToProofUnGenId(requests))
 	if err != nil {
 		logger.Error("write ungen Proof error: %v", err)
 		return err
@@ -249,28 +249,27 @@ func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, proofs []Proof,
 	return nil
 }
 
-func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, []RedeemProofParam, []Proof, error) {
+func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, []*common.ZkProofRequest, error) {
 	block, err := e.ethClient.GetBlock(height)
 	if err != nil {
 		logger.Error("ethereum rpc get block error:%v", err)
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	blockHash := block.Hash().String()
 	logFilters, topicFilters := e.logAddrFilter.FilterLogs()
 	logs, err := e.ethClient.GetLogs(blockHash, logFilters, topicFilters)
 	if err != nil {
 		logger.Error("ethereum rpc get logs error:%v", err)
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	var redeemTxes []Transaction
 	var depositTxes []Transaction
-	var proofs []Proof
-	var requests []RedeemProofParam
+	var requests []*common.ZkProofRequest
 	for _, log := range logs {
 		depositTx, isDeposit, err := e.isDepositTx(log)
 		if err != nil {
 			logger.Error("check is deposit tx error:%v", err)
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 		if isDeposit {
 			depositTxes = append(depositTxes, depositTx)
@@ -279,26 +278,33 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 		redeemTx, isRedeem, err := e.isRedeemTx(log)
 		if err != nil {
 			logger.Error("check is redeem tx error:%v", err)
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 		if isRedeem {
 			submitted, err := e.btcClient.CheckTx(redeemTx.BtcTxId)
 			if err != nil {
 				logger.Error("check btc tx error:%v", err)
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, err
 			}
-			var redeemTxProof Proof
 			if submitted {
-				redeemTxProof = NewRedeemProof(redeemTx.TxHash, common.ProofSuccess)
+
 			} else {
-				requests = append(requests, NewRedeemProofParam(redeemTx.TxHash, nil))
-				redeemTxProof = NewRedeemProof(redeemTx.TxHash, common.ProofDefault)
+				data, ok, err := e.getTxInEth2Data(log.TxHash.String())
+				if err != nil {
+					logger.Error("get tx in eth2 data error: %v %v", log.TxHash.String(), err)
+					return nil, nil, nil, err
+				}
+				if !ok {
+					logger.Error("get tx eth data false: %v", log.TxHash.String())
+					return nil, nil, nil, fmt.Errorf("get tx eth data false: %v", log.TxHash.String())
+				}
+				requests = append(requests, common.NewZkProofRequest(common.TxInEth2, data, 0, log.TxHash.String()))
+
 			}
-			proofs = append(proofs, redeemTxProof)
 			redeemTxes = append(redeemTxes, redeemTx)
 		}
 	}
-	return redeemTxes, depositTxes, requests, proofs, nil
+	return redeemTxes, depositTxes, requests, nil
 }
 
 func (e *EthereumAgent) isDepositTx(log types.Log) (Transaction, bool, error) {
@@ -877,7 +883,7 @@ func (e *EthereumAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error)
 		return nil, false, nil
 	}
 	// todo
-	var update utils.LightClientUpdateInfo
+	var update utils.SyncCommitteeUpdate
 	update.Version = currentPeriodUpdate.Version
 	err = ParseObj(currentPeriodUpdate.Data, &update)
 	if err != nil {

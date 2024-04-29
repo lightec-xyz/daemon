@@ -155,7 +155,7 @@ func (w *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 
 func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
 	logger.Debug("start gen deposit prove: %v", req.TxHash)
-	proof, err := w.circuit.DepositProve(req.TxHash, req.BlockHash)
+	proof, err := w.circuit.DepositProve(req.Data)
 	if err != nil {
 		logger.Error(err.Error())
 		return rpc.DepositResponse{}, fmt.Errorf("gen deposit prove error: %v", err)
@@ -205,7 +205,7 @@ func (w *LocalWorker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemRespons
 
 func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
 	logger.Debug("start gen verify proof %v", req.TxHash)
-	proof, err := w.circuit.UpdateChangeProve(req.TxHash, req.BlockHash)
+	proof, err := w.circuit.UpdateChangeProve(req.Data)
 	if err != nil {
 		logger.Error(err.Error())
 		return rpc.VerifyResponse{}, fmt.Errorf("gen verify proof error: %v", err)
@@ -260,7 +260,7 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
 	// todo
 	logger.Debug("start unit prove : %v Index", req.Period)
-	var update utils.LightClientUpdateInfo
+	var update utils.SyncCommitteeUpdate
 	err := ParseObj(req, &update)
 	if err != nil {
 		logger.Error("deep copy error %v", err)

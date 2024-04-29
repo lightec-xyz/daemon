@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/frontend"
+	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
@@ -13,11 +14,9 @@ import (
 	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
 	"github.com/lightec-xyz/provers/circuits/redeem"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
-	proverCommon "github.com/lightec-xyz/provers/common"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
 	"math/big"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -80,11 +79,6 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Warn("current zk circuit RedeemProve prove is debug,skip prove")
 		return debugProof()
 	}
-	txVk, err := utils.ReadVk(filepath.Join(c.Cfg.DataDir, proverCommon.TxInEth2VkFile))
-	if err != nil {
-		logger.Error("read vk error:%v", err)
-		return nil, err
-	}
 
 	txInEth2Proof, err := HexToProof(txProof)
 	if err != nil {
@@ -97,11 +91,6 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		return nil, err
 	}
 
-	bhVk, err := utils.ReadVk(filepath.Join(c.Cfg.DataDir, proverCommon.BeaconHeaderOuterVkFile))
-	if err != nil {
-		logger.Error("read vk error:%v", err)
-		return nil, err
-	}
 	blockHeaderProof, err := HexToProof(bhProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
@@ -110,11 +99,6 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 	blockHeaderWitness, err := HexToWitness(bhWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
-		return nil, err
-	}
-	bhfVk, err := utils.ReadVk(filepath.Join(c.Cfg.DataDir, proverCommon.BeaconHeaderFinalityPkFile))
-	if err != nil {
-		logger.Error("read vk error:%v", err)
 		return nil, err
 	}
 	blockHeaderFinalityProof, err := HexToProof(bhfProof)
@@ -148,8 +132,8 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("decode current scssz root error:%v", err)
 		return nil, err
 	}
-	proof, err := redeem.Prove(c.Cfg.DataDir, txVk, txInEth2Proof, txInEth2Witness, bhVk, blockHeaderProof, blockHeaderWitness,
-		bhfVk, blockHeaderFinalityProof, blockHeaderFinalityWitness, beginIdBytes, endIdBytes, genesisSCSSZRoot, curScRootBytes, *txVar,
+	proof, err := redeem.Prove(c.Cfg.DataDir, txInEth2Proof, txInEth2Witness, blockHeaderProof, blockHeaderWitness,
+		blockHeaderFinalityProof, blockHeaderFinalityWitness, beginIdBytes, endIdBytes, genesisSCSSZRoot, curScRootBytes, *txVar,
 		*receiptVar)
 	if err != nil {
 		logger.Error("redeem prove error:%v", err)
@@ -178,11 +162,6 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 		logger.Warn("current zk circuit BeaconHeaderFinalityUpdateProve prove is debug,skip prove")
 		return debugProof()
 	}
-	scRecursiveVk, err := utils.ReadVk(filepath.Join(c.Cfg.DataDir, reLightCommon.RecursiveVkFile))
-	if err != nil {
-		logger.Error("read vk error:%v", err)
-		return nil, err
-	}
 	scRecursiveProof, err := HexToProof(recursiveProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
@@ -191,11 +170,6 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 	scRecursiveWitness, err := HexToWitness(recursiveWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
-		return nil, err
-	}
-	scOuterVk, err := utils.ReadVk(filepath.Join(c.Cfg.DataDir, reLightCommon.OuterVkFile))
-	if err != nil {
-		logger.Error("read vk error:%v", err)
 		return nil, err
 	}
 	scOuterProof, err := HexToProof(outerProof)
@@ -209,8 +183,8 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 		return nil, err
 	}
 
-	proof, err := beacon_header_finality.Prove(c.Cfg.DataDir, genesisSCSSZRoot, scRecursiveVk, scRecursiveProof,
-		scRecursiveWitness, scOuterVk, scOuterProof, scOuterWitness, finalityUpdate, scUpdate)
+	proof, err := beacon_header_finality.Prove(c.Cfg.DataDir, genesisSCSSZRoot, scRecursiveProof,
+		scRecursiveWitness, scOuterProof, scOuterWitness, finalityUpdate, scUpdate)
 	if err != nil {
 		logger.Error("beacon header finality update prove error:%v", err)
 		return nil, err
@@ -256,16 +230,22 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*reLightComm
 	}, err
 }
 
-func (c *Circuit) DepositProve(txId, blockHash string) (*reLightCommon.Proof, error) {
+func (c *Circuit) DepositProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit DepositProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
+	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
+	if err != nil {
+		logger.Error("deposit prove error:%v", err)
+		return nil, err
+	}
+	return proof, nil
+
 }
 
-func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*reLightCommon.Proof, *reLightCommon.Proof, error) {
+func (c *Circuit) UnitProve(period uint64, update *utils.SyncCommitteeUpdate) (*reLightCommon.Proof, *reLightCommon.Proof, error) {
 	// todo
 	logger.Debug("current zk circuit unit prove")
 	ok, err := common.VerifyLightClientUpdate(update)
@@ -393,16 +373,21 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	return proof, err
 }
 
-func (c *Circuit) UpdateChangeProve(txId, blockHash string) (*reLightCommon.Proof, error) {
+func (c *Circuit) UpdateChangeProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit UpdateChangeProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
+	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
+	if err != nil {
+		logger.Error("update change prove error:%v", err)
+		return nil, err
+	}
+	return proof, nil
 }
 
-func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
+func SyncCommitRoot(update *utils.SyncCommitteeUpdate) ([]byte, error) {
 	ok, err := common.VerifyLightClientUpdate(update)
 	if err != nil {
 		return nil, err
@@ -413,7 +398,7 @@ func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
 	return utils.SyncCommitRoot(update)
 }
 
-func unitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*reLightCommon.Proof, error) {
+func unitProv(dataDir string, subDir string, update *utils.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
 	unitCfg := unit.NewUnitConfig(dataDir, "", subDir)
 	unit := unit.NewUnit(unitCfg)
 	err := unit.Load()
@@ -427,7 +412,7 @@ func unitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo
 	return proofs, nil
 }
 
-func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*reLightCommon.Proof, error) {
+func outerProve(dataDir string, subDir string, update *utils.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
 	outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
 	outer := unit.NewOuter(&outerCfg)
 	err := outer.Load()
@@ -445,7 +430,7 @@ func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateIn
 	return proofs, nil
 }
 
-func innerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
+func innerProve(dataDir string, subDir string, update *utils.SyncCommitteeUpdate) error {
 	innerCfg := unit.NewInnerConfig(dataDir, "", subDir)
 	inner := unit.NewInner(&innerCfg)
 	err := inner.Load()
@@ -461,7 +446,7 @@ func innerProve(dataDir string, subDir string, update *utils.LightClientUpdateIn
 		if err != nil {
 			return err
 		}
-		err = inner.Save(index, proof)
+		err = inner.Save(proof, index)
 		if err != nil {
 			return err
 		}

@@ -209,10 +209,10 @@ func DelTxBlock(store store.IStore, height int64) error {
 	return store.DeleteObj(DbTxBlockHeightKey(height))
 }
 
-func WriteUnGenProof(store store.IStore, chain ChainType, txList []string) error {
+func WriteUnGenProof(store store.IStore, chain ChainType, ids []string) error {
 	batch := store.Batch()
-	for _, txHash := range txList {
-		err := batch.BatchPutObj(DbUnGenProofId(chain, txHash), nil)
+	for _, id := range ids {
+		err := batch.BatchPutObj(DbUnGenProofId(chain, id), nil)
 		if err != nil {
 			logger.Error("put ungen Proof error:%v", err)
 			return err

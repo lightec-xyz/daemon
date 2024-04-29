@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/consensys/gnark/frontend"
+	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
@@ -91,9 +92,8 @@ type BlockHeaderFinalityResponse struct {
 }
 
 type DepositRequest struct {
-	Version   string
-	TxHash    string
-	BlockHash string
+	TxHash string
+	Data   *btcproverUtils.GrandRollupProofData
 }
 
 type DepositResponse struct {
@@ -118,9 +118,8 @@ type RedeemResponse struct {
 }
 
 type VerifyRequest struct {
-	Version   string
-	TxHash    string
-	BlockHash string
+	TxHash string
+	Data   *btcproverUtils.GrandRollupProofData
 }
 
 type VerifyResponse struct {

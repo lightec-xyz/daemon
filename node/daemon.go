@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -92,6 +93,13 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
 	}
+
+	btcProverClient, err := btcproverClient.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
+	if err != nil {
+		logger.Error("new btc btcProverClient error:%v", err)
+		return nil, err
+	}
+
 	beaconClient, err := beacon.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
@@ -136,7 +144,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 
 	var agents []*WrapperAgent
-	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, btcClient, ethClient, proofRequest, keyStore, taskManager)
+	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient, proofRequest, keyStore, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

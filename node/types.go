@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/consensys/gnark/frontend"
+	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
 	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
@@ -15,10 +16,8 @@ import (
 )
 
 type DepositProofParam struct {
-	Version   string
-	Body      interface{}
-	TxHash    string
-	BlockHash string
+	TxHash string
+	Data   *btcproverUtils.GrandRollupProofData
 }
 
 type VerifyProofParam struct {

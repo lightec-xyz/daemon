@@ -4,8 +4,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
+	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
@@ -17,8 +20,11 @@ import (
 type BitcoinAgent struct {
 	btcClient       *bitcoin.Client
 	ethClient       *ethereum.Client
+	btcProverClient *btcproverClient.Client
 	store           store.IStore
 	memoryStore     store.IStore
+	fileStore       *FileStorage
+	cache           *CacheState
 	proofRequest    chan<- []*common.ZkProofRequest
 	taskManager     *TaskManager
 	operatorAddr    string
@@ -29,8 +35,8 @@ type BitcoinAgent struct {
 	task            *TaskManager
 }
 
-func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, btcClient *bitcoin.Client,
-	ethClient *ethereum.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
+func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, fileStore *FileStorage, btcClient *bitcoin.Client,
+	ethClient *ethereum.Client, btcProverClient *btcproverClient.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:       btcClient,
 		ethClient:       ethClient,
@@ -39,10 +45,13 @@ func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore stor
 		operatorAddr:    cfg.BtcOperatorAddr,
 		proofRequest:    requests,
 		minDepositValue: 0, // todo
+		btcProverClient: btcProverClient,
 		keyStore:        keyStore,
 		submitTxEthAddr: submitTxEthAddr,
+		fileStore:       fileStore,
 		initHeight:      cfg.BtcInitHeight,
 		task:            task,
+		cache:           NewCacheState(),
 	}, nil
 }
 
@@ -103,7 +112,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		if index%5 == 0 {
 			logger.Debug("bitcoin parse block height:%d", index)
 		}
-		depositTxes, redeemTxes, proofRequests, proofs, err := b.parseBlock(index)
+		depositTxes, redeemTxes, proofRequests, err := b.parseBlock(index)
 		if err != nil {
 			logger.Error("bitcoin agent parse block error: %v %v", index, err)
 			return err
@@ -119,7 +128,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("bitcoin agent save transaction error: %v %v", index, err)
 			return err
 		}
-		err = b.saveDepositData(proofs, proofRequests)
+		err = b.saveRequestsInfo(proofRequests)
 		if err != nil {
 			logger.Error("bitcoin agent save Data to db error: %v %v", index, err)
 			return err
@@ -129,20 +138,9 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("write btc height error: %v %v", index, err)
 			return err
 		}
-		// todo
-		updateZkProofRequests, err := toUpdateZkProofRequest(redeemTxes)
-		if err != nil {
-			logger.Error("to update zk Proof request error: %v %v", index, err)
-			return err
-		}
-		zkProofRequest, err := toDepositZkProofRequest(proofRequests)
-		if err != nil {
-			logger.Error("to deposit zk Proof request error: %v %v", index, err)
-			return err
-		}
-		b.proofRequest <- append(updateZkProofRequests, zkProofRequest...)
-		if len(zkProofRequest) > 0 {
-			logger.Info("success send btc deposit proof request: %v", len(zkProofRequest))
+		b.proofRequest <- proofRequests
+		if len(proofRequests) > 0 {
+			logger.Info("success send btc deposit proof request: %v", len(proofRequests))
 		}
 
 	}
@@ -168,13 +166,13 @@ func (e *BitcoinAgent) saveTransaction(height int64, txes []Transaction) error {
 	return nil
 }
 
-func (b *BitcoinAgent) saveDepositData(proofs []Proof, requests []DepositProofParam) error {
-	err := WriteDbProof(b.store, proofsToDbProofs(proofs))
+func (b *BitcoinAgent) saveRequestsInfo(requests []*common.ZkProofRequest) error {
+	err := WriteDbProof(b.store, proofsToDbProofs(requests))
 	if err != nil {
 		logger.Error("write Proof error: %v", err)
 		return err
 	}
-	err = WriteUnGenProof(b.store, Bitcoin, depositToTxHash(requests))
+	err = WriteUnGenProof(b.store, Bitcoin, requestsToProofUnGenId(requests))
 	if err != nil {
 		logger.Error("write ungen Proof error:%v", err)
 		return err
@@ -182,58 +180,77 @@ func (b *BitcoinAgent) saveDepositData(proofs []Proof, requests []DepositProofPa
 	return nil
 }
 
-func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, []DepositProofParam, []Proof, error) {
+func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, []*common.ZkProofRequest, error) {
 	blockHash, err := b.btcClient.GetBlockHash(height)
 	if err != nil {
 		logger.Error("btcClient get block hash error: %v %v", height, err)
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	blockWithTx, err := b.btcClient.GetBlock(blockHash)
 	if err != nil {
 		logger.Error("btcClient get block error: %v %v", blockHash, err)
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	var depositTxes []Transaction
 	var redeemTxes []Transaction
-	var requests []DepositProofParam
-	var proofs []Proof
+	var requests []*common.ZkProofRequest
 	for _, tx := range blockWithTx.Tx {
 		redeemTx, isRedeem := b.isRedeemTx(tx, blockHash)
 		if isRedeem {
 			redeemTxes = append(redeemTxes, redeemTx)
+			proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
+			if err != nil {
+				logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
+				return nil, nil, nil, err
+			}
+			verifyRequest := rpc.VerifyRequest{
+				TxHash: tx.Txid,
+				Data:   proofData,
+			}
+			requests = append(requests, common.NewZkProofRequest(common.VerifyTxType, &verifyRequest, 0, tx.Txid))
 			continue
 		}
 		depositTx, isDeposit, err := parseDepositTx(tx, b.operatorAddr, b.minDepositValue)
 		if err != nil {
 			logger.Error("check deposit tx error: %v %v", tx.Txid, err)
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 		if isDeposit {
 			submitted, err := b.ethClient.CheckDepositProof(depositTx.TxHash)
 			if err != nil {
 				logger.Error("check deposit Proof error: %v %v", tx.Txid, err)
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, err
 			}
-			var depositTxProof Proof
 			if submitted {
-				depositTxProof = NewDepositTxProof(tx.Txid, common.ProofSuccess)
+
 			} else {
-				requests = append(requests, NewDepositProofParam(depositTx.TxHash, blockHash))
-				depositTxProof = NewDepositTxProof(tx.Txid, common.ProofDefault)
+				proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
+				if err != nil {
+					logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
+					return nil, nil, nil, err
+				}
+				depositRequest := rpc.DepositRequest{
+					TxHash: tx.Txid,
+					Data:   proofData,
+				}
+				requests = append(requests, common.NewZkProofRequest(common.DepositTxType, &depositRequest, 0, tx.Txid))
 			}
-			proofs = append(proofs, depositTxProof)
 			depositTxes = append(depositTxes, depositTx)
 		}
 	}
-	return depositTxes, redeemTxes, requests, proofs, nil
+	return depositTxes, redeemTxes, requests, nil
 }
 
 func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive  Proof resp: %v %v %v %x",
 		resp.ZkProofType.String(), resp.Period, resp.TxHash, resp.Proof)
+	err := StoreZkProof(b.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
+	if err != nil {
+		logger.Error("store Proof error: %v %v", resp.TxHash, err)
+		return err
+	}
 	proofId := resp.TxHash
-	hexProof := hex.EncodeToString(resp.Proof)
-	err := b.updateDepositProof(proofId, hexProof, resp.Status)
+	err = b.updateDepositProof(proofId, hex.EncodeToString(resp.Proof), resp.Status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", proofId, err)
 		return err
@@ -250,15 +267,6 @@ func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		}
 	default:
 	}
-	//// todo
-	//if b.autoSubmit {
-	//	txHash, err := b.taskManager.MintZkBtcRequest(proofId, resp.Proof)
-	//	if err != nil {
-	//		logger.Error("mint btc tx error:%v", err)
-	//		return err
-	//	}
-	//	logger.Info("success mint zkbtc tx: %v", txHash)
-	//}
 	return nil
 }
 
@@ -468,10 +476,10 @@ func getEthAddrFromScript(script string) (string, error) {
 	return script[4:], nil
 }
 
-func NewDepositProofParam(txId, blockHash string) DepositProofParam {
+func NewDepositProofParam(txHash string, data *btcproverUtils.GrandRollupProofData) DepositProofParam {
 	return DepositProofParam{
-		TxHash:    txId,
-		BlockHash: blockHash,
+		TxHash: txHash,
+		Data:   data,
 	}
 }
 
