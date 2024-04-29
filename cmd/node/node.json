@@ -2,7 +2,7 @@
   "datadir": "/Users/red/lworkspace/lightec/daemon/node/test",
   "network": "local",
   "rpcbind": "127.0.0.1",
-  "rpcport": "9970",
+  "rpcport": "7880",
   "btcUser": "lightec",
   "btcPwd": "Abcd1234",
   "btcUrl": "http://18.116.118.39:18332",
@@ -12,8 +12,8 @@
   "btcInitHeight": 2745077,
   "ethInitHeight": 1298160,
   "enableLocalWorker": true,
-  "beaconInitSlot": 1286144,
+  "beaconInitSlot": 1482752,
   "autoSubmit": true,
   "disableRecursiveAgent": false,
-  "disableTxAgent": true
+  "disableTxAgent": false
 }

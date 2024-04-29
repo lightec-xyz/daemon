@@ -451,7 +451,6 @@ func (e *EthereumAgent) CheckState() error {
 		}
 		if !ok {
 			logger.Warn("no find near %v tx slot finalized slot", txSlot)
-			continue
 		}
 		logger.Debug("find near %v tx slot finalized slot %v", txSlot, finalizedSlot)
 
