@@ -151,7 +151,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg, cfg.GenesisSyncPeriod, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, proofRequest, taskManager)
+	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, proofRequest, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

@@ -199,6 +199,12 @@ func (f *Fetch) GetFinalityUpdate() error {
 		return fmt.Errorf("parse slot error:%v", finalityUpdate.Data.FinalizedHeader.Slot)
 	}
 	slot := slotBig.Uint64()
+
+	err = f.fileStore.StoreFinalizedSlot(slot)
+	if err != nil {
+		logger.Error("store finality update error:%v %v", slot, err)
+		return err
+	}
 	exists, err := f.fileStore.CheckFinalityUpdate(slot)
 	if err != nil {
 		logger.Error("check finality update error:%v %v", slot, err)

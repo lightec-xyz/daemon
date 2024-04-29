@@ -304,21 +304,20 @@ func (b *BeaconAgent) CheckState() error {
 		}
 		skip = true
 	}
-
-	// todo
-	bhfUpdateIndexes, err := b.fileStore.NeedGenBhfUpdateIndex()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	for _, index := range bhfUpdateIndexes {
-		logger.Info("need to update block header finality: %v", index)
-		err := b.tryProofRequest(index, common.BeaconHeaderFinalityType)
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	}
+	//// todo
+	//bhfUpdateIndexes, err := b.fileStore.NeedGenBhfUpdateIndex()
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return err
+	//}
+	//for _, index := range bhfUpdateIndexes {
+	//	logger.Info("need to update block header finality: %v", index)
+	//	err := b.tryProofRequest(index, common.BeaconHeaderFinalityType)
+	//	if err != nil {
+	//		logger.Error(err.Error())
+	//		return err
+	//	}
+	//}
 	return nil
 }
 

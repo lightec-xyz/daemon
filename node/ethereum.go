@@ -42,9 +42,10 @@ type EthereumAgent struct {
 	initHeight       int64
 	task             *TaskManager
 	genesisPeriod    uint64
+	genesisSlot      uint64
 }
 
-func NewEthereumAgent(cfg Config, genesisPeriod uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
+func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
 	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
@@ -54,12 +55,13 @@ func NewEthereumAgent(cfg Config, genesisPeriod uint64, fileStore *FileStorage, 
 		store:            store,
 		fileStore:        fileStore,
 		memoryStore:      memoryStore,
-		genesisPeriod:    genesisPeriod,
 		proofRequest:     proofRequest,
 		multiAddressInfo: cfg.MultiAddressInfo,
 		initHeight:       cfg.EthInitHeight,
 		logAddrFilter:    cfg.EthAddrFilter,
 		task:             task,
+		genesisPeriod:    genesisSlot / 8192,
+		genesisSlot:      genesisSlot,
 		stateCache:       NewCacheState(),
 	}, nil
 }
@@ -226,6 +228,7 @@ func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, proofs []Proof,
 		return err
 	}
 	for _, tx := range redeemTxes {
+		logger.Debug("save redeem tx: %v", tx.TxHash)
 		err := WriteDestHash(e.store, tx.BtcTxId, tx.TxHash)
 		if err != nil {
 			logger.Error("batch write error: %v", err)
@@ -436,6 +439,29 @@ func (e *EthereumAgent) CheckState() error {
 		}
 		if !exists {
 			err := e.tryProofRequest(common.BeaconHeaderType, txSlot, txHash)
+			if err != nil {
+				logger.Error("try proof request error: %v", err)
+				return err
+			}
+		}
+		finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
+		if err != nil {
+			logger.Error("get near tx slot finalized slot error: %v", err)
+			return err
+		}
+		if !ok {
+			logger.Warn("no find near %v tx slot finalized slot", txSlot)
+			continue
+		}
+		logger.Debug("find near %v tx slot finalized slot %v", txSlot, finalizedSlot)
+
+		exists, err = CheckProof(e.fileStore, common.BeaconHeaderFinalityType, finalizedSlot, "")
+		if err != nil {
+			logger.Error("check block header finality proof error: %v %v", finalizedSlot, err)
+			return err
+		}
+		if !exists {
+			err := e.tryProofRequest(common.BeaconHeaderFinalityType, finalizedSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
@@ -694,7 +720,19 @@ func (e *EthereumAgent) getRequestProofData(zkType common.ZkProofType, index uin
 	case common.BeaconHeaderType:
 		return e.getBlockHeaderRequestData(index)
 	case common.RedeemTxType:
-		return e.getRedeemRequestData(index, txHash)
+		data, ok, err := GetRedeemRequestData(e.fileStore, e.genesisSlot, index, txHash, e.beaconClient, e.ethClient.Client)
+		if err != nil {
+			logger.Error("get redeem request data error: %v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.BeaconHeaderFinalityType:
+		data, ok, err := GetBhfUpdateData(e.fileStore, index, e.genesisPeriod)
+		if err != nil {
+			logger.Error("get bhf update data error: %v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
 	default:
 		return nil, false, fmt.Errorf("never should happen: %v", zkType)
 	}
@@ -739,10 +777,11 @@ func (e *EthereumAgent) checkRequest(zkType common.ZkProofType, index uint64, tx
 			return false, nil
 		}
 		return true, nil
-
 	case common.RedeemTxType:
 		// todo
 		return true, nil
+	case common.BeaconHeaderFinalityType:
+		return index >= e.genesisSlot, nil
 
 	default:
 		return false, fmt.Errorf("invalid zkType: %v", zkType)
