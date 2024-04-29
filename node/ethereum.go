@@ -835,7 +835,7 @@ func (e *EthereumAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error)
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v period update Data, send new update request", period)
+		logger.Warn("no find %v Index update Data, send new update request", period)
 		return nil, false, nil
 	}
 	// todo
@@ -878,7 +878,7 @@ func (e *EthereumAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error)
 			return nil, false, err
 		}
 		if !preUpdateExists {
-			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
+			logger.Warn("get unit Data,no find %v Index update Data, send new update request", prePeriod)
 			return nil, false, nil
 		}
 		// todo

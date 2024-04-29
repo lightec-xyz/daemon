@@ -123,13 +123,23 @@ type FetchRequest struct {
 }
 
 type FetchDataResponse struct {
-	period     uint64
+	FetchId    string
+	Index      uint64
 	UpdateType FetchType
+}
+
+func NewFetchDataResponse(updateType FetchType, index uint64) *FetchDataResponse {
+	id := fmt.Sprintf("%v_%v", updateType.String(), index)
+	return &FetchDataResponse{FetchId: id, Index: index, UpdateType: updateType}
+}
+
+func (f *FetchDataResponse) Id() string {
+	return f.FetchId
 }
 
 type Utxo struct {
 	TxId  string `json:"txId"`
-	Index uint32 `json:"index"`
+	Index uint32 `json:"Index"`
 }
 
 type TxOut struct {

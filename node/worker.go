@@ -229,7 +229,7 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 }
 
 func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
-	logger.Debug("start gen genesis prove %v period", req.Period)
+	logger.Debug("start gen genesis prove %v Index", req.Period)
 	proof, err := w.circuit.GenesisProve(req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
 		req.GenesisID, req.FirstID, req.SecondID)
 	if err != nil {
@@ -259,7 +259,7 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 
 func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
 	// todo
-	logger.Debug("start unit prove : %v period", req.Period)
+	logger.Debug("start unit prove : %v Index", req.Period)
 	var update utils.LightClientUpdateInfo
 	err := ParseObj(req, &update)
 	if err != nil {

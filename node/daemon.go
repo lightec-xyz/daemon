@@ -36,7 +36,6 @@ type IAgent interface {
 type IBeaconAgent interface {
 	ProofResponse(resp *common.ZkProofResponse) error
 	FetchDataResponse(resp FetchDataResponse) error
-	CheckBeaconHeaderFinality() error
 	CheckState() error
 	Init() error
 	Close() error
@@ -86,7 +85,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		logger.Info("ethereum submit address:%v", submitTxEthAddr)
 	}
-	logger.Info("beacon genesis period: %v, slot:%v", cfg.GenesisSyncPeriod, cfg.BeaconInitSlot)
+	logger.Info("beacon genesis Index: %v, slot:%v", cfg.GenesisSyncPeriod, cfg.BeaconInitSlot)
 
 	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {

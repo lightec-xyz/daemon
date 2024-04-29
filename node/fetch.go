@@ -19,14 +19,15 @@ type Fetch struct {
 	lock          sync.Mutex
 	maxReqs       *atomic.Int64
 	state         *CacheState
+	fetchResp     chan *FetchDataResponse
 }
 
 func (f *Fetch) Close() error {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (f *Fetch) Init() error {
+	logger.Debug("init fetch now")
 	err := f.Bootstrap()
 	if err != nil {
 		logger.Error("bootstrap error:%v", err)
@@ -34,7 +35,7 @@ func (f *Fetch) Init() error {
 	}
 	err = f.StoreLatestPeriod()
 	if err != nil {
-		logger.Error("store latest period error:%v", err)
+		logger.Error("store latest Index error:%v", err)
 		return err
 	}
 	return nil
@@ -76,12 +77,12 @@ func (f *Fetch) FinalityUpdate() error {
 func (f *Fetch) StoreLatestPeriod() error {
 	period, err := f.client.GetFinalizedSyncPeriod()
 	if err != nil {
-		logger.Error("get latest period error:%v", err)
+		logger.Error("get latest Index error:%v", err)
 		return err
 	}
 	err = f.fileStore.StorePeriod(period)
 	if err != nil {
-		logger.Error("store latest period error:%v", err)
+		logger.Error("store latest Index error:%v", err)
 		return err
 	}
 	return nil
@@ -95,7 +96,7 @@ func (f *Fetch) LightClientUpdate() error {
 	logger.Debug("start light client update")
 	err := f.StoreLatestPeriod()
 	if err != nil {
-		logger.Error("store latest period error:%v", err)
+		logger.Error("store latest Index error:%v", err)
 		return err
 	}
 	if !f.canUpdateReq() {
@@ -117,6 +118,15 @@ func (f *Fetch) LightClientUpdate() error {
 		f.state.Store(index, true)
 		go f.GetLightClientUpdate(index)
 
+	}
+	return nil
+}
+
+func (f *Fetch) SendFetchResp(fetchType FetchType, index uint64) error {
+	if f.fetchResp != nil {
+		fetchResp := NewFetchDataResponse(fetchType, index)
+		logger.Debug("reply send fetch resp: %v", fetchResp.Id())
+		f.fetchResp <- fetchResp
 	}
 	return nil
 }

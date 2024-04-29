@@ -13,7 +13,7 @@ import (
 type StoreProof struct {
 	ProofType common.ZkProofType `json:"type"`
 	Hash      string             `json:"hash"`
-	Period    uint64             `json:"period"`
+	Period    uint64             `json:"Index"`
 	Proof     string             `json:"proof"`
 	Witness   string             `json:"witness"`
 }
@@ -28,7 +28,7 @@ const (
 type Table string
 
 const (
-	PeriodTable       Table = "period"
+	PeriodTable       Table = "Index"
 	GenesisTable      Table = "genesis"
 	UpdateTable       Table = "update"
 	OuterTable        Table = "outer"
@@ -128,7 +128,7 @@ func (fs *FileStorage) GetPeriod() (uint64, bool, error) {
 	var period uint64
 	exists, err := fs.Get(PeriodTable, LatestPeriodKey, &period)
 	if err != nil {
-		logger.Error("get period error:%v", err)
+		logger.Error("get Index error:%v", err)
 		return 0, false, err
 	}
 	return period, exists, nil
@@ -424,11 +424,11 @@ func (fs *FileStorage) NeedUpdateIndexes() ([]uint64, error) {
 	}
 	latestPeriod, ok, err := fs.GetPeriod()
 	if err != nil {
-		logger.Error("get latest period error:%v", err)
+		logger.Error("get latest Index error:%v", err)
 		return nil, err
 	}
 	if !ok {
-		return nil, fmt.Errorf("get latest period error")
+		return nil, fmt.Errorf("get latest Index error")
 	}
 	indexes, err := fileStore.AllIndexes()
 	if err != nil {
@@ -453,11 +453,11 @@ func (fs *FileStorage) NeedGenUnitProofIndexes() ([]uint64, error) {
 	}
 	latestPeriod, ok, err := fs.GetPeriod()
 	if err != nil {
-		logger.Error("get latest period error:%v", err)
+		logger.Error("get latest Index error:%v", err)
 		return nil, err
 	}
 	if !ok {
-		return nil, fmt.Errorf("get latest period error")
+		return nil, fmt.Errorf("get latest Index error")
 	}
 	indexes, err := fileStore.AllIndexes()
 	if err != nil {
@@ -481,11 +481,11 @@ func (fs *FileStorage) NeedGenRecProofIndexes() ([]uint64, error) {
 	}
 	latestPeriod, ok, err := fs.GetPeriod()
 	if err != nil {
-		logger.Error("get latest period error:%v", err)
+		logger.Error("get latest Index error:%v", err)
 		return nil, err
 	}
 	if !ok {
-		return nil, fmt.Errorf("get latest period error")
+		return nil, fmt.Errorf("get latest Index error")
 	}
 	indexes, err := fileStore.AllIndexes()
 	if err != nil {

@@ -36,7 +36,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 	}
 	response.CanGen = true
 	response.Request = zkProofRequest
-	logger.Info("worker: %v get task: type:%v hash:%v:period:%v", request.Id, zkProofRequest.ReqType.String(),
+	logger.Info("worker: %v get task: type:%v hash:%v:Index:%v", request.Id, zkProofRequest.ReqType.String(),
 		zkProofRequest.TxHash, zkProofRequest.Index)
 	return &response, nil
 }
@@ -44,7 +44,7 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//todo check
 	for _, item := range req.Data {
-		logger.Info("workerId %v,submit proof type:%v period:%v hash:%v", req.WorkerId, item.ZkProofType.String(), item.Period, item.TxHash)
+		logger.Info("workerId %v,submit proof type:%v Index:%v hash:%v", req.WorkerId, item.ZkProofType.String(), item.Period, item.TxHash)
 	}
 	err := h.manager.SendProofResponse(req.Data)
 	if err != nil {

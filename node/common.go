@@ -118,7 +118,7 @@ func GetBhfUpdateData(fileStore *FileStorage, slot uint64) (interface{}, bool, e
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period genesis commitId no find", genesisPeriod)
+		logger.Warn("get %v Index genesis commitId no find", genesisPeriod)
 		return nil, false, nil
 	}
 	// todo
@@ -128,7 +128,7 @@ func GetBhfUpdateData(fileStore *FileStorage, slot uint64) (interface{}, bool, e
 		return nil, false, err
 	}
 	period := (attestedSlot / 8192)
-	logger.Debug("get bhf update data slot: %v,period: %v", slot, period)
+	logger.Debug("get bhf update data slot: %v,Index: %v", slot, period)
 	recursiveProof, ok, err := fileStore.GetRecursiveProof(period)
 	if err != nil {
 		logger.Error("get recursive proof error: %v %v", period, err)
@@ -195,7 +195,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period genesis commitId no find", genesisPeriod)
+		logger.Warn("get %v Index genesis commitId no find", genesisPeriod)
 		return nil, false, nil
 	}
 	relayId, ok, err := GetSyncCommitRootId(fileStore, period)
@@ -204,7 +204,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period relay commitId no find", period)
+		logger.Warn("get %v Index relay commitId no find", period)
 		return nil, false, nil
 	}
 	endPeriod := period + 1
@@ -214,7 +214,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period end commitId no find", endPeriod)
+		logger.Warn("get %v Index end commitId no find", endPeriod)
 		return nil, false, nil
 	}
 	secondProof, exists, err := fileStore.GetUnitProof(period)
@@ -234,7 +234,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v period recursive Data, send new proof request", prePeriod)
+		logger.Warn("no find %v Index recursive Data, send new proof request", prePeriod)
 		return nil, false, nil
 	}
 	return &rpc.SyncCommRecursiveRequest{
@@ -257,7 +257,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period genesis commitId no find", genesisPeriod)
+		logger.Warn("get %v Index genesis commitId no find", genesisPeriod)
 		return nil, false, nil
 	}
 	relayPeriod := period
@@ -267,7 +267,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v  period relay commitId no find ", relayPeriod)
+		logger.Warn("get %v  Index relay commitId no find ", relayPeriod)
 		return nil, false, nil
 	}
 	endPeriod := relayPeriod + 1
@@ -277,7 +277,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period end commitId no find", endPeriod)
+		logger.Warn("get %v Index end commitId no find", endPeriod)
 		return nil, false, nil
 	}
 
@@ -296,7 +296,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		return nil, false, err
 	}
 	if !secondExists {
-		logger.Warn("no find %v period unit proof , send new proof request", relayPeriod)
+		logger.Warn("no find %v Index unit proof , send new proof request", relayPeriod)
 		return nil, false, nil
 	}
 	return &rpc.SyncCommRecursiveRequest{
@@ -320,7 +320,7 @@ func GetGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, 
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period genesis commitId  no find", genesisPeriod)
+		logger.Warn("get %v Index genesis commitId  no find", genesisPeriod)
 		return nil, false, nil
 	}
 
@@ -331,7 +331,7 @@ func GetGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, 
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period first commitId no find", nextPeriod)
+		logger.Warn("get %v Index first commitId no find", nextPeriod)
 		return nil, false, nil
 	}
 	secondPeriod := nextPeriod + 1
@@ -341,7 +341,7 @@ func GetGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, 
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v period second commitId no find", secondPeriod)
+		logger.Warn("get %v Index second commitId no find", secondPeriod)
 		return nil, false, nil
 	}
 
@@ -351,7 +351,7 @@ func GetGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, 
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("get genesis Data,first proof not exists: %v period", genesisPeriod)
+		logger.Warn("get genesis Data,first proof not exists: %v Index", genesisPeriod)
 		return nil, false, nil
 	}
 	logger.Info("get genesis first proof: %v", genesisPeriod)
@@ -363,7 +363,7 @@ func GetGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, 
 	}
 
 	if !exists {
-		logger.Warn("get genesis Data,second proof not exists: %v period", nextPeriod)
+		logger.Warn("get genesis Data,second proof not exists: %v Index", nextPeriod)
 		return nil, false, nil
 	}
 	logger.Info("get genesis second proof: %v", nextPeriod)
@@ -405,7 +405,7 @@ func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.LightCli
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v period update Data, send new update request", period)
+		logger.Warn("no find %v Index update Data, send new update request", period)
 		return nil, false, nil
 	}
 	var update utils.LightClientUpdateInfo
@@ -447,7 +447,7 @@ func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.LightCli
 			return nil, false, err
 		}
 		if !preUpdateExists {
-			logger.Warn("get unit Data,no find %v period update Data, send new update request", prePeriod)
+			logger.Warn("get unit Data,no find %v Index update Data, send new update request", prePeriod)
 			return nil, false, nil
 		}
 		// todo
