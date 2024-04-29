@@ -111,11 +111,11 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	// todo
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []*common.ZkProofRequest)
-	btcProofResp := make(chan *common.ZkProofResponse)
-	ethProofResp := make(chan *common.ZkProofResponse)
-	syncCommitResp := make(chan *common.ZkProofResponse)
-	fetchDataResp := make(chan FetchDataResponse)
+	proofRequest := make(chan []*common.ZkProofRequest, 10)
+	btcProofResp := make(chan *common.ZkProofResponse, 10)
+	ethProofResp := make(chan *common.ZkProofResponse, 10)
+	syncCommitResp := make(chan *common.ZkProofResponse, 10)
+	fetchDataResp := make(chan FetchDataResponse, 10)
 
 	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot)
 	if err != nil {
