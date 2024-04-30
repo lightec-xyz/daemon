@@ -726,7 +726,7 @@ func (e *EthereumAgent) getRequestProofData(zkType common.ZkProofType, index uin
 	case common.BeaconHeaderType:
 		return e.getBlockHeaderRequestData(index)
 	case common.RedeemTxType:
-		data, ok, err := GetRedeemRequestData(e.fileStore, e.genesisSlot, index, txHash, e.beaconClient, e.ethClient.Client)
+		data, ok, err := GetRedeemRequestData(e.fileStore, e.genesisPeriod, index, txHash, e.beaconClient, e.ethClient.Client)
 		if err != nil {
 			logger.Error("get redeem request data error: %v %v", index, err)
 			return nil, false, err
