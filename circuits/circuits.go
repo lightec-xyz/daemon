@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/frontend"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	//btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
@@ -24,7 +24,6 @@ import (
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
-	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
 	"github.com/lightec-xyz/daemon/logger"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
@@ -230,18 +229,19 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*reLightComm
 	}, err
 }
 
-func (c *Circuit) DepositProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
+func (c *Circuit) DepositProve(txHash, blockHash string) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit DepositProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
-	if err != nil {
-		logger.Error("deposit prove error:%v", err)
-		return nil, err
-	}
-	return proof, nil
+	panic(txHash)
+	//proof, _, err := grandrollup.Prove(c.Cfg.DataDir)
+	//if err != nil {
+	//	logger.Error("deposit prove error:%v", err)
+	//	return nil, err
+	//}
+	//return proof, nil
 
 }
 
@@ -373,18 +373,19 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	return proof, err
 }
 
-func (c *Circuit) UpdateChangeProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
+func (c *Circuit) UpdateChangeProve(txHash, blockHash string) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit UpdateChangeProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
-	if err != nil {
-		logger.Error("update change prove error:%v", err)
-		return nil, err
-	}
-	return proof, nil
+	panic(txHash)
+	//proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
+	//if err != nil {
+	//	logger.Error("update change prove error:%v", err)
+	//	return nil, err
+	//}
+	//return proof, nil
 }
 
 func SyncCommitRoot(update *utils.SyncCommitteeUpdate) ([]byte, error) {

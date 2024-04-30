@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	//btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	//btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -18,9 +18,9 @@ import (
 )
 
 type BitcoinAgent struct {
-	btcClient       *bitcoin.Client
-	ethClient       *ethereum.Client
-	btcProverClient *btcproverClient.Client
+	btcClient *bitcoin.Client
+	ethClient *ethereum.Client
+	//btcProverClient *btcproverClient.Client
 	store           store.IStore
 	memoryStore     store.IStore
 	fileStore       *FileStorage
@@ -36,7 +36,7 @@ type BitcoinAgent struct {
 }
 
 func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, fileStore *FileStorage, btcClient *bitcoin.Client,
-	ethClient *ethereum.Client, btcProverClient *btcproverClient.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
+	ethClient *ethereum.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:       btcClient,
 		ethClient:       ethClient,
@@ -45,7 +45,7 @@ func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore stor
 		operatorAddr:    cfg.BtcOperatorAddr,
 		proofRequest:    requests,
 		minDepositValue: 0, // todo
-		btcProverClient: btcProverClient,
+		//btcProverClient: btcProverClient,
 		keyStore:        keyStore,
 		submitTxEthAddr: submitTxEthAddr,
 		fileStore:       fileStore,
@@ -198,14 +198,15 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 		redeemTx, isRedeem := b.isRedeemTx(tx, blockHash)
 		if isRedeem {
 			redeemTxes = append(redeemTxes, redeemTx)
-			proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
-			if err != nil {
-				logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
-				return nil, nil, nil, err
-			}
+			//proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
+			//if err != nil {
+			//	logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
+			//	return nil, nil, nil, err
+			//}
 			verifyRequest := rpc.VerifyRequest{
-				TxHash: tx.Txid,
-				Data:   proofData,
+				TxHash:    tx.Txid,
+				BlockHash: blockHash,
+				//Data:   proofData,
 			}
 			requests = append(requests, common.NewZkProofRequest(common.VerifyTxType, &verifyRequest, 0, tx.Txid))
 			continue
@@ -224,14 +225,15 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			if submitted {
 
 			} else {
-				proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
-				if err != nil {
-					logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
-					return nil, nil, nil, err
-				}
+				//proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
+				//if err != nil {
+				//	logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
+				//	return nil, nil, nil, err
+				//}
 				depositRequest := rpc.DepositRequest{
-					TxHash: tx.Txid,
-					Data:   proofData,
+					TxHash:    tx.Txid,
+					BlockHash: blockHash,
+					//Data:   proofData,
 				}
 				requests = append(requests, common.NewZkProofRequest(common.DepositTxType, &depositRequest, 0, tx.Txid))
 			}
@@ -474,13 +476,6 @@ func getEthAddrFromScript(script string) (string, error) {
 		return "", fmt.Errorf("script is not hex address")
 	}
 	return script[4:], nil
-}
-
-func NewDepositProofParam(txHash string, data *btcproverUtils.GrandRollupProofData) DepositProofParam {
-	return DepositProofParam{
-		TxHash: txHash,
-		Data:   data,
-	}
 }
 
 func NewDepositTxProof(txId string, status common.ProofStatus) Proof {

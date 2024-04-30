@@ -227,7 +227,7 @@ func GetSyncCommitRootId(fileStore *FileStorage, period uint64) ([]byte, bool, e
 	return syncCommitRoot, true, nil
 }
 
-func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.LightClientUpdateInfo, bool, error) {
+func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.SyncCommitteeUpdate, bool, error) {
 	var currentPeriodUpdate structs.LightClientUpdateWithVersion
 	exists, err := fileStore.GetUpdate(period, &currentPeriodUpdate)
 	if err != nil {
@@ -238,7 +238,7 @@ func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.LightCli
 		logger.Warn("no find %v index update Data", period)
 		return nil, false, nil
 	}
-	var update utils.LightClientUpdateInfo
+	var update utils.SyncCommitteeUpdate
 	err = common.ParseObj(currentPeriodUpdate.Data, &update)
 	if err != nil {
 		logger.Error("parse obj error: %v %v", period, err)

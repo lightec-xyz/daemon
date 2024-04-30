@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/consensys/gnark/frontend"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	//btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
 	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
@@ -14,11 +14,6 @@ import (
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
-
-type DepositProofParam struct {
-	TxHash string
-	Data   *btcproverUtils.GrandRollupProofData
-}
 
 type VerifyProofParam struct {
 	Version   string

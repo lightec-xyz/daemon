@@ -340,7 +340,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		return nil, false, nil
 	}
 	// todo
-	var update utils.LightClientUpdateInfo
+	var update utils.SyncCommitteeUpdate
 	err = ParseObj(currentPeriodUpdate.Data, &update)
 	if err != nil {
 		logger.Error(err.Error())
