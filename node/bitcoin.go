@@ -392,8 +392,15 @@ func (b *BitcoinAgent) tryProofRequest(proofType common.ZkProofType, txHash stri
 	if exists {
 		return nil
 	}
-	b.getRequestData(proofType, txHash)
-	zkProofRequest := common.NewZkProofRequest(proofType, nil, 0, txHash)
+	data, ok, err := b.getRequestData(proofType, txHash)
+	if err != nil {
+		logger.Error("get request data error:%v %v", txHash, err)
+		return err
+	}
+	if !ok {
+		return nil
+	}
+	zkProofRequest := common.NewZkProofRequest(proofType, data, 0, txHash)
 	b.SendProofRequest(zkProofRequest)
 	return nil
 }
