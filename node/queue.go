@@ -195,7 +195,7 @@ func NewSubmitQueue() *SubmitQueue {
 }
 
 func (q *SubmitQueue) Push(value *common.ZkProofResponse) {
-	q.list.Store(value.Id, value)
+	q.list.Store(value.Id(), value)
 }
 
 func (q *SubmitQueue) Delete(key string) {
