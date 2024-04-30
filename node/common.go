@@ -167,9 +167,9 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 		return nil, err
 	}
 	btcTxHash := transaction.TxHash()
-	_, err = btcClient.GetTransaction(btcTxHash)
-	if err != nil {
-		logger.Error("get btc tx error:%v %v", btcTxHash, err)
+	_, err = btcClient.GetTransaction(btcTxHash) // todo
+	if err == nil {
+		logger.Warn("btc tx already exist: %v", btcTxHash)
 		return "", nil
 	}
 	txHex := hex.EncodeToString(btxTx)
