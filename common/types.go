@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -84,4 +85,28 @@ func NewProofId(reqType ZkProofType, period uint64, txHash string) string {
 		return fmt.Sprintf("%v_%v", reqType.String(), txHash)
 	}
 	return fmt.Sprintf("%v_%v_%v", reqType.String(), period, txHash)
+}
+
+func ParseProofId(id string) (ZkProofType, uint64, string, error) {
+	// todo
+	if len(id) == 0 {
+		return ZkProofType(0), 0, "", fmt.Errorf("proof id is empty")
+	}
+	params := strings.Split(id, "_")
+	if len(params) == 2 {
+
+	} else if len(params) == 3 {
+
+	} else {
+		return ZkProofType(0), 0, "", fmt.Errorf("proof id format error: %v", id)
+	}
+
+	var reqType ZkProofType
+	var period uint64
+	var txHash string
+	_, err := fmt.Sscanf(id, "%v_%v", &reqType, &period)
+	if err != nil {
+		return ZkProofType(0), 0, "", err
+	}
+	return reqType, period, txHash, nil
 }

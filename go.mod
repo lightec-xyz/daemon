@@ -6,10 +6,10 @@ toolchain go1.22.0
 
 require (
 	github.com/blockcypher/gobcy/v2 v2.0.5
-	github.com/btcsuite/btcd v0.23.4
+	github.com/btcsuite/btcd v0.24.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
-	github.com/btcsuite/btcd/btcutil v1.1.3
-	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
+	github.com/btcsuite/btcd/btcutil v1.1.5
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/consensys/gnark v0.9.1
 	github.com/consensys/gnark-crypto v0.12.2-0.20240215234832-d72fcb379d3e
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
@@ -37,6 +37,8 @@ require (
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
+	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
+	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
@@ -172,7 +174,9 @@ require (
 replace (
 	github.com/consensys/gnark => github.com/lightec-xyz/gnark v0.0.0-20240314143013-a200efabb849
 	github.com/consensys/gnark-crypto => github.com/lightec-xyz/gnark-crypto v0.0.0-20240314062713-0c4d1f3833df
+
 	github.com/lightec-xyz/btc_provers => ../btc_provers
 	github.com/lightec-xyz/provers => ../provers
 	github.com/lightec-xyz/reLight => ../reLight
+	//github.com/lightec-xyz/chainark => ../chainark
 )
