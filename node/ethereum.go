@@ -88,11 +88,11 @@ func (e *EthereumAgent) Init() error {
 		return err
 	}
 	// todo just test
-	//err = WriteUnGenProof(e.store, Ethereum, []string{"0x554ff1fa98d6dfd812bcbca1ed40bf8022403dadd5373ceff4a1df5b7b19d484"})
-	//if err != nil {
-	//	logger.Error("write ungen proof error: %v", err)
-	//	return err
-	//}
+	err = WriteUnGenProof(e.store, Ethereum, []string{"622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f"})
+	if err != nil {
+		logger.Error("write ungen proof error: %v", err)
+		return err
+	}
 	return nil
 }
 
@@ -457,6 +457,7 @@ func (e *EthereumAgent) CheckState() error {
 		}
 		if !ok {
 			logger.Warn("no find near %v tx slot finalized slot", txSlot)
+			continue
 		}
 		logger.Debug("find near %v tx slot finalized slot %v", txSlot, finalizedSlot)
 

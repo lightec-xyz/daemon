@@ -14,6 +14,8 @@ func TestUuid(t *testing.T) {
 
 func TestGetSlot(t *testing.T) {
 	//1531905
+	//0x622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f
+	// 1434666
 	slot, err := GetSlot(1434666)
 	if err != nil {
 		t.Fatal(err)

@@ -275,8 +275,8 @@ func (d *Daemon) Run() error {
 		}
 		//scan block with tx
 		for _, agent := range d.agents {
-			scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
-			go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+			//scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
+			//go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
 
 			checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
 			go DoTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)

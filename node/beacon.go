@@ -206,13 +206,13 @@ func (b *BeaconAgent) prepareProofRequestData(index uint64, reqType common.ZkPro
 			return nil, false, err
 		}
 		return data, prepared, nil
-	case common.BeaconHeaderFinalityType:
-		data, prepared, err = b.GetBhfUpdateData(index)
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, false, err
-		}
-		return data, prepared, nil
+	//case common.BeaconHeaderFinalityType:
+	//	data, prepared, err = b.GetBhfUpdateData(index)
+	//	if err != nil {
+	//		logger.Error(err.Error())
+	//		return nil, false, err
+	//	}
+	//	return data, prepared, nil
 	default:
 		logger.Error(" prepare request Data never should happen : %v %v", index, reqType)
 		return nil, false, fmt.Errorf("never should happen : %v %v", index, reqType)

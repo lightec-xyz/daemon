@@ -77,7 +77,7 @@ func txesToDbTxes(txes []Transaction) []DbTx {
 func requestsToProofUnGenId(requests []*common.ZkProofRequest) []string {
 	var ids []string
 	for _, req := range requests {
-		ids = append(ids, req.Id())
+		ids = append(ids, req.TxHash) // todo
 	}
 	return ids
 }

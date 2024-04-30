@@ -318,9 +318,9 @@ func (m *manager) getChanResponse(reqType common.ZkProofType) chan *common.ZkPro
 	switch reqType {
 	case common.DepositTxType, common.VerifyTxType:
 		return m.btcProofResp
-	case common.RedeemTxType, common.TxInEth2, common.BeaconHeaderType: // todo
+	case common.RedeemTxType, common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType: // todo
 		return m.ethProofResp
-	case common.SyncComGenesisType, common.SyncComUnitType, common.SyncComRecursiveType, common.BeaconHeaderFinalityType:
+	case common.SyncComGenesisType, common.SyncComUnitType, common.SyncComRecursiveType:
 		return m.syncCommitResp
 	default:
 		logger.Error("never should happen Proof type:%v", reqType)
