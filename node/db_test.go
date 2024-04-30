@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/store"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -19,16 +20,23 @@ func initStore() store.IStore {
 
 func TestWriteUnGenProof(t *testing.T) {
 	store := initStore()
-	err := WriteUnGenProof(store, Bitcoin, []string{"sdfsdfsdf", "2sdfsdfsd"})
+	var unGenProofs []*DbUnGenProof
+	unGenProofs = append(unGenProofs, &DbUnGenProof{
+		TxHash:    "sdsdfsdf",
+		ProofType: common.RedeemTxType,
+		ChainType: Bitcoin,
+	})
+
+	err := WriteUnGenProof(store, Bitcoin, unGenProofs)
 	assert.Nil(t, err)
-	ids, err := ReadAllUnGenProofIds(store, Bitcoin)
+	ids, err := ReadAllUnGenProofs(store, Bitcoin)
 	assert.Nil(t, err)
 	t.Log(ids)
 	for _, item := range ids {
-		err := DeleteUnGenProof(store, Bitcoin, item.TxId)
+		err := DeleteUnGenProof(store, Bitcoin, item.TxHash)
 		assert.Nil(t, err)
 	}
-	ids, err = ReadAllUnGenProofIds(store, Bitcoin)
+	ids, err = ReadAllUnGenProofs(store, Bitcoin)
 	assert.Nil(t, err)
 	t.Log(ids)
 }

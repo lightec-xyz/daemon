@@ -57,7 +57,7 @@ func txesToTxIds(txes []Transaction) []string {
 func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
 	var dbProofs []DbProof
 	for _, proof := range proofs {
-		dbProofs = append(dbProofs, DbProof{
+		dbProofs = append(dbProofs, DbProof{ // todo
 			TxHash: proof.TxHash,
 		})
 	}
@@ -74,12 +74,16 @@ func txesToDbTxes(txes []Transaction) []DbTx {
 	return dbtxes
 }
 
-func requestsToProofUnGenId(requests []*common.ZkProofRequest) []string {
-	var ids []string
+func requestsToUnGenProofs(chainType ChainType, requests []*common.ZkProofRequest) []*DbUnGenProof {
+	var proofs []*DbUnGenProof
 	for _, req := range requests {
-		ids = append(ids, req.TxHash) // todo
+		proofs = append(proofs, &DbUnGenProof{
+			TxHash:    req.TxHash,
+			ProofType: req.ReqType,
+			ChainType: chainType,
+		})
 	}
-	return ids
+	return proofs
 }
 
 func redeemToTxHashList(txs []RedeemProofParam) []string {

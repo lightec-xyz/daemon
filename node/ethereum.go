@@ -212,7 +212,7 @@ func (e *EthereumAgent) saveTransaction(height int64, txes []Transaction) error 
 		logger.Error("write ethereum tx ids error: %v %v", height, err)
 		return err
 	}
-	err = WriteEthereumTx(e.store, txesToDbTxes(txes))
+	err = WriteTxes(e.store, txesToDbTxes(txes))
 	if err != nil {
 		logger.Error("put redeem tx error: %v %v", height, err)
 		return err
@@ -241,7 +241,7 @@ func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, requests []*com
 		}
 	}
 	// cache need to generate redeem proof
-	err = WriteUnGenProof(e.store, Ethereum, requestsToProofUnGenId(requests))
+	err = WriteUnGenProof(e.store, Ethereum, requestsToUnGenProofs(Ethereum, requests))
 	if err != nil {
 		logger.Error("write ungen Proof error: %v", err)
 		return err
@@ -397,13 +397,13 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 
 func (e *EthereumAgent) CheckState() error {
 	logger.Debug("ethereum check state ...")
-	unGenProofs, err := ReadAllUnGenProofIds(e.store, Ethereum)
+	unGenProofs, err := ReadAllUnGenProofs(e.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
 		return err
 	}
 	for _, unGenProof := range unGenProofs {
-		txHash := unGenProof.TxId
+		txHash := unGenProof.TxHash
 		logger.Debug("start check redeem proof tx: %v", txHash)
 		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, txHash)
 		if err != nil {

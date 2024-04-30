@@ -6,11 +6,10 @@ import (
 )
 
 const (
-	ProofPrefix              = "p_"  // p_ + hash
-	TxPrefix                 = "t_"  // t_ + hash
-	DestChainHashPrefix      = "d_"  // d_ + hash
-	UnGenProofPrefix         = "u_"  // u_ + hash
-	UnBlockHeaderProofPrefix = "uh_" //
+	ProofPrefix         = "p_" // p_ + hash
+	TxPrefix            = "t_" // t_ + hash
+	DestChainHashPrefix = "d_" // d_ + hash
+	UnGenProofPrefix    = "u_" // u_ + hash
 )
 
 var (
@@ -30,6 +29,12 @@ type DbProof struct {
 	ProofType common.ZkProofType `json:"type"`
 	Status    int                `json:"status"`
 	Proof     string             `json:"Proof"`
+}
+
+type DbUnGenProof struct {
+	TxHash    string
+	ProofType common.ZkProofType
+	ChainType ChainType
 }
 
 type TxType = int
@@ -74,8 +79,4 @@ func DbDestId(txId string) string {
 func DbUnGenProofId(chain ChainType, txId string) string {
 	pTxID := fmt.Sprintf("%s%d_%s", UnGenProofPrefix, chain, trimOx(txId))
 	return pTxID
-}
-
-func DbTxBlockHeightKey(height int64) string {
-	return fmt.Sprintf("%s%d", UnBlockHeaderProofPrefix, height)
 }

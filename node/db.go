@@ -179,7 +179,7 @@ func ReadEthereumTxIds(store store.IStore, height int64) ([]string, error) {
 	return txIds, nil
 }
 
-func WriteEthereumTx(store store.IStore, txes []DbTx) error {
+func WriteTxes(store store.IStore, txes []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbTxId(tx.TxHash), tx)
@@ -196,23 +196,10 @@ func WriteEthereumTx(store store.IStore, txes []DbTx) error {
 	return nil
 }
 
-func WriteTxBlock(store store.IStore, height int64) error {
-	err := store.PutObj(DbTxBlockHeightKey(height), nil)
-	if err != nil {
-		logger.Error("put block tx error:%v", err)
-		return err
-	}
-	return nil
-}
-
-func DelTxBlock(store store.IStore, height int64) error {
-	return store.DeleteObj(DbTxBlockHeightKey(height))
-}
-
-func WriteUnGenProof(store store.IStore, chain ChainType, ids []string) error {
+func WriteUnGenProof(store store.IStore, chain ChainType, list []*DbUnGenProof) error {
 	batch := store.Batch()
-	for _, id := range ids {
-		err := batch.BatchPutObj(DbUnGenProofId(chain, id), nil)
+	for _, item := range list {
+		err := batch.BatchPutObj(DbUnGenProofId(chain, item.TxHash), item)
 		if err != nil {
 			logger.Error("put ungen Proof error:%v", err)
 			return err
@@ -228,7 +215,7 @@ func WriteUnGenProof(store store.IStore, chain ChainType, ids []string) error {
 
 // todo
 
-func ReadAllUnGenProofIds(store store.IStore, chainType ChainType) ([]UnGenPreProof, error) {
+func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProof, error) {
 	var keys []string
 	queryPrefix := fmt.Sprintf("%s%d", UnGenProofPrefix, chainType)
 	iterator := store.Iterator([]byte(queryPrefix), nil)
@@ -241,17 +228,15 @@ func ReadAllUnGenProofIds(store store.IStore, chainType ChainType) ([]UnGenPrePr
 		logger.Error("read ungen Proof error:%v", err)
 		return nil, err
 	}
-	var unGenPreProofs []UnGenPreProof
+	var unGenPreProofs []*DbUnGenProof
 	for _, key := range keys {
-		id, chain, err := parseUnGenProofId(key)
+		var unGenProof DbUnGenProof
+		err := store.GetObj(key, &unGenProof)
 		if err != nil {
-			logger.Error("parse ungen Proof error:%v", err)
+			logger.Error("read ungen Proof error:%v", err)
 			return nil, err
 		}
-		unGenPreProofs = append(unGenPreProofs, UnGenPreProof{
-			ChainType: chain,
-			TxId:      id,
-		})
+		unGenPreProofs = append(unGenPreProofs, &unGenProof)
 	}
 	return unGenPreProofs, nil
 }
