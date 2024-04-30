@@ -459,7 +459,7 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Warn("no find near %v tx slot finalized slot", txSlot)
 			continue
 		}
-		logger.Debug("find near %v tx slot finalized slot %v", txSlot, finalizedSlot)
+		logger.Debug("%v find near %v tx slot finalized slot %v", txHash, txSlot, finalizedSlot)
 
 		exists, err = CheckProof(e.fileStore, common.BeaconHeaderFinalityType, finalizedSlot, "")
 		if err != nil {
