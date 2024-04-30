@@ -88,11 +88,11 @@ func (e *EthereumAgent) Init() error {
 		return err
 	}
 	// todo just test
-	err = WriteUnGenProof(e.store, Ethereum, []string{"622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f"})
-	if err != nil {
-		logger.Error("write ungen proof error: %v", err)
-		return err
-	}
+	//err = WriteUnGenProof(e.store, Ethereum, []string{"622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f"})
+	//if err != nil {
+	//	logger.Error("write ungen proof error: %v", err)
+	//	return err
+	//}
 	return nil
 }
 
