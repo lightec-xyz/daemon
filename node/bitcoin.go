@@ -139,7 +139,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 			return err
 		}
 
-		b.SendProofRequest(proofRequests...)
+		//b.SendProofRequest(proofRequests...)
 
 	}
 	return nil
