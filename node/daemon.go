@@ -97,7 +97,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	// todo
-	url := strings.Replace(cfg.BtcUrl, "http//", "", 1)
+	url := strings.Replace(cfg.BtcUrl, "http://", "", 1)
 	btcProverClient, err := btcproverClient.NewClient(url, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btc btcProverClient error:%v", err)

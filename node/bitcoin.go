@@ -203,7 +203,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 			redeemTxes = append(redeemTxes, redeemTx)
 			proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
 			if err != nil {
-				logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
+				logger.Error("get verify proof data error: %v %v", tx.Txid, err)
 				return nil, nil, nil, err
 			}
 			verifyRequest := rpc.VerifyRequest{

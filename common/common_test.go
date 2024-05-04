@@ -1,6 +1,7 @@
 package common
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -35,4 +36,11 @@ func TestProofId(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(zkProofType.String(), index, txHash)
+}
+
+func TestDemo(t *testing.T) {
+	res := "http://18.116.118.39:18332"
+	url := strings.Replace(res, "http://", "", 1)
+	t.Log(url)
+
 }
