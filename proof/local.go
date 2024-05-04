@@ -25,6 +25,7 @@ func NewLocal(url, datadir, id string, num int, store store.IStore) (*Local, err
 		return nil, err
 	}
 	zkParamDir := os.Getenv(common.ZkParameterDir)
+	logger.Info("zkParamDir: %v", zkParamDir)
 	worker, err := node.NewLocalWorker(zkParamDir, datadir, num)
 	if err != nil {
 		logger.Error("new local worker error:%v", err)

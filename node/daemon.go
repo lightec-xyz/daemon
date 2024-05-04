@@ -174,6 +174,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enabled")
 		zkParamDir := os.Getenv(common.ZkParameterDir) // todo
+		logger.Info("zkParamDir: %v", zkParamDir)
 		localWorker, err := NewLocalWorker(zkParamDir, "", 1)
 		if err != nil {
 			logger.Error("new local worker error:%v", err)
