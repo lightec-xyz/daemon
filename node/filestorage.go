@@ -28,7 +28,7 @@ const (
 type Table string
 
 const (
-	PeriodTable       Table = "Index"
+	PeriodTable       Table = "index"
 	GenesisTable      Table = "genesis"
 	UpdateTable       Table = "update"
 	OuterTable        Table = "outer"

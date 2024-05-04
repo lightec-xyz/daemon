@@ -151,6 +151,11 @@ func (f *Fetch) GetBootStrap(slot uint64) error {
 		logger.Error("store bootstrap error:%v %v", slot, err)
 		return err
 	}
+	err = f.fileStore.StoreBootStrap(bootstrap)
+	if err != nil {
+		logger.Error("store bootstrap error:%v %v", slot, err)
+		return err
+	}
 	logger.Debug("success store bootstrap Data:%v", slot)
 	return nil
 }
