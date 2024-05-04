@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	"strings"
 
 	//btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
@@ -95,8 +96,9 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
 	}
-	//
-	btcProverClient, err := btcproverClient.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
+	// todo
+	url := strings.Replace(cfg.BtcUrl, "http//", "", 1)
+	btcProverClient, err := btcproverClient.NewClient(url, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btc btcProverClient error:%v", err)
 		return nil, err
@@ -178,6 +180,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 			return nil, err
 		}
 		workers = append(workers, localWorker)
+	} else {
+		logger.Warn("no local worker to generate proof")
 	}
 	schedule := NewSchedule(workers)
 	msgManager, err := NewManager(btcClient, ethClient, btcProofResp, ethProofResp, syncCommitResp,

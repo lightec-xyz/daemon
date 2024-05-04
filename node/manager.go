@@ -153,7 +153,7 @@ func (m *manager) DistributeRequest() error {
 		return err
 	}
 	if !find {
-		//logger.Warn(" no find best worker to gen Proof")
+		logger.Warn(" no find best worker to gen Proof: %v", request.Id())
 		m.CacheRequest(request)
 		time.Sleep(10 * time.Second)
 		return nil
