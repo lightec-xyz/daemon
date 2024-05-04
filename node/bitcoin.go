@@ -354,6 +354,10 @@ func (b *BitcoinAgent) CheckState() error {
 	}
 	for _, proof := range unGenProofs {
 		logger.Debug("check ungen proof: %v %v", proof.ProofType.String(), proof.TxHash)
+		if proof.ProofType == 0 || proof.TxHash == "" {
+			logger.Warn("unGenProof error:%v %v", proof.ProofType.String(), proof.TxHash)
+			continue
+		}
 		exists, err := CheckProof(b.fileStore, proof.ProofType, 0, proof.TxHash)
 		if err != nil {
 			logger.Error("check proof error:%v %v", proof.TxHash, err)
@@ -366,10 +370,6 @@ func (b *BitcoinAgent) CheckState() error {
 				logger.Error("delete ungen proof error:%v %v", proof.TxHash, err)
 				return nil
 			}
-			continue
-		}
-		if proof.ProofType == 0 || proof.TxHash == "" {
-			logger.Warn("unGenProof error:%v %v", proof.ProofType.String(), proof.TxHash)
 			continue
 		}
 		err = b.tryProofRequest(proof.ProofType, proof.TxHash)

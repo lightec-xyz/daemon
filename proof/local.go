@@ -6,6 +6,7 @@ import (
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
+	"os"
 )
 
 type Local struct {
@@ -23,7 +24,8 @@ func NewLocal(url, datadir, id string, num int, store store.IStore) (*Local, err
 		logger.Error("new node client error:%v", err)
 		return nil, err
 	}
-	worker, err := node.NewLocalWorker(datadir, datadir, num)
+	zkParamDir := os.Getenv(common.ZkParameterDir)
+	worker, err := node.NewLocalWorker(zkParamDir, datadir, num)
 	if err != nil {
 		logger.Error("new local worker error:%v", err)
 		return nil, err
