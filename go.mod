@@ -89,7 +89,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lightec-xyz/chainark v0.1.0 // indirect
+	github.com/lightec-xyz/chainark v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -178,5 +178,4 @@ replace (
 	github.com/lightec-xyz/btc_provers => ../btc_provers
 	github.com/lightec-xyz/provers => ../provers
 	github.com/lightec-xyz/reLight => ../reLight
-	//github.com/lightec-xyz/chainark => ../chainark
 )

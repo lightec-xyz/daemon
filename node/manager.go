@@ -173,10 +173,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 	var result []*common.ZkProofResponse
 	switch request.ReqType {
 	case common.DepositTxType:
-		var depositRpcRequest rpc.DepositRequest
-		err := common.ParseObj(request.Data, &depositRpcRequest)
-		if err != nil {
-			return nil, fmt.Errorf("not deposit Proof param")
+		depositRpcRequest, ok := request.Data.(rpc.DepositRequest)
+		if !ok {
+			logger.Error("parse deposit Proof param error: %v", request.TxHash)
+			return nil, fmt.Errorf("not deposit Proof param %v", request.TxHash)
 		}
 		proofResponse, err := worker.GenDepositProof(depositRpcRequest)
 		if err != nil {
@@ -186,10 +186,10 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		zkbProofResponse := NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 		result = append(result, zkbProofResponse)
 	case common.VerifyTxType:
-		var verifyRpcRequest rpc.VerifyRequest
-		err := common.ParseObj(request.Data, &verifyRpcRequest)
-		if err != nil {
-			return nil, fmt.Errorf("not verify Proof param")
+		verifyRpcRequest, ok := request.Data.(rpc.VerifyRequest)
+		if !ok {
+			logger.Error("parse verify Proof param error: %v", request.TxHash)
+			return nil, fmt.Errorf("not verify Proof param %v", request.TxHash)
 		}
 		proofResponse, err := worker.GenVerifyProof(verifyRpcRequest)
 		if err != nil {
