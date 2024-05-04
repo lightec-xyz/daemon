@@ -1,6 +1,6 @@
 ## Command
 
-    ./proof --config ./client_config.json run
+    ./generator --config ./client_config.json run
 
 ## Config
 
