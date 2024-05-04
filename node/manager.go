@@ -77,7 +77,11 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 
 func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	for _, response := range responses {
-		chanResponse := m.getChanResponse(response.ZkProofType)
+		chanResponse, err := m.getChanResponse(response.ZkProofType)
+		if err != nil {
+			logger.Error("get chan response error:%v", err)
+			return err
+		}
 		chanResponse <- response
 		logger.Info("send Proof response:%v %v %v", response.ZkProofType.String(), response.Period, response.TxHash)
 		proofId := response.Id()
@@ -111,7 +115,13 @@ func (m *manager) DistributeRequest() error {
 		logger.Info("Proof already submitted:%v", request.String())
 		return nil
 	}
-	chanResponse := m.getChanResponse(request.ReqType)
+	chanResponse, err := m.getChanResponse(request.ReqType)
+	if err != nil {
+		logger.Error("get chan response error:%v", err)
+		m.CacheRequest(request)
+		time.Sleep(10 * time.Second)
+		return err
+	}
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
@@ -314,17 +324,17 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 
 }
 
-func (m *manager) getChanResponse(reqType common.ZkProofType) chan *common.ZkProofResponse {
+func (m *manager) getChanResponse(reqType common.ZkProofType) (chan *common.ZkProofResponse, error) {
 	switch reqType {
 	case common.DepositTxType, common.VerifyTxType:
-		return m.btcProofResp
+		return m.btcProofResp, nil
 	case common.RedeemTxType, common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType: // todo
-		return m.ethProofResp
+		return m.ethProofResp, nil
 	case common.SyncComGenesisType, common.SyncComUnitType, common.UnitOuter, common.SyncComRecursiveType:
-		return m.syncCommitResp
+		return m.syncCommitResp, nil
 	default:
-		logger.Error("never should happen Proof type:%v", reqType)
-		return nil
+		logger.Error("never should happen Proof type:%v", reqType.String())
+		return nil, fmt.Errorf("never should happen Proof type:%v", reqType.String())
 	}
 }
 
