@@ -4,7 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/consensys/gnark/frontend"
 	"github.com/google/uuid"
+	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
+	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -114,4 +117,45 @@ func FileExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, fmt.Errorf("stat error: %v", err)
+}
+
+func TxVarToHex(data *[tx.MaxTxUint128Len]frontend.Variable) (string, error) {
+	var bytes []byte
+	for _, v := range data {
+		bytes = append(bytes, v.(byte))
+	}
+	return hex.EncodeToString(bytes), nil
+
+}
+
+func HexToTxVar(data string) (*[tx.MaxTxUint128Len]frontend.Variable, error) {
+	bytes, err := hex.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	var res [tx.MaxTxUint128Len]frontend.Variable
+	for k, v := range bytes {
+		res[k] = v
+	}
+	return &res, nil
+}
+
+func ReceiptVarToHex(data *[receipt.MaxReceiptUint128Len]frontend.Variable) (string, error) {
+	var bytes []byte
+	for _, v := range data {
+		bytes = append(bytes, v.(byte))
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+func HexToReceiptVar(data string) (*[receipt.MaxReceiptUint128Len]frontend.Variable, error) {
+	bytes, err := hex.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	var res [receipt.MaxReceiptUint128Len]frontend.Variable
+	for k, v := range bytes {
+		res[k] = v
+	}
+	return &res, nil
 }

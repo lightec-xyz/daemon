@@ -1,12 +1,9 @@
 package rpc
 
 import (
-	"github.com/consensys/gnark/frontend"
 	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
-	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
-	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
@@ -109,8 +106,10 @@ type RedeemRequest struct {
 	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness string
 	BeginId, EndId, GenesisScRoot,
 	CurrentSCSSZRoot string
-	TxVar      *[tx.MaxTxUint128Len]frontend.Variable
-	ReceiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable
+	TxVar      string
+	ReceiptVar string
+	//TxVar      *[tx.MaxTxUint128Len]frontend.Variable
+	//ReceiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable
 }
 
 type RedeemResponse struct {

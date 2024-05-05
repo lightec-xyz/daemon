@@ -138,8 +138,9 @@ func (b *BitcoinAgent) ScanBlock() error {
 			logger.Error("write btc height error: %v %v", index, err)
 			return err
 		}
-
-		b.SendProofRequest(proofRequests...)
+		if len(proofRequests) > 0 {
+			b.SendProofRequest(proofRequests...)
+		}
 
 	}
 	return nil

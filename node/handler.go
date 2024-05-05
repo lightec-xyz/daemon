@@ -36,8 +36,7 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 	}
 	response.CanGen = true
 	response.Request = zkProofRequest
-	logger.Info("worker: %v get zk proof task: %v", request.Id, zkProofRequest.Id(),
-		zkProofRequest.TxHash, zkProofRequest.Index)
+	logger.Info("worker: %v get zk proof task: %v", request.Id, zkProofRequest.Id())
 	return &response, nil
 }
 

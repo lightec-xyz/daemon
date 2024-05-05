@@ -458,6 +458,17 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		logger.Error("get tx and receipt error: %v", err)
 		return rpc.RedeemRequest{}, false, err
 	}
+	txVarHex, err := common.TxVarToHex(txVar)
+	if err != nil {
+		logger.Error("tx var to bytes error: %v", err)
+		return rpc.RedeemRequest{}, false, err
+	}
+	receiptVarHex, err := common.ReceiptVarToHex(receiptVar)
+	if err != nil {
+		logger.Error("receipt var to bytes error: %v", err)
+		return rpc.RedeemRequest{}, false, err
+	}
+
 	redeemRequest := rpc.RedeemRequest{
 		TxHash:           txHash,
 		TxProof:          txProof.Proof,
@@ -470,8 +481,8 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		BeginId:          hex.EncodeToString(beginID),
 		EndId:            hex.EncodeToString(endId),
 		CurrentSCSSZRoot: hex.EncodeToString(currentRoot),
-		TxVar:            txVar,
-		ReceiptVar:       receiptVar,
+		TxVar:            txVarHex,
+		ReceiptVar:       receiptVarHex,
 	}
 	return redeemRequest, true, nil
 

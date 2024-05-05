@@ -11,8 +11,6 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
-	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
-	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
 	"github.com/lightec-xyz/provers/circuits/redeem"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
@@ -72,7 +70,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 }
 
 func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot,
-	currentSCSSZRoot string, txVar *[tx.MaxTxUint128Len]frontend.Variable, receiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable) (*reLightCommon.Proof, error) {
+	currentSCSSZRoot string, txVar, receiptVar string) (*reLightCommon.Proof, error) {
 	//todo
 	logger.Debug("current zk circuit RedeemProve")
 	if c.debug {
@@ -132,9 +130,19 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("decode current scssz root error:%v", err)
 		return nil, err
 	}
+	txValue, err := common.HexToTxVar(txVar)
+	if err != nil {
+		logger.Error("decode tx value error:%v", err)
+		return nil, err
+	}
+	hexToReceiptVar, err := common.HexToReceiptVar(receiptVar)
+	if err != nil {
+		logger.Error("decode receipt value error:%v", err)
+		return nil, err
+	}
 	proof, err := redeem.Prove(c.Cfg.DataDir, txInEth2Proof, txInEth2Witness, blockHeaderProof, blockHeaderWitness,
-		blockHeaderFinalityProof, blockHeaderFinalityWitness, beginIdBytes, endIdBytes, genesisSCSSZRoot, curScRootBytes, *txVar,
-		*receiptVar)
+		blockHeaderFinalityProof, blockHeaderFinalityWitness, beginIdBytes, endIdBytes, genesisSCSSZRoot, curScRootBytes, *txValue,
+		*hexToReceiptVar)
 	if err != nil {
 		logger.Error("redeem prove error:%v", err)
 		return nil, err

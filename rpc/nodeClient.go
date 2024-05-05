@@ -18,7 +18,7 @@ type NodeClient struct {
 
 func (c *NodeClient) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	var result common.TaskResponse
-	err := c.call(&result, "zkbtc_getTask", request)
+	err := c.call(&result, "zkbtc_getZkProofTask", request)
 	if err != nil {
 		return nil, err
 	}

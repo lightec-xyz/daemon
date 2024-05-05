@@ -18,7 +18,6 @@ import (
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
-	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
@@ -581,105 +580,6 @@ func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*rpc.BlockHeade
 		EndRoot:   hex.EncodeToString(endRoot),
 		Headers:   beaconBlockHeaders[1:],
 	}, true, nil
-}
-
-func (e *EthereumAgent) getRedeemRequestData(txSlot uint64, txHash string) (rpc.RedeemRequest, bool, error) {
-	txProof, ok, err := e.fileStore.GetTxProof(txHash)
-	if err != nil {
-		logger.Error("get tx proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	if !ok {
-		logger.Debug("proof request data not prepared: %v", txHash)
-		return rpc.RedeemRequest{}, false, nil
-	}
-	blockHeaderProof, ok, err := e.fileStore.GetBeaconHeaderProof(txSlot)
-	if err != nil {
-		logger.Error("get block header proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	if !ok {
-		logger.Debug("proof request data not prepared: %v", txSlot)
-		return rpc.RedeemRequest{}, false, nil
-	}
-	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
-	if err != nil {
-		logger.Error("get bhf update proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	if !ok {
-		logger.Debug("proof request data not prepared: %v", txSlot)
-		return rpc.RedeemRequest{}, false, nil
-	}
-	bhfProof, ok, err := e.fileStore.GetBhfProof(finalizedSlot)
-	if err != nil {
-		logger.Error("get bhf update proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	if !ok {
-		logger.Warn("no find bhf update %v", finalizedSlot)
-		return rpc.RedeemRequest{}, false, nil
-	}
-	genesisRoot, ok, err := e.GetSyncCommitRootID(e.genesisPeriod)
-	if err != nil {
-		logger.Error("get genesis root error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	if !ok {
-		logger.Warn("no find genesis root %v", e.genesisPeriod)
-		return rpc.RedeemRequest{}, false, nil
-	}
-
-	var finalityUpdate *structs.LightClientUpdateWithVersion
-	ok, err = e.fileStore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
-	if err != nil {
-		logger.Error("get finality update error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	if !ok {
-		logger.Warn("no find finality update %v", finalizedSlot)
-		return rpc.RedeemRequest{}, false, nil
-	}
-
-	attestedSlot, err := strconv.ParseUint(finalityUpdate.Data.AttestedHeader.Slot, 10, 64)
-	if err != nil {
-		logger.Error("parse slot error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	period := attestedSlot / common.SlotPerPeriod
-	currentRoot, ok, err := e.GetSyncCommitRootID(period)
-	if err != nil {
-		logger.Error("get current root error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	beginID, endId, err := e.GetBeaconHeaderId(txSlot, finalizedSlot)
-	if err != nil {
-		logger.Error("get begin and end id error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	// todo need cache
-	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(e.ethClient.Client, txHash)
-	if err != nil {
-		logger.Error("get tx and receipt error: %v", err)
-		return rpc.RedeemRequest{}, false, err
-	}
-	redeemRequest := rpc.RedeemRequest{
-		TxHash:           txHash,
-		TxProof:          txProof.Proof,
-		TxWitness:        txProof.Witness,
-		BhProof:          blockHeaderProof.Proof,
-		BhWitness:        blockHeaderProof.Witness,
-		BhfProof:         bhfProof.Proof,
-		BhfWitness:       bhfProof.Witness,
-		GenesisScRoot:    hex.EncodeToString(genesisRoot),
-		BeginId:          hex.EncodeToString(beginID),
-		EndId:            hex.EncodeToString(endId),
-		CurrentSCSSZRoot: hex.EncodeToString(currentRoot),
-		TxVar:            txVar,
-		ReceiptVar:       receiptVar,
-	}
-	return redeemRequest, true, nil
-
 }
 
 func (e *EthereumAgent) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, error) {
