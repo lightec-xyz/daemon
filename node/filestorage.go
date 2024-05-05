@@ -411,7 +411,7 @@ func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, 
 		}
 	}
 	if finalizedSlot-txSlot > 64 { // todo
-		logger.Warn("get txSlot nearest finalized  error slot %v, txSlot %v", finalizedSlot, txSlot)
+		logger.Warn("get txSlot nearest finalizedSlot %v txSlot %v, more than 64 ", finalizedSlot, txSlot)
 		return 0, false, nil
 	}
 

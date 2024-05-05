@@ -169,12 +169,12 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	if resp.ZkProofType == common.RedeemTxType {
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
-			logger.Error("update Proof error:%v", err)
+			logger.Error("update Proof error:%v %v", resp.TxHash, err)
 			return err
 		}
 		_, err = RedeemBtcTx(e.btcClient, resp.TxHash, resp.Proof)
 		if err != nil {
-			logger.Error("redeem btc tx error:%v", err)
+			logger.Error("redeem btc tx error:%v %v", resp.TxHash, err)
 			e.task.AddTask(resp)
 			return err
 		}

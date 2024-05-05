@@ -4,6 +4,9 @@
 
 ## Config
 
+    export ZkParameterDir=<circuit setup data path>
+
+
     {
         "url": "https://test.apps.zkbtc.money",  // daemon server url
         "maxNums": 1,                            // maximum number of tasks on the machine,default 1

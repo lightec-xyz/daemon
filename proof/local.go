@@ -1,6 +1,7 @@
 package proof
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
@@ -26,6 +27,10 @@ func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *n
 		return nil, err
 	}
 	zkParamDir := os.Getenv(common.ZkParameterDir)
+	if zkParamDir == "" {
+		logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
+		return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
+	}
 	logger.Info("zkParamDir: %v", zkParamDir)
 	worker, err := node.NewLocalWorker(zkParamDir, datadir, num)
 	if err != nil {

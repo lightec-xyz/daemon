@@ -40,7 +40,7 @@ func (t *TaskManager) Check() error {
 	t.queue.Iterator(func(value *common.ZkProofResponse) error {
 		logger.Info("task check %v", value.Id())
 		switch value.ZkProofType {
-		case common.TxInEth2:
+		case common.RedeemTxType:
 			_ = t.MintZkBtcRequest(value)
 		case common.VerifyTxType:
 			_ = t.UpdateUtxoChange(value)
