@@ -119,43 +119,43 @@ func FileExists(path string) (bool, error) {
 	return false, fmt.Errorf("stat error: %v", err)
 }
 
-func TxVarToHex(data *[tx.MaxTxUint128Len]frontend.Variable) (string, error) {
-	var bytes []byte
+func TxVarToHex(data *[tx.MaxTxUint128Len]frontend.Variable) ([]string, error) {
+	var res []string
 	for _, v := range data {
-		bytes = append(bytes, v.(byte))
+		res = append(res, hex.EncodeToString(v.([]byte)))
 	}
-	return hex.EncodeToString(bytes), nil
+	return res, nil
 
 }
 
-func HexToTxVar(data string) (*[tx.MaxTxUint128Len]frontend.Variable, error) {
-	bytes, err := hex.DecodeString(data)
-	if err != nil {
-		return nil, err
-	}
+func HexToTxVar(data []string) (*[tx.MaxTxUint128Len]frontend.Variable, error) {
 	var res [tx.MaxTxUint128Len]frontend.Variable
-	for k, v := range bytes {
-		res[k] = v
+	for k, v := range data {
+		bytes, err := hex.DecodeString(v)
+		if err != nil {
+			return nil, err
+		}
+		res[k] = bytes
 	}
 	return &res, nil
 }
 
-func ReceiptVarToHex(data *[receipt.MaxReceiptUint128Len]frontend.Variable) (string, error) {
-	var bytes []byte
+func ReceiptVarToHex(data *[receipt.MaxReceiptUint128Len]frontend.Variable) ([]string, error) {
+	var res []string
 	for _, v := range data {
-		bytes = append(bytes, v.(byte))
+		res = append(res, hex.EncodeToString(v.([]byte)))
 	}
-	return hex.EncodeToString(bytes), nil
+	return res, nil
 }
 
-func HexToReceiptVar(data string) (*[receipt.MaxReceiptUint128Len]frontend.Variable, error) {
-	bytes, err := hex.DecodeString(data)
-	if err != nil {
-		return nil, err
-	}
+func HexToReceiptVar(data []string) (*[receipt.MaxReceiptUint128Len]frontend.Variable, error) {
 	var res [receipt.MaxReceiptUint128Len]frontend.Variable
-	for k, v := range bytes {
-		res[k] = v
+	for k, v := range data {
+		bytes, err := hex.DecodeString(v)
+		if err != nil {
+			return nil, err
+		}
+		res[k] = bytes
 	}
 	return &res, nil
 }

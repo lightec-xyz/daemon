@@ -70,7 +70,7 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 }
 
 func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot,
-	currentSCSSZRoot string, txVar, receiptVar string) (*reLightCommon.Proof, error) {
+	currentSCSSZRoot string, txVar, receiptVar []string) (*reLightCommon.Proof, error) {
 	//todo
 	logger.Debug("current zk circuit RedeemProve")
 	if c.debug {

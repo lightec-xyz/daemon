@@ -1,9 +1,56 @@
 package common
 
 import (
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/lightec-xyz/daemon/logger"
+	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	"strings"
 	"testing"
 )
+
+func TestHexToTxVar(t *testing.T) {
+	txHash := "0x16a4e0568da1d0b53c75a990e74f08996d112ff03c917e9a63b138b7a02d5ec5"
+	ethClient, err := ethclient.DialContext(nil, "https://ethereum-holesky-rpc.publicnode.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(ethClient, txHash)
+	if err != nil {
+		logger.Error("get tx and receipt error: %v", err)
+		t.Fatal(err)
+	}
+	t.Log(txVar[0])
+	varToHex, err := TxVarToHex(txVar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(varToHex)
+
+	bigToTxVar, err := HexToTxVar(varToHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(bigToTxVar)
+
+	receiptVarToHex, err := ReceiptVarToHex(receiptVar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(receiptVarToHex)
+
+	hexToTxVar, err := HexToTxVar(varToHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(hexToTxVar)
+
+	toReceiptVar, err := HexToReceiptVar(receiptVarToHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(toReceiptVar)
+
+}
 
 func TestUuid(t *testing.T) {
 	uuid, err := Uuid()

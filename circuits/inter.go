@@ -18,7 +18,7 @@ type ICircuit interface {
 	BeaconHeaderProve(header proverType.BeaconHeaderChain) (*common.Proof, error)
 	// todo submit to eth contract proof
 	RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot, currentSCSSZRoot string,
-		txVar, receiptVar string) (*common.Proof, error)
+		txVar, receiptVar []string) (*common.Proof, error)
 	DepositProve(data *btcproverUtils.GrandRollupProofData) (*common.Proof, error)
 	GenesisProve(firstProof, secondProof, firstWitness, secondWitness string,
 		genesisId, firstId, secondId []byte) (*common.Proof, error)
