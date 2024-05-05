@@ -36,6 +36,13 @@ func NewNode(cfg Config) (*Node, error) {
 	}
 	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
 	logger.Info("dbPath:%s", dbPath)
+
+	fileStorage, err := dnode.NewFileStorage(dbPath, 0)
+	if err != nil {
+		logger.Error("new fileStorage error:%v", err)
+		return nil, err
+	}
+
 	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
 		logger.Error("new store error:%v,dbPath:%s", err, cfg.DataDir)
@@ -48,9 +55,14 @@ func NewNode(cfg Config) (*Node, error) {
 	}
 	if !exists {
 		workerId = common.MustUUID()
+		err := WriteWorkerId(storeDb, workerId)
+		if err != nil {
+			logger.Error("write worker id error:%v", err)
+			return nil, err
+		}
 	}
 	if cfg.Mode == common.Client {
-		local, err := NewLocal(cfg.Url, cfg.DataDir, workerId, cfg.MaxNums, storeDb)
+		local, err := NewLocal(cfg.Url, cfg.DataDir, workerId, cfg.MaxNums, storeDb, fileStorage)
 		if err != nil {
 			logger.Error("new local error:%v", err)
 			return nil, err

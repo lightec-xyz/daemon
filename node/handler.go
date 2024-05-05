@@ -21,11 +21,11 @@ type Handler struct {
 	manager  IManager
 }
 
-func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
+func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	// Todo
 	zkProofRequest, ok, err := h.manager.GetProofRequest()
 	if err != nil {
-		logger.Error("get proof request error: %v", err)
+		logger.Error("get proof request error: %v %v", request.Id, err)
 		return nil, err
 	}
 	var response common.TaskResponse
@@ -44,11 +44,11 @@ func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, err
 func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//todo check
 	for _, item := range req.Data {
-		logger.Info("workerId %v,submit proof type:%v Index:%v hash:%v", req.WorkerId, item.ZkProofType.String(), item.Period, item.TxHash)
+		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.Id())
 	}
 	err := h.manager.SendProofResponse(req.Data)
 	if err != nil {
-		logger.Error("send proof to manager error: %v", err)
+		logger.Error("worker %v send proof to manager error: %v", req.WorkerId, err)
 		return "", err
 	}
 	return "ok", nil

@@ -20,7 +20,7 @@ func TestNodeClient_GetTask(t *testing.T) {
 		Id:        "test_id",
 		ProofType: nil,
 	}
-	task, err := nodeClient.GetTask(request)
+	task, err := nodeClient.GetZkProofTask(request)
 	if err != nil {
 		t.Fatal(err)
 	}

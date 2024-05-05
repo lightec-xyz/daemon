@@ -14,11 +14,12 @@ type Local struct {
 	client      *rpc.NodeClient
 	worker      rpc.IWorker
 	store       store.IStore
+	fileStore   *node.FileStorage
 	exit        chan struct{}
 	cacheProofs *node.ProofRespQueue
 }
 
-func NewLocal(url, datadir, id string, num int, store store.IStore) (*Local, error) {
+func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
 	client, err := rpc.NewNodeClient(url)
 	if err != nil {
 		logger.Error("new node client error:%v", err)
@@ -34,6 +35,7 @@ func NewLocal(url, datadir, id string, num int, store store.IStore) (*Local, err
 	logger.Info("workerId: %v", id)
 	return &Local{
 		client:      client,
+		fileStore:   fileStore,
 		worker:      worker,
 		Id:          id,
 		store:       store,
@@ -52,7 +54,7 @@ func (l *Local) Run() error {
 		Id:        l.Id,
 		ProofType: []common.ZkProofType{}, // Todo worker support which proof type
 	}
-	requestResp, err := l.client.GetTask(request)
+	requestResp, err := l.client.GetZkProofTask(request)
 	if err != nil {
 		logger.Error("get task error:%v", err)
 		return nil
@@ -62,6 +64,11 @@ func (l *Local) Run() error {
 		return nil
 	}
 	l.worker.AddReqNum()
+	err = l.fileStore.StoreRequest(requestResp.Request)
+	if err != nil {
+		logger.Error("store request error:%v %v", requestResp.Request.Id(), err)
+		return nil
+	}
 	go func(request *common.ZkProofRequest) {
 		count := 0
 		for {

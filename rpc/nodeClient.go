@@ -16,7 +16,7 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
-func (c *NodeClient) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
+func (c *NodeClient) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	var result common.TaskResponse
 	err := c.call(&result, "zkbtc_getTask", request)
 	if err != nil {
