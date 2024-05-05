@@ -37,7 +37,7 @@ func NewNode(cfg Config) (*Node, error) {
 	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
 	logger.Info("dbPath:%s", dbPath)
 
-	fileStorage, err := dnode.NewFileStorage(dbPath, 0)
+	fileStorage, err := dnode.NewFileStorage(cfg.DataDir, 0)
 	if err != nil {
 		logger.Error("new fileStorage error:%v", err)
 		return nil, err

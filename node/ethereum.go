@@ -280,13 +280,15 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			return nil, nil, nil, err
 		}
 		if isRedeem {
-			submitted, err := e.btcClient.CheckTx(redeemTx.BtcTxId)
-			if err != nil {
-				logger.Error("check btc tx error:%v", err)
-				return nil, nil, nil, err
-			}
-			if submitted {
-
+			// todo
+			//submitted, err := e.btcClient.CheckTx(redeemTx.BtcTxId)
+			//if err != nil {
+			//	logger.Error("check btc tx error:%v", err)
+			//	return nil, nil, nil, err
+			//}
+			//if submitted {
+			if false {
+				logger.Warn("redeem btc tx %v already submitted", redeemTx.BtcTxId)
 			} else {
 				data, ok, err := e.getTxInEth2Data(log.TxHash.String())
 				if err != nil {

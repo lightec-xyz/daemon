@@ -77,7 +77,7 @@ func (l *Local) Run() error {
 				return
 			}
 			count = count + 1
-			logger.Info("worker start generate Proof type: %v_%v", l.worker.Id(), request.Id())
+			logger.Info("worker %v start generate Proof type: %v", l.worker.Id(), request.Id())
 			proofs, err := node.WorkerGenProof(l.worker, request)
 			if err != nil {
 				logger.Error("worker gen proof error:%v %v", request.Id(), err)
