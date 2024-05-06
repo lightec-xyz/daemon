@@ -6,22 +6,22 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	zkbridge_verify "github.com/lightec-xyz/daemon/rpc/oasis/contract"
+	zkbridgeSigner "github.com/lightec-xyz/daemon/rpc/oasis/contract"
 )
 
 type Client struct {
-	zkBridgeVerifyCall1 *zkbridge_verify.ZkbridgeVerify // todo
+	zkBridgeVerifyCall1 *zkbridgeSigner.ZkbridgeSigner // todo
 	timout              time.Duration
 }
 
-func NewClient(url string, address string) (*Client, error) {
+func NewClient(url string, signerAddress string) (*Client, error) {
 	// todo
 	rpcDial, err := rpc.Dial(url)
 	if err != nil {
 		return nil, err
 	}
 	client := ethclient.NewClient(rpcDial)
-	zkBridgeVerifyCall1, err := zkbridge_verify.NewZkbridgeVerify(common.HexToAddress(address), client)
+	zkBridgeVerifyCall1, err := zkbridgeSigner.NewZkbridgeSigner(common.HexToAddress(signerAddress), client)
 	if err != nil {
 		return nil, err
 	}

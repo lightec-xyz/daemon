@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 )
 
@@ -196,9 +195,7 @@ func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
 	return balance, nil
 }
 
-func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
-	nonce, gasLimit uint64, chainID, gasPrice, amount *big.Int, proof common.ZkProof) (string, error) {
-	address := ethcommon.HexToAddress(receiveAddr)
+func (c *Client) Deposit(secret string, nonce, gasLimit uint64, chainID, gasPrice *big.Int, rawBtcTx, proof []byte) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
@@ -214,9 +211,7 @@ func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
 	//auth.GasPrice = gasPrice todo
 	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
-	fixedTxId := [32]byte{}
-	copy(fixedTxId[:], ethcommon.FromHex(txId))
-	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, address, proof[:])
+	transaction, err := c.zkBridgeCall.Deposit(auth, rawBtcTx, proof[:])
 	if err != nil {
 		return "", err
 	}
@@ -258,8 +253,8 @@ func TxIdsToFixedIds(txIds []string) [][32]byte {
 	return fixedTxIds
 }
 
-func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice,
-	amount, btcMinerFee *big.Int, receiveLockScript []byte) (string, error) {
+func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice *big.Int,
+	amount, btcMinerFee uint64, receiveLockScript []byte) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)

@@ -11,7 +11,7 @@ var client *Client
 
 func init() {
 	client, err = NewClient("https://testnet.sapphire.oasis.io",
-		"0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB",
+		"0x7ccCc552F55C05FD33d9827070E1dB3D28322622",
 	)
 	if err != nil {
 		panic(err)
@@ -19,6 +19,11 @@ func init() {
 }
 
 func TestClient_PublicKey(t *testing.T) {
+	/*
+		    oasis_test.go:27: 0x034def276d763bfb937a4f356d26b58cb0428bc198d000b91630db5d04bb7f35dc
+			oasis_test.go:27: 0x03183ee062dafa5a0e536ba497c6375a996364682bf22cd5de989df1b0b9d23621
+		    oasis_test.go:27: 0x03a868050ec7b61b6956d6c1ca722f4d2a32671902486980d5fd6ebf9b4c64dd93
+	*/
 	publicKey, err := client.PublicKey()
 	if err != nil {
 		t.Fatal(err)

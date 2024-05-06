@@ -97,7 +97,7 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 
 func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interface{}, error) {
 	ethTxHash := ethcommon.HexToHash(txHash)
-	zkBridgeAddr, zkBtcAddr := "0x8e4f5a8f3e24a279d8ed39e868f698130777fded", "0xbf3041e37be70a58920a6fd776662b50323021c9"
+	zkBridgeAddr, zkBtcAddr := "0xb2631368c8c8151875ea67cb5faf8f1377ec02a0", "0xbf3041e37be70a58920a6fd776662b50323021c9"
 	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
 	if err != nil {
 		logger.Error("new eth client error:%v", err)
@@ -126,7 +126,8 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
 	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
 
-	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
+	// todo
+	btcSignerContract := "0x7ccCc552F55C05FD33d9827070E1dB3D28322622"
 	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
 	if err != nil {
 		logger.Error("new client error:%v", err)

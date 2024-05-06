@@ -30,9 +30,6 @@ const (
 	TopicRedeemAddr  = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
 )
 
-var LogAddrs = []string{LogDepositAddr, LogRedeemAddr}
-var LogTopics = []string{TopicDepositAddr, TopicRedeemAddr}
-
 // ********************* testnet ************************
 const (
 	LightecTestnet            = "testnet"
@@ -59,36 +56,33 @@ const (
 	TestTopicRedeemAddr  = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
 )
 
-var TestLogAddrs = []string{TestLogDepositAddr, TestLogRedeemAddr}
-var TestLogTopics = []string{TestTopicDepositAddr, TestTopicRedeemAddr}
-
 // ********************* local ************************
 const (
 	Lighteclocal            = "local"
-	LocalBtcOperatorAddress = "tb1qtysxx7zkmm5nwy0hv2mjxfrermsry2vjsygg0eqawwwp6gy4hl4s2tudtw"
-	LocalBtcMultiSigPublic1 = "03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050"
-	LocalBtcMultiSigPublic2 = "03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22"
-	LocalBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
+	LocalBtcOperatorAddress = "tb1qj4atskm3pj6m2achrc3mkdyj2dkgq2wvn9g37wfq60xp8pc6yvnsnnpxj4"
+	LocalBtcMultiSigPublic1 = "0x034def276d763bfb937a4f356d26b58cb0428bc198d000b91630db5d04bb7f35dc"
+	LocalBtcMultiSigPublic2 = "0x03183ee062dafa5a0e536ba497c6375a996364682bf22cd5de989df1b0b9d23621"
+	LocalBtcMultiSigPublic3 = "0x03a868050ec7b61b6956d6c1ca722f4d2a32671902486980d5fd6ebf9b4c64dd93"
 	LocalBtcMultiNRequired  = 2
 	LocalBtcScanTime        = 15 * time.Second
 	LocalEthScanTime        = 5 * time.Second
 
-	LocalInitBitcoinHeight  = 2585325
+	LocalInitBitcoinHeight  = 2812015
 	LocalInitBeaconHeight   = 153 //slot of 596751 in holesky
-	LocalInitEthereumHeight = 1286949
+	LocalInitEthereumHeight = 1489369
 
-	LocalEthZkBridgeAddress = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
+	LocalEthZkBridgeAddress = "0xb2631368c8c8151875ea67cb5faf8f1377ec02a0"
 	LocalEthZkBtcAddress    = "0xbf3041e37be70a58920a6fd776662b50323021c9"
 
 	// utxo manager contract
-	LocalLogDepositAddr = "0xab5146a46e90c497b3d23afab7ddaedf3ff61eaf"
-	LocalLogRedeemAddr  = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
+	LocalLogDepositAddr = "0xe8965848879eb831e3c8f47d2256eff883d9a0d9"
+	LocalLogRedeemAddr  = "0xb2631368c8c8151875ea67cb5faf8f1377ec02a0"
 
 	LocalTopicDepositAddr = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
 	LocalTopicRedeemAddr  = "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"
 )
 
-// ***********************************************************
+// *********************Other**************************************
 
 const RpcRegisterName = "zkbtc"
 

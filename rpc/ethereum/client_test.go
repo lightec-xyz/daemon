@@ -182,8 +182,8 @@ func TestPrivateKey(t *testing.T) {
 
 func TestRedeemTx(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	redeemAmount := big.NewInt(2199999800)
-	minerFee := big.NewInt(300)
+	redeemAmount := uint64(2199999800)
+	minerFee := uint64(300)
 
 	fromAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
 	balance, err := client.GetZkBtcBalance(fromAddr)
@@ -224,10 +224,6 @@ func TestRedeemTx(t *testing.T) {
 
 func TestDepositeTransaction(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	txId := "31917fbc5da25a5db50a084dcfa4b72c04413e570d60bca338eca1cac70bbb28"
-	//ethAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
-	index := uint32(1)
-	amount := big.NewInt(12390000000)
 	proof := common.ZkProof([]byte("test proof"))
 	from := ethcommon.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -246,8 +242,8 @@ func TestDepositeTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	txHash, err := client.Deposit(privateKey, txId, "", index,
-		nonce, uint64(gasLimit), chainID, gasPrice, amount, proof)
+	txHash, err := client.Deposit(privateKey,
+		nonce, uint64(gasLimit), chainID, gasPrice, nil, proof)
 	if err != nil {
 		t.Fatal(err)
 	}
