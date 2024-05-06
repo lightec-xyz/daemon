@@ -109,7 +109,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		return nil
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
-		if index%5 == 0 {
+		if index%10 == 0 {
 			logger.Debug("bitcoin parse block height:%d", index)
 		}
 		depositTxes, redeemTxes, proofRequests, err := b.parseBlock(index)

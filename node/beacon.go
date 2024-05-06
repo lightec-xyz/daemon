@@ -202,7 +202,7 @@ func (b *BeaconAgent) prepareProofRequestData(index uint64, reqType common.ZkPro
 	case common.SyncComRecursiveType:
 		data, prepared, err = b.GetRecursiveData(index)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("get RecursiveData %v err: %v", index, err)
 			return nil, false, err
 		}
 		return data, prepared, nil
@@ -553,7 +553,7 @@ func (b *BeaconAgent) getRecursiveData(period uint64) (interface{}, bool, error)
 	endPeriod := period + 1
 	endId, ok, err := b.GetSyncCommitRootID(endPeriod)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("get commitId %v err: %v", endPeriod, err)
 		return nil, false, err
 	}
 	if !ok {
