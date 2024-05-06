@@ -60,9 +60,9 @@ const (
 const (
 	Lighteclocal            = "local"
 	LocalBtcOperatorAddress = "tb1qj4atskm3pj6m2achrc3mkdyj2dkgq2wvn9g37wfq60xp8pc6yvnsnnpxj4"
-	LocalBtcMultiSigPublic1 = "0x034def276d763bfb937a4f356d26b58cb0428bc198d000b91630db5d04bb7f35dc"
-	LocalBtcMultiSigPublic2 = "0x03183ee062dafa5a0e536ba497c6375a996364682bf22cd5de989df1b0b9d23621"
-	LocalBtcMultiSigPublic3 = "0x03a868050ec7b61b6956d6c1ca722f4d2a32671902486980d5fd6ebf9b4c64dd93"
+	LocalBtcMultiSigPublic1 = "034def276d763bfb937a4f356d26b58cb0428bc198d000b91630db5d04bb7f35dc"
+	LocalBtcMultiSigPublic2 = "03183ee062dafa5a0e536ba497c6375a996364682bf22cd5de989df1b0b9d23621"
+	LocalBtcMultiSigPublic3 = "03a868050ec7b61b6956d6c1ca722f4d2a32671902486980d5fd6ebf9b4c64dd93"
 	LocalBtcMultiNRequired  = 2
 	LocalBtcScanTime        = 15 * time.Second
 	LocalEthScanTime        = 5 * time.Second
