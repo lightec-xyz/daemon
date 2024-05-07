@@ -2,8 +2,11 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"github.com/lightec-xyz/reLight/circuits/utils"
+	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -183,6 +186,15 @@ func (f *Fetch) GetLightClientUpdate(period uint64) {
 		logger.Error("get light client updates error:%v %v", period, err)
 		return
 	}
+	ok, err := f.CheckLightClientUpdate(period, &updates[0])
+	if err != nil {
+		logger.Error("check light client update error:%v %v", period, err)
+		return
+	}
+	if !ok {
+		logger.Error("check light client update error:%v %v", period, err)
+		return
+	}
 	err = f.fileStore.StoreUpdate(period, updates[0])
 	if err != nil {
 		logger.Error("store update error:%v %v", period, err)
@@ -225,4 +237,47 @@ func (f *Fetch) GetFinalityUpdate() error {
 	}
 	logger.Debug("success store finality update:%v", slot)
 	return nil
+}
+
+func (f *Fetch) CheckLightClientUpdate(period uint64, update *structs.LightClientUpdateWithVersion) (bool, error) {
+	prePeriod := period - 1
+	if prePeriod >= 0 {
+		var prePeriodUpdate structs.LightClientUpdateWithVersion
+		exists, err := f.fileStore.GetUpdate(prePeriod, &prePeriodUpdate)
+		if err != nil {
+			logger.Error("get update error:%v %v", prePeriod, err)
+			return false, err
+		}
+		if exists {
+			var syncUpdate *utils.SyncCommitteeUpdate
+			err = common.ParseObj(update.Data, &syncUpdate)
+			if err != nil {
+				logger.Error("parse sync update error:%v %v", period, err)
+				return false, err
+			}
+			syncUpdate.Version = prePeriodUpdate.Version
+			var currentSyncCommittee utils.SyncCommittee
+			err = common.ParseObj(prePeriodUpdate.Data.NextSyncCommittee, &currentSyncCommittee)
+			if err != nil {
+				logger.Error(err.Error())
+				return false, err
+			}
+			syncUpdate.CurrentSyncCommittee = &currentSyncCommittee
+			ok, err := common.VerifyLightClientUpdate(syncUpdate)
+			if err != nil {
+				logger.Error(err.Error())
+				return false, err
+			}
+			if !ok {
+				logger.Error("verify sync update error:%v %v", period, err)
+				return false, nil
+			}
+			return true, nil
+		} else {
+			// todo
+			logger.Warn("no find %v Index update Data", prePeriod)
+			return true, nil
+		}
+	}
+	return true, nil
 }
