@@ -39,10 +39,10 @@ func (rc *RunConfig) Check() error {
 		rc.Rpcbind = "127.0.0.1"
 	}
 	if rc.Rpcport == "" {
-		rc.Rpcport = "9980"
+		rc.Rpcport = "9870"
 	}
 	if rc.Network == "" {
-		rc.Network = "local" // todo
+		rc.Network = "testnet" // todo
 	}
 	if rc.BtcUrl == "" {
 		return fmt.Errorf("btcUrl is empty")
@@ -77,6 +77,8 @@ func NewConfig(cfg RunConfig) (Config, error) {
 		return Config{}, err
 	}
 	switch cfg.Network {
+	case LightecTestnet:
+		return getTestnetConfig(cfg)
 	case Lighteclocal:
 		return getLocalConfig(cfg)
 	default:
@@ -109,6 +111,34 @@ func getLocalConfig(runCnfg RunConfig) (Config, error) {
 		BtcScanTime:       LocalBtcScanTime,
 		EthScanTime:       LocalEthScanTime,
 		EthAddrFilter:     NewEthAddrFilter(LocalLogDepositAddr, LocalLogRedeemAddr, LocalTopicDepositAddr, LocalTopicRedeemAddr),
+	}, nil
+}
+
+func getTestnetConfig(runCnfg RunConfig) (Config, error) {
+	multiAddressInfo, err := NewMultiAddressInfo([]string{TestnetBtcMultiSigPublic1, TestnetBtcMultiSigPublic2,
+		TestnetBtcMultiSigPublic3}, TestnetBtcMultiNRequired)
+	if err != nil {
+		return Config{}, err
+	}
+	if runCnfg.BtcInitHeight == 0 {
+		runCnfg.BtcInitHeight = TestnetInitBitcoinHeight
+	}
+	if runCnfg.EthInitHeight == 0 {
+		runCnfg.EthInitHeight = TestnetInitEthereumHeight
+	}
+	if runCnfg.BeaconInitSlot == 0 {
+		runCnfg.BeaconInitSlot = TestnetInitBeaconHeight
+	}
+	return Config{
+		RunConfig:         runCnfg,
+		GenesisSyncPeriod: runCnfg.BeaconInitSlot / 8192, // todo
+		BtcOperatorAddr:   TestnetBtcOperatorAddress,
+		MultiAddressInfo:  multiAddressInfo,
+		ZkBridgeAddr:      TestnetEthZkBridgeAddress,
+		ZkBtcAddr:         TestnetEthZkBtcAddress,
+		BtcScanTime:       TestnetBtcScanTime,
+		EthScanTime:       TestnetEthScanTime,
+		EthAddrFilter:     NewEthAddrFilter(TestLogDepositAddr, TestLogRedeemAddr, TestTopicDepositAddr, TestTopicRedeemAddr),
 	}, nil
 }
 

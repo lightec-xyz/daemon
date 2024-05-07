@@ -33,27 +33,27 @@ const (
 // ********************* testnet ************************
 const (
 	LightecTestnet            = "testnet"
-	TestnetBtcOperatorAddress = "tb1qalv7aduqdpz9wc4fut3nt44tsf42anleed76yj3el3rgd4rgldvq8yyuhr"
-	TestnetBtcMultiSigPublic1 = "03bd96c4d06aa773e5d282f0b6bccd1fb91268484918648ccda1ae768209edb050"
-	TestnetBtcMultiSigPublic2 = "03aa9c4245340a02864c903f7f9e7bc9ef1cc374093aacbf72b614002f6d8c8c22"
-	TestnetBtcMultiSigPublic3 = "03351a7971bf7ed886fca99aebdc3b195fc79ffe93b499e2309a4e69ab115405e0"
+	TestnetBtcOperatorAddress = "tb1qtysxx7zkmm5nwy0hv2mjxfrermsry2vjsygg0eqawwwp6gy4hl4s2tudtw"
+	TestnetBtcMultiSigPublic1 = "0363f549d250342df02ee8b51ad6c9148dabc587c6569761ab58aa68488bd2e2c5"
+	TestnetBtcMultiSigPublic2 = "031cbb294f9955d80f65d9499feaeb5cb29d44c070adddd75cd48a40791d39b971"
+	TestnetBtcMultiSigPublic3 = "035c54e8287a7f7ba31886249fc89f295a4cb74cebf0d925f1eafe87f22fba57f9"
 	TestnetBtcMultiNRequired  = 2
-	TestnetBtcNetwork         = btctx.TestNet
-	TestnetEthZkBridgeAddress = "0x3ca427befe5b8b821c09a8d6425fbcee20f952f6"
-	TestnetEthZkBtcAddress    = "0x3528594509fcf7b06f70976a9fae1c3b0ab92e22"
+	TestnetEthZkBridgeAddress = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
+	TestnetEthZkBtcAddress    = "0xbf3041e37be70a58920a6fd776662b50323021c9"
 
 	TestnetBtcScanTime = 1 * time.Minute
-	TestnetEthScanTime = 5 * time.Second
+	TestnetEthScanTime = 15 * time.Second
 
-	TestnetInitBitcoinHeight  = 2544083
-	TestnetInitBeaconHeight   = 1024256
-	TestnetInitEthereumHeight = 598020
+	TestnetInitBitcoinHeight  = 2812015
+	TestnetInitBeaconHeight   = 153
+	TestnetInitEthereumHeight = 1489369
 
-	TestLogRedeemAddr  = "0x3ca427befe5b8b821c09a8d6425fbcee20f952f6"
-	TestLogDepositAddr = "0x96ffb80f74a646940569b599039e0fbd0b3a4711"
+	// utxo manager
+	TestLogDepositAddr = "0x9d2aaea60dee441981edf44300c26f1946411548"
+	TestLogRedeemAddr  = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
 
 	TestTopicDepositAddr = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
-	TestTopicRedeemAddr  = "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"
+	TestTopicRedeemAddr  = "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"
 )
 
 // ********************* local ************************
