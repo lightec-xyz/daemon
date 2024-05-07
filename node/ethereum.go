@@ -101,6 +101,7 @@ func (e *EthereumAgent) checkUnGenerateProof() error {
 }
 
 func (e *EthereumAgent) ScanBlock() error {
+	logger.Debug("ethereum scan block ...")
 	ethHeight, ok, err := ReadEthereumHeight(e.store)
 	if err != nil {
 		logger.Error("get eth current height error:%v", err)
