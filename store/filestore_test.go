@@ -5,12 +5,12 @@ import (
 )
 
 func TestNewFileStore(t *testing.T) {
-	fileStore, err := NewFileStore("test/", "sub", "")
+	fileStore, err := NewFileStore("test/", "", "")
 	if err != nil {
 		t.Error(err)
 	}
 	fileName := "10"
-	fileData := "{}"
+	fileData := "{sdfsdf}"
 
 	exists, err := fileStore.CheckExists(fileName)
 	if err != nil {
