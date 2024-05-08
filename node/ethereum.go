@@ -14,6 +14,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
@@ -28,6 +29,7 @@ import (
 type EthereumAgent struct {
 	btcClient        *bitcoin.Client
 	ethClient        *ethrpc.Client
+	oasisClient      *oasis.Client
 	apiClient        *apiclient.Client // todo temporary use
 	beaconClient     *beacon.Client
 	store            store.IStore
@@ -45,12 +47,13 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
 		ethClient:        ethClient,
 		beaconClient:     beaconClient,
+		oasisClient:      oasisClient,
 		store:            store,
 		fileStore:        fileStore,
 		memoryStore:      memoryStore,
@@ -173,7 +176,7 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 			logger.Error("update Proof error:%v %v", resp.TxHash, err)
 			return err
 		}
-		_, err = RedeemBtcTx(e.btcClient, resp.TxHash, resp.Proof)
+		_, err = RedeemBtcTx(e.btcClient, e.ethClient, e.oasisClient, resp.TxHash, resp.Proof)
 		if err != nil {
 			logger.Error("redeem btc tx error:%v %v", resp.TxHash, err)
 			e.task.AddTask(resp)

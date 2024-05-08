@@ -95,20 +95,14 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 
 // todo refactor
 
-func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interface{}, error) {
+func RedeemBtcTx(btcClient *bitcoin.Client, ethClient *ethrpc.Client, oasisClient *oasis.Client, txHash string, proof []byte) (interface{}, error) {
 	ethTxHash := ethcommon.HexToHash(txHash)
-	zkBridgeAddr, zkBtcAddr := "0x8e4f5a8f3e24a279d8ed39e868f698130777fded", "0xbf3041e37be70a58920a6fd776662b50323021c9"
-	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
-	if err != nil {
-		logger.Error("new eth client error:%v", err)
-		return nil, err
-	}
-	ethTx, _, err := ec.TransactionByHash(context.Background(), ethTxHash)
+	ethTx, _, err := ethClient.TransactionByHash(context.Background(), ethTxHash)
 	if err != nil {
 		logger.Error("get eth tx error:%v", err)
 		return nil, err
 	}
-	receipt, err := ec.TransactionReceipt(context.Background(), ethTxHash)
+	receipt, err := ethClient.TransactionReceipt(context.Background(), ethTxHash)
 	if err != nil {
 		logger.Error("get eth tx receipt error:%v", err)
 		return nil, err
@@ -119,52 +113,36 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 		logger.Error("decode redeem log error:%v", err)
 		return nil, err
 	}
-
 	logger.Info("btcRawTx: %v\n", hexutil.Encode(btcRawTx))
-
 	rawTx, rawReceipt := ethereum.GetRawTxAndReceipt(ethTx, receipt)
 	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
 	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
 
-	// todo
-	option := oasis.Option{
-		Address:      "0x7ccCc552F55C05FD33d9827070E1dB3D28322622",
-		AlphaAddress: "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB",
-	}
-	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", &option)
-	if err != nil {
-		logger.Error("new client error:%v", err)
-		return nil, err
-	}
-
-	sigs, err := oasisClient.AlphaSignBtcTx(rawTx, rawReceipt, proof)
+	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proof)
 	if err != nil {
 		logger.Error("sign btc tx error:%v", err)
 		return nil, err
 	}
-
 	transaction := btctx.NewMultiTransactionBuilder()
 	err = transaction.Deserialize(btcRawTx)
 	if err != nil {
 		logger.Error("deserialize btc tx error:%v", err)
 		return nil, err
 	}
-
-	multiSigScript, err := ec.GetMultiSigScript()
+	multiSigScript, err := ethClient.GetMultiSigScript()
 	if err != nil {
 		logger.Error("get multi sig script error:%v", err)
 		return nil, err
 	}
 
+	// todo
 	nTotal, nRequred := 3, 2
 	transaction.AddMultiScript(multiSigScript, nRequred, nTotal)
-
 	err = transaction.MergeSignature(sigs[:nRequred])
 	if err != nil {
 		logger.Error("merge signature error:%v", err)
 		return nil, err
 	}
-
 	btxTx, err := transaction.Serialize()
 	if err != nil {
 		logger.Error("serialize btc tx error:%v", err)
@@ -177,7 +155,7 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 		return "", nil
 	}
 	txHex := hex.EncodeToString(btxTx)
-	logger.Info("btx Tx: %v\n", txHex)
+	logger.Info("btc Tx: %v\n", txHex)
 	TxHash, err := btcClient.Sendrawtransaction(txHex)
 	if err != nil {
 		logger.Error("send btc tx error:%v %v", btcTxHash, err)

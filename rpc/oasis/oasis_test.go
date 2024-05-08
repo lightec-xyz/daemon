@@ -10,9 +10,9 @@ var err error
 var client *Client
 
 func init() {
-	client, err = NewClient("https://testnet.sapphire.oasis.io", &Option{
-		Address:      "0x7ccCc552F55C05FD33d9827070E1dB3D28322622",
-		AlphaAddress: "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB",
+	client, err = NewClient("https://testnet.sapphire.oasis.io", Local, &Option{
+		LocalAddress:   "0x7ccCc552F55C05FD33d9827070E1dB3D28322622",
+		TestnetAddress: "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB",
 	})
 	if err != nil {
 		panic(err)
@@ -69,7 +69,7 @@ func TestClient_SignBtcTx(t *testing.T) {
 }
 
 func TestClient_AlphaPublicKey(t *testing.T) {
-	publicKey, err := client.AlphaPublicKey()
+	publicKey, err := client.TestnetPublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}

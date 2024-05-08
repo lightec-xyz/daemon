@@ -5,29 +5,32 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 )
 
 // Todo
 
 type TaskManager struct {
-	ethClient *ethrpc.Client
-	btcClient *bitcoin.Client
-	queue     *SubmitQueue
-	address   string
-	keyStore  *KeyStore
+	ethClient   *ethrpc.Client
+	btcClient   *bitcoin.Client
+	oasisClient *oasis.Client
+	queue       *SubmitQueue
+	address     string
+	keyStore    *KeyStore
 }
 
-func NewTaskManager(keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client) (*TaskManager, error) {
+func NewTaskManager(keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client, oasisClient *oasis.Client) (*TaskManager, error) {
 	address, err := keyStore.Address()
 	if err != nil {
 		return nil, err
 	}
 	return &TaskManager{
-		ethClient: ethClient,
-		btcClient: btcClient,
-		keyStore:  keyStore,
-		address:   address,
-		queue:     NewSubmitQueue(),
+		ethClient:   ethClient,
+		btcClient:   btcClient,
+		oasisClient: oasisClient,
+		keyStore:    keyStore,
+		address:     address,
+		queue:       NewSubmitQueue(),
 	}, nil
 }
 
@@ -52,7 +55,7 @@ func (t *TaskManager) Check() error {
 }
 
 func (t *TaskManager) MintZkBtcRequest(resp *common.ZkProofResponse) error {
-	_, err := RedeemBtcTx(t.btcClient, resp.TxHash, resp.Proof)
+	_, err := RedeemBtcTx(t.btcClient, t.ethClient, t.oasisClient, resp.TxHash, resp.Proof)
 	if err != nil {
 		logger.Error("mint zk btc error: %v", err)
 		return err

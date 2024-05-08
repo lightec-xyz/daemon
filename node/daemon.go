@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"strings"
 
 	//btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
@@ -114,6 +115,15 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
+	oasisClient, err := oasis.NewClient(cfg.OasisUrl, cfg.Network, &oasis.Option{
+		LocalAddress:   LocalOasisSignerAddr,
+		TestnetAddress: TestnetOasisSignerAddr,
+	})
+	if err != nil {
+		logger.Error("new eth btcClient error:%v", err)
+		return nil, err
+	}
+
 	dbPath := fmt.Sprintf("%s/%s", cfg.Datadir, cfg.Network)
 	logger.Info("levelDbPath: %s", dbPath)
 	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
@@ -141,7 +151,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	keyStore := NewKeyStore(cfg.EthPrivateKey)
 
-	taskManager, err := NewTaskManager(keyStore, ethClient, btcClient)
+	taskManager, err := NewTaskManager(keyStore, ethClient, btcClient, oasisClient)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -163,7 +173,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, proofRequest, taskManager)
+	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, oasisClient, proofRequest, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

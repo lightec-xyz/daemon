@@ -17,6 +17,7 @@ type RunConfig struct {
 	BtcUrl                string `json:"btcUrl"`
 	EthUrl                string `json:"ethUrl"`
 	BeaconUrl             string `json:"beaconUrl"`
+	OasisUrl              string `json:"oasisUrl"`
 	EthPrivateKey         string `json:"ethPrivateKey"`
 	EnableLocalWorker     bool   `json:"enableLocalWorker"`
 	DisableRecursiveAgent bool   `json:"disableRecursiveAgent"`
@@ -51,6 +52,9 @@ func (rc *RunConfig) Check() error {
 	}
 	if rc.BeaconUrl == "" {
 		return fmt.Errorf("beaconUrl is empty")
+	}
+	if rc.OasisUrl == "" {
+		return fmt.Errorf("oasisUrl is empty")
 	}
 	if rc.EthPrivateKey == "" {
 		return fmt.Errorf("ethPrivateKey is empty")
