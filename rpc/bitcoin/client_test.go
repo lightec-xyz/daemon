@@ -192,8 +192,7 @@ func Test_MergeAndSendTx(t *testing.T) {
 }
 
 func Test_GetMultiSigScriptRelatedsFromOasis(t *testing.T) {
-	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
-	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", nil)
 	require.NoError(t, err)
 
 	publicKeys, err := oasisClient.PublicKey()
@@ -238,8 +237,7 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 	proofData, err := hexutil.Decode("0x123456")
 	require.NoError(t, err)
 
-	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
-	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", nil)
 	require.NoError(t, err)
 
 	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proofData)

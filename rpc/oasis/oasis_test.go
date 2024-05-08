@@ -97,7 +97,7 @@ func TestClient_AlphaSignBtcTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sigs, err := client.AlphaSignBtcTx(txRaw, receiptRaw, proofData)
+	sigs, err := client.SignBtcTx(txRaw, receiptRaw, proofData)
 	if err != nil {
 		t.Fatal(err)
 	}
