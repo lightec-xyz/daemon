@@ -127,14 +127,17 @@ func RedeemBtcTx(btcClient *bitcoin.Client, txHash string, proof []byte) (interf
 	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
 
 	// todo
-	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
-	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
+	option := oasis.Option{
+		Address:      "0x7ccCc552F55C05FD33d9827070E1dB3D28322622",
+		AlphaAddress: "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB",
+	}
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", &option)
 	if err != nil {
 		logger.Error("new client error:%v", err)
 		return nil, err
 	}
 
-	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proof)
+	sigs, err := oasisClient.AlphaSignBtcTx(rawTx, rawReceipt, proof)
 	if err != nil {
 		logger.Error("sign btc tx error:%v", err)
 		return nil, err

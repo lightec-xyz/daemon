@@ -6,33 +6,61 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	zkbridgeSigner "github.com/lightec-xyz/daemon/rpc/oasis/contract"
+	alphaSigner "github.com/lightec-xyz/daemon/rpc/oasis/alpha"
+	signer "github.com/lightec-xyz/daemon/rpc/oasis/contract"
 )
 
-type Client struct {
-	zkBridgeVerifyCall1 *zkbridgeSigner.ZkbridgeSigner // todo
-	timout              time.Duration
+type Option struct {
+	Address      string
+	AlphaAddress string
 }
 
-func NewClient(url string, signerAddress string) (*Client, error) {
-	// todo
+type Client struct {
+	signerCall      *signer.ZkbridgeSigner // todo
+	alphaSignerCall *alphaSigner.ZkbridgeSigner
+	timout          time.Duration
+}
+
+func NewClient(url string, option *Option) (*Client, error) {
 	rpcDial, err := rpc.Dial(url)
 	if err != nil {
 		return nil, err
 	}
 	client := ethclient.NewClient(rpcDial)
-	zkBridgeVerifyCall1, err := zkbridgeSigner.NewZkbridgeSigner(common.HexToAddress(signerAddress), client)
+	signerCall, err := signer.NewZkbridgeSigner(common.HexToAddress(option.Address), client)
+	if err != nil {
+		return nil, err
+	}
+	alphaSignerCall, err := alphaSigner.NewZkbridgeSigner(common.HexToAddress(option.AlphaAddress), client)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
-		zkBridgeVerifyCall1: zkBridgeVerifyCall1,
-		timout:              60 * time.Second,
+		signerCall:      signerCall,
+		alphaSignerCall: alphaSignerCall,
+		timout:          60 * time.Second,
 	}, nil
 }
 
+func (c *Client) AlphaPublicKey() ([][]byte, error) {
+	publicKeys, err := c.alphaSignerCall.GetPublicKeys(nil)
+	if err != nil {
+		return nil, err
+	}
+	return publicKeys, nil
+
+}
+
+func (c *Client) AlphaSignBtcTx(rawTx, receiptTx, proof []byte) ([][][]byte, error) {
+	signature1, err := c.alphaSignerCall.SignBtcTx(nil, rawTx, receiptTx, proof)
+	if err != nil {
+		return nil, err
+	}
+	return signature1, nil
+}
+
 func (c *Client) PublicKey() ([][]byte, error) {
-	publicKeys, err := c.zkBridgeVerifyCall1.GetPublicKeys(nil)
+	publicKeys, err := c.signerCall.GetPublicKeys(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +68,7 @@ func (c *Client) PublicKey() ([][]byte, error) {
 }
 
 func (c *Client) SignBtcTx(rawTx, receiptTx, proof []byte) ([][][]byte, error) {
-	signature1, err := c.zkBridgeVerifyCall1.SignBtcTx(nil, rawTx, receiptTx, proof)
+	signature1, err := c.signerCall.SignBtcTx(nil, rawTx, receiptTx, proof)
 	if err != nil {
 		return nil, err
 	}
