@@ -437,30 +437,6 @@ func (w *Worker) AddReqNum() {
 	w.currentNums++
 }
 
-func GetGenesisProofPath(datadir string) string {
-	return fmt.Sprintf("%s/genesis/genesis.proof", datadir)
-}
-
-func GetGenesisWitnessPath(datadir string, period uint64) string {
-	return fmt.Sprintf("%s/%d_genesis.witness", datadir, period)
-}
-
-func GetUnitProofPath(datadir string, period uint64) string {
-	return fmt.Sprintf("%s/%d_unit.proof", datadir, period)
-}
-
-func GetRecursiveProofPath(datadir string, period uint64) string {
-	return fmt.Sprintf("%s/%d_recursive.proof", datadir, period)
-}
-
-func GetUnitWitnessPath(unitDir string, period uint64) string {
-	return fmt.Sprintf("%s/%d_unit.witness", unitDir, period)
-}
-
-func GetRecursiveWitnessPath(recursiveDir string, period uint64) string {
-	return fmt.Sprintf("%s/%d_recursive.witness", recursiveDir, period)
-}
-
 func ParseObj(src, dst interface{}) error {
 	if reflect.ValueOf(dst).Kind() != reflect.Ptr {
 		return fmt.Errorf("dst must be a pointer")
@@ -474,13 +450,4 @@ func ParseObj(src, dst interface{}) error {
 		return err
 	}
 	return nil
-}
-
-func objToJson(obj interface{}) string {
-	ojbBytes, err := json.Marshal(obj)
-	if err != nil {
-		return "error obj to josn"
-	}
-	return string(ojbBytes)
-
 }
