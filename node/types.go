@@ -3,16 +3,20 @@ package node
 import (
 	"bytes"
 	"fmt"
+	"github.com/consensys/gnark/frontend"
+	//btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
+	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"strconv"
 
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
-type DepositProofParam struct {
+type VerifyProofParam struct {
 	Version   string
-	Body      interface{}
 	TxHash    string
 	BlockHash string
 }
@@ -23,16 +27,22 @@ type TxInEth2Param struct {
 	TxData  *ethblock.TxInEth2ProofData
 }
 
-type RedeemProofParam struct {
-	Version string
-	TxHash  string
-	TxData  *ethblock.TxInEth2ProofData
+type BeaconHeaderParam struct {
+	Index     uint64
+	BeginSlot uint64
+	BeginRoot string
+	EndSlot   uint64
+	EndRoot   string
+	Headers   []*structs.BeaconBlockHeader
 }
 
-type VerifyProofParam struct {
-	Version   string
-	TxHash    string
-	BlockHash string
+type RedeemProofParam struct {
+	TxHash  string
+	Version string
+	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness, BeginId, EndId, GenesisScRoot,
+	CurrentSCSSZRoot []byte
+	TxVar      *[tx.MaxTxUint128Len]frontend.Variable
+	ReceiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable
 }
 
 type GenesisProofParam struct {
@@ -72,6 +82,14 @@ type RecursiveProofParam struct {
 	RecursiveFp   []byte
 }
 
+type FinalityBeaconHeaderParam struct {
+	GenesisSCSSZRoot string
+	RecursiveProof, RecursiveWitness, OuterProof,
+	OuterWitness []byte
+	FinalityUpdate *proverType.FinalityUpdate
+	ScUpdate       *proverType.SyncCommitteeUpdate
+}
+
 type FetchType int
 
 const (
@@ -99,13 +117,23 @@ type FetchRequest struct {
 }
 
 type FetchDataResponse struct {
-	period     uint64
+	FetchId    string
+	Index      uint64
 	UpdateType FetchType
+}
+
+func NewFetchDataResponse(updateType FetchType, index uint64) *FetchDataResponse {
+	id := fmt.Sprintf("%v_%v", updateType.String(), index)
+	return &FetchDataResponse{FetchId: id, Index: index, UpdateType: updateType}
+}
+
+func (f *FetchDataResponse) Id() string {
+	return f.FetchId
 }
 
 type Utxo struct {
 	TxId  string `json:"txId"`
-	Index uint32 `json:"index"`
+	Index uint32 `json:"Index"`
 }
 
 type TxOut struct {
@@ -151,12 +179,14 @@ type Transaction struct {
 }
 
 type Proof struct {
-	TxHash    string             `json:"txId"`
+	TxHash    string             `json:"txHash"`
 	ProofType common.ZkProofType `json:"type"`
 	Status    int                `json:"status"`
 	Proof     string             `json:"Proof"`
 }
 
-// PreProofRequest todo
-type PreProofRequest struct {
+// todo
+type UnGenPreProof struct {
+	TxId      string
+	ChainType ChainType
 }

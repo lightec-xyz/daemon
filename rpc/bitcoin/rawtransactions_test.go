@@ -74,7 +74,7 @@ func TestClient_Getrawtransaction(t *testing.T) {
 }
 
 func TestClient_GetTransaction(t *testing.T) {
-	tx, err := client.GetTransaction("f3558552478bbc873759c4dac9655a19d41efb10cedf66f36be37d97c57155cf")
+	tx, err := client.GetTransaction("ea2762100ef10551775c6014f487c5326fc95e76d714c7b4f60d756f8c2c0ddf")
 	if err != nil {
 		panic(err)
 	}

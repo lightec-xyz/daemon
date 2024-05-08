@@ -2,7 +2,10 @@ package common
 
 // env
 
-const BeaconHeaderSlot = 32 // todo
+const (
+	BeaconHeaderSlot = 32
+	SlotPerPeriod    = 8192
+)
 
 const (
 	ZkDebugEnv     = "ZkDebug"
@@ -39,6 +42,16 @@ const (
 	Cluster Mode = "cluster"
 )
 
+type ProofWeight int
+
+const (
+	WeightDefault ProofWeight = iota
+	WeightLow
+	WeightMedium
+	WeightHigh
+	Highest
+)
+
 type ZkProofType int
 
 const (
@@ -49,12 +62,13 @@ const (
 	SyncComGenesisType
 	SyncComUnitType
 	SyncComRecursiveType
-	BhfUpdate //BeaconHeaderFinalityUpdate
-	BeaconHeader
+	BeaconHeaderFinalityType //BeaconHeaderFinalityUpdate
+	UnitOuter
+	BeaconHeaderType
 )
 
-func (zkpr *ZkProofType) String() string {
-	switch *zkpr {
+func (zkpt *ZkProofType) String() string {
+	switch *zkpt {
 	case DepositTxType:
 		return "DepositTxType"
 	case RedeemTxType:
@@ -67,7 +81,31 @@ func (zkpr *ZkProofType) String() string {
 		return "SyncComUnitType"
 	case SyncComRecursiveType:
 		return "SyncComRecursiveType"
+	case TxInEth2:
+		return "TxInEth2"
+	case UnitOuter:
+		return "UnitOuter"
+	case BeaconHeaderFinalityType:
+		return "BeaconHeaderFinalityType"
+	case BeaconHeaderType:
+		return "BeaconHeaderType"
 	default:
 		return ""
+	}
+}
+
+func (zkpt *ZkProofType) Weight() ProofWeight {
+	// todo
+	switch *zkpt {
+	case SyncComRecursiveType, SyncComGenesisType, RedeemTxType:
+		return Highest
+	case BeaconHeaderFinalityType:
+		return WeightHigh
+	case SyncComUnitType:
+		return WeightMedium
+	case VerifyTxType:
+		return WeightLow
+	default:
+		return WeightDefault
 	}
 }

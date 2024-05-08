@@ -3,9 +3,8 @@ package proof
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"os"
 )
-
-const RpcRegisterName = "zkbtc"
 
 type Config struct {
 	RpcBind string `json:"rpcbind"`
@@ -15,21 +14,25 @@ type Config struct {
 	MaxNums int         `json:"maxNums"`
 	Network string      `json:"network"`
 	DataDir string      `json:"datadir"`
-	Mode    common.Mode `json:"model"` // server | client
+	Mode    common.Mode `json:"model"` // rpcServer | client
 }
 
 func (c *Config) Check() error {
 	if c.MaxNums == 0 {
-		return fmt.Errorf("maxNums is empty")
+		c.MaxNums = 1
 	}
 	if c.DataDir == "" {
-		return fmt.Errorf("datadir is empty")
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		c.DataDir = fmt.Sprintf("%s/.generateor", homeDir)
 	}
 	if c.Network == "" {
-		return fmt.Errorf("network is empty")
+		c.Network = "local" // todo
 	}
 	if c.Mode == "" {
-		return fmt.Errorf("model is empty,please select client or server")
+		c.Mode = common.Client
 	}
 	if c.Mode == common.Client {
 		if c.Url == "" {
@@ -55,7 +58,7 @@ func (c *Config) Info() string {
 
 func NewClientModeConfig() Config {
 	return Config{
-		Url:     "http://127.0.0.1:9780",
+		Url:     "http://127.0.0.1:7880",
 		MaxNums: 1,
 		Mode:    common.Client,
 		Network: "local",
@@ -73,3 +76,5 @@ func NewClusterModeConfig() Config {
 		DataDir: "/Users/red/lworkspace/lightec/daemon/proof/test",
 	}
 }
+
+const RpcRegisterName = "zkbtc"

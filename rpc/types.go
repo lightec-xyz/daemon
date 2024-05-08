@@ -1,8 +1,10 @@
 package rpc
 
 import (
+	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
@@ -48,32 +50,48 @@ type NodeInfo struct {
 
 //------
 
-type TxInEth2ProveReq struct {
+type TxInEth2ProveRequest struct {
 	Version string
 	TxHash  string
 	TxData  *ethblock.TxInEth2ProofData
 }
 
-type TxInEth2ProveResp struct {
+type TxInEth2ProveResponse struct {
 	Proof   []byte
 	Witness []byte
 }
 
-type TxBlockIsParentOfCheckPointProveReq struct {
+type BlockHeaderRequest struct {
+	Index     uint64
+	BeginSlot uint64
+	BeginRoot string
+	EndSlot   uint64
+	EndRoot   string
+	Headers   []*structs.BeaconBlockHeader
 }
 
-type TxBlockIsParentOfCheckPointResp struct {
+type BlockHeaderResponse struct {
+	Proof   []byte
+	Witness []byte
 }
-type CheckPointFinalityProveReq struct {
+type BlockHeaderFinalityRequest struct {
+	Index            uint64
+	GenesisSCSSZRoot string
+	RecursiveProof, RecursiveWitness, OuterProof,
+	OuterWitness string
+	FinalityUpdate *proverType.FinalityUpdate
+	ScUpdate       *proverType.SyncCommitteeUpdate
 }
 
-type CheckPointFinalityProveResp struct {
+type BlockHeaderFinalityResponse struct {
+	Proof   []byte
+	Witness []byte
 }
 
 type DepositRequest struct {
-	Version   string
 	TxHash    string
 	BlockHash string
+	Data      *btcproverUtils.GrandRollupProofData
 }
 
 type DepositResponse struct {
@@ -83,20 +101,26 @@ type DepositResponse struct {
 }
 
 type RedeemRequest struct {
-	Version string
-	TxHash  string
-	TxData  *ethblock.TxInEth2ProofData
+	TxHash                                                       string
+	Version                                                      string
+	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness string
+	BeginId, EndId, GenesisScRoot,
+	CurrentSCSSZRoot string
+	TxVar      []string
+	ReceiptVar []string
+	//TxVar      *[tx.MaxTxUint128Len]frontend.Variable
+	//ReceiptVar *[receipt.MaxReceiptUint128Len]frontend.Variable
 }
 
 type RedeemResponse struct {
-	Proof   common.ZkProof
+	Proof   []byte
 	Witness []byte
 }
 
 type VerifyRequest struct {
-	Version   string
 	TxHash    string
 	BlockHash string
+	Data      *btcproverUtils.GrandRollupProofData
 }
 
 type VerifyResponse struct {
@@ -106,16 +130,16 @@ type VerifyResponse struct {
 }
 
 type SyncCommGenesisRequest struct {
-	Period        uint64 `json:"period"`
-	Version       string `json:"version"`
-	FirstProof    []byte `json:"firstProof"`
-	FirstWitness  []byte
-	SecondProof   []byte
-	SecondWitness []byte
-	GenesisID     []byte
-	FirstID       []byte
-	SecondID      []byte
-	RecursiveFp   []byte
+	Period  uint64 `json:"period"`
+	Version string `json:"version"`
+	FirstProof,
+	FirstWitness,
+	SecondProof,
+	SecondWitness string
+	GenesisID   []byte
+	FirstID     []byte
+	SecondID    []byte
+	RecursiveFp []byte
 }
 
 type SyncCommGenesisResponse struct {
@@ -140,25 +164,27 @@ type SyncCommUnitsRequest struct {
 }
 
 type SyncCommUnitsResponse struct {
-	Version   string             `json:"version"`
-	Period    uint64             `json:"period"`
-	ProofType common.ZkProofType `json:"proofType"`
-	Proof     common.ZkProof     `json:"proof"`
-	Witness   []byte             `json:"witness"`
+	Version      string             `json:"version"`
+	Period       uint64             `json:"period"`
+	ProofType    common.ZkProofType `json:"proofType"`
+	Proof        common.ZkProof     `json:"proof"`
+	Witness      []byte             `json:"witness"`
+	OuterProof   []byte             `json:"outerProof"`
+	OuterWitness []byte             `json:"outerWitness"`
 }
 
 type SyncCommRecursiveRequest struct {
-	Period        uint64
-	Version       string
-	Choice        string `json:"choice"`
-	FirstProof    []byte
-	FirstWitness  []byte
-	SecondProof   []byte
-	SecondWitness []byte
-	BeginId       []byte
-	RelayId       []byte
-	EndId         []byte
-	RecursiveFp   []byte
+	Period  uint64
+	Version string
+	Choice  string `json:"choice"`
+	FirstProof,
+	FirstWitness,
+	SecondProof,
+	SecondWitness string
+	BeginId,
+	RelayId,
+	EndId,
+	RecursiveFp []byte
 }
 
 type SyncCommRecursiveResponse struct {

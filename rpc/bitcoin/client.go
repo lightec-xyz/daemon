@@ -25,7 +25,7 @@ func basicAuth(username, password string) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-func NewClient(url, user, pwd, network string) (*Client, error) {
+func NewClient(url, user, pwd string) (*Client, error) {
 	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: false}, nil
 }
 

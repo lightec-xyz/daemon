@@ -9,23 +9,24 @@ type INode interface {
 	Transaction(txHash string) (Transaction, error)
 	TransactionsByHeight(height uint64, network string) ([]string, error)
 	Transactions(txId []string) ([]Transaction, error)
-	GetTask(request common.TaskRequest) (*common.TaskResponse, error)
-	SubmitProof(req common.SubmitProof) (string, error)
+	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
+	SubmitProof(req *common.SubmitProof) (string, error)
 	Stop() error
 }
 
 // IProof api between node and proof
 type IProof interface {
 	GenDepositProof(req DepositRequest) (DepositResponse, error)
-	GenRedeemProof(req RedeemRequest) (RedeemResponse, error)
 	GenVerifyProof(req VerifyRequest) (VerifyResponse, error)
 	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
 	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
 	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
 
-	TxInEth2Prove(req *TxInEth2ProveReq) (*TxInEth2ProveResp, error)
-	TxBlockIsParentOfCheckPointProve(req *TxBlockIsParentOfCheckPointProveReq) (*TxBlockIsParentOfCheckPointResp, error)
-	CheckPointFinalityProve(req *CheckPointFinalityProveReq) (*CheckPointFinalityProveResp, error)
+	GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error)
+	TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error)
+	BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error)
+	BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error)
+
 	ProofInfo(proofId string) (ProofInfo, error)
 }
 

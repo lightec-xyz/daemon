@@ -305,7 +305,7 @@ type Config struct {
 	EthPrivateKey  string
 	EthAddr        string
 	Network        btctx.NetWork
-	node.NodeConfig
+	node.Config
 }
 
 func floatToInt(value float64) int64 {

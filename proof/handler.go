@@ -1,7 +1,6 @@
 package proof
 
 import (
-	"encoding/json"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,23 +15,24 @@ var _ rpc.IProof = (*Handler)(nil)
 
 type Handler struct {
 	memoryStore store.IStore
+	store       store.IStore
 	maxNums     int // The maximum number of proofs that can be generated at the same time
 	proofs      *sync.Map
 	currentNums atomic.Int64
 	lock        sync.Mutex
 }
 
-func (h *Handler) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
+func (h *Handler) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (h *Handler) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
+func (h *Handler) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (h *Handler) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
+func (h *Handler) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -51,10 +51,10 @@ func (h *Handler) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, 
 	}, nil
 }
 
-func (h *Handler) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+func (h *Handler) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	logger.Debug("gen redeem proof")
 	time.Sleep(10 * time.Second)
-	return rpc.RedeemResponse{
+	return &rpc.RedeemResponse{
 		Proof: common.ZkProof([]byte("redeem proof")),
 	}, nil
 }
@@ -113,20 +113,10 @@ func (h *Handler) DelReqNum() {
 	panic("implement me")
 }
 
-func NewHandler(memoryStore store.IStore, max int) *Handler {
+func NewHandler(store, memoryStore store.IStore, max int) *Handler {
 	return &Handler{
 		memoryStore: memoryStore,
+		store:       store,
 		maxNums:     max,
 	}
-}
-func objParse(src, dest interface{}) error {
-	marshal, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(marshal, dest)
-	if err != nil {
-		return err
-	}
-	return nil
 }

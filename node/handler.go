@@ -21,32 +21,33 @@ type Handler struct {
 	manager  IManager
 }
 
-func (h *Handler) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
+func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	// Todo
 	zkProofRequest, ok, err := h.manager.GetProofRequest()
 	if err != nil {
-		logger.Error("get proof request error: %v", err)
+		logger.Error("get proof request error: %v %v", request.Id, err)
 		return nil, err
 	}
 	var response common.TaskResponse
 	if !ok {
-		logger.Warn("workerId: %v ,server maybe no new proof task", request.Id)
+		logger.Warn("workerId: %v ,rpcServer maybe no new proof task", request.Id)
 		response.CanGen = false
 		return &response, nil
 	}
 	response.CanGen = true
 	response.Request = zkProofRequest
-	logger.Info("worker: %v get task: type:%v hash:%v:period:%v", request.Id, zkProofRequest.ReqType.String(),
-		zkProofRequest.TxHash, zkProofRequest.Period)
+	logger.Info("worker: %v get zk proof task: %v", request.Id, zkProofRequest.Id())
 	return &response, nil
 }
 
-func (h *Handler) SubmitProof(req common.SubmitProof) (string, error) {
+func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//todo check
-	logger.Info("workerId %v,submit proof type:%v period:%v hash:%v", req.Id, req.Data.ZkProofType.String(), req.Data.Period, req.Data.TxHash)
+	for _, item := range req.Data {
+		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.Id())
+	}
 	err := h.manager.SendProofResponse(req.Data)
 	if err != nil {
-		logger.Error("send proof to manager error: %v", err)
+		logger.Error("worker %v send proof to manager error: %v", req.WorkerId, err)
 		return "", err
 	}
 	return "ok", nil

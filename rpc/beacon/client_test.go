@@ -2,9 +2,9 @@ package beacon
 
 import "testing"
 
-//var endpoint = "http://127.0.0.1:8970"
+var endpoint = "http://127.0.0.1:9870"
 
-var endpoint = "http://37.120.151.183:8970"
+// var endpoint = "http://37.120.151.183:8970"
 var err error
 var client *Client
 
@@ -16,7 +16,7 @@ func init() {
 }
 
 func TestClient(t *testing.T) {
-	latestSyncPeriod, err := client.GetLatestSyncPeriod()
+	latestSyncPeriod, err := client.GetFinalizedSyncPeriod()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,8 +39,16 @@ func TestClient(t *testing.T) {
 	t.Log(updates)
 }
 
+func TestCliet_GetLatestPeriod(t *testing.T) {
+	period, err := client.GetFinalizedSyncPeriod()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(period)
+}
+
 func TestClient_Bootstrap(t *testing.T) {
-	bootstrap, err := client.Bootstrap(153 * 8192)
+	bootstrap, err := client.Bootstrap(182 * 8192)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,11 +64,49 @@ func TestClient_GetLightClientUpdates(t *testing.T) {
 }
 
 func TestClient_RetrieveBeaconHeaders(t *testing.T) {
-	headers, err := client.RetrieveBeaconHeaders(1315329, 1315360)
+	latestSlot, err := client.GetLatestFinalizedSlot()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, header := range headers {
-		t.Log(header)
+	t.Log(latestSlot)
+	latestSlot = latestSlot - 1
+	start := latestSlot - 32
+	end := latestSlot
+	t.Log(start, end)
+	headers, err := client.RetrieveBeaconHeaders(start, end)
+	if err != nil {
+		t.Fatal(err)
 	}
+	t.Log(len(headers))
+	for _, header := range headers {
+		t.Log(header.ParentRoot)
+	}
+}
+
+func TestClient_GetFinalityUpdate(t *testing.T) {
+	slot, err := client.GetLatestFinalizedSlot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(slot)
+	t.Log(slot / 8192)
+	update, err := client.GetFinalityUpdate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(update.Data)
+}
+
+func TestClient_GetBeaconHeaders(t *testing.T) {
+	result, err := client.BeaconHeaderBySlot(9192)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(result)
+	headers, err := client.GetBeaconHeaders(9192)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(headers)
+
 }

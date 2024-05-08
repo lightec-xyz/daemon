@@ -10,7 +10,6 @@ const (
 	TxPrefix            = "t_" // t_ + hash
 	DestChainHashPrefix = "d_" // d_ + hash
 	UnGenProofPrefix    = "u_" // u_ + hash
-
 )
 
 var (
@@ -30,6 +29,12 @@ type DbProof struct {
 	ProofType common.ZkProofType `json:"type"`
 	Status    int                `json:"status"`
 	Proof     string             `json:"Proof"`
+}
+
+type DbUnGenProof struct {
+	TxHash    string
+	ProofType common.ZkProofType
+	ChainType ChainType
 }
 
 type TxType = int

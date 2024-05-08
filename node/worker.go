@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/circuits"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"reflect"
 	"sync"
@@ -42,14 +43,14 @@ func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) 
 	}, nil
 }
 
-func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
-	logger.Debug("local worker transaction in eth2")
+func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
+	logger.Debug("start TxInEth2Prove: %v", req.TxHash)
 	proof, err := w.circuit.TxInEth2Prove(req.TxData)
 	if err != nil {
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
 	}
-	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
+	proofSolBytes, err := circuits.ProofToBytes(proof.Proof)
 	if err != nil {
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
@@ -59,21 +60,76 @@ func (w *LocalWorker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2Pro
 		logger.Error("TxInEth2Prove error: %v", err)
 		return nil, err
 	}
-	return &rpc.TxInEth2ProveResp{
+	logger.Debug("complete TxInEth2Prove: %v", req.TxHash)
+	return &rpc.TxInEth2ProveResponse{
 		Proof:   proofSolBytes,
 		Witness: witnessBytes,
 	}, nil
 
 }
 
-func (w *LocalWorker) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
-	//TODO implement me
-	panic("implement me")
+func (w *LocalWorker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
+	logger.Debug("start BlockHeaderProve %v", req.BeginSlot)
+	var middleHeader []*proverType.BeaconHeader
+	err := common.ParseObj(req.Headers, &middleHeader)
+	if err != nil {
+		logger.Error("deep copy error %v", err)
+		return nil, err
+	}
+	headers := proverType.BeaconHeaderChain{
+		BeginSlot:           req.BeginSlot,
+		EndSlot:             req.EndSlot,
+		BeginRoot:           req.BeginRoot,
+		EndRoot:             req.EndRoot,
+		MiddleBeaconHeaders: middleHeader,
+	}
+	logger.Debug("len: %v", len(headers.MiddleBeaconHeaders))
+	proof, err := w.circuit.BeaconHeaderProve(headers)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	proofToBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("BlockHeaderProve error: %v", err)
+		return nil, err
+	}
+	logger.Debug("complete BlockHeaderProve %v", req.BeginSlot)
+	return &rpc.BlockHeaderResponse{
+		Proof:   proofToBytes,
+		Witness: witnessBytes,
+	}, nil
+
 }
 
-func (w *LocalWorker) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
-	//TODO implement me
-	panic("implement me")
+func (w *LocalWorker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
+	logger.Debug("start BlockHeaderFinalityProve %v", req.Index)
+	proof, err := w.circuit.BeaconHeaderFinalityUpdateProve(req.GenesisSCSSZRoot, req.RecursiveProof, req.RecursiveWitness,
+		req.OuterProof, req.OuterWitness, req.FinalityUpdate, req.ScUpdate)
+	if err != nil {
+		logger.Error("BeaconHeaderFinalityUpdateProve error: %v", err)
+		return nil, err
+	}
+	proofToBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("BeaconHeaderFinalityUpdateProve error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("BeaconHeaderFinalityUpdateProve error: %v", err)
+		return nil, err
+	}
+	logger.Debug("complete BlockHeaderFinalityProve %v", req.Index)
+	return &rpc.BlockHeaderFinalityResponse{
+		Proof:   proofToBytes,
+		Witness: witnessBytes,
+	}, nil
 }
 
 func (w *LocalWorker) Id() string {
@@ -91,8 +147,8 @@ func (w *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 }
 
 func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	logger.Debug("gen deposit proof")
-	proof, err := w.circuit.DepositProve(req.TxHash, req.BlockHash)
+	logger.Debug("start gen deposit prove: %v", req.TxHash)
+	proof, err := w.circuit.DepositProve(req.Data)
 	if err != nil {
 		logger.Error(err.Error())
 		return rpc.DepositResponse{}, fmt.Errorf("gen deposit prove error: %v", err)
@@ -107,6 +163,7 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 		logger.Error(err.Error())
 		return rpc.DepositResponse{}, nil
 	}
+	logger.Debug("complete gen deposit prove: %v", req.TxHash)
 	return rpc.DepositResponse{
 		TxHash:  req.TxHash,
 		Proof:   proofSolBytes,
@@ -114,17 +171,34 @@ func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositRespon
 	}, nil
 }
 
-func (w *LocalWorker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
-	logger.Debug("gen redeem Proof")
-	time.Sleep(10 * time.Second)
-	return rpc.RedeemResponse{
-		Proof: common.ZkProof([]byte("redeem Proof")),
+func (w *LocalWorker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
+	logger.Debug("start gen redeem proof: %v", req.TxHash)
+	proof, err := w.circuit.RedeemProve(req.TxProof, req.TxWitness, req.BhProof, req.BhWitness, req.BhfProof, req.BhfWitness,
+		req.BeginId, req.EndId, req.GenesisScRoot, req.CurrentSCSSZRoot, req.TxVar, req.ReceiptVar)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, fmt.Errorf("gen redeem proof error: %v", err)
+	}
+	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
+	if err != nil {
+		logger.Error("TxInEth2Prove error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("TxInEth2Prove error: %v", err)
+		return nil, err
+	}
+	logger.Debug("complete gen redeem proof: %v", req.TxHash)
+	return &rpc.RedeemResponse{
+		Proof:   proofSolBytes,
+		Witness: witnessBytes,
 	}, nil
 }
 
 func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	logger.Debug("update change proof %v", req.TxHash)
-	proof, err := w.circuit.UpdateChangeProve(req.TxHash, req.BlockHash)
+	logger.Debug("start gen verify proof %v", req.TxHash)
+	proof, err := w.circuit.UpdateChangeProve(req.Data)
 	if err != nil {
 		logger.Error(err.Error())
 		return rpc.VerifyResponse{}, fmt.Errorf("gen verify proof error: %v", err)
@@ -139,6 +213,7 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 		logger.Error(err.Error())
 		return rpc.VerifyResponse{}, nil
 	}
+	logger.Debug("complete gen verify proof %v", req.TxHash)
 	return rpc.VerifyResponse{
 		TxHash: req.TxHash,
 		Proof:  proofSolBytes,
@@ -147,7 +222,7 @@ func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse,
 }
 
 func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
-	logger.Debug("start gen genesis prove %v period", req.Period)
+	logger.Debug("start gen genesis prove %v Index", req.Period)
 	proof, err := w.circuit.GenesisProve(req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
 		req.GenesisID, req.FirstID, req.SecondID)
 	if err != nil {
@@ -165,7 +240,7 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 		logger.Error("witness to bytes error %v", err)
 		return rpc.SyncCommGenesisResponse{}, err
 	}
-
+	logger.Debug("complete  genesis prove %v", req.Period)
 	return rpc.SyncCommGenesisResponse{
 		Version:   req.Version,
 		Period:    req.Period,
@@ -177,41 +252,55 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 
 func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
 	// todo
-	logger.Debug("unit prove request: %v period", req.Period)
-	var update utils.LightClientUpdateInfo
+	logger.Debug("start unit prove : %v Index", req.Period)
+	var update utils.SyncCommitteeUpdate
 	err := ParseObj(req, &update)
 	if err != nil {
 		logger.Error("deep copy error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	proof, err := w.circuit.UnitProve(req.Period, &update)
+	unitProof, outerProof, err := w.circuit.UnitProve(req.Period, &update)
 	if err != nil {
 		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
 	logger.Debug("complete unit prove %v", req.Period)
-	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	proofBytes, err := circuits.ProofToBytes(unitProof.Proof)
 	if err != nil {
 		logger.Error("proof to bytes error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	witnessBytes, err := circuits.WitnessToBytes(unitProof.Wit)
 	if err != nil {
 		logger.Error("witness to bytes error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
+
+	outerProofBytes, err := circuits.ProofToBytes(outerProof.Proof)
+	if err != nil {
+		logger.Error("proof to bytes error %v", err)
+		return rpc.SyncCommUnitsResponse{}, err
+	}
+	outerWitnessBytes, err := circuits.WitnessToBytes(outerProof.Wit)
+	if err != nil {
+		logger.Error("witness to bytes error %v", err)
+		return rpc.SyncCommUnitsResponse{}, err
+	}
+	logger.Debug("complete unit prove %v", req.Period)
 	return rpc.SyncCommUnitsResponse{
-		Version:   req.Version,
-		Period:    req.Period,
-		ProofType: common.SyncComUnitType,
-		Proof:     proofBytes,
-		Witness:   witnessBytes,
+		Version:      req.Version,
+		Period:       req.Period,
+		ProofType:    common.SyncComUnitType,
+		Proof:        proofBytes,
+		Witness:      witnessBytes,
+		OuterProof:   outerProofBytes,
+		OuterWitness: outerWitnessBytes,
 	}, nil
 
 }
 
 func (w *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
-	logger.Debug("recursive prove request %v period", req.Period)
+	logger.Debug("start recursive prove %v", req.Period)
 	proof, err := w.circuit.RecursiveProve(req.Choice, req.FirstProof, req.SecondProof, req.FirstWitness, req.SecondWitness,
 		req.BeginId, req.RelayId, req.EndId)
 	if err != nil {
@@ -229,6 +318,7 @@ func (w *LocalWorker) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest
 		logger.Error("witness to bytes error %v", err)
 		return rpc.SyncCommRecursiveResponse{}, err
 	}
+	logger.Debug("complete recursive prove %v", req.Period)
 	return rpc.SyncCommRecursiveResponse{
 		Version:   req.Version,
 		Period:    req.Period,
@@ -270,18 +360,18 @@ type Worker struct {
 	wid         string
 }
 
-func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveReq) (*rpc.TxInEth2ProveResp, error) {
+func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
 
 	//TODO implement me
 	panic("implement me")
 }
 
-func (w *Worker) TxBlockIsParentOfCheckPointProve(req *rpc.TxBlockIsParentOfCheckPointProveReq) (*rpc.TxBlockIsParentOfCheckPointResp, error) {
+func (w *Worker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (w *Worker) CheckPointFinalityProve(req *rpc.CheckPointFinalityProveReq) (*rpc.CheckPointFinalityProveResp, error) {
+func (w *Worker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -307,7 +397,7 @@ func (w *Worker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, e
 	return w.client.GenDepositProof(req)
 }
 
-func (w *Worker) GenRedeemProof(req rpc.RedeemRequest) (rpc.RedeemResponse, error) {
+func (w *Worker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	return w.GenRedeemProof(req)
 }
 

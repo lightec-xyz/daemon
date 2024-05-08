@@ -2,6 +2,8 @@ package ethereum
 
 import (
 	"context"
+	"encoding/hex"
+	"github.com/lightec-xyz/daemon/circuits"
 	"math/big"
 	"strings"
 	"time"
@@ -13,8 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/lightec-xyz/daemon/common"
-	"github.com/lightec-xyz/daemon/transaction/ethereum/zkbridge"
+	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 )
 
 // todo
@@ -22,6 +23,7 @@ type Client struct {
 	*ethclient.Client
 	zkBridgeCall *zkbridge.Zkbridge
 	zkBtcCall    *zkbridge.Zkbtc
+	verifyCall   *zkbridge.Verify
 	timeout      time.Duration
 }
 
@@ -40,13 +42,36 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 	if err != nil {
 		return nil, err
 	}
-
+	// todo
+	verifyCall, err := zkbridge.NewVerify(ethcommon.HexToAddress("0x2c11C48Df8C44f90971ee3A8Fa6779CfbDA5321E"), client)
+	if err != nil {
+		return nil, err
+	}
 	return &Client{
 		Client:       client,
 		zkBridgeCall: zkBridgeCall,
 		zkBtcCall:    zkBtcCall,
+		verifyCall:   verifyCall,
 		timeout:      15 * time.Second,
 	}, nil
+}
+
+func (c *Client) Verify(proof, wit string) (bool, error) {
+	bytes, err := hex.DecodeString(proof)
+	if err != nil {
+		return false, err
+	}
+	// todo
+	bigInts, err := circuits.HexWitnessToBigInts(wit)
+	if err != nil {
+		return false, err
+	}
+	verify, err := c.verifyCall.Verify(nil, bytes, bigInts)
+	if err != nil {
+		return false, err
+	}
+	return verify, nil
+
 }
 
 func (c *Client) CheckDepositProof(txId string) (bool, error) {
@@ -170,9 +195,7 @@ func (c *Client) GetZkBtcBalance(addr string) (*big.Int, error) {
 	return balance, nil
 }
 
-func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
-	nonce, gasLimit uint64, chainID, gasPrice, amount *big.Int, proof common.ZkProof) (string, error) {
-	address := ethcommon.HexToAddress(receiveAddr)
+func (c *Client) Deposit(secret string, nonce, gasLimit uint64, chainID, gasPrice *big.Int, rawBtcTx, proof []byte) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)
@@ -188,9 +211,7 @@ func (c *Client) Deposit(secret, txId, receiveAddr string, index uint32,
 	//auth.GasPrice = gasPrice todo
 	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
-	fixedTxId := [32]byte{}
-	copy(fixedTxId[:], ethcommon.FromHex(txId))
-	transaction, err := c.zkBridgeCall.Deposit(auth, fixedTxId, index, amount, address, proof[:])
+	transaction, err := c.zkBridgeCall.Deposit(auth, rawBtcTx, proof[:])
 	if err != nil {
 		return "", err
 	}
@@ -232,8 +253,8 @@ func TxIdsToFixedIds(txIds []string) [][32]byte {
 	return fixedTxIds
 }
 
-func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice,
-	amount, btcMinerFee *big.Int, receiveLockScript []byte) (string, error) {
+func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice *big.Int,
+	amount, btcMinerFee uint64, receiveLockScript []byte) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
 	privateKey, err := crypto.HexToECDSA(secret)

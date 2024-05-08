@@ -20,7 +20,7 @@ func TestNodeClient_GetTask(t *testing.T) {
 		Id:        "test_id",
 		ProofType: nil,
 	}
-	task, err := nodeClient.GetTask(request)
+	task, err := nodeClient.GetZkProofTask(request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,8 +29,8 @@ func TestNodeClient_GetTask(t *testing.T) {
 
 func TestNodeClient_SubmitProof(t *testing.T) {
 	result, err := nodeClient.SubmitProof(common.SubmitProof{
-		Data: common.ZkProofResponse{
-			ProofStr: "sdsdfsdf",
+		Data: []*common.ZkProofResponse{
+			{},
 		},
 	})
 	if err != nil {

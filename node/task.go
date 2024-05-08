@@ -33,14 +33,14 @@ func NewTaskManager(keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bit
 
 func (t *TaskManager) AddTask(resp *common.ZkProofResponse) {
 	logger.Info("add retry task: %v", resp.Id())
-	t.queue.Push(resp.Id(), resp)
+	t.queue.Push(resp)
 }
 
 func (t *TaskManager) Check() error {
 	t.queue.Iterator(func(value *common.ZkProofResponse) error {
-		logger.Info("task check", value.Id())
+		logger.Info("task check %v", value.Id())
 		switch value.ZkProofType {
-		case common.TxInEth2:
+		case common.RedeemTxType:
 			_ = t.MintZkBtcRequest(value)
 		case common.VerifyTxType:
 			_ = t.UpdateUtxoChange(value)
@@ -67,6 +67,7 @@ func (t *TaskManager) UpdateUtxoChange(resp *common.ZkProofResponse) error {
 		logger.Error("update utxo error: %v", err)
 		return err
 	}
+	// todo
 	t.queue.Delete(resp.Id())
 	return nil
 }

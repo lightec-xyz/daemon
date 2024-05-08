@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
@@ -28,7 +29,7 @@ func NewClient(rawurl string) (*Client, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        10,
-			IdleConnTimeout:     2 * time.Hour,
+			IdleConnTimeout:     6 * time.Hour,
 			DisableKeepAlives:   false,
 			MaxIdleConnsPerHost: 10,
 		},
@@ -36,7 +37,7 @@ func NewClient(rawurl string) (*Client, error) {
 	return &Client{
 		ctx:        context.Background(),
 		endpoint:   rawurl,
-		timeout:    2 * time.Hour,
+		timeout:    6 * time.Hour,
 		debug:      false,
 		httpClient: client,
 	}, nil
@@ -88,7 +89,7 @@ func (c *Client) GetLatestFinalizedSlot() (uint64, error) {
 
 }
 
-func (c *Client) GetLatestSyncPeriod() (uint64, error) {
+func (c *Client) GetFinalizedSyncPeriod() (uint64, error) {
 	resp := &structs.GetBlockHeaderResponse{}
 	err := c.get("/eth/v1/beacon/headers/finalized", nil, &resp)
 	if err != nil {
@@ -114,46 +115,72 @@ func (c *Client) GetLightClientUpdates(start uint64, count uint64) ([]structs.Li
 	return updates, nil
 }
 
-func (c *Client) beaconHeaders(value interface{}) (*structs.BeaconBlockHeader, error) {
-	result := &structs.BeaconBlockHeader{}
-	path := fmt.Sprintf("/eth/v1/beacon/headers/%v", value)
-	err := c.get(path, nil, result)
+func (c *Client) BeaconHeaderBySlot(slot uint64) (*structs.GetBlockHeaderResponse, error) {
+	result := &structs.GetBlockHeaderResponse{}
+	path := fmt.Sprintf("/eth/v1/beacon/headers/%v", slot)
+	err := c.get(path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (c *Client) BeaconHeaderBySlot(slot uint64) (*structs.BeaconBlockHeader, error) {
-	return c.beaconHeaders(slot)
-}
-
-func (c *Client) BeaconHeaderByRoot(root string) (*structs.BeaconBlockHeader, error) {
-	return c.beaconHeaders(root)
-}
-
-func (c *Client) RetrieveBeaconHeaders(start, end uint64) ([]*structs.BeaconBlockHeader, error) {
-	endHeader, err := c.BeaconHeaderBySlot(end)
+func (c *Client) BeaconHeaderByRoot(root string) (*structs.GetBlockHeaderResponse, error) {
+	result := &structs.GetBlockHeaderResponse{}
+	path := fmt.Sprintf("/eth/v1/beacon/headers/%v", root)
+	err := c.get(path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
-	var headers []*structs.BeaconBlockHeader
-	headers = append(headers, endHeader)
-	for index := end; index >= start; index-- {
-		header, err := c.BeaconHeaderByRoot(endHeader.ParentRoot)
+	return result, nil
+}
+
+func (c *Client) GetFinalityUpdate() (*structs.LightClientUpdateWithVersion, error) {
+	var result structs.LightClientUpdateWithVersion
+	err := c.get("/eth/v1/beacon/light_client/finality_update", nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *Client) RetrieveBeaconHeaders(start, end uint64) ([]*structs.BeaconBlockHeader, error) {
+	// todo
+	headers := make([]*structs.BeaconBlockHeader, 0)
+	response, err := c.BeaconHeaderBySlot(end)
+	if err != nil {
+		return nil, err
+	}
+	header := response.Data.Header.Message
+	headers = append(headers, header)
+	slot, ok := big.NewInt(0).SetString(header.Slot, 10)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse slot")
+	}
+	if slot.Int64() == int64(start) {
+		return headers, nil
+	}
+	found := false
+	for i := end; i > start; {
+		response, err = c.BeaconHeaderByRoot(header.ParentRoot)
 		if err != nil {
 			return nil, err
 		}
-		slot, ok := big.NewInt(0).SetString(header.Slot, 10)
+		header = response.Data.Header.Message
+		slot, ok = big.NewInt(0).SetString(header.Slot, 10)
 		if !ok {
 			return nil, fmt.Errorf("failed to parse slot")
 		}
 		headers = append(headers, header)
-		if slot.Uint64() == start {
-			return slice.Reverse(headers), nil
+		i = slot.Uint64()
+		if i == start {
+			found = true
 		}
 	}
-	return nil, fmt.Errorf("no find %v ~ %v Beacon Header", start, end)
+	if found {
+		return slice.Reverse(headers), nil
+	}
+	return nil, fmt.Errorf("failed to %v headers", start)
 
 }
 
@@ -165,6 +192,7 @@ func (c *Client) get(path string, param Param, value interface{}, headers ...Hea
 	if len(reqStr) != 0 {
 		path = fmt.Sprintf("%s?%s", path, reqStr)
 	}
+	path = strings.TrimSuffix(path, "&")
 	return c.httpReq(http.MethodGet, path, param, value, headers...)
 }
 

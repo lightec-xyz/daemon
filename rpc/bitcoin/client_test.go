@@ -28,13 +28,14 @@ var client *Client
 var err error
 
 func init() {
-	url := "https://go.getblock.io/706ae594be5b4c70a57d0caa761f333a"
+	//url := "https://go.getblock.io/280070f10f53493ba69c8b983a862b45"
+	//url := "https://go.getblock.io/66bfbe1fc97d4ed68510ff0a15c59082"
+	url := "http://18.116.118.39:18332"
 	//url := "https://rpc.testnet.bitcoin.org"
 	//url := "http://127.0.0.1:8332"
 	user := "lightec"
-	pwd := "abcd1234"
-	network := "regtest"
-	client, err = NewClient(url, user, pwd, network)
+	pwd := "Abcd1234"
+	client, err = NewClient(url, user, pwd)
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +58,7 @@ func TestClient_GetBlockCount1(t *testing.T) {
 }
 
 func TestClient_GetBlockHash(t *testing.T) {
-	hash, err := client.GetBlockHash(2585162)
+	hash, err := client.GetBlockHash(2606823)
 	if err != nil {
 		panic(err)
 	}
@@ -65,13 +66,18 @@ func TestClient_GetBlockHash(t *testing.T) {
 }
 
 func TestClient_GetBlockTx(t *testing.T) {
-	hash, err := client.GetBlockHash(2585162)
+	hash, err := client.GetBlockHash(2742930)
 	if err != nil {
 		panic(err)
 	}
 	blockWithTx, err := client.GetBlock(hash)
 	if err != nil {
 		panic(err)
+	}
+	for _, tx := range blockWithTx.Tx {
+		if tx.Txid == "51d0b0721f72ec89de0e45bb63db68175e5d25c21ef1b8740cb1f410177b7578" {
+			t.Log(tx)
+		}
 	}
 	fmt.Println(blockWithTx.Hash)
 }
@@ -186,8 +192,7 @@ func Test_MergeAndSendTx(t *testing.T) {
 }
 
 func Test_GetMultiSigScriptRelatedsFromOasis(t *testing.T) {
-	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
-	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", nil)
 	require.NoError(t, err)
 
 	publicKeys, err := oasisClient.PublicKey()
@@ -232,8 +237,7 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 	proofData, err := hexutil.Decode("0x123456")
 	require.NoError(t, err)
 
-	btcSignerContract := "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
-	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", btcSignerContract)
+	oasisClient, err := oasis.NewClient("https://testnet.sapphire.oasis.io", nil)
 	require.NoError(t, err)
 
 	sigs, err := oasisClient.SignBtcTx(rawTx, rawReceipt, proofData)

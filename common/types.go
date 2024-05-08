@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -17,24 +18,22 @@ type TaskResponse struct {
 }
 
 type SubmitProof struct {
-	Data *ZkProofResponse
-	Id   string
+	Data     []*ZkProofResponse
+	WorkerId string
+	Id       string
 }
-
-// todo
-const ZkProofLength = 928
 
 type ZkProof []byte
 
 type ZkProofRequest struct {
-	Id      string // todo
+	ZkId    string // todo
 	ReqType ZkProofType
 	Data    interface{}
-	Period  uint64
+	Index   uint64
 	TxHash  string
 
 	Status     ProofStatus
-	Weight     int // todo
+	Weight     ProofWeight // todo
 	CreateTime time.Time
 	StartTime  time.Time
 	EndTime    time.Time
@@ -42,18 +41,23 @@ type ZkProofRequest struct {
 
 func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
-		Id:         NewProofId(reqType, period, txHash), // todo
+		ZkId:       NewProofId(reqType, period, txHash), // todo
 		ReqType:    reqType,
 		Data:       data,
-		Period:     period,
+		Index:      period,
 		TxHash:     txHash,
+		Weight:     reqType.Weight(),
 		Status:     ProofDefault,
 		CreateTime: time.Now(),
 	}
 }
 
+func (zk *ZkProofRequest) Id() string {
+	return zk.ZkId
+}
+
 func (r *ZkProofRequest) String() string {
-	return fmt.Sprintf("ZkProofRequest{ReqType:%v,Period:%v,Data:%v}", r.ReqType, r.Period, r.Data)
+	return fmt.Sprintf("ZkProofRequest{ReqType:%v,Index:%v,Data:%v}", r.ReqType, r.Index, r.Data)
 }
 
 type ZkProofResponse struct {
@@ -70,9 +74,39 @@ func (zkp *ZkProofResponse) Id() string {
 }
 
 func (zkResp *ZkProofResponse) String() string {
-	return fmt.Sprintf("ZkProofType:%v Period:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
+	return fmt.Sprintf("ZkProofType:%v Index:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
 }
 
 func NewProofId(reqType ZkProofType, period uint64, txHash string) string {
+	if txHash == "" {
+		return fmt.Sprintf("%v_%v", reqType.String(), period)
+	}
+	if period == 0 {
+		return fmt.Sprintf("%v_%v", reqType.String(), txHash)
+	}
 	return fmt.Sprintf("%v_%v_%v", reqType.String(), period, txHash)
+}
+
+func ParseProofId(id string) (ZkProofType, uint64, string, error) {
+	// todo
+	if len(id) == 0 {
+		return ZkProofType(0), 0, "", fmt.Errorf("proof id is empty")
+	}
+	params := strings.Split(id, "_")
+	if len(params) == 2 {
+
+	} else if len(params) == 3 {
+
+	} else {
+		return ZkProofType(0), 0, "", fmt.Errorf("proof id format error: %v", id)
+	}
+
+	var reqType ZkProofType
+	var period uint64
+	var txHash string
+	_, err := fmt.Sscanf(id, "%v_%v", &reqType, &period)
+	if err != nil {
+		return ZkProofType(0), 0, "", err
+	}
+	return reqType, period, txHash, nil
 }

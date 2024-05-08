@@ -2,11 +2,44 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/store"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
+
+func initStore() store.IStore {
+	dbPath := "/Users/red/lworkspace/lightec/daemon/node/test/dbtest"
+	db, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func TestWriteUnGenProof(t *testing.T) {
+	store := initStore()
+	var unGenProofs []*DbUnGenProof
+	unGenProofs = append(unGenProofs, &DbUnGenProof{
+		TxHash:    "sdsdfsdf",
+		ProofType: common.RedeemTxType,
+		ChainType: Bitcoin,
+	})
+
+	err := WriteUnGenProof(store, Bitcoin, unGenProofs)
+	assert.Nil(t, err)
+	ids, err := ReadAllUnGenProofs(store, Bitcoin)
+	assert.Nil(t, err)
+	t.Log(ids)
+	for _, item := range ids {
+		err := DeleteUnGenProof(store, Bitcoin, item.TxHash)
+		assert.Nil(t, err)
+	}
+	ids, err = ReadAllUnGenProofs(store, Bitcoin)
+	assert.Nil(t, err)
+	t.Log(ids)
+}
 
 func TestDb_Mock(t *testing.T) {
 	dbPath := "testdb"
@@ -27,7 +60,10 @@ func TestDb_Mock(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, true, after)
 	var bitcoinHeight int64
-	bitcoinHeight, err = ReadBitcoinHeight(db)
+	bitcoinHeight, ok, err := ReadBitcoinHeight(db)
+	if !ok {
+		panic("")
+	}
 	assert.Nil(t, err)
 	assert.Equal(t, int64(100), bitcoinHeight)
 	var txes []DbTx

@@ -4,6 +4,17 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark/frontend"
+	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
+	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	"github.com/lightec-xyz/daemon/common"
+	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
+	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
+	"github.com/lightec-xyz/provers/circuits/redeem"
+	proverType "github.com/lightec-xyz/provers/circuits/types"
+	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
+	"math/big"
 	"os"
 	"strconv"
 	"time"
@@ -12,17 +23,16 @@ import (
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/backend/witness"
-	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
-	dCom "github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
-	"github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 )
+
+var _ ICircuit = (*Circuit)(nil)
 
 type Circuit struct {
 	unit      *unit.Unit
@@ -32,13 +42,18 @@ type Circuit struct {
 	debug     bool
 }
 
+func (c *Circuit) Load() error {
+	// todo
+	return nil
+}
+
 func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	unitConfig := unit.NewUnitConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	genesisConfig := genesis.NewGenesisConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	recursiveConfig := recursive.NewRecursiveConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	var zkDebug bool
 	var err error
-	zkDebugEnv := os.Getenv(dCom.ZkDebugEnv)
+	zkDebugEnv := os.Getenv(common.ZkDebugEnv)
 	if zkDebugEnv != "" {
 		zkDebug, err = strconv.ParseBool(zkDebugEnv)
 		if err != nil {
@@ -54,33 +69,160 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	}, nil
 }
 
-func (c *Circuit) Load() error {
-	// todo
-	return nil
-	//if c.debug {
-	//	logger.Warn("current zk circuit is debug mode,skip load")
-	//	return nil
-	//}
-	//// todo
-	//err := c.genesis.Load()
-	//if err != nil {
-	//	logger.Error("genesis load error:%v", err)
-	//	return err
-	//}
-	//err = c.unit.Load()
-	//if err != nil {
-	//	logger.Error("unit load error:%v", err)
-	//	return err
-	//}
-	//err = c.recursive.Load()
-	//if err != nil {
-	//	logger.Error("recursive load error:%v", err)
-	//	return err
-	//}
-	//return nil
+func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot,
+	currentSCSSZRoot string, txVar, receiptVar []string) (*reLightCommon.Proof, error) {
+	//todo
+	logger.Debug("current zk circuit RedeemProve")
+	if c.debug {
+		logger.Warn("current zk circuit RedeemProve prove is debug,skip prove")
+		return debugProof()
+	}
+
+	txInEth2Proof, err := HexToProof(txProof)
+	if err != nil {
+		logger.Error("parse proof error:%v", err)
+		return nil, err
+	}
+	txInEth2Witness, err := HexToWitness(txWitness)
+	if err != nil {
+		logger.Error("parse witness error:%v", err)
+		return nil, err
+	}
+
+	blockHeaderProof, err := HexToProof(bhProof)
+	if err != nil {
+		logger.Error("parse proof error:%v", err)
+		return nil, err
+	}
+	blockHeaderWitness, err := HexToWitness(bhWitness)
+	if err != nil {
+		logger.Error("parse witness error:%v", err)
+		return nil, err
+	}
+	blockHeaderFinalityProof, err := HexToProof(bhfProof)
+	if err != nil {
+		logger.Error("parse proof error:%v", err)
+		return nil, err
+	}
+
+	blockHeaderFinalityWitness, err := HexToWitness(bhfWitness)
+	if err != nil {
+		logger.Error("parse witness error:%v", err)
+		return nil, err
+	}
+	genesisSCSSZRoot, err := GetGenesisSCSSZRoot(genesisScRoot)
+	if err != nil {
+		logger.Error("get genesis scssz root error:%v", err)
+		return nil, err
+	}
+	beginIdBytes, err := HexToBytes(beginId)
+	if err != nil {
+		logger.Error("decode begin id error:%v", err)
+		return nil, err
+	}
+	endIdBytes, err := HexToBytes(endId)
+	if err != nil {
+		logger.Error("decode begin id error:%v", err)
+		return nil, err
+	}
+	curScRootBytes, err := HexToBytes(currentSCSSZRoot)
+	if err != nil {
+		logger.Error("decode current scssz root error:%v", err)
+		return nil, err
+	}
+	txValue, err := common.HexToTxVar(txVar)
+	if err != nil {
+		logger.Error("decode tx value error:%v", err)
+		return nil, err
+	}
+	hexToReceiptVar, err := common.HexToReceiptVar(receiptVar)
+	if err != nil {
+		logger.Error("decode receipt value error:%v", err)
+		return nil, err
+	}
+	proof, err := redeem.Prove(c.Cfg.DataDir, txInEth2Proof, txInEth2Witness, blockHeaderProof, blockHeaderWitness,
+		blockHeaderFinalityProof, blockHeaderFinalityWitness, beginIdBytes, endIdBytes, genesisSCSSZRoot, curScRootBytes, *txValue,
+		*hexToReceiptVar)
+	if err != nil {
+		logger.Error("redeem prove error:%v", err)
+		return nil, err
+	}
+	return &reLightCommon.Proof{ // todo
+		Proof: proof.Proof,
+		Wit:   proof.Wit,
+	}, nil
 }
 
-func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error) {
+func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recursiveProof, recursiveWitness, outerProof,
+	outerWitness string, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
+	// todo
+	ok, err := common.VerifyLightClientUpdate(scUpdate)
+	if err != nil {
+		logger.Error("verify light client update error:%v", err)
+		return nil, err
+	}
+	if !ok {
+		logger.Error("verify light client update error")
+		return nil, fmt.Errorf("verify light client update error")
+	}
+	logger.Debug("current zk circuit BeaconHeaderFinalityUpdateProve")
+	if c.debug {
+		logger.Warn("current zk circuit BeaconHeaderFinalityUpdateProve prove is debug,skip prove")
+		return debugProof()
+	}
+	scRecursiveProof, err := HexToProof(recursiveProof)
+	if err != nil {
+		logger.Error("parse proof error:%v", err)
+		return nil, err
+	}
+	scRecursiveWitness, err := HexToWitness(recursiveWitness)
+	if err != nil {
+		logger.Error("parse witness error:%v", err)
+		return nil, err
+	}
+	scOuterProof, err := HexToProof(outerProof)
+	if err != nil {
+		logger.Error("parse proof error:%v", err)
+		return nil, err
+	}
+	scOuterWitness, err := HexToWitness(outerWitness)
+	if err != nil {
+		logger.Error("parse witness error:%v", err)
+		return nil, err
+	}
+
+	proof, err := beacon_header_finality.Prove(c.Cfg.DataDir, genesisSCSSZRoot, scRecursiveProof,
+		scRecursiveWitness, scOuterProof, scOuterWitness, finalityUpdate, scUpdate)
+	if err != nil {
+		logger.Error("beacon header finality update prove error:%v", err)
+		return nil, err
+	}
+	return &reLightCommon.Proof{ // todo
+		Proof: proof.Proof,
+		Wit:   proof.Wit,
+	}, nil
+}
+
+func (c *Circuit) BeaconHeaderProve(header proverType.BeaconHeaderChain) (*reLightCommon.Proof, error) {
+	//todo
+	logger.Debug("current zk circuit BeaconHeaderProve")
+	if c.debug {
+		logger.Warn("current zk circuit BeaconHeaderProve prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := beacon_header.Prove(c.Cfg.DataDir, header)
+	if err != nil {
+		logger.Error("beacon header prove error:%v %v %v", header.BeginSlot, header.EndSlot, err)
+		return nil, err
+	}
+	return &reLightCommon.Proof{ // todo
+		Proof: proof.Proof,
+		Wit:   proof.Wit,
+	}, nil
+}
+
+func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit TxInEth2Prove")
 	if c.debug {
 		logger.Warn("current zk circuit TxInEth2Prove prove is debug,skip prove")
 		return debugProof()
@@ -90,50 +232,68 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proo
 		logger.Error(err.Error())
 		return nil, err
 	}
-	return &common.Proof{ // todo
+	return &reLightCommon.Proof{ // todo
 		Proof: proof.Proof,
 		Wit:   proof.Wit,
 	}, err
 }
-
-func (c *Circuit) DepositProve(txId, blockHash string) (*common.Proof, error) {
+func (c *Circuit) DepositProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit DepositProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
-}
-
-func (c *Circuit) UnitProve(period uint64, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
-	if c.debug {
-		logger.Warn("current zk circuit unit prove is debug mode,skip prove")
-		return debugProof()
-	}
-	// todo
-	logger.Warn("really do unit prove now: %v", period)
-	//proof, err := unitProve(c.Cfg.DataDir, c.Cfg.SrsDir, fmt.Sprintf("sc%d", period), update)
-	//proof, err := c.unit.Prove(update)
-	subDir := fmt.Sprintf("sc%d", period)
-	err := innerProve(c.Cfg.DataDir, subDir, update)
+	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
 	if err != nil {
-		logger.Error("inner prove error:%v", err)
-		return nil, err
-	}
-	err = outerProve(c.Cfg.DataDir, subDir, update)
-	if err != nil {
-		logger.Error("outer prove error:%v", err)
-		return nil, err
-	}
-	proof, err := innerUnitProv(c.Cfg.DataDir, subDir, update)
-	if err != nil {
-		logger.Error("unit prove error:%v", err)
+		logger.Error("deposit prove error:%v", err)
 		return nil, err
 	}
 	return proof, nil
+
+}
+func (c *Circuit) UnitProve(period uint64, update *utils.SyncCommitteeUpdate) (*reLightCommon.Proof, *reLightCommon.Proof, error) {
+	// todo
+	logger.Debug("current zk circuit unit prove")
+	ok, err := common.VerifyLightClientUpdate(update)
+	if err != nil {
+		logger.Error("verify light client update error:%v", err)
+		return nil, nil, err
+	}
+	if !ok {
+		logger.Error("verify light client update error")
+		return nil, nil, fmt.Errorf("verify light client update error")
+	}
+	if c.debug {
+		logger.Warn("current zk circuit unit prove is debug mode,skip prove")
+		proof, err := debugProof()
+		if err != nil {
+			logger.Error("debug proof error:%v", err)
+			return nil, nil, err
+		}
+		return proof, proof, err
+	}
+	logger.Warn("really do unit prove now: %v", period)
+	subDir := fmt.Sprintf("sc%d", period)
+	err = innerProve(c.Cfg.DataDir, subDir, update)
+	if err != nil {
+		logger.Error("inner prove error:%v", err)
+		return nil, nil, err
+	}
+	outerProof, err := outerProve(c.Cfg.DataDir, subDir, update)
+	if err != nil {
+		logger.Error("outer prove error:%v", err)
+		return nil, nil, err
+	}
+	unitProof, err := unitProv(c.Cfg.DataDir, subDir, update)
+	if err != nil {
+		logger.Error("unit prove error:%v", err)
+		return nil, nil, err
+	}
+	return unitProof, outerProof, nil
 }
 
-func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness []byte,
-	beginId, relayId, endId []byte) (*common.Proof, error) {
+func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness string,
+	beginId, relayId, endId []byte) (*reLightCommon.Proof, error) {
 	logger.Debug("recursive prove request data choice:%v", choice)
 	if c.debug {
 		logger.Warn("current zk circuit recursive prove is debug mode,skip prove")
@@ -142,22 +302,22 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 	if !(choice == "genesis" || choice == "recursive") {
 		return nil, fmt.Errorf("invalid choice: %s", choice)
 	}
-	firstPr, err := ParseProof(firstProof)
+	firstPr, err := HexToProof(firstProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	secondPr, err := ParseProof(secondProof)
+	secondPr, err := HexToProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	firstWit, err := ParseWitness(firstWitness)
+	firstWit, err := HexToWitness(firstWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	secondWit, err := ParseWitness(secondWitness)
+	secondWit, err := HexToWitness(secondWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -177,30 +337,29 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 	return proof, err
 }
 
-func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness []byte,
-	genesisId, firstId, secondId []byte) (*common.Proof, error) {
-	//logger.Debug("genesis prove request data firstProof:%x secondProof:%x firstWitness:%x secondWitness:%x,genesisId:%x firstId:%x secondId:%x",
-	//	firstProof, secondProof, firstWitness, secondWitness, genesisId, firstId, secondId)
+func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitness string,
+	genesisId, firstId, secondId []byte) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit syncCommittee genesis prove")
 	if c.debug {
 		logger.Warn("current zk circuit genesis prove is debug mode,skip prove")
 		return debugProof()
 	}
-	firstPf, err := ParseProof(firstProof)
+	firstPf, err := HexToProof(firstProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	secondPf, err := ParseProof(secondProof)
+	secondPf, err := HexToProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	firstWit, err := ParseWitness(firstWitness)
+	firstWit, err := HexToWitness(firstWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	secondWit, err := ParseWitness(secondWitness)
+	secondWit, err := HexToWitness(secondWitness)
 	if err != nil {
 		logger.Error("parse witness error:%v", err)
 		return nil, err
@@ -219,43 +378,33 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	}
 	return proof, err
 }
-func (c *Circuit) TxBlockIsParentOfCheckPointProve() (*common.Proof, error) {
 
-	return nil, nil
-}
-
-func (c *Circuit) FinalityUpdateProve() (*common.Proof, error) {
-
-	return nil, nil
-}
-
-func (c *Circuit) RedeemProve() (*common.Proof, error) {
-	panic(c)
-	return nil, nil
-}
-func (c *Circuit) UpdateChangeProve(txId, blockHash string) (*common.Proof, error) {
+func (c *Circuit) UpdateChangeProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit UpdateChangeProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	return grandrollup.ProveWithDefaults(c.Cfg.DataDir, txId, blockHash)
+	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
+	if err != nil {
+		logger.Error("update change prove error:%v", err)
+		return nil, err
+	}
+	return proof, nil
 }
 
-func SyncCommitRoot(update *utils.LightClientUpdateInfo) ([]byte, error) {
-	return utils.SyncCommitRoot(update)
-}
-
-func ParseProof(proof []byte) (native_plonk.Proof, error) {
-	reader := bytes.NewReader(proof)
-	var bn254Proof plonk_bn254.Proof
-	_, err := bn254Proof.ReadFrom(reader)
+func SyncCommitRoot(update *utils.SyncCommitteeUpdate) ([]byte, error) {
+	ok, err := common.VerifyLightClientUpdate(update)
 	if err != nil {
 		return nil, err
 	}
-	return &bn254Proof, nil
+	if !ok {
+		return nil, fmt.Errorf("verify light client update error")
+	}
+	return utils.SyncCommitRoot(update)
 }
 
-func innerUnitProv(dataDir string, subDir string, update *utils.LightClientUpdateInfo) (*common.Proof, error) {
+func unitProv(dataDir string, subDir string, update *utils.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
 	unitCfg := unit.NewUnitConfig(dataDir, "", subDir)
 	unit := unit.NewUnit(unitCfg)
 	err := unit.Load()
@@ -266,31 +415,28 @@ func innerUnitProv(dataDir string, subDir string, update *utils.LightClientUpdat
 	if err != nil {
 		return nil, err
 	}
+	return proofs, nil
+}
+
+func outerProve(dataDir string, subDir string, update *utils.SyncCommitteeUpdate) (*reLightCommon.Proof, error) {
+	outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
+	outer := unit.NewOuter(&outerCfg)
+	err := outer.Load()
+	if err != nil {
+		return nil, err
+	}
+	proofs, err := outer.Prove(update)
+	if err != nil {
+		return nil, err
+	}
+	err = outer.Save(proofs)
 	if err != nil {
 		return nil, err
 	}
 	return proofs, nil
 }
 
-func outerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
-	outerCfg := unit.NewOuterConfig(dataDir, "", subDir)
-	outer := unit.NewOuter(&outerCfg)
-	err := outer.Load()
-	if err != nil {
-		return err
-	}
-	proofs, err := outer.Prove(update)
-	if err != nil {
-		return err
-	}
-	err = outer.Save(proofs)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func innerProve(dataDir string, subDir string, update *utils.LightClientUpdateInfo) error {
+func innerProve(dataDir string, subDir string, update *utils.SyncCommitteeUpdate) error {
 	innerCfg := unit.NewInnerConfig(dataDir, "", subDir)
 	inner := unit.NewInner(&innerCfg)
 	err := inner.Load()
@@ -306,7 +452,7 @@ func innerProve(dataDir string, subDir string, update *utils.LightClientUpdateIn
 		if err != nil {
 			return err
 		}
-		err = inner.Save(index, proof)
+		err = inner.Save(proof, index)
 		if err != nil {
 			return err
 		}
@@ -335,7 +481,7 @@ type CircuitConfig struct {
 	Debug   bool
 }
 
-func debugProof() (*common.Proof, error) {
+func debugProof() (*reLightCommon.Proof, error) {
 	// todo only just local debug
 	time.Sleep(15 * time.Second)
 	field := ecc.BN254.ScalarField()
@@ -343,27 +489,38 @@ func debugProof() (*common.Proof, error) {
 	if err != nil {
 		return nil, err
 	}
-	//proofBytes, err := hex.DecodeString("201c5d2f7f746c025582d4bf687c821d46ef2cf7d79b18a648731132aad3b1402b171c26a4b247cb749babdd443cf916774a4b74e85e3ea9ba19f4ee43638dd7032c6ea702809b843263e19d4b97cfdf2471a74a127b56ad581473c6df3d0f472d2eea103495c5e856bf5aee8b3270bd9adab84209338b6f09f51cf39a365c351ada496af014c9abf7276d854ea0d6ea6a36e090d0a45b9069f81fcb6f9fbd73032bb31aa39995a864d98c440a77b8950847066150f0e94f066054bae18704811680a1a766672149d412d5b60c57b31433f897942bf7216aa3aaf1642e4992e60c007447583c5ce87e207476241fcca408417aeff488f7165f60bce73ce7e12a171f8927ca72e68714e0a80c89f833fdbdf895cbe94e6e6892cd474d1964970d2313ad60cffff9450d1f9724fc0bb68d81f031a09209406232d5f4d7dfb4c15e262822a536f433d56b461c812916ecf692a979a0246fc8de7de0d3092c7e7a8e283342712db0f2db4ad60551e8e110799ea7bafd37990658473c9e447f93cd8809bb45473b7d249831878bd88381c76e3695ab957ff876f5fb75c3091ae7a2c82877b98e4aaca1ae32064360f9ad05d0f1595d5613a416ec544192309b8ed61b21ef0de29b4706bb0f0e91a82945168ebbe619b6987e92790a9920444de540e0264525ca3ac9f4de4a8409226e52bb18ce38d837c700f7aee5a907b45a0b5fcb06c9f5d06cb0a8558e239b09f28c90de463dc2c9d12cb985d938cca3e4cd459825bbe0d37f3de8e6a212a181cb3f5b25320afbe17a1aab305bd55e0fdaaf4a851d0cc3ae31c567fb9b466e9049b9db84936191b9cfa7f709e269c40982cfb5ca001915a0707f2a0484a92cc9befdf16e5213972d39e1cb7b2cf421159f2836c21941febd827e29c1b669181c00a9cee546cb1ee5eb391d6841f4dff4d5acc455058d495e2a39d5fc9a1a1902c7b539c791f7c72301391bac7a127a5dadbb289c16851ed31eb91037cb6f61b8d9628af08983cf94273b7425a0a96995103c95ee267b2a4d36a83faafde99eaa295de72cf58defd0e9482d4979dec70aa10e4fe506a0ab76dbb2ae094f758e74aa34d7c433fcc70bc88c3f12a878881ff6c0fee81f759700345b16aea15f43ee6ab7b3803c4d149b667ae8570d21783e1cc294dc06b40f01e8d5a42ecd7f6d50bf0b3209054a2acf7d27791754445a87a1baace024f3b5db24c273a368285f93531bba3693df99680cb56079117d301988dc2731087738b148b8626517c5768a6ad37eeb6a29c3f83145b14572cf46e29aae0660")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//buffer := bytes.NewBuffer(proofBytes)
+	witnessByts, err := hex.DecodeString("000000180000000000000018000000000000000000000000000000000000000000000000bc4d9a773a304f7c000000000000000000000000000000000000000000000000c879892de7b1130b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004d13e6221265d5470000000000000000000000000000000000000000000000000a9a955cdf54319900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bd806aa2440faf3a00000000000000000000000000000000000000000000000056bb0ec865d27e9800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fba8545ab164e9ef0000000000000000000000000000000000000000000000000653e66962364b88000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007e1da36c41365c0d000000000000000000000000000000000000000000000000942a5884da9b98da00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000061ae6bd87e134e80000000000000000000000000000000000000000000000002085a29e1cf057bb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	if err != nil {
+		return nil, err
+	}
+	_, err = w.ReadFrom(bytes.NewReader(witnessByts))
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := hex.DecodeString("d05f24ef1d3e8b59ba060b4141b1048b0199ed002c0a313c03b87f8e51e24aabd01a1fb0eaee9473970eeecaf7c3c850b57afe3386641bcc6cc18581b003abeacf557f98fc31079075dccf75f355221a018edd7bf5054fdbd280f3c61f537be6e3cba22a1f3ba940149f4f251195cea82b6559344ae7d6d40e600655cf591561cc8422fbc1ba2929de9488315e5d23d717e8c9048d534d3569a358f57eddfcb5dfa8e221f4104d063048df28114ac4ab5a7883245b55901367b972b4ead270c0a6550b7c6c44fd672a5b88ed8d153cf50eb6247d2bf48794ecb3803a2017e967d3553de5efb7ca588f31ed43ce43f198619d6eecc1203970caab1f46123b8b520000000805994c4caf545b0998b1cd70a2778274a35f5b8a2d1c64344b7b119b62f990232164704f0f9cd6e2ea6de50ca2694790cbd6c5db0a14ac6d4462f0563f5d42e120e2fa2be493efd68b25a793957779ab2af40f2b0422e18ba72bdd57196c81b026b9f7955a08ee21bea6045e64eeca6cf7e7504b290960e5ecd58b1919ced66625c08a8c391b0763abbcd3f5ef0509d445ec02f3b11db660796ae1d02f47f0b91bdf22f73b1b9fb3e7a8264523bc016164aea7770b7f47223a4c449833f9324b217ce713ec851098916ce7b9349ee7bfc63095e19644ce496e8cdd542d0703aa0723b8b49eae51db612335d883c26d2013663ef4c3fb8ed734afeef30bd38e19a5415f3c287648a2160c32b1176ffd043d27fa50614843649306d814b9f198a70cfa4c03f0f487ad2a8cd3f0d3be71cccc00d237eba86e4f9d5ed91cfc0da7f500000001840fdac67c39e3ccf5363c17dca27f6118bdc2dd629e07885be3778401fe566c")
+	if err != nil {
+		return nil, err
+	}
 	proof := &plonk_bn254.Proof{}
-	//_, err = proof.WriteTo(buffer)
-	//if err != nil {
-	//	return nil, err
-	//}
-	return &common.Proof{
+	_, err = proof.ReadFrom(bytes.NewReader(proofBytes))
+	if err != nil {
+		return nil, err
+	}
+	return &reLightCommon.Proof{
 		Proof: proof,
 		Wit:   w,
 	}, nil
 }
 
-func ProofToHexSol(proof native_plonk.Proof) (string, error) {
-	_proof := proof.(*plonk_bn254.Proof)
-	proofStr := hex.EncodeToString(_proof.MarshalSolidity())
-	return proofStr, nil
-
+func GetGenesisSCSSZRoot(root string) ([2]frontend.Variable, error) {
+	hexBytes, err := HexToBytes(root)
+	if err != nil {
+		return [2]frontend.Variable{}, err
+	}
+	var genesisSCSSZRoot [2]frontend.Variable
+	genesisSCSSZRoot[0] = hexBytes[:16]
+	genesisSCSSZRoot[1] = hexBytes[16:]
+	return genesisSCSSZRoot, nil
 }
 
 func ProofToSolBytes(proof native_plonk.Proof) ([]byte, error) {
@@ -394,4 +551,61 @@ func WitnessToBytes(witness witness.Witness) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func HexToWitness(witness string) (witness.Witness, error) {
+	witnessBytes, err := HexToBytes(witness)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWitness(witnessBytes)
+}
+
+func ParseProof(proof []byte) (native_plonk.Proof, error) {
+	reader := bytes.NewReader(proof)
+	var bn254Proof plonk_bn254.Proof
+	_, err := bn254Proof.ReadFrom(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &bn254Proof, nil
+}
+
+func HexToProof(proof string) (native_plonk.Proof, error) {
+	proofBytes, err := HexToBytes(proof)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProof(proofBytes)
+}
+
+func HexToBytes(data string) ([]byte, error) {
+	if data[0:2] == "0x" {
+		data = data[2:]
+	}
+	bytes, err := hex.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
+
+func HexWitnessToBigInts(witness string) ([]*big.Int, error) {
+	wit, err := HexToWitness(witness)
+	if err != nil {
+		return nil, err
+	}
+	list, ok := wit.Vector().(fr.Vector)
+	if !ok {
+		return nil, fmt.Errorf("parse fr vector error")
+	}
+	var bigList []*big.Int
+	for _, item := range list {
+		value, ok := big.NewInt(0).SetString(item.String(), 10)
+		if !ok {
+			return nil, fmt.Errorf("parse big int error")
+		}
+		bigList = append(bigList, value)
+	}
+	return bigList, nil
 }

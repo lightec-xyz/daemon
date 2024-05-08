@@ -3,38 +3,45 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/lightec-xyz/daemon/logger"
-	beaconconfig "github.com/prysmaticlabs/prysm/v5/config/params"
-	"os/user"
+	"os"
 	"time"
 )
 
 type RunConfig struct {
-	RootConfig
-	BtcUrl            string `json:"btcUrl"`
-	BtcUser           string `json:"btcUser"`
-	BtcPwd            string `json:"btcPwd"`
-	EthUrl            string `json:"ethUrl"`
-	EthPrivateKey     string `json:"ethPrivateKey"`
-	AutoSubmit        bool   `json:"autoSubmit"`
-	EnableLocalWorker bool   `json:"enableLocalWorker"`
-	BeaconUrl         string `json:"beaconUrl"`
-	BtcInitHeight     int64  `json:"btcInitHeight"`
-	EthInitHeight     int64  `json:"ethInitHeight"`
+	Datadir               string `json:"datadir"`
+	Rpcbind               string `json:"rpcbind"`
+	Rpcport               string `json:"rpcport"`
+	Network               string `json:"network"`
+	BtcUser               string `json:"btcUser"`
+	BtcPwd                string `json:"btcPwd"`
+	BtcUrl                string `json:"btcUrl"`
+	EthUrl                string `json:"ethUrl"`
+	BeaconUrl             string `json:"beaconUrl"`
+	EthPrivateKey         string `json:"ethPrivateKey"`
+	EnableLocalWorker     bool   `json:"enableLocalWorker"`
+	DisableRecursiveAgent bool   `json:"disableRecursiveAgent"`
+	DisableTxAgent        bool   `json:"disableTxAgent"`
+	BtcInitHeight         int64  `json:"btcInitHeight"`
+	EthInitHeight         int64  `json:"ethInitHeight"`
+	BeaconInitSlot        uint64 `json:"beaconInitSlot"`
 }
 
 func (rc *RunConfig) Check() error {
 	if rc.Datadir == "" {
-		return fmt.Errorf("datadir is empty")
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		rc.Datadir = fmt.Sprintf("%s/.lightec", homeDir)
 	}
 	if rc.Rpcbind == "" {
-		return fmt.Errorf("rpcbind is empty")
+		rc.Rpcbind = "127.0.0.1"
 	}
 	if rc.Rpcport == "" {
-		return fmt.Errorf("rpcport is empty")
+		rc.Rpcport = "9870"
 	}
 	if rc.Network == "" {
-		return fmt.Errorf("network is empty")
+		rc.Network = "testnet" // todo
 	}
 	if rc.BtcUrl == "" {
 		return fmt.Errorf("btcUrl is empty")
@@ -45,384 +52,98 @@ func (rc *RunConfig) Check() error {
 	if rc.BeaconUrl == "" {
 		return fmt.Errorf("beaconUrl is empty")
 	}
-	if rc.BtcInitHeight == 0 {
-		return fmt.Errorf("btcInitHeight is empty")
-	}
-	if rc.EthInitHeight == 0 {
-		return fmt.Errorf("ethInitHeight is empty")
-	}
-	if rc.AutoSubmit && rc.EthPrivateKey == "" {
+	if rc.EthPrivateKey == "" {
 		return fmt.Errorf("ethPrivateKey is empty")
 	}
 	return nil
 }
 
-type RootConfig struct {
-	Datadir string `json:"datadir"`
-	Rpcbind string `json:"rpcbind"`
-	Rpcport string `json:"rpcport"`
-	Network string `json:"network"`
-}
-
-type NodeConfig struct {
-	DataDir           string `json:"datadir"`
-	Network           string `json:"network"`
-	Rpcbind           string `json:"rpcbind"`
-	RpcPort           string `json:"rpcport"`
-	EnableLocalWorker bool   `json:"enableLocalWorker"`
-	EnableGenScProof  bool   `json:"enableGenScProof"`
-
-	BtcUrl            string           `json:"btcUrl"`
-	BtcUser           string           `json:"btcUser"`
-	BtcPwd            string           `json:"btcPwd"`
-	BtcNetwork        string           `json:"btcNetwork"`
-	BtcScanBlockTime  time.Duration    `json:"btcBlockTime"`
+type Config struct {
+	RunConfig
 	BtcOperatorAddr   string           `json:"btcOperatorAddr"`
-	BtcPrivateKeys    []string         `json:"btcPrivateKeys"`
-	BtcWhiteList      []string         `json:"btcWhiteList"`
-	BtcInitHeight     int64            `json:"btcInitHeight"`
 	MultiAddressInfo  MultiAddressInfo `json:"multiAddressInfo"`
 	GenesisSyncPeriod uint64           `json:"genesisPeriod"`
-	AutoSubmit        bool             `json:"autoSubmit"`
-
-	//Beacon config
-	BeaconSlotHeight uint64                          `json:"beaconSlotHeight"`
-	BeaconUrl        string                          `json:"beaconUrl"`
-	BeaconConfig     *beaconconfig.BeaconChainConfig `json:"beaconConfig"`
-
-	//Eth1 config
-	EthInitHeight    int64          `json:"ethInitHeight"`
-	EthWhiteList     []string       `json:"ethWhiteList"`
-	EthUrl           string         `json:"ethUrl"` //eth1 url
-	ZkBridgeAddr     string         `json:"zkBridgeAddr"`
-	ZkBtcAddr        string         `json:"zkBtcAddr"`
-	EthScanBlockTime time.Duration  `json:"ethBlockTime"`
-	EthPrivateKey    string         `json:"ethPrivateKey"`
-	LogAddr          []string       `json:"logAddr"`
-	LogTopic         []string       `json:"logTopic"`
-	Workers          []WorkerConfig `json:"workers"`
-	EthAddrFilter    EthAddrFilter
+	ZkBridgeAddr      string           `json:"zkBridgeAddr"`
+	ZkBtcAddr         string           `json:"zkBtcAddr"`
+	EthAddrFilter     EthAddrFilter    `json:"ethAddrFilter"`
+	EthScanTime       time.Duration    `json:"ethScanTime"`
+	BtcScanTime       time.Duration    `json:"btcScanTime"`
 }
 
-type EthAddrFilter struct {
-	LogDepositAddr      string
-	LogRedeemAddr       string
-	LogTopicDepositAddr string
-	LogTopicRedeemAddr  string
-}
-
-func (f *EthAddrFilter) FilterLogs() (logFilters []string, topicFilters []string) {
-	logFilters = []string{f.LogDepositAddr, f.LogRedeemAddr}
-	topicFilters = []string{f.LogTopicDepositAddr, f.LogTopicRedeemAddr}
-	return logFilters, topicFilters
-}
-
-func NewConfig(cfg RunConfig) (NodeConfig, error) {
+func NewConfig(cfg RunConfig) (Config, error) {
 	err := cfg.Check()
 	if err != nil {
-		return NodeConfig{}, err
+		return Config{}, err
 	}
-	network := cfg.Network
-	switch network {
-	case LightecMainnet:
-		return newMainnetConfig(cfg.EnableLocalWorker, cfg.AutoSubmit, cfg.Datadir, network, cfg.Rpcbind, cfg.Rpcport, cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BeaconUrl,
-			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.MainnetConfig(), cfg.BtcInitHeight, cfg.EthInitHeight)
+	switch cfg.Network {
 	case LightecTestnet:
-		return newTestConfig(cfg.EnableLocalWorker, cfg.AutoSubmit, cfg.Datadir, network, cfg.Rpcbind, cfg.Rpcport, cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BeaconUrl,
-			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.HoleskyConfig(), cfg.BtcInitHeight, cfg.EthInitHeight)
+		return getTestnetConfig(cfg)
 	case Lighteclocal:
-		return newLocalConfig(cfg.EnableLocalWorker, cfg.AutoSubmit, cfg.Datadir, network, cfg.Rpcbind, cfg.Rpcport, cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BeaconUrl,
-			cfg.EthUrl, cfg.EthPrivateKey, beaconconfig.HoleskyConfig(), cfg.BtcInitHeight, cfg.EthInitHeight)
+		return getLocalConfig(cfg)
 	default:
-		return NodeConfig{}, fmt.Errorf("unsupport network now: %v", network)
+		return Config{}, fmt.Errorf("unsupport network now: %v", cfg.Network)
 	}
 }
 
-func NewNodeConfig(enableLocalWorker, autoSubmit bool, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string) (NodeConfig, error) {
-	var config NodeConfig
-	if network == "" {
-		network = LightecMainnet
-	}
-	logger.Info("current network: %v", network)
-	if dataDir == "" {
-		current, err := user.Current()
-		if err != nil {
-			logger.Error("get current user error: %v", err)
-			return config, err
-		}
-		dataDir = fmt.Sprintf("%v/.daemon", current.HomeDir)
-		logger.Info("datadir: %v", dataDir)
-	}
-	if rpcbind == "" {
-		rpcbind = "127.0.0.1"
-	}
-	if rpcport == "" {
-		rpcport = "9780"
-	}
-	if btcUrl == "" {
-		return config, fmt.Errorf("btcUrl is empty")
-	}
-	if beaconUrl == "" {
-		return config, fmt.Errorf("beaconUrl is empty")
-	}
-	if ethUrl == "" {
-		return config, fmt.Errorf("ethUrl is empty")
-	}
-
-	if autoSubmit {
-		if ethPrivateKey == "" {
-			return config, fmt.Errorf("ethPrivateKey is empty")
-		}
-	}
-	panic(config)
-	return config, nil
-	//switch network {
-	//case LightecMainnet:
-	//	return newMainnetConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey, beaconconfig.MainnetConfig())
-	//case LightecTestnet:
-	//	return newTestConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey, beaconconfig.HoleskyConfig())
-	//case Lighteclocal:
-	//	return newLocalConfig(enableLocalWorker, autoSubmit, dataDir, network, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey, beaconconfig.HoleskyConfig())
-	//default:
-	//	return config, fmt.Errorf("unsupport network now: %v", network)
-	//}
-
-}
-
-func NewLightLocalDaemonConfig(enableLocalWorker bool, dataDir, network, rpcbind, rpcport, beaconUrl string, initSlot uint64) (NodeConfig, error) {
-	if network == "" {
-		network = LightecMainnet
-	}
-	if dataDir == "" {
-		current, err := user.Current()
-		if err != nil {
-			logger.Error("get current user error: %v", err)
-			return NodeConfig{}, err
-		}
-		dataDir = fmt.Sprintf("%v/.daemon", current.HomeDir)
-		logger.Info("datadir: %v", dataDir)
-	}
-	if rpcbind == "" {
-		rpcbind = "127.0.0.1"
-	}
-	if rpcport == "" {
-		rpcport = "9780"
-	}
-	if initSlot == 0 {
-		initSlot = 8192 //1253376, 8192
-	}
-	if beaconUrl == "" {
-		return NodeConfig{}, fmt.Errorf("beaconUrl is empty")
-	}
-	return NodeConfig{
-		EnableLocalWorker: enableLocalWorker,
-		DataDir:           dataDir,
-		Network:           network,
-		Rpcbind:           rpcbind,
-		RpcPort:           rpcport,
-		BeaconUrl:         beaconUrl,
-		BeaconSlotHeight:  initSlot,
-	}, nil
-
-}
-
-func newMainnetConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
-	beaconConfig *beaconconfig.BeaconChainConfig, btcInitHeight, ethInitHeight int64) (NodeConfig, error) {
-	multiSigPub1, err := hex.DecodeString(BtcMultiSigPublic1)
+func getLocalConfig(runCnfg RunConfig) (Config, error) {
+	multiAddressInfo, err := NewMultiAddressInfo([]string{LocalBtcMultiSigPublic1, LocalBtcMultiSigPublic2,
+		LocalBtcMultiSigPublic3}, LocalBtcMultiNRequired)
 	if err != nil {
-		logger.Error("hex decode string error: %v", err)
-		return NodeConfig{}, err
+		return Config{}, err
 	}
-	multiSigPub2, err := hex.DecodeString(BtcMultiSigPublic2)
-	if err != nil {
-		logger.Error("hex decode string error:%v", err)
-		return NodeConfig{}, err
+	if runCnfg.BtcInitHeight == 0 {
+		runCnfg.BtcInitHeight = LocalInitBitcoinHeight
 	}
-	multiSigPub3, err := hex.DecodeString(BtcMultiSigPublic3)
-	if err != nil {
-		logger.Error("hex decode string error:%v", err)
-		return NodeConfig{}, err
+	if runCnfg.EthInitHeight == 0 {
+		runCnfg.EthInitHeight = LocalInitEthereumHeight
 	}
-	multiSigAddressInfo := MultiAddressInfo{
-		PublicKeyList: [][]byte{
-			multiSigPub1, multiSigPub2, multiSigPub3,
-		},
-		NRequired: BtcMultiNRequired,
+	if runCnfg.BeaconInitSlot == 0 {
+		runCnfg.BeaconInitSlot = LocalInitBeaconHeight
 	}
-	return NodeConfig{
-		DataDir:           dataDir,
-		Network:           testnet,
-		Rpcbind:           rpcbind,
-		RpcPort:           rpcport,
-		EnableLocalWorker: enableLocalWorker,
-
-		BtcUrl:           btcUrl,
-		BtcUser:          btcUser,
-		BtcPwd:           btcPwd,
-		BtcNetwork:       string(BtcNetwork),
-		BtcScanBlockTime: BtcScanTime,
-		BtcOperatorAddr:  BtcOperatorAddress,
-		BtcPrivateKeys: []string{
-			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
-			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
-			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
-		},
-		BtcInitHeight:    btcInitHeight,
-		BeaconSlotHeight: InitBeaconHeight,
-		BeaconUrl:        beaconUrl,
-		BeaconConfig:     beaconConfig,
-		EthInitHeight:    ethInitHeight,
-		EthUrl:           ethUrl,
-		ZkBridgeAddr:     EthZkBridgeAddress,
-		ZkBtcAddr:        EthZkBtcAddress,
-		EthScanBlockTime: EthScanTime,
-		EthPrivateKey:    ethPrivateKey,
-		LogAddr:          LogAddrs,
-		LogTopic:         LogTopics,
-		AutoSubmit:       autoSubmit,
-		MultiAddressInfo: multiSigAddressInfo,
-		EthAddrFilter: EthAddrFilter{
-			LogDepositAddr:      LogDepositAddr,
-			LogRedeemAddr:       LogRedeemAddr,
-			LogTopicDepositAddr: TopicDepositAddr,
-			LogTopicRedeemAddr:  TopicRedeemAddr,
-		},
-	}, nil
-}
-
-func newTestConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
-	beaconConfig *beaconconfig.BeaconChainConfig, btcInitHeight, ethInitHeight int64) (NodeConfig, error) {
-	multiSigPub1, err := hex.DecodeString(TestnetBtcMultiSigPublic1)
-	if err != nil {
-		logger.Error("hex decode string error:%v", err)
-		return NodeConfig{}, err
-	}
-	multiSigPub2, err := hex.DecodeString(TestnetBtcMultiSigPublic2)
-	if err != nil {
-		logger.Error("hex decode string error:%v", err)
-		return NodeConfig{}, err
-	}
-	multiSigPub3, err := hex.DecodeString(TestnetBtcMultiSigPublic3)
-	if err != nil {
-		logger.Error("hex decode string error:%v", err)
-		return NodeConfig{}, err
-	}
-	multiSigAddressInfo := MultiAddressInfo{
-		PublicKeyList: [][]byte{
-			multiSigPub1, multiSigPub2, multiSigPub3,
-		},
-		NRequired: TestnetBtcMultiNRequired,
-	}
-	return NodeConfig{
-		DataDir:           dataDir,
-		Network:           testnet,
-		Rpcbind:           rpcbind,
-		RpcPort:           rpcport,
-		EnableLocalWorker: enableLocalWorker,
-
-		BtcUrl:           btcUrl,
-		BtcUser:          btcUser,
-		BtcPwd:           btcPwd,
-		BtcNetwork:       string(TestnetBtcNetwork),
-		BtcScanBlockTime: TestnetBtcScanTime,
-		BtcOperatorAddr:  TestnetBtcOperatorAddress,
-		BtcPrivateKeys: []string{
-			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
-			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
-			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
-		},
-		BtcInitHeight: btcInitHeight,
-		AutoSubmit:    autoSubmit,
-
-		//BeaconConfig
-		BeaconSlotHeight: TestnetInitBeaconHeight,
-		BeaconUrl:        beaconUrl,
-		BeaconConfig:     beaconConfig,
-
-		EthInitHeight:    ethInitHeight,
-		EthUrl:           ethUrl,
-		ZkBridgeAddr:     TestnetEthZkBridgeAddress,
-		ZkBtcAddr:        TestnetEthZkBtcAddress,
-		EthScanBlockTime: TestnetEthScanTime,
-		EthPrivateKey:    ethPrivateKey,
-		LogAddr:          TestLogAddrs,
-		LogTopic:         TestLogTopics,
-		MultiAddressInfo: multiSigAddressInfo,
-		EthAddrFilter: EthAddrFilter{
-			LogDepositAddr:      TestLogDepositAddr,
-			LogRedeemAddr:       TestLogRedeemAddr,
-			LogTopicDepositAddr: TestTopicDepositAddr,
-			LogTopicRedeemAddr:  TestTopicRedeemAddr,
-		},
-	}, nil
-}
-
-func newLocalConfig(enableLocalWorker, autoSubmit bool, dataDir, testnet, rpcbind, rpcport, btcUrl, btcUser, btcPwd, beaconUrl, ethUrl, ethPrivateKey string,
-	beaconConfig *beaconconfig.BeaconChainConfig, btcInitHeight, ethInitHeight int64) (NodeConfig, error) {
-	multiSigPub1, err := hex.DecodeString(LocalBtcMultiSigPublic1)
-	if err != nil {
-		logger.Error("hex decode string error: %v", err)
-		return NodeConfig{}, err
-	}
-	multiSigPub2, err := hex.DecodeString(LocalBtcMultiSigPublic2)
-	if err != nil {
-		logger.Error("hex decode string error: %v", err)
-		return NodeConfig{}, err
-	}
-	multiSigPub3, err := hex.DecodeString(LocalBtcMultiSigPublic3)
-	if err != nil {
-		logger.Error("hex decode string error: %v", err)
-		return NodeConfig{}, err
-	}
-	multiSigAddressInfo := MultiAddressInfo{
-		PublicKeyList: [][]byte{
-			multiSigPub1, multiSigPub2, multiSigPub3,
-		},
-		NRequired: LocalBtcMultiNRequired,
-	}
-	return NodeConfig{
-		DataDir:           dataDir,
-		Network:           testnet,
-		Rpcbind:           rpcbind,
-		RpcPort:           rpcport,
-		EnableLocalWorker: enableLocalWorker,
-		BtcUrl:            btcUrl,
-		BtcUser:           btcUser,
-		BtcPwd:            btcPwd,
-		BtcNetwork:        string(LocalBtcNetwork),
-		BtcScanBlockTime:  LocalBtcScanTime,
+	return Config{
+		RunConfig:         runCnfg,
+		GenesisSyncPeriod: runCnfg.BeaconInitSlot / 8192, // todo
 		BtcOperatorAddr:   LocalBtcOperatorAddress,
-		BtcPrivateKeys: []string{
-			"b26dbaab82d9ebd8f37c88bbe56e22bf9cb21150c96dfb35ece4b787d3710d3301",
-			"62dd5835dc2ce7f4f40eea1b88c816043d288532c8bb91964adef9bc0f0b4b7201",
-			"9ff573d948c80fa1a50da6f66229b4bede9ec3fb482dd126f58d3acfb4b2979801",
-		},
-		BtcInitHeight:    btcInitHeight,
-		AutoSubmit:       autoSubmit,
-		BeaconSlotHeight: LocalInitBeaconHeight,
-		BeaconUrl:        beaconUrl,
-		BeaconConfig:     beaconConfig,
-		EthInitHeight:    ethInitHeight,
-		EthUrl:           ethUrl,
-		ZkBridgeAddr:     LocalEthZkBridgeAddress,
-		ZkBtcAddr:        LocalEthZkBtcAddress,
-		EthScanBlockTime: LocalEthScanTime,
-		EthPrivateKey:    ethPrivateKey,
-		LogAddr:          LocalLogAddrs,
-		LogTopic:         LocalLogTopics,
-		MultiAddressInfo: multiSigAddressInfo,
-		EthAddrFilter: EthAddrFilter{
-			LogDepositAddr:      LocalLogDepositAddr,
-			LogRedeemAddr:       LocalLogRedeemAddr,
-			LogTopicDepositAddr: LocalTopicDepositAddr,
-			LogTopicRedeemAddr:  LocalTopicRedeemAddr,
-		},
+		MultiAddressInfo:  multiAddressInfo,
+		ZkBridgeAddr:      LocalEthZkBridgeAddress,
+		ZkBtcAddr:         LocalEthZkBtcAddress,
+		BtcScanTime:       LocalBtcScanTime,
+		EthScanTime:       LocalEthScanTime,
+		EthAddrFilter:     NewEthAddrFilter(LocalLogDepositAddr, LocalLogRedeemAddr, LocalTopicDepositAddr, LocalTopicRedeemAddr),
+	}, nil
+}
+
+func getTestnetConfig(runCnfg RunConfig) (Config, error) {
+	multiAddressInfo, err := NewMultiAddressInfo([]string{TestnetBtcMultiSigPublic1, TestnetBtcMultiSigPublic2,
+		TestnetBtcMultiSigPublic3}, TestnetBtcMultiNRequired)
+	if err != nil {
+		return Config{}, err
+	}
+	if runCnfg.BtcInitHeight == 0 {
+		runCnfg.BtcInitHeight = TestnetInitBitcoinHeight
+	}
+	if runCnfg.EthInitHeight == 0 {
+		runCnfg.EthInitHeight = TestnetInitEthereumHeight
+	}
+	if runCnfg.BeaconInitSlot == 0 {
+		runCnfg.BeaconInitSlot = TestnetInitBeaconHeight
+	}
+	return Config{
+		RunConfig:         runCnfg,
+		GenesisSyncPeriod: runCnfg.BeaconInitSlot / 8192, // todo
+		BtcOperatorAddr:   TestnetBtcOperatorAddress,
+		MultiAddressInfo:  multiAddressInfo,
+		ZkBridgeAddr:      TestnetEthZkBridgeAddress,
+		ZkBtcAddr:         TestnetEthZkBtcAddress,
+		BtcScanTime:       TestnetBtcScanTime,
+		EthScanTime:       TestnetEthScanTime,
+		EthAddrFilter:     NewEthAddrFilter(TestLogDepositAddr, TestLogRedeemAddr, TestTopicDepositAddr, TestTopicRedeemAddr),
 	}, nil
 }
 
 type MultiAddressInfo struct {
-	PublicKeyList [][]byte
-	NRequired     int
+	PublicKeyList [][]byte `json:"publicKeyList"`
+	NRequired     int      `json:"nRequired"`
 }
 
 type WorkerConfig struct {
@@ -431,50 +152,39 @@ type WorkerConfig struct {
 	DataDir string `json:"dataDir"`
 }
 
-func TestnetDaemonConfig() NodeConfig {
-	user, err := user.Current()
-	config, err := NewNodeConfig(
-		true,
-		true,
-		fmt.Sprintf("%v/.daemon", user.HomeDir),
-		"testnet",
-		"127.0.0.1",
-		"9870",
-		"https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
-		"lightec",
-		"abcd1234",
-		"http://127.0.0.1:8970",
-		"https://go.getblock.io/0d372517498b419a97613e2bbf882a30",
-		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-	)
-	if err != nil {
-		panic(err)
+func NewMultiAddressInfo(publicKeys []string, nRequired int) (MultiAddressInfo, error) {
+	var publicKeyListByte [][]byte
+	for _, pub := range publicKeys {
+		pubBytes, err := hex.DecodeString(pub)
+		if err != nil {
+			return MultiAddressInfo{}, err
+		}
+		publicKeyListByte = append(publicKeyListByte, pubBytes)
 	}
-	return config
+	return MultiAddressInfo{
+		PublicKeyList: publicKeyListByte,
+		NRequired:     nRequired,
+	}, nil
 }
-func LocalDevDaemonConfig() NodeConfig {
-	//user, err := user.Current()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//dataDir := fmt.Sprintf("%v/.daemon", user.HomeDir)
-	dataDir := "/Users/red/lworkspace/lightec/daemon/node/test"
-	config, err := NewNodeConfig(
-		true,
-		true,
-		dataDir,
-		"local",
-		"127.0.0.1",
-		"9870",
-		"https://go.getblock.io/d54c59f635654cc082de1f3fd14e5d02",
-		"lightec",
-		"abcd1234",
-		"https://young-morning-meadow.ethereum-holesky.quiknode.pro",
-		"https://1rpc.io/holesky",
-		"c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-	)
-	if err != nil {
-		panic(err)
+
+type EthAddrFilter struct {
+	LogDepositAddr      string `json:"logDepositAddr"`
+	LogRedeemAddr       string `json:"logRedeemAddr"`
+	LogTopicDepositAddr string `json:"logTopicDepositAddr"`
+	LogTopicRedeemAddr  string `json:"logTopicRedeemAddr"`
+}
+
+func NewEthAddrFilter(depositAddr, redeemAddr, topicDepositAddr, topicRedeemAddr string) EthAddrFilter {
+	return EthAddrFilter{
+		LogDepositAddr:      depositAddr,
+		LogRedeemAddr:       redeemAddr,
+		LogTopicDepositAddr: topicDepositAddr,
+		LogTopicRedeemAddr:  topicRedeemAddr,
 	}
-	return config
+}
+
+func (f *EthAddrFilter) FilterLogs() (logFilters []string, topicFilters []string) {
+	logFilters = []string{f.LogDepositAddr, f.LogRedeemAddr}
+	topicFilters = []string{f.LogTopicDepositAddr, f.LogTopicRedeemAddr}
+	return logFilters, topicFilters
 }

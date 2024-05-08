@@ -9,9 +9,9 @@ import (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "generate zk proof node",
-	Long:  "example: ./proof  run --ip 0.0.0.0 --port 30001 --nums 1",
+	Use:     "run",
+	Short:   "generate zk proof node",
+	Example: "./generator --config ./client_config.json run",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfgBytes, err := os.ReadFile(cfgFile)
 		if err != nil {

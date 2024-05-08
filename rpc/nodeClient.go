@@ -16,16 +16,16 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
-func (c *NodeClient) GetTask(request common.TaskRequest) (*common.TaskResponse, error) {
+func (c *NodeClient) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	var result common.TaskResponse
-	err := c.call(&result, "zkbtc_getTask", request)
+	err := c.call(&result, "zkbtc_getZkProofTask", request)
 	if err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (c *NodeClient) SubmitProof(req common.SubmitProof) (string, error) {
+func (c *NodeClient) SubmitProof(req *common.SubmitProof) (string, error) {
 	var result string
 	err := c.call(&result, "zkbtc_submitProof", req)
 	if err != nil {

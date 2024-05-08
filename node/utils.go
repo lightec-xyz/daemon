@@ -54,10 +54,10 @@ func txesToTxIds(txes []Transaction) []string {
 	return txHashes
 }
 
-func proofsToDbProofs(proofs []Proof) []DbProof {
+func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
 	var dbProofs []DbProof
 	for _, proof := range proofs {
-		dbProofs = append(dbProofs, DbProof{
+		dbProofs = append(dbProofs, DbProof{ // todo
 			TxHash: proof.TxHash,
 		})
 	}
@@ -74,12 +74,16 @@ func txesToDbTxes(txes []Transaction) []DbTx {
 	return dbtxes
 }
 
-func depositToTxHash(txs []DepositProofParam) []string {
-	var txHashList []string
-	for _, tx := range txs {
-		txHashList = append(txHashList, tx.TxHash)
+func requestsToUnGenProofs(chainType ChainType, requests []*common.ZkProofRequest) []*DbUnGenProof {
+	var proofs []*DbUnGenProof
+	for _, req := range requests {
+		proofs = append(proofs, &DbUnGenProof{
+			TxHash:    req.TxHash,
+			ProofType: req.ReqType,
+			ChainType: chainType,
+		})
 	}
-	return txHashList
+	return proofs
 }
 
 func redeemToTxHashList(txs []RedeemProofParam) []string {
@@ -88,30 +92,6 @@ func redeemToTxHashList(txs []RedeemProofParam) []string {
 		txHashList = append(txHashList, tx.TxHash)
 	}
 	return txHashList
-}
-func toDepositZkProofRequest(list []DepositProofParam) ([]*common.ZkProofRequest, error) {
-	var result []*common.ZkProofRequest
-	for _, item := range list {
-		result = append(result, common.NewZkProofRequest(common.DepositTxType, item, 0, item.TxHash))
-	}
-	return result, nil
-}
-
-func toUpdateZkProofRequest(redeemTxes []Transaction) ([]*common.ZkProofRequest, error) {
-	var result []*common.ZkProofRequest
-	for _, item := range redeemTxes {
-		data := VerifyProofParam{TxHash: item.TxHash, BlockHash: item.BlockHash}
-		result = append(result, common.NewZkProofRequest(common.VerifyTxType, data, 0, item.TxHash))
-	}
-	return result, nil
-}
-
-func toRedeemZkProofRequest(list []RedeemProofParam) ([]*common.ZkProofRequest, error) {
-	var result []*common.ZkProofRequest
-	for _, item := range list {
-		result = append(result, common.NewZkProofRequest(common.TxInEth2, item, 0, item.TxHash))
-	}
-	return result, nil
 }
 
 func NewRat() *big.Rat {

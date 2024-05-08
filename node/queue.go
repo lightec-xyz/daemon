@@ -4,8 +4,11 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"sort"
 	"sync"
 )
+
+//Todo abstract queue
 
 type Queue struct {
 	list     *list.List
@@ -81,7 +84,7 @@ func (sl *Queue) Iterator(fn func(value *list.Element) error) {
 	}
 }
 
-// PendingQueue Todo abstract it
+// PendingQueue
 type PendingQueue struct {
 	list *sync.Map
 }
@@ -126,7 +129,61 @@ func (q *PendingQueue) Iterator(fn func(value *common.ZkProofRequest) error) {
 	})
 }
 
-// SubmitQueue todo
+type ArrayQueue struct {
+	list []*common.ZkProofRequest
+	lock sync.Mutex
+}
+
+func NewArrayQueue() *ArrayQueue {
+	return &ArrayQueue{
+		list: make([]*common.ZkProofRequest, 0),
+	}
+}
+
+func (aq *ArrayQueue) Push(value *common.ZkProofRequest) {
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	aq.list = append(aq.list, value)
+}
+func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	if len(aq.list) == 0 {
+		return nil, false
+	}
+	aq.sortList()
+	value := aq.list[0]
+	aq.list = aq.list[1:]
+	return value, true
+}
+
+func (aq *ArrayQueue) sortList() {
+	sort.Slice(aq.list, func(i, j int) bool {
+		if aq.list[i].Weight != aq.list[j].Weight {
+			return aq.list[i].Weight > aq.list[j].Weight
+		}
+		return aq.list[i].Index < aq.list[j].Index
+	})
+}
+
+func (aq *ArrayQueue) Iterator(fn func(index int, value *common.ZkProofRequest) error) {
+	// todo
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	for index, value := range aq.list {
+		err := fn(index, value)
+		if err != nil {
+			return
+		}
+	}
+}
+func (aq *ArrayQueue) Len() int {
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	return len(aq.list)
+}
+
+// ProofRespQueue todo
 type SubmitQueue struct {
 	list *sync.Map
 }
@@ -137,8 +194,8 @@ func NewSubmitQueue() *SubmitQueue {
 	}
 }
 
-func (q *SubmitQueue) Push(key string, value *common.ZkProofResponse) {
-	q.list.Store(key, value)
+func (q *SubmitQueue) Push(value *common.ZkProofResponse) {
+	q.list.Store(value.Id(), value)
 }
 
 func (q *SubmitQueue) Delete(key string) {
@@ -148,11 +205,11 @@ func (q *SubmitQueue) Delete(key string) {
 func (q *SubmitQueue) Get(key string) (*common.ZkProofResponse, error) {
 	value, ok := q.list.Load(key)
 	if !ok {
-		return nil, fmt.Errorf("not found")
+		return nil, fmt.Errorf("not found: %v", key)
 	}
 	req, ok := value.(*common.ZkProofResponse)
 	if !ok {
-		return nil, fmt.Errorf("parse error")
+		return nil, fmt.Errorf("parse error:%v", key)
 	}
 	return req, nil
 }
@@ -160,6 +217,51 @@ func (q *SubmitQueue) Get(key string) (*common.ZkProofResponse, error) {
 func (q *SubmitQueue) Iterator(fn func(value *common.ZkProofResponse) error) {
 	q.list.Range(func(key, value interface{}) bool {
 		req, ok := value.(*common.ZkProofResponse)
+		if !ok {
+			return false
+		}
+		err := fn(req)
+		if err != nil {
+			return false
+		}
+		return true
+	})
+}
+
+// ProofRespQueue todo
+type ProofRespQueue struct {
+	list *sync.Map
+}
+
+func NewProofRespQueue() *ProofRespQueue {
+	return &ProofRespQueue{
+		list: new(sync.Map),
+	}
+}
+
+func (q *ProofRespQueue) Push(value *common.SubmitProof) {
+	q.list.Store(value.Id, value)
+}
+
+func (q *ProofRespQueue) Delete(key string) {
+	q.list.Delete(key)
+}
+
+func (q *ProofRespQueue) Get(key string) (*common.SubmitProof, error) {
+	value, ok := q.list.Load(key)
+	if !ok {
+		return nil, fmt.Errorf("not found: %v", key)
+	}
+	req, ok := value.(*common.SubmitProof)
+	if !ok {
+		return nil, fmt.Errorf("parse error:%v", key)
+	}
+	return req, nil
+}
+
+func (q *ProofRespQueue) Iterator(fn func(value *common.SubmitProof) error) {
+	q.list.Range(func(key, value interface{}) bool {
+		req, ok := value.(*common.SubmitProof)
 		if !ok {
 			return false
 		}

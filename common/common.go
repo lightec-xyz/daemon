@@ -1,9 +1,28 @@
 package common
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"github.com/consensys/gnark/frontend"
 	"github.com/google/uuid"
+	"github.com/lightec-xyz/provers/circuits/fabric/receipt-proof"
+	"github.com/lightec-xyz/provers/circuits/fabric/tx-proof"
+	"os"
+	"path/filepath"
+	"reflect"
 )
+
+func HexToBytes(data string) ([]byte, error) {
+	if data[0:2] == "0x" {
+		data = data[2:]
+	}
+	bytes, err := hex.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
 
 func Uuid() (string, error) {
 	newV7, err := uuid.NewV7()
@@ -26,5 +45,117 @@ func objToJson(obj interface{}) string {
 		return "error obj to josn"
 	}
 	return string(ojbBytes)
+}
 
+func ParseObj(src, dst interface{}) error {
+	if reflect.ValueOf(dst).Kind() != reflect.Ptr {
+		return fmt.Errorf("dst must be a pointer")
+	}
+	srcBytes, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(srcBytes, dst)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func WriteFile(path string, data []byte) error {
+	err := CheckOrCreateDir(path)
+	if err != nil {
+		return err
+	}
+	exists, err := FileExists(path)
+	if err != nil {
+		return err
+	}
+	if exists {
+		err := os.Remove(path)
+		if err != nil {
+			return err
+		}
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+	err = file.Sync()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func CheckOrCreateDir(path string) error {
+	dir := filepath.Dir(path)
+	_, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("stat error: %v", err)
+}
+
+func TxVarToHex(data *[tx.MaxTxUint128Len]frontend.Variable) ([]string, error) {
+	var res []string
+	for _, v := range data {
+		res = append(res, hex.EncodeToString(v.([]byte)))
+	}
+	return res, nil
+
+}
+
+func HexToTxVar(data []string) (*[tx.MaxTxUint128Len]frontend.Variable, error) {
+	var res [tx.MaxTxUint128Len]frontend.Variable
+	for k, v := range data {
+		bytes, err := hex.DecodeString(v)
+		if err != nil {
+			return nil, err
+		}
+		res[k] = bytes
+	}
+	return &res, nil
+}
+
+func ReceiptVarToHex(data *[receipt.MaxReceiptUint128Len]frontend.Variable) ([]string, error) {
+	var res []string
+	for _, v := range data {
+		res = append(res, hex.EncodeToString(v.([]byte)))
+	}
+	return res, nil
+}
+
+func HexToReceiptVar(data []string) (*[receipt.MaxReceiptUint128Len]frontend.Variable, error) {
+	var res [receipt.MaxReceiptUint128Len]frontend.Variable
+	for k, v := range data {
+		bytes, err := hex.DecodeString(v)
+		if err != nil {
+			return nil, err
+		}
+		res[k] = bytes
+	}
+	return &res, nil
 }
