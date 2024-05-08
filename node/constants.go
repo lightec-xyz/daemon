@@ -42,7 +42,7 @@ const (
 	TestnetEthZkBtcAddress    = "0xbf3041e37be70a58920a6fd776662b50323021c9"
 
 	TestnetBtcScanTime = 1 * time.Minute
-	TestnetEthScanTime = 15 * time.Second
+	TestnetEthScanTime = 30 * time.Second
 
 	TestnetInitBitcoinHeight  = 2812015
 	TestnetInitBeaconHeight   = 153

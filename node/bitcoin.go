@@ -354,7 +354,7 @@ func (b *BitcoinAgent) CheckState() error {
 		return err
 	}
 	for _, proof := range unGenProofs {
-		logger.Debug("check ungen proof: %v %v", proof.ProofType.String(), proof.TxHash)
+		logger.Debug("bitcoin check ungen proof: %v %v", proof.ProofType.String(), proof.TxHash)
 		if proof.ProofType == 0 || proof.TxHash == "" {
 			logger.Warn("unGenProof error:%v %v", proof.ProofType.String(), proof.TxHash)
 			continue

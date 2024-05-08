@@ -136,7 +136,6 @@ func TestClient_GetLogs(t *testing.T) {
 			parseEthRedeem(log)
 
 		}
-
 	}
 }
 

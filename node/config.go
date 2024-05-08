@@ -18,7 +18,6 @@ type RunConfig struct {
 	EthUrl                string `json:"ethUrl"`
 	BeaconUrl             string `json:"beaconUrl"`
 	EthPrivateKey         string `json:"ethPrivateKey"`
-	AutoSubmit            bool   `json:"autoSubmit"`
 	EnableLocalWorker     bool   `json:"enableLocalWorker"`
 	DisableRecursiveAgent bool   `json:"disableRecursiveAgent"`
 	DisableTxAgent        bool   `json:"disableTxAgent"`
