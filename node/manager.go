@@ -71,7 +71,7 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 	}
 	//logger.Info("get proof request:%v %v", request.ReqType.String(), request.Index)
 	request.StartTime = time.Now()
-	m.pendingQueue.Push(request.ZkId, request)
+	m.pendingQueue.Push(request.Id(), request)
 	return request, true, nil
 }
 
@@ -238,7 +238,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 			logger.Error("gen redeem Proof error:%v", err)
 			return nil, err
 		}
-		zkbProofResponse := NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 		result = append(result, zkbProofResponse)
 	case common.SyncComGenesisType:
 		var genesisRpcRequest rpc.SyncCommGenesisRequest
@@ -384,6 +384,17 @@ func NewZkTxProofResp(reqType common.ZkProofType, txHash string, proof common.Zk
 		ZkProofType: reqType,
 		TxHash:      txHash,
 		Proof:       proof,
+		Witness:     witness,
+		Status:      common.ProofSuccess,
+	}
+}
+
+func NewProofResp(reqType common.ZkProofType, period uint64, txHash string, proof common.ZkProof, witness []byte) *common.ZkProofResponse {
+	return &common.ZkProofResponse{
+		ZkProofType: reqType,
+		Period:      period,
+		Proof:       proof,
+		TxHash:      txHash,
 		Witness:     witness,
 		Status:      common.ProofSuccess,
 	}

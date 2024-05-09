@@ -479,7 +479,7 @@ func (e *EthereumAgent) CheckState() error {
 			}
 			continue
 		}
-		err = e.tryProofRequest(common.RedeemTxType, 0, txHash)
+		err = e.tryProofRequest(common.RedeemTxType, txSlot, txHash)
 		if err != nil {
 			logger.Error("try proof request error: %v", err)
 			return err
