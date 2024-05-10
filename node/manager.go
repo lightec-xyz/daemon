@@ -297,7 +297,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 			logger.Error("gen block header Proof error:%v", err)
 			return nil, err
 		}
-		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, response.Proof, response.Witness)
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.TxHash, response.Proof, response.Witness)
 		result = append(result, zkbProofResponse)
 	case common.BeaconHeaderFinalityType:
 		// todo

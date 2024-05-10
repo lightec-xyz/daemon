@@ -98,11 +98,6 @@ func (e *EthereumAgent) Init() error {
 	return nil
 }
 
-func (e *EthereumAgent) checkUnGenerateProof() error {
-	// todo
-	return nil
-}
-
 func (e *EthereumAgent) ScanBlock() error {
 	logger.Debug("ethereum scan block ...")
 	ethHeight, ok, err := ReadEthereumHeight(e.store)

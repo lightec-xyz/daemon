@@ -26,7 +26,6 @@ type BitcoinAgent struct {
 	fileStore       *FileStorage
 	cache           *CacheState
 	proofRequest    chan<- []*common.ZkProofRequest
-	taskManager     *TaskManager
 	operatorAddr    string
 	submitTxEthAddr string
 	keyStore        *KeyStore

@@ -301,7 +301,7 @@ func (d *Daemon) Run() error {
 
 	}
 
-	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
+	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-d.exitSignal
 		switch msg {

@@ -8,7 +8,7 @@
 
     curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"'"zkbtc_version"'","params":[],"id":1}' http://127.0.0.1:7880
 
-    curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"'"zkbtc_txesByAddr"'","params":["0x5eed85149D7C3d74d28C9b164b210a20e749199c","redeem"],"id":1}' http://127.0.0.1:7880
+    curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"'"zkbtc_txesByAddr"'","params":["0x2A6443B5838f9524970c471289AB22f399395Ff6","redeem"],"id":1}' http://127.0.0.1:7880
 
 
     
