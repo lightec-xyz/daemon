@@ -1,6 +1,8 @@
 package rpc
 
-import "github.com/lightec-xyz/daemon/common"
+import (
+	"github.com/lightec-xyz/daemon/common"
+)
 
 type INode interface {
 	Version() (NodeInfo, error)
@@ -11,6 +13,7 @@ type INode interface {
 	Transactions(txId []string) ([]Transaction, error)
 	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
 	SubmitProof(req *common.SubmitProof) (string, error)
+	TxesByAddr(addr, txType string) ([]Transaction, error)
 	Stop() error
 }
 

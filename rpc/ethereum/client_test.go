@@ -40,6 +40,23 @@ func init() {
 	}
 }
 
+func TestClient_Demo001(t *testing.T) {
+	receipt, err := client.TransactionReceipt(context.Background(), ethcommon.HexToHash("0xb19639d5c7c5804632f8ed92ca7e16d78cc1c6590a314b0aafee78793be223c6"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(receipt.TransactionIndex)
+}
+
+func TestClient_GetTxSender(t *testing.T) {
+	sender, err := client.GetTxSender("0xb19639d5c7c5804632f8ed92ca7e16d78cc1c6590a314b0aafee78793be223c6",
+		"0xf99ab49c39e77bd6274035cbc1d6db068e014d3dc8e8a6a4c988f327a9b417f1", 39)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(sender)
+}
+
 func TestClient_Number(t *testing.T) {
 	number, err := client.BlockNumber(context.Background())
 	if err != nil {

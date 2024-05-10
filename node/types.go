@@ -168,6 +168,8 @@ type Transaction struct {
 	BlockHash string
 	TxType    TxType
 	ChainType ChainType
+	Sender    string
+	Receiver  string
 
 	// bitcoin
 	EthAddr string

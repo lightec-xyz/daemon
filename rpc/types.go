@@ -17,21 +17,7 @@ type ProfTaskResponse struct {
 }
 
 type Transaction struct {
-	TxHash   string
-	DestHash string
-	Height   int64
-
-	BtcTxId string
-
-	Amount  int64
-	EthAddr string
-	Utxo    []Utxo
-
-	Inputs  []Utxo
-	Outputs []TxOut
-
-	TxType    int
-	ChainType int
+	TxHash string `json:"txHash"`
 }
 type Utxo struct {
 	TxId  string `json:"txId"`

@@ -21,6 +21,25 @@ type Handler struct {
 	manager  IManager
 }
 
+func (h *Handler) TxesByAddr(addr, txType string) ([]rpc.Transaction, error) {
+	if addr == "" || txType == "" {
+		return nil, fmt.Errorf("addr or txType is empty")
+	}
+	dbTxes, err := ReadAddrTxs(h.store, addr)
+	if err != nil {
+		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
+		return nil, err
+	}
+	var rpcTxes []rpc.Transaction
+	for _, tx := range dbTxes {
+		rpcTxes = append(rpcTxes, rpc.Transaction{
+			TxHash: tx.TxHash,
+		})
+	}
+	return rpcTxes, nil
+
+}
+
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	// Todo
 	zkProofRequest, ok, err := h.manager.GetProofRequest()

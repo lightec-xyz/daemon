@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
-	"strconv"
 	"strings"
 
 	"github.com/lightec-xyz/daemon/logger"
@@ -250,29 +249,44 @@ func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) erro
 	return nil
 }
 
-func CheckDestHash(store store.IStore, txId string) (bool, error) {
-	ok, err := store.HasObj(DbDestId(txId))
-	if err != nil {
-		return false, err
+func WriteAddrTxs(store store.IStore, addr string, txes []DbTx) error {
+	batch := store.Batch()
+	for _, tx := range txes {
+		err := batch.BatchPutObj(DbAddrPrefixTxId(addr, tx.TxHash), tx)
+		if err != nil {
+			logger.Error("put addr tx error:%v", err)
+			return err
+		}
 	}
-	return ok, nil
+	err := batch.BatchWriteObj()
+	if err != nil {
+		logger.Error("put addr tx batch error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func ReadAddrTxs(store store.IStore, addr string) ([]DbTx, error) {
+	var txes []DbTx
+	iterator := store.Iterator([]byte(DbAddrPrefixTxId(addr, "")), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var tx DbTx
+		err := store.GetObj(iterator.Key(), &tx)
+		if err != nil {
+			logger.Error("get addr tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, tx)
+	}
+	err := iterator.Error()
+	if err != nil {
+		return nil, err
+	}
+	return txes, nil
 }
 
 func getTxId(key string) string {
 	txId := key[strings.Index(key, "_")+1:]
 	return txId
-}
-
-// todo
-func parseUnGenProofId(key string) (string, ChainType, error) {
-	splits := strings.Split(key, "_")
-	if len(splits) != 3 {
-		return "", 0, fmt.Errorf("parse ungen Proof id error: %v ", key)
-	}
-	chainType, err := strconv.ParseInt(splits[1], 10, 32)
-	if err != nil {
-		return "", 0, err
-	}
-	return splits[2], ChainType(chainType), nil
-
 }
