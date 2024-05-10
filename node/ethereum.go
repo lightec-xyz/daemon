@@ -412,7 +412,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 		}
 		txHash := log.TxHash.String()
 		if strings.TrimPrefix(transaction.TxHash().String(), "0x") != strings.TrimPrefix(btcTxId, "0x") {
-			logger.Error("never should happen btc tx not match error: TxHash:%v, logBtcTxId:%v,decodeTxHash:%v", txHash, btcTxId, transaction.TxHash().String())
+			logger.Error("never should happen btc tx not match error: Hash:%v, logBtcTxId:%v,decodeTxHash:%v", txHash, btcTxId, transaction.TxHash().String())
 			return redeemTx, false, fmt.Errorf("tx hash not match:%v", txHash)
 		}
 
@@ -422,7 +422,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 			return redeemTx, false, err
 		}
 		logger.Info("ethereum agent find redeem zkbtc  ethTxHash:%v,sender:%v,btcTxId:%v,input:%v,output:%v",
-			redeemTx.TxHash, txSender, btcTxId, formatUtxo(inputs), formatOut(outputs))
+			txHash, txSender, btcTxId, formatUtxo(inputs), formatOut(outputs))
 		redeemTx = NewRedeemEthTx(txHash, txSender, btcTxId, inputs, outputs)
 		return redeemTx, true, nil
 	} else {

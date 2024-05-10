@@ -17,7 +17,7 @@ type ProfTaskResponse struct {
 }
 
 type Transaction struct {
-	TxHash string `json:"txHash"`
+	Hash string `json:"hash"`
 }
 type Utxo struct {
 	TxId  string `json:"txId"`

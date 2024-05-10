@@ -33,7 +33,7 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]rpc.Transaction, error) {
 	var rpcTxes []rpc.Transaction
 	for _, tx := range dbTxes {
 		rpcTxes = append(rpcTxes, rpc.Transaction{
-			TxHash: tx.TxHash,
+			Hash: tx.TxHash,
 		})
 	}
 	return rpcTxes, nil
