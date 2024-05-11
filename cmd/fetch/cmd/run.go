@@ -86,13 +86,11 @@ func (f *Fetch) Run() error {
 	}
 	go node.DoTimerTask("fetch-finality-update", 1*time.Minute, f.fetch.FinalityUpdate, f.exitSignal)
 	go node.DoTimerTask("fetch-update", 1*time.Minute, f.fetch.LightClientUpdate, f.exitSignal)
-	signal.Notify(f.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
+	signal.Notify(f.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-f.exitSignal
 		switch msg {
-		case syscall.SIGHUP:
-			logger.Info("get exit sign")
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
+		case syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
 			logger.Info("get shutdown signal ,waiting exit now ...")
 			err := f.Close()
 			if err != nil {

@@ -16,6 +16,15 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
+func (c *NodeClient) TxesByAddr(addr, txType string) ([]Transaction, error) {
+	var result []Transaction
+	err := c.call(&result, "zkbtc_txesByAddr", addr, txType)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (c *NodeClient) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	var result common.TaskResponse
 	err := c.call(&result, "zkbtc_getZkProofTask", request)

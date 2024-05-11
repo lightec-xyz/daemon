@@ -3,7 +3,9 @@ package ethereum
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/lightec-xyz/daemon/circuits"
+	"github.com/lightec-xyz/daemon/logger"
 	"math/big"
 	"strings"
 	"time"
@@ -54,6 +56,24 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 		verifyCall:   verifyCall,
 		timeout:      15 * time.Second,
 	}, nil
+}
+
+func (e *Client) GetTxSender(txHash, blockHash string, index uint) (string, error) {
+	tx, pending, err := e.Client.TransactionByHash(context.Background(), ethcommon.HexToHash(txHash))
+	if err != nil {
+		logger.Error("get eth tx error:%v %v", txHash, err)
+		return "", err
+	}
+	if pending {
+		return "", fmt.Errorf("tx %v is pending", txHash)
+	}
+	sender, err := e.Client.TransactionSender(context.Background(), tx, ethcommon.HexToHash(blockHash), index)
+	if err != nil {
+		logger.Error("get eth tx sender error:%v %v", txHash, err)
+		return "", err
+	}
+	return sender.Hex(), nil
+
 }
 
 func (c *Client) Verify(proof, wit string) (bool, error) {

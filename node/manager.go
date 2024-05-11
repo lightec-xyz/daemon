@@ -238,7 +238,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 			logger.Error("gen redeem Proof error:%v", err)
 			return nil, err
 		}
-		zkbProofResponse := NewZkTxProofResp(request.ReqType, request.TxHash, proofResponse.Proof, proofResponse.Witness)
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.TxHash, proofResponse.Proof, proofResponse.Witness)
 		result = append(result, zkbProofResponse)
 	case common.SyncComGenesisType:
 		var genesisRpcRequest rpc.SyncCommGenesisRequest
@@ -297,7 +297,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 			logger.Error("gen block header Proof error:%v", err)
 			return nil, err
 		}
-		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, response.Proof, response.Witness)
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.TxHash, response.Proof, response.Witness)
 		result = append(result, zkbProofResponse)
 	case common.BeaconHeaderFinalityType:
 		// todo
@@ -384,6 +384,17 @@ func NewZkTxProofResp(reqType common.ZkProofType, txHash string, proof common.Zk
 		ZkProofType: reqType,
 		TxHash:      txHash,
 		Proof:       proof,
+		Witness:     witness,
+		Status:      common.ProofSuccess,
+	}
+}
+
+func NewProofResp(reqType common.ZkProofType, period uint64, txHash string, proof common.ZkProof, witness []byte) *common.ZkProofResponse {
+	return &common.ZkProofResponse{
+		ZkProofType: reqType,
+		Period:      period,
+		Proof:       proof,
+		TxHash:      txHash,
 		Witness:     witness,
 		Status:      common.ProofSuccess,
 	}

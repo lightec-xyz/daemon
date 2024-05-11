@@ -15,6 +15,14 @@ func init() {
 	}
 }
 
+func TestNodeClient_TxesByAddr(t *testing.T) {
+	txes, err := nodeClient.TxesByAddr("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(txes)
+}
+
 func TestNodeClient_GetTask(t *testing.T) {
 	request := common.TaskRequest{
 		Id:        "test_id",
@@ -28,7 +36,7 @@ func TestNodeClient_GetTask(t *testing.T) {
 }
 
 func TestNodeClient_SubmitProof(t *testing.T) {
-	result, err := nodeClient.SubmitProof(common.SubmitProof{
+	result, err := nodeClient.SubmitProof(&common.SubmitProof{
 		Data: []*common.ZkProofResponse{
 			{},
 		},

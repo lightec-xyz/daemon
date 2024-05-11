@@ -80,3 +80,8 @@ func DbUnGenProofId(chain ChainType, txId string) string {
 	pTxID := fmt.Sprintf("%s%d_%s", UnGenProofPrefix, chain, trimOx(txId))
 	return pTxID
 }
+
+func DbAddrPrefixTxId(addr string, txId string) string {
+	key := fmt.Sprintf("%s_%s", addr, trimOx(txId))
+	return key
+}

@@ -10,9 +10,9 @@ var err error
 var client *Client
 
 func init() {
-	client, err = NewClient("https://testnet.sapphire.oasis.io", &Option{
-		Address:      "0x7ccCc552F55C05FD33d9827070E1dB3D28322622",
-		AlphaAddress: "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB",
+	client, err = NewClient("https://testnet.sapphire.oasis.io", Local, &Option{
+		LocalAddress:   "0x7ccCc552F55C05FD33d9827070E1dB3D28322622",
+		TestnetAddress: "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB",
 	})
 	if err != nil {
 		panic(err)
@@ -69,7 +69,7 @@ func TestClient_SignBtcTx(t *testing.T) {
 }
 
 func TestClient_AlphaPublicKey(t *testing.T) {
-	publicKey, err := client.AlphaPublicKey()
+	publicKey, err := client.TestnetPublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestClient_AlphaPublicKey(t *testing.T) {
 	}
 }
 
-func TestClient_AlphaSignBtcTx(t *testing.T) {
+func TestClient_TestnetSignBtcTx(t *testing.T) {
 	//https://holesky.etherscan.io/tx/0x41dda39af76f3c85ce7e9fda196473add3038dc708cc60e0f1c64844c9c1a656
 	//    ethereum_test.go:41
 	txRaw, err := hexutil.Decode("0x02f9011382426834840522d61285020b3f7d5e830b3d47948e4f5a8f3e24a279d8ed39e868f698130777fded80b8a474f4897c000000000000000000000000000000000000000000000000000000000000753000000000000000000000000000000000000000000000000000000000000037e3000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000160014a8a337fbfd692a5628e96d44684b9ee35d9e913e00000000000000000000c080a036b4a4e4af63f0d380d497335b4585cb5eaba0e83d4584cfdae8f0dd31b89588a043c5c8edf3832c711cb4f456702dc618a869ac92b9db1b178d0fd44a90149f65")

@@ -42,8 +42,8 @@ func privateKeyToEthAddr(secret string) (string, error) {
 	return address, nil
 }
 
-func trimOx(hash string) string {
-	return strings.TrimPrefix(hash, "0x")
+func trimOx(id string) string {
+	return strings.TrimPrefix(id, "0x")
 }
 
 func txesToTxIds(txes []Transaction) []string {
@@ -84,6 +84,28 @@ func requestsToUnGenProofs(chainType ChainType, requests []*common.ZkProofReques
 		})
 	}
 	return proofs
+}
+
+func txesByAddrGroup(txes []Transaction) map[string][]DbTx {
+	txMap := make(map[string][]DbTx)
+	for _, tx := range txes {
+		if tx.Sender == "" {
+			continue
+		}
+		list, ok := txMap[tx.Sender]
+		if ok {
+			list = append(list, DbTx{
+				TxHash: tx.TxHash,
+			})
+		} else {
+			txMap[tx.Sender] = []DbTx{
+				{
+					TxHash: tx.TxHash,
+				},
+			}
+		}
+	}
+	return txMap
 }
 
 func redeemToTxHashList(txs []RedeemProofParam) []string {

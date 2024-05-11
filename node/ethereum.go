@@ -14,6 +14,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
@@ -28,6 +29,7 @@ import (
 type EthereumAgent struct {
 	btcClient        *bitcoin.Client
 	ethClient        *ethrpc.Client
+	oasisClient      *oasis.Client
 	apiClient        *apiclient.Client // todo temporary use
 	beaconClient     *beacon.Client
 	store            store.IStore
@@ -45,12 +47,13 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
 		ethClient:        ethClient,
 		beaconClient:     beaconClient,
+		oasisClient:      oasisClient,
 		store:            store,
 		fileStore:        fileStore,
 		memoryStore:      memoryStore,
@@ -92,11 +95,6 @@ func (e *EthereumAgent) Init() error {
 	//	logger.Error("write ungen proof error: %v", err)
 	//	return err
 	//}
-	return nil
-}
-
-func (e *EthereumAgent) checkUnGenerateProof() error {
-	// todo
 	return nil
 }
 
@@ -142,7 +140,7 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("ethereum save transaction error: %v %v", index, err)
 			return err
 		}
-		err = e.saveRedeemData(redeemTxes, requests)
+		err = e.saveData(redeemTxes, requests)
 		if err != nil {
 			logger.Error("ethereum save Data error: %v %v", index, err)
 			return err
@@ -173,7 +171,7 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 			logger.Error("update Proof error:%v %v", resp.TxHash, err)
 			return err
 		}
-		_, err = RedeemBtcTx(e.btcClient, resp.TxHash, resp.Proof)
+		_, err = RedeemBtcTx(e.btcClient, e.ethClient, e.oasisClient, resp.TxHash, resp.Proof)
 		if err != nil {
 			logger.Error("redeem btc tx error:%v %v", resp.TxHash, err)
 			e.task.AddTask(resp)
@@ -220,8 +218,15 @@ func (e *EthereumAgent) saveTransaction(height int64, txes []Transaction) error 
 	return nil
 }
 
-func (e *EthereumAgent) saveRedeemData(redeemTxes []Transaction, requests []*common.ZkProofRequest) error {
-
+func (e *EthereumAgent) saveData(redeemTxes []Transaction, requests []*common.ZkProofRequest) error {
+	addrTxesMap := txesByAddrGroup(redeemTxes)
+	for addr, addrTxes := range addrTxesMap {
+		err := WriteAddrTxs(e.store, addr, addrTxes)
+		if err != nil {
+			logger.Error("write addr txes error: %v %v", addr, err)
+			return err
+		}
+	}
 	err := WriteDbProof(e.store, proofsToDbProofs(requests))
 	if err != nil {
 		logger.Error("put eth current height error:%v", err)
@@ -346,6 +351,24 @@ func (e *EthereumAgent) isDepositTx(log types.Log) (Transaction, bool, error) {
 	}
 }
 
+func (e *EthereumAgent) getTxSender(txHash, blockHash string, index uint) (string, error) {
+	tx, pending, err := e.ethClient.TransactionByHash(context.Background(), ethCommon.HexToHash(txHash))
+	if err != nil {
+		logger.Error("get eth tx error:%v %v", txHash, err)
+		return "", err
+	}
+	if pending {
+		return "", fmt.Errorf("tx %v is pending", txHash)
+	}
+	sender, err := e.ethClient.TransactionSender(context.Background(), tx, ethCommon.HexToHash(blockHash), index)
+	if err != nil {
+		logger.Error("get eth tx sender error:%v %v", txHash, err)
+		return "", err
+	}
+	return sender.Hex(), nil
+
+}
+
 func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 	redeemTx := Transaction{}
 	if log.Removed {
@@ -384,12 +407,18 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (Transaction, bool, error) {
 		}
 		txHash := log.TxHash.String()
 		if strings.TrimPrefix(transaction.TxHash().String(), "0x") != strings.TrimPrefix(btcTxId, "0x") {
-			logger.Error("never should happen btc tx not match error: TxHash:%v, logBtcTxId:%v,decodeTxHash:%v", txHash, btcTxId, transaction.TxHash().String())
+			logger.Error("never should happen btc tx not match error: Hash:%v, logBtcTxId:%v,decodeTxHash:%v", txHash, btcTxId, transaction.TxHash().String())
 			return redeemTx, false, fmt.Errorf("tx hash not match:%v", txHash)
 		}
-		logger.Info("ethereum agent find redeem zkbtc  ethTxHash:%v,btcTxId:%v,input:%v,output:%v",
-			redeemTx.TxHash, btcTxId, formatUtxo(inputs), formatOut(outputs))
-		redeemTx = NewRedeemEthTx(txHash, btcTxId, inputs, outputs)
+
+		txSender, err := e.getTxSender(txHash, log.BlockHash.Hex(), log.TxIndex)
+		if err != nil {
+			logger.Error("get tx sender error:%v", err)
+			return redeemTx, false, err
+		}
+		logger.Info("ethereum agent find redeem zkbtc  ethTxHash:%v,sender:%v,btcTxId:%v,input:%v,output:%v",
+			txHash, txSender, btcTxId, formatUtxo(inputs), formatOut(outputs))
+		redeemTx = NewRedeemEthTx(txHash, txSender, btcTxId, inputs, outputs)
 		return redeemTx, true, nil
 	} else {
 		return redeemTx, false, nil
@@ -476,7 +505,7 @@ func (e *EthereumAgent) CheckState() error {
 			}
 			continue
 		}
-		err = e.tryProofRequest(common.RedeemTxType, 0, txHash)
+		err = e.tryProofRequest(common.RedeemTxType, txSlot, txHash)
 		if err != nil {
 			logger.Error("try proof request error: %v", err)
 			return err
@@ -765,12 +794,13 @@ func NewDepositEthTx(txHash, btcTxId string, utxo []Utxo, amount int64) Transact
 		BtcTxId:   btcTxId,
 	}
 }
-func NewRedeemEthTx(txHash string, btcTxId string, inputs []Utxo, outputs []TxOut) Transaction {
+func NewRedeemEthTx(txHash, sender, btcTxId string, inputs []Utxo, outputs []TxOut) Transaction {
 	return Transaction{
 		TxHash:    txHash,
 		ChainType: Ethereum,
 		TxType:    RedeemTx,
 		BtcTxId:   btcTxId,
+		Sender:    sender,
 	}
 }
 

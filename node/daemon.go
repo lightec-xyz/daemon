@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"strings"
 
 	//btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
@@ -114,6 +115,15 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
+	oasisClient, err := oasis.NewClient(cfg.OasisUrl, cfg.Network, &oasis.Option{
+		LocalAddress:   LocalOasisSignerAddr,
+		TestnetAddress: TestnetOasisSignerAddr,
+	})
+	if err != nil {
+		logger.Error("new eth btcClient error:%v", err)
+		return nil, err
+	}
+
 	dbPath := fmt.Sprintf("%s/%s", cfg.Datadir, cfg.Network)
 	logger.Info("levelDbPath: %s", dbPath)
 	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
@@ -141,7 +151,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	keyStore := NewKeyStore(cfg.EthPrivateKey)
 
-	taskManager, err := NewTaskManager(keyStore, ethClient, btcClient)
+	taskManager, err := NewTaskManager(keyStore, ethClient, btcClient, oasisClient)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -158,12 +168,13 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	// todo find a better way
 	params.UseHoleskyNetworkConfig()
 	params.OverrideBeaconConfig(params.HoleskyConfig())
-	beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro")
+	//beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro")
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, proofRequest, taskManager)
+	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, oasisClient, proofRequest, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -290,13 +301,11 @@ func (d *Daemon) Run() error {
 
 	}
 
-	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP, syscall.SIGQUIT)
+	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-d.exitSignal
 		switch msg {
-		case syscall.SIGHUP:
-			logger.Info("daemon get SIGHUP")
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
+		case syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
 			logger.Info("get shutdown signal ,waiting exit now ...")
 			err := d.Close()
 			if err != nil {

@@ -47,6 +47,7 @@ const (
 	TestnetInitBitcoinHeight  = 2812015
 	TestnetInitBeaconHeight   = 153
 	TestnetInitEthereumHeight = 1489369
+	TestnetOasisSignerAddr    = "0x99e514Dc90f4Dd36850C893bec2AdC9521caF8BB"
 
 	// utxo manager
 	TestLogDepositAddr = "0x9d2aaea60dee441981edf44300c26f1946411548"
@@ -70,6 +71,8 @@ const (
 	LocalInitBitcoinHeight  = 2812015
 	LocalInitBeaconHeight   = 153 //slot of 596751 in holesky
 	LocalInitEthereumHeight = 1489369
+
+	LocalOasisSignerAddr = "0x7ccCc552F55C05FD33d9827070E1dB3D28322622"
 
 	LocalEthZkBridgeAddress = "0xb2631368c8c8151875ea67cb5faf8f1377ec02a0"
 	LocalEthZkBtcAddress    = "0xbf3041e37be70a58920a6fd776662b50323021c9"

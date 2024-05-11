@@ -8,6 +8,7 @@
   "btcUrl": "http://18.116.118.39:18332",
   "ethUrl": "https://ethereum-holesky-rpc.publicnode.com",
   "beaconUrl": "http://127.0.0.1:9870",
+  "oasisUrl": "https://testnet.sapphire.oasis.io",
   "ethPrivateKey": "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
   "btcInitHeight": 2813226,
   "ethInitHeight": 1500046,
