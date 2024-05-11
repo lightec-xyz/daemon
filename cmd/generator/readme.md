@@ -1,19 +1,37 @@
-## Command
+# Generator
 
-    ./generator --config ./client_config.json run
+## Build
 
-## Config
+    git clone https://github.com/lightec-xyz/daemon
+    git checkout -b red_dev orign/red_dv
+    cd  daemon/cmd/generator && go build
 
-    export ZkParameterDir=<circuit setup data path>
+
+## Environment
+1. download circuit config data
+
+    
+    // maybe you should Compressed file before download
+    scp -r red@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits <lcoal circuit param file dir>
+
+2. set ZkParameterDir environment variables
+
+
+    export ZkParameterDir =<local circuit param file dir>
+
+3. generator run config file
 
 
     {
-        "url": "https://test.apps.zkbtc.money",  // daemon server url
-        "maxNums": 1,                            // maximum number of tasks on the machine,default 1
-        "network": "local",                      // lightec network name
-        "datadir": "/opt/light/.proof,           // generate proof temporary directory and setup directory, should be separated (environment variable settings ？)
-        "model": "client"                        // generator mode (client: server-client)
+        "url": "https://test.apps.zkbtc.money/api",
+        "maxNums": 1,
+        "network": "testnet",
+        "datadir": "<local genetator storagte data dir>",
+        "model": "client"
     }
 
-## Important tips
-**please prepare all setup files before starting the proof generator**
+
+## Run
+
+    ./generator --config ./testnet.json run
+
