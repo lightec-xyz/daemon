@@ -11,7 +11,7 @@
 download circuit config data
 
     // maybe you should Compressed file before download
-    scp -r red@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits <lcoal circuit param file dir>
+    scp -r <userName>@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits <lcoal circuit param file dir>
 
 set ZkParameterDir environment variables
 
