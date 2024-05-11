@@ -377,6 +377,10 @@ func (m *manager) CheckPendingRequest() error {
 			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
 			m.proofQueue.Push(request)
 			m.pendingQueue.Delete(request.Id())
+			err := m.UpdateProofStatus(request, common.ProofQueueWait)
+			if err != nil {
+				logger.Error("update Proof status error:%v %v", request.Id(), err)
+			}
 		}
 		return nil
 	})
