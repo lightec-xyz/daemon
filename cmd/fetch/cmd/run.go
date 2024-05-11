@@ -90,9 +90,7 @@ func (f *Fetch) Run() error {
 	for {
 		msg := <-f.exitSignal
 		switch msg {
-		case syscall.SIGHUP:
-			logger.Info("get exit sign")
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
+		case syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
 			logger.Info("get shutdown signal ,waiting exit now ...")
 			err := f.Close()
 			if err != nil {

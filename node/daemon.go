@@ -305,9 +305,7 @@ func (d *Daemon) Run() error {
 	for {
 		msg := <-d.exitSignal
 		switch msg {
-		case syscall.SIGHUP:
-			logger.Info("daemon get SIGHUP")
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
+		case syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
 			logger.Info("get shutdown signal ,waiting exit now ...")
 			err := d.Close()
 			if err != nil {

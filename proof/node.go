@@ -108,9 +108,7 @@ func (node *Node) Start() error {
 	for {
 		msg := <-node.exit
 		switch msg {
-		case syscall.SIGHUP:
-			logger.Info("node get SIGHUP")
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
+		case syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGTSTP:
 			logger.Info("get shutdown signal ...")
 			err := node.Close()
 			if err != nil {
