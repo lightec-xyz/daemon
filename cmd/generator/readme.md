@@ -7,13 +7,13 @@
     cd <projectDir>
 
     git clone https://<Token>@github.com/lightec-xyz/provers.git
-    git checkout -b Beta1 origin/feat/Beta1   
+    git checkout v0.2.0   
 
     git cloen https://<Token>@github.com/lightec-xyz/btc_provers.git
-    git checkout -b Beta1 origin/beta1
+    git checkout v0.2.0  
 
     git clone https://<Token>@github.com/lightec-xyz/reLight.git
-    git checkout -b Beta1 origin/feat/Beta1
+    git checkout v0.2.0  
 
 
     git clone https://<Token>@github.com/lightec-xyz/daemon
