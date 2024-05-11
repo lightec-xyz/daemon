@@ -2,13 +2,14 @@
 
 ## Build
 
-    git clone https://github.com/lightec-xyz/daemon
+    git clone https://<Token>@github.com/lightec-xyz/daemon
     git checkout -b red_dev orign/red_dv
     cd  daemon/cmd/generator && go build
 
 
 ## Environment
 1. download circuit config data
+
 
     
     // maybe you should Compressed file before download
@@ -17,9 +18,11 @@
 2. set ZkParameterDir environment variables
 
 
+
     export ZkParameterDir =<local circuit param file dir>
 
 3. generator run config file
+
 
 
     {
