@@ -30,10 +30,31 @@ type ProofStatus int
 
 const (
 	ProofDefault ProofStatus = iota
-	ProofPending
+	ProofPending             // already not use now,placeholder compatible
 	ProofSuccess
 	ProofFailed
+	ProofGenerating
+	ProofQueueWait
 )
+
+func (ps *ProofStatus) String() string {
+	switch *ps {
+	case ProofDefault:
+		return "ProofDefault"
+	case ProofPending:
+		return "ProofPending"
+	case ProofSuccess:
+		return "ProofSuccess"
+	case ProofFailed:
+		return "ProofFailed"
+	case ProofGenerating:
+		return "ProofGenerating"
+	case ProofQueueWait:
+		return "ProofQueueWait"
+	default:
+		return "unknown"
+	}
+}
 
 type Mode string
 
