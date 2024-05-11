@@ -50,7 +50,7 @@ generator run config file
     ./generator --config ./testnet.json run
 
 
-## Setup circuits locally, 
+## Setup circuits locally
 如果很难 从mac studio下载ccs/pk/vk，可以采用local setup的方式生成ccs/pk/vk/sol 文件。以下是操作步骤。
 
 1. 从mac studio 下载aztec_bn254的srs/lsrs到本地
