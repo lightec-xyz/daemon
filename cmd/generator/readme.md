@@ -8,22 +8,16 @@
 
 
 ## Environment
-1. download circuit config data
+download circuit config data
 
-
-    
     // maybe you should Compressed file before download
     scp -r red@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits <lcoal circuit param file dir>
 
-2. set ZkParameterDir environment variables
-
-
+set ZkParameterDir environment variables
 
     export ZkParameterDir =<local circuit param file dir>
 
-3. generator run config file
-
-
+generator run config file
 
     {
         "url": "https://test.apps.zkbtc.money/api",
