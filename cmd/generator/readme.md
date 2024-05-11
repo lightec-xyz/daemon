@@ -7,16 +7,20 @@
     cd <projectDir>
 
     git clone https://<Token>@github.com/lightec-xyz/provers.git
+    cd provers
     git checkout v0.2.0   
 
     git cloen https://<Token>@github.com/lightec-xyz/btc_provers.git
+    cd btc_provers
     git checkout v0.2.0  
 
     git clone https://<Token>@github.com/lightec-xyz/reLight.git
+    cd reLight
     git checkout v0.2.0  
 
 
     git clone https://<Token>@github.com/lightec-xyz/daemon
+    cd daemon
     git checkout -b red_dev orign/red_dv
     cd  daemon/cmd/generator && go build
 
