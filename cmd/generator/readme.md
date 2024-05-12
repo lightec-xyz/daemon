@@ -148,7 +148,7 @@ export srs=/Users/xxx/lightec-xyz/srs/aztec_bn254
 sh setup.sh 
 ```
 
-3. setup btc_prover中的各个模块(TBD）， 因为btc 的ccs/pk/vk文件只有grandrollup.ccs/pk/vk，建议直接从mac studio 下载。
+3. setup btc_prover中的各个模块(TBD）， 因为btc 的ccs/pk/vk文件只有grandrollup.ccs/pk/vk，建议直接从mac studio:/opt/lightec/circuit_data/beta1/circuits/grandrollup 中下载。
    
    
 
