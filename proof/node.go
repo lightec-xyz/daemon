@@ -104,7 +104,7 @@ func (node *Node) Start() error {
 		go node.rpcServer.Run()
 	}
 	logger.Info("proof worker node start now ....")
-	signal.Notify(node.exit, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(node.exit, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-node.exit
 		switch msg {

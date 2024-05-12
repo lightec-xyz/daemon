@@ -86,7 +86,7 @@ func (f *Fetch) Run() error {
 	}
 	go node.DoTimerTask("fetch-finality-update", 1*time.Minute, f.fetch.FinalityUpdate, f.exitSignal)
 	go node.DoTimerTask("fetch-update", 1*time.Minute, f.fetch.LightClientUpdate, f.exitSignal)
-	signal.Notify(f.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(f.exitSignal, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-f.exitSignal
 		switch msg {

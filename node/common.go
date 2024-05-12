@@ -176,7 +176,7 @@ func DoTask(name string, fn func() error, exit chan os.Signal) {
 		select {
 		case <-exit:
 			logger.Info("%v goroutine exit now ...", name)
-			//return todo
+			return
 		default:
 			err := fn()
 			if err != nil {
@@ -194,7 +194,7 @@ func DoTimerTask(name string, interval time.Duration, fn func() error, exit chan
 		select {
 		case <-exit:
 			logger.Info("%v goroutine exit now ...", name)
-			//return todo
+			return
 		case <-ticker.C:
 			err := fn()
 			if err != nil {
@@ -210,7 +210,7 @@ func doProofRequestTask(name string, req chan []*common.ZkProofRequest, fn func(
 		select {
 		case <-exit:
 			logger.Info("%v goroutine exit now ...", name)
-		//return todo
+			return
 		case request := <-req:
 			err := fn(request)
 			if err != nil {
@@ -227,7 +227,7 @@ func doFetchRespTask(name string, resp chan FetchDataResponse, fn func(resp Fetc
 		select {
 		case <-exit:
 			logger.Info("%v goroutine exit now ...", name)
-		//return todo
+			return
 		case response := <-resp:
 			err := fn(response)
 			if err != nil {
@@ -243,7 +243,7 @@ func doProofResponseTask(name string, resp chan *common.ZkProofResponse, fn func
 		select {
 		case <-exit:
 			logger.Info("%v goroutine exit now ...", name)
-			//return todo
+			return
 		case response := <-resp:
 			err := fn(response)
 			if err != nil {
