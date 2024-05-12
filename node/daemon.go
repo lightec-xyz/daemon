@@ -168,8 +168,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	// todo find a better way
 	params.UseHoleskyNetworkConfig()
 	params.OverrideBeaconConfig(params.HoleskyConfig())
-	//beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro")
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro")
+	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -185,6 +185,10 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enabled")
 		zkParamDir := os.Getenv(common.ZkParameterDir) // todo
+		if zkParamDir == "" {
+			logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
+			return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
+		}
 		logger.Info("zkParamDir: %v", zkParamDir)
 		localWorker, err := NewLocalWorker(zkParamDir, "", 1)
 		if err != nil {
@@ -276,7 +280,7 @@ func (d *Daemon) Run() error {
 	}
 
 	// task manager
-	go DoTimerTask("task-manager", 10*time.Minute, d.taskManager.Check, d.exitSignal) // todo
+	go DoTimerTask("task-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)
@@ -301,7 +305,7 @@ func (d *Daemon) Run() error {
 
 	}
 
-	signal.Notify(d.exitSignal, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(d.exitSignal, syscall.SIGTERM, syscall.SIGQUIT)
 	for {
 		msg := <-d.exitSignal
 		switch msg {

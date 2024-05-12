@@ -296,16 +296,16 @@ func (e *EthereumAgent) parseBlock(height int64) ([]Transaction, []Transaction, 
 			if false {
 				logger.Warn("redeem btc tx %v already submitted", redeemTx.BtcTxId)
 			} else {
-				data, ok, err := e.getTxInEth2Data(log.TxHash.String())
-				if err != nil {
-					logger.Error("get tx in eth2 data error: %v %v", log.TxHash.String(), err)
-					return nil, nil, nil, err
-				}
-				if !ok {
-					logger.Error("get tx eth data false: %v", log.TxHash.String())
-					return nil, nil, nil, fmt.Errorf("get tx eth data false: %v", log.TxHash.String())
-				}
-				requests = append(requests, common.NewZkProofRequest(common.TxInEth2, data, 0, log.TxHash.String()))
+				//data, ok, err := e.getTxInEth2Data(log.TxHash.String())
+				//if err != nil {
+				//	logger.Error("get tx in eth2 data error: %v %v", log.TxHash.String(), err)
+				//	return nil, nil, nil, err
+				//}
+				//if !ok {
+				//	logger.Error("get tx eth data false: %v", log.TxHash.String())
+				//	return nil, nil, nil, fmt.Errorf("get tx eth data false: %v", log.TxHash.String())
+				//}
+				requests = append(requests, common.NewZkProofRequest(common.TxInEth2, nil, 0, log.TxHash.String()))
 
 			}
 			redeemTxes = append(redeemTxes, redeemTx)

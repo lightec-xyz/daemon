@@ -30,10 +30,31 @@ type ProofStatus int
 
 const (
 	ProofDefault ProofStatus = iota
-	ProofPending
+	ProofPending             // already not use now,placeholder compatible
 	ProofSuccess
 	ProofFailed
+	ProofGenerating
+	ProofQueueWait
 )
+
+func (ps *ProofStatus) String() string {
+	switch *ps {
+	case ProofDefault:
+		return "ProofDefault"
+	case ProofPending:
+		return "ProofPending"
+	case ProofSuccess:
+		return "ProofSuccess"
+	case ProofFailed:
+		return "ProofFailed"
+	case ProofGenerating:
+		return "ProofGenerating"
+	case ProofQueueWait:
+		return "ProofQueueWait"
+	default:
+		return "unknown"
+	}
+}
 
 type Mode string
 
@@ -97,14 +118,12 @@ func (zkpt *ZkProofType) String() string {
 func (zkpt *ZkProofType) Weight() ProofWeight {
 	// todo
 	switch *zkpt {
-	case SyncComRecursiveType, SyncComGenesisType, RedeemTxType:
+	case SyncComRecursiveType, SyncComGenesisType, RedeemTxType, DepositTxType, VerifyTxType:
 		return Highest
-	case BeaconHeaderFinalityType:
-		return WeightHigh
 	case SyncComUnitType:
+		return WeightHigh
+	case BeaconHeaderFinalityType:
 		return WeightMedium
-	case VerifyTxType:
-		return WeightLow
 	default:
 		return WeightDefault
 	}

@@ -50,7 +50,7 @@ func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *n
 }
 
 func (l *Local) Run() error {
-	logger.Debug("local proof run")
+	logger.Debug("generator proof run")
 	if l.worker.CurrentNums() >= l.worker.MaxNums() {
 		logger.Warn("maxNums limit reached, wait proof generated")
 		return nil
@@ -108,7 +108,7 @@ func (l *Local) Run() error {
 }
 
 func (l *Local) CheckState() error {
-	logger.Debug("local proof check state")
+	logger.Debug("generator proof check state")
 	l.cacheProofs.Iterator(func(value *common.SubmitProof) error {
 		_, err := l.client.SubmitProof(value)
 		if err != nil {

@@ -87,7 +87,6 @@ func (b *BeaconAgent) Init() error {
 	return err
 }
 
-// todo maybe use for  to replace recursive
 func (b *BeaconAgent) tryProofRequest(index uint64, reqType common.ZkProofType) error {
 	proofId := common.NewProofId(reqType, index, "")
 	exists := b.stateCache.Check(proofId)
@@ -240,7 +239,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v Index update Data, send new update request", period)
+		logger.Warn("no find %v Index update Data", period)
 		return nil, false, nil
 	}
 	// todo
@@ -343,11 +342,6 @@ func (b *BeaconAgent) GetGenesisRaw() (interface{}, bool, error) {
 	}
 	if !exists {
 		logger.Warn("get genesis Data,first proof not exists: %v Index", b.genesisPeriod)
-		//err := b.tryProofRequest(b.genesisPeriod, SyncComUnitType)
-		//if err != nil {
-		//	logger.Error(err.Error())
-		//	return nil, false, err
-		//}
 		return nil, false, nil
 	}
 	logger.Info("get genesis first proof: %v", b.genesisPeriod)
@@ -424,7 +418,7 @@ func (b *BeaconAgent) GetUnitData(period uint64) (*rpc.SyncCommUnitsRequest, boo
 			return nil, false, err
 		}
 		if !preUpdateExists {
-			logger.Warn("get unit Data,no find %v Index update Data, send new update request", prePeriod)
+			logger.Warn("get unit Data,no find %v Index update Data", prePeriod)
 			return nil, false, nil
 		}
 		return &rpc.SyncCommUnitsRequest{
@@ -556,12 +550,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		return nil, false, err
 	}
 	if !firstExists {
-		logger.Warn("no find genesis proof ,start new proof request")
-		//err := b.tryProofRequest(Index, SyncComGenesisType)
-		//if err != nil {
-		//	logger.Error(err.Error())
-		//	return nil, false, err
-		//}
+		logger.Warn("no find genesis proof")
 		return nil, false, nil
 	}
 	secondProof, secondExists, err := b.fileStore.GetUnitProof(relayPeriod)
@@ -570,12 +559,7 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 		return nil, false, err
 	}
 	if !secondExists {
-		logger.Warn("no find %v Index unit proof , send new proof request", relayPeriod)
-		//err := b.tryProofRequest(relayPeriod, SyncComUnitType)
-		//if err != nil {
-		//	logger.Error(err.Error())
-		//	return nil, false, err
-		//}
+		logger.Warn("no find %v Index unit proof ", relayPeriod)
 		return nil, false, nil
 	}
 

@@ -247,7 +247,7 @@ func (b *BitcoinAgent) parseBlock(height int64) ([]Transaction, []Transaction, [
 }
 
 func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
-	logger.Info("bitcoinAgent receive  Proof resp: %v %v %v %x",
+	logger.Info("bitcoinAgent receive Proof resp: %v %v %v %x",
 		resp.ZkProofType.String(), resp.Period, resp.TxHash, resp.Proof)
 	err := StoreZkProof(b.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
 	if err != nil {

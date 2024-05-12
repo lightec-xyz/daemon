@@ -53,6 +53,10 @@ func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
 		logger.Info("queue receive gen Proof request:%v", req.Id())
 		m.proofQueue.Push(req)
+		err := m.UpdateProofStatus(req, common.ProofQueueWait)
+		if err != nil {
+			logger.Error("update Proof status error:%v %v", req.Id(), err)
+		}
 	}
 	return nil
 }
@@ -69,10 +73,26 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 		logger.Error("should never happen,parse Proof request error")
 		return nil, false, fmt.Errorf("parse Proof request error")
 	}
-	//logger.Info("get proof request:%v %v", request.ReqType.String(), request.Index)
+	//logger.Debug("get proof request:v", request.Id())
 	request.StartTime = time.Now()
 	m.pendingQueue.Push(request.Id(), request)
+	err := m.UpdateProofStatus(request, common.ProofGenerating)
+	if err != nil {
+		logger.Error("update Proof status error:%v %v", request.Id(), err)
+	}
 	return request, true, nil
+}
+
+func (m *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.ProofStatus) error {
+	// todo
+	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
+		err := UpdateProof(m.store, req.TxHash, "", req.ReqType, status)
+		if err != nil {
+			logger.Error("update Proof status error:%v %v", req.Id(), err)
+			return err
+		}
+	}
+	return nil
 }
 
 func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
@@ -357,6 +377,10 @@ func (m *manager) CheckPendingRequest() error {
 			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
 			m.proofQueue.Push(request)
 			m.pendingQueue.Delete(request.Id())
+			err := m.UpdateProofStatus(request, common.ProofQueueWait)
+			if err != nil {
+				logger.Error("update Proof status error:%v %v", request.Id(), err)
+			}
 		}
 		return nil
 	})
