@@ -239,7 +239,7 @@ func (b *BeaconAgent) GetSyncCommitRootID(period uint64) ([]byte, bool, error) {
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v Index update Data, send new update request", period)
+		logger.Warn("no find %v Index update Data", period)
 		return nil, false, nil
 	}
 	// todo

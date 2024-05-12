@@ -118,14 +118,12 @@ func (zkpt *ZkProofType) String() string {
 func (zkpt *ZkProofType) Weight() ProofWeight {
 	// todo
 	switch *zkpt {
-	case SyncComRecursiveType, SyncComGenesisType, RedeemTxType:
+	case SyncComRecursiveType, SyncComGenesisType, RedeemTxType, DepositTxType, VerifyTxType:
 		return Highest
-	case BeaconHeaderFinalityType:
-		return WeightHigh
 	case SyncComUnitType:
+		return WeightHigh
+	case BeaconHeaderFinalityType:
 		return WeightMedium
-	case VerifyTxType:
-		return WeightLow
 	default:
 		return WeightDefault
 	}

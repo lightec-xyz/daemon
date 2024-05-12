@@ -280,7 +280,7 @@ func (d *Daemon) Run() error {
 	}
 
 	// task manager
-	go DoTimerTask("task-manager", 10*time.Minute, d.taskManager.Check, d.exitSignal) // todo
+	go DoTimerTask("task-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)
