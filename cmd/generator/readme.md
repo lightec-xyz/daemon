@@ -93,7 +93,7 @@ go build
 
 例如：
 ```
-export data=/Users/xxx/lightec-xyz/worker/circuit_data/circuits  # tx-in-eth2/setup.sh 中的是 "data"
+export home=/Users/xxx/lightec-xyz/worker/circuit_data/circuits  # tx-in-eth2/setup.sh 中的是 "data"
 export srs=/Users/xxx/lightec-xyz/srs/aztec_bn254
 ```
 
