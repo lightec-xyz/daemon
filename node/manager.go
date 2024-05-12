@@ -73,7 +73,7 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 		logger.Error("should never happen,parse Proof request error")
 		return nil, false, fmt.Errorf("parse Proof request error")
 	}
-	//logger.Info("get proof request:%v %v", request.ReqType.String(), request.Index)
+	//logger.Debug("get proof request:v", request.Id())
 	request.StartTime = time.Now()
 	m.pendingQueue.Push(request.Id(), request)
 	err := m.UpdateProofStatus(request, common.ProofGenerating)
