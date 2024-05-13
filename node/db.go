@@ -70,6 +70,16 @@ func WriteDestHash(store store.IStore, key, value string) error {
 	return store.PutObj(DbDestId(key), value)
 }
 
+func ReadDestHash(store store.IStore, key string) (string, error) {
+	var value string
+	err := store.GetObj(DbDestId(key), &value)
+	if err != nil {
+		logger.Error("get dest hash error:%v", err)
+		return value, err
+	}
+	return value, nil
+}
+
 func ReadDbTx(store store.IStore, txId string) (DbTx, error) {
 	var tx DbTx
 	err := store.GetObj(DbTxId(txId), &tx)

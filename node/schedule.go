@@ -1,7 +1,6 @@
 package node
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -68,16 +67,4 @@ func (m *Schedule) findBestWorker(work func(worker rpc.IWorker) error) (rpc.IWor
 	}
 	return bestWork, true, nil
 
-}
-
-func objParse(src, dest interface{}) error {
-	marshal, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(marshal, dest)
-	if err != nil {
-		return err
-	}
-	return nil
 }
