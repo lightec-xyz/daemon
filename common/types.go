@@ -26,12 +26,11 @@ type SubmitProof struct {
 type ZkProof []byte
 
 type ZkProofRequest struct {
-	ZkId    string // todo
-	ReqType ZkProofType
-	Data    interface{}
-	Index   uint64
-	TxHash  string
-
+	ZkId       string // todo
+	ReqType    ZkProofType
+	Data       interface{}
+	Index      uint64
+	TxHash     string
 	Status     ProofStatus
 	Weight     ProofWeight // todo
 	CreateTime time.Time

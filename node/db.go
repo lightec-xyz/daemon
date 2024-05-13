@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"sort"
 	"strings"
 
 	"github.com/lightec-xyz/daemon/logger"
@@ -237,6 +238,7 @@ func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProo
 		}
 		unGenPreProofs = append(unGenPreProofs, &unGenProof)
 	}
+	sort.Slice(unGenPreProofs, func(i, j int) bool { return unGenPreProofs[i].Height < unGenPreProofs[j].Height })
 	return unGenPreProofs, nil
 }
 

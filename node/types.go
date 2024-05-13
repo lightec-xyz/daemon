@@ -164,12 +164,14 @@ func formatOut(outputs []TxOut) string {
 
 type Transaction struct {
 	TxHash    string
-	Height    int64
+	Height    uint64
+	TxIndex   uint
 	BlockHash string
 	TxType    TxType
 	ChainType ChainType
-	Sender    string
-	Receiver  string
+	From      string
+	To        string
+	Proofed   bool
 
 	// bitcoin
 	EthAddr string

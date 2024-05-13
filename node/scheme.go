@@ -35,6 +35,8 @@ type DbUnGenProof struct {
 	TxHash    string
 	ProofType common.ZkProofType
 	ChainType ChainType
+	Height    uint64
+	TxIndex   uint
 }
 
 type TxType = int
