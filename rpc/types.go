@@ -19,7 +19,7 @@ type ProfTaskResponse struct {
 type Transaction struct {
 	Height        int64     `json:"height"`
 	Hash          string    `json:"hash"`
-	DestChainHash string    `json:"dest_chan_hash"`
+	DestChainHash string    `json:"destChainHash"`
 	Proof         ProofInfo `json:"proof"`
 }
 type Utxo struct {
