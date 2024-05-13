@@ -102,7 +102,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		return err
 	}
 	//todo
-	blockCount = blockCount - 0
+	blockCount = blockCount - 1
 	if curHeight >= blockCount {
 		logger.Debug("btc current height:%d,node block count:%d", curHeight, blockCount)
 		return nil
@@ -557,6 +557,7 @@ func NewDepositBtcTx(height uint64, txId, ethAddr string, utxo []Utxo, amount in
 		TxType:    DepositTx,
 		ChainType: Bitcoin,
 		EthAddr:   ethAddr,
+		ProofType: common.DepositTxType,
 		Utxo:      utxo,
 		Amount:    amount,
 	}
@@ -568,6 +569,7 @@ func NewRedeemBtcTx(height uint64, txId, blockHash string, inputs []Utxo, output
 		Height:    height,
 		TxType:    RedeemTx,
 		ChainType: Bitcoin,
+		ProofType: common.VerifyTxType,
 		BlockHash: blockHash,
 	}
 }

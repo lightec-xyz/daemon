@@ -172,6 +172,7 @@ type Transaction struct {
 	From      string
 	To        string
 	Proofed   bool
+	ProofType common.ZkProofType
 
 	// bitcoin
 	EthAddr string

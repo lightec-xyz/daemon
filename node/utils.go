@@ -95,6 +95,7 @@ func txesToUnGenProofs(chainType ChainType, txes []*Transaction) []*DbUnGenProof
 		if !tx.Proofed {
 			proofs = append(proofs, &DbUnGenProof{
 				ChainType: chainType,
+				ProofType: tx.ProofType,
 				TxHash:    tx.TxHash,
 				Height:    tx.Height,
 				TxIndex:   tx.TxIndex,
