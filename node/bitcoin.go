@@ -360,6 +360,10 @@ func (b *BitcoinAgent) CheckState() error {
 		logger.Debug("bitcoin check ungen proof: %v %v", proof.ProofType.String(), proof.TxHash)
 		if proof.ProofType == 0 || proof.TxHash == "" {
 			logger.Warn("unGenProof error:%v %v", proof.ProofType.String(), proof.TxHash)
+			err := DeleteUnGenProof(b.store, Bitcoin, proof.TxHash)
+			if err != nil {
+				logger.Error("delete ungen proof error:%v %v", proof.TxHash, err)
+			}
 			continue
 		}
 		exists, err := CheckProof(b.fileStore, proof.ProofType, 0, proof.TxHash)
