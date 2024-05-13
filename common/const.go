@@ -67,9 +67,16 @@ type ProofWeight int
 
 const (
 	WeightDefault ProofWeight = iota
-	WeightLow
-	WeightMedium
-	WeightHigh
+	OneLevel
+	TwoLevel
+	ThreeLevel
+	FourLevel
+	FiveLevel
+	SixLevel
+	SevenLevel
+	EightLevel
+	NineLevel
+	TenLevel
 	Highest
 )
 
@@ -118,12 +125,14 @@ func (zkpt *ZkProofType) String() string {
 func (zkpt *ZkProofType) Weight() ProofWeight {
 	// todo
 	switch *zkpt {
-	case SyncComRecursiveType, SyncComGenesisType, RedeemTxType, DepositTxType, VerifyTxType:
+	case RedeemTxType, DepositTxType, VerifyTxType:
 		return Highest
+	case SyncComRecursiveType, SyncComGenesisType:
+		return TenLevel
 	case SyncComUnitType:
-		return WeightHigh
-	case BeaconHeaderFinalityType:
-		return WeightMedium
+		return NineLevel
+	case BeaconHeaderFinalityType, TxInEth2, BeaconHeaderType:
+		return EightLevel
 	default:
 		return WeightDefault
 	}
