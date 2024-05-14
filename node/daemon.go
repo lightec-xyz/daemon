@@ -2,24 +2,24 @@ package node
 
 import (
 	"fmt"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	"github.com/lightec-xyz/daemon/rpc/oasis"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
-	//btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
+
 	"github.com/prysmaticlabs/prysm/v5/config/params"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func init() {
@@ -168,8 +168,11 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	// todo find a better way
 	params.UseHoleskyNetworkConfig()
 	params.OverrideBeaconConfig(params.HoleskyConfig())
-	beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro")
-	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+
+	// tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
+	// beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
+
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
