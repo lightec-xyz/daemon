@@ -39,19 +39,41 @@ type DbUnGenProof struct {
 	TxIndex   uint
 }
 
-type TxType = int
+type TxType int
 
 const (
 	DepositTx TxType = iota + 1
 	RedeemTx
 )
 
-type ChainType = int
+func (tt *TxType) String() string {
+	switch *tt {
+	case DepositTx:
+		return "deposit"
+	case RedeemTx:
+		return "redeem"
+	default:
+		return "Unknown"
+	}
+}
+
+type ChainType int
 
 const (
 	Bitcoin ChainType = iota + 1
 	Ethereum
 )
+
+func (ct *ChainType) String() string {
+	switch *ct {
+	case Bitcoin:
+		return "bitcoin"
+	case Ethereum:
+		return "ethereum"
+	default:
+		return "Unknown"
+	}
+}
 
 func DbProofId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", ProofPrefix, trimOx(txId))
