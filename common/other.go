@@ -1,8 +1,9 @@
 package common
 
 import (
+	"strconv"
+
 	"github.com/lightec-xyz/provers/utils"
-	"math/big"
 )
 
 // todo
@@ -13,11 +14,7 @@ func GetSlot(blockNumber int64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	slotBig, ok := big.NewInt(0).SetString(slot, 10)
-	if !ok {
-		return 0, err
-	}
-	return slotBig.Uint64(), nil
+	return strconv.ParseUint(slot, 10, 64)
 }
 
 func GetNearTxSlot(slot uint64) uint64 {
