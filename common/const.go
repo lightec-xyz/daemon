@@ -118,7 +118,7 @@ func (zkpt *ZkProofType) String() string {
 	case BeaconHeaderType:
 		return "BeaconHeaderType"
 	default:
-		return ""
+		return "unKnown"
 	}
 }
 
