@@ -1,12 +1,14 @@
 package common
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	"github.com/prysmaticlabs/prysm/v5/container/trie"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
+	"os"
 )
 
 // todo
@@ -144,4 +146,22 @@ func decodeHex(hexString string) ([]byte, error) {
 		return nil, err
 	}
 	return decoded, nil
+}
+
+type Parameters struct {
+	FileName string `json:"file"`
+	Hash     string `json:"md5"`
+}
+
+func Md5(data []byte) []byte {
+	ret := md5.Sum(data)
+	return ret[:]
+}
+
+func FileMd5(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(Md5(data)), nil
 }

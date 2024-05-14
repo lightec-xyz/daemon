@@ -1,6 +1,7 @@
 package node
 
 import (
+	"container/heap"
 	"container/list"
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
@@ -9,6 +10,90 @@ import (
 )
 
 //Todo abstract queue
+
+type HeapQueue struct {
+	queue *PriorityQueue
+	lock  sync.Mutex
+}
+
+func NewHeapQueue() *HeapQueue {
+	pq := make(PriorityQueue, 0)
+	heap.Init(&pq)
+	return &HeapQueue{
+		queue: &pq,
+	}
+}
+
+func (h *HeapQueue) Push(value *common.ZkProofRequest) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	heap.Push(h.queue, &Item{
+		value:    value,
+		priority: int(value.Weight),
+	})
+}
+
+func (h *HeapQueue) Len() int {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	return h.queue.Len()
+}
+
+func (h *HeapQueue) Pop() (*common.ZkProofRequest, bool) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	if h.queue.Len() == 0 {
+		return nil, false
+	}
+	return heap.Pop(h.queue).(*Item).value, true
+}
+
+// https://pkg.go.dev/container/heap
+type Item struct {
+	value    *common.ZkProofRequest
+	priority int
+	index    int
+}
+
+type PriorityQueue []*Item
+
+func (pq PriorityQueue) Len() int { return len(pq) }
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	if pq[i].priority != pq[j].priority {
+		return pq[i].priority < pq[j].priority
+	}
+	return pq[i].value.Index < pq[j].value.Index
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+
+func (pq *PriorityQueue) Push(x any) {
+	n := len(*pq)
+	item := x.(*Item)
+	item.index = n
+	*pq = append(*pq, item)
+}
+
+func (pq *PriorityQueue) Pop() any {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	old[n-1] = nil  // avoid memory leak
+	item.index = -1 // for safety
+	*pq = old[0 : n-1]
+	return item
+}
+
+func (pq *PriorityQueue) update(item *Item, value *common.ZkProofRequest, priority int) {
+	item.value = value
+	item.priority = priority
+	heap.Fix(pq, item.index)
+}
 
 type Queue struct {
 	list     *list.List

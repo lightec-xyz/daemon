@@ -125,11 +125,13 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 		//return nil, err
 	}
 	transaction := rpc.Transaction{
-		Height:        tx.Height,
-		Hash:          txHash,
-		TxType:        tx.TxType.String(),
-		ChainType:     tx.ChainType.String(),
-		DestChainHash: destChainHash,
+		Height:    tx.Height,
+		Hash:      txHash,
+		TxType:    tx.TxType.String(),
+		ChainType: tx.ChainType.String(),
+		DestChain: rpc.DestChainInfo{
+			Hash: destChainHash,
+		},
 		Proof: rpc.ProofInfo{
 			Proof:  dbProof.Proof,
 			Status: dbProof.Status,
