@@ -129,6 +129,7 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 		Hash:      txHash,
 		TxType:    tx.TxType.String(),
 		ChainType: tx.ChainType.String(),
+		Amount:    tx.Amount,
 		DestChain: rpc.DestChainInfo{
 			Hash: destChainHash,
 		},

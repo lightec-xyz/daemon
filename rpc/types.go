@@ -21,6 +21,7 @@ type Transaction struct {
 	Hash      string        `json:"hash"`
 	ChainType string        `json:"chainType"`
 	TxType    string        `json:"txType"`
+	Amount    int64         `json:"amount"`
 	DestChain DestChainInfo `json:"destChain"`
 	Proof     ProofInfo     `json:"proof"`
 }

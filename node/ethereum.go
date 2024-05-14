@@ -42,6 +42,7 @@ type EthereumAgent struct {
 	proofRequest     chan []*common.ZkProofRequest
 	multiAddressInfo MultiAddressInfo
 	logAddrFilter    EthAddrFilter
+	btcLockScript    string
 	initHeight       int64
 	task             *TaskManager
 	genesisPeriod    uint64
@@ -63,6 +64,7 @@ func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, st
 		multiAddressInfo: cfg.MultiAddressInfo,
 		initHeight:       cfg.EthInitHeight,
 		logAddrFilter:    cfg.EthAddrFilter,
+		btcLockScript:    cfg.BtcLockScript,
 		task:             task,
 		genesisPeriod:    genesisSlot / 8192,
 		genesisSlot:      genesisSlot,
@@ -398,8 +400,12 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (*Transaction, bool, error) {
 				Index: in.PreviousOutPoint.Index,
 			})
 		}
+		var amount int64
 		var outputs []TxOut
 		for _, out := range transaction.TxOut {
+			if hex.EncodeToString(out.PkScript) != e.btcLockScript {
+				amount = amount + out.Value
+			}
 			outputs = append(outputs, TxOut{
 				Value:    out.Value,
 				PkScript: out.PkScript,
@@ -417,9 +423,9 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (*Transaction, bool, error) {
 			return nil, false, err
 		}
 		blockNumber := log.BlockNumber
-		logger.Info("ethereum agent find redeem zkbtc height:%v,ethTxHash:%v,sender:%v,btcTxId:%v,input:%v,output:%v",
-			blockNumber, txHash, txSender, btcTxId, formatUtxo(inputs), formatOut(outputs))
-		redeemTx := NewRedeemEthTx(blockNumber, log.TxIndex, txHash, txSender, btcTxId, inputs, outputs)
+		logger.Info("ethereum agent find redeem zkbtc height:%v,ethTxHash:%v,sender:%v,btcTxId:%v,amount:%v,input:%v,output:%v",
+			blockNumber, txHash, txSender, btcTxId, amount, formatUtxo(inputs), formatOut(outputs))
+		redeemTx := NewRedeemEthTx(blockNumber, log.TxIndex, txHash, txSender, btcTxId, amount, inputs, outputs)
 		return redeemTx, true, nil
 	} else {
 		return nil, false, nil
@@ -811,7 +817,7 @@ func NewDepositEthTx(height uint64, txIndex uint, txHash, btcTxId string, utxo [
 		BtcTxId:   btcTxId,
 	}
 }
-func NewRedeemEthTx(height uint64, txIndex uint, txHash, sender, btcTxId string, inputs []Utxo, outputs []TxOut) *Transaction {
+func NewRedeemEthTx(height uint64, txIndex uint, txHash, sender, btcTxId string, amount int64, inputs []Utxo, outputs []TxOut) *Transaction {
 	return &Transaction{
 		Height:    height,
 		TxIndex:   txIndex,
@@ -820,6 +826,7 @@ func NewRedeemEthTx(height uint64, txIndex uint, txHash, sender, btcTxId string,
 		TxType:    RedeemTx,
 		BtcTxId:   btcTxId,
 		From:      sender,
+		Amount:    amount,
 	}
 }
 

@@ -86,6 +86,7 @@ func txesToDbTxes(txes []*Transaction) []DbTx {
 			Height:    int64(tx.Height),
 			TxType:    tx.TxType,
 			ChainType: tx.ChainType,
+			Amount:    tx.Amount,
 		})
 	}
 	return dbtxes

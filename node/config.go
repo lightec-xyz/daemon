@@ -65,6 +65,7 @@ func (rc *RunConfig) Check() error {
 type Config struct {
 	RunConfig
 	BtcOperatorAddr   string           `json:"btcOperatorAddr"`
+	BtcLockScript     string           `json:"btcLockScript"`
 	MultiAddressInfo  MultiAddressInfo `json:"multiAddressInfo"`
 	GenesisSyncPeriod uint64           `json:"genesisPeriod"`
 	ZkBridgeAddr      string           `json:"zkBridgeAddr"`
@@ -136,6 +137,7 @@ func getTestnetConfig(runCnfg RunConfig) (Config, error) {
 		RunConfig:         runCnfg,
 		GenesisSyncPeriod: runCnfg.BeaconInitSlot / 8192, // todo
 		BtcOperatorAddr:   TestnetBtcOperatorAddress,
+		BtcLockScript:     TestnetBtcLockScript,
 		MultiAddressInfo:  multiAddressInfo,
 		ZkBridgeAddr:      TestnetEthZkBridgeAddress,
 		ZkBtcAddr:         TestnetEthZkBtcAddress,

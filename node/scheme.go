@@ -22,6 +22,7 @@ type DbTx struct {
 	Height    int64
 	TxType    TxType
 	ChainType ChainType
+	Amount    int64
 }
 
 type DbProof struct {
