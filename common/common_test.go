@@ -1,11 +1,12 @@
 package common
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lightec-xyz/daemon/logger"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
-	"strings"
-	"testing"
 )
 
 func TestHexToTxVar(t *testing.T) {
