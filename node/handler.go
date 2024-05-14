@@ -133,6 +133,7 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 			Hash: destChainHash,
 		},
 		Proof: rpc.ProofInfo{
+			TxId:   txHash,
 			Proof:  dbProof.Proof,
 			Status: dbProof.Status,
 		},
