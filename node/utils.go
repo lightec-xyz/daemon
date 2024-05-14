@@ -82,8 +82,10 @@ func txesToDbTxes(txes []*Transaction) []DbTx {
 	var dbtxes []DbTx
 	for _, tx := range txes {
 		dbtxes = append(dbtxes, DbTx{
-			TxHash: tx.TxHash,
-			Height: int64(tx.Height),
+			TxHash:    tx.TxHash,
+			Height:    int64(tx.Height),
+			TxType:    tx.TxType,
+			ChainType: tx.ChainType,
 		})
 	}
 	return dbtxes

@@ -116,17 +116,19 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 	}
 	destChainHash, err := ReadDestHash(h.store, txHash)
 	if err != nil {
-		logger.Error("read dest chain hash error: %v %v", txHash, err)
+		//logger.Error("read dest chain hash error: %v %v", txHash, err)
 		//return nil, err
 	}
 	dbProof, err := ReadDbProof(h.store, txHash)
 	if err != nil {
-		logger.Error("read dbProof error: %v %v", txHash, err)
+		//logger.Error("read dbProof error: %v %v", txHash, err)
 		//return nil, err
 	}
 	transaction := rpc.Transaction{
 		Height:        tx.Height,
 		Hash:          txHash,
+		TxType:        tx.TxType.String(),
+		ChainType:     tx.ChainType.String(),
 		DestChainHash: destChainHash,
 		Proof: rpc.ProofInfo{
 			Proof:  dbProof.Proof,
