@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"strconv"
+	"strings"
+
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/lightec-xyz/daemon/circuits"
@@ -19,11 +22,10 @@ import (
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
+	commonUtiles "github.com/lightec-xyz/provers/utils"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
-	"strconv"
-	"strings"
 )
 
 type EthereumAgent struct {
@@ -562,7 +564,7 @@ func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64,
 }
 
 func (e *EthereumAgent) getTxInEth2Data(txHash string) (*rpc.TxInEth2ProveRequest, bool, error) {
-	txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, txHash)
+	txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, commonUtiles.GetSlotOfEth1Block, txHash)
 	if err != nil {
 		logger.Error("get tx data error: %v", err)
 		return nil, false, err
@@ -643,7 +645,7 @@ func (e *EthereumAgent) GetSlotByHash(hash string) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	slot, err := common.GetSlot(receipt.BlockNumber.Int64())
+	slot, err := commonUtiles.GetSlotOfEth1Block(receipt.BlockNumber.Uint64())
 	if err != nil {
 		return 0, err
 	}
@@ -692,7 +694,7 @@ func (e *EthereumAgent) checkRequest(zkType common.ZkProofType, index uint64, tx
 			logger.Error("get tx receipt error: %v", err)
 			return false, err
 		}
-		txSlot, err := common.GetSlot(receipt.BlockNumber.Int64())
+		txSlot, err := commonUtiles.GetSlotOfEth1Block(receipt.BlockNumber.Uint64())
 		if err != nil {
 			logger.Error("get slot error: %v", err)
 			return false, err
