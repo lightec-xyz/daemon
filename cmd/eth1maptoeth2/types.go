@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/prysmaticlabs/prysm/v5/api/client/beacon"
-	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
+	"github.com/prysmaticlabs/prysm/v5/encoding/ssz/detect"
 )
 
 type Eth1MapToEth2 struct {
@@ -43,21 +43,30 @@ func GetEth1MapToEth2(cl *apiclient.Client, slot int) (*Eth1MapToEth2, error) {
 		return nil, err
 	}
 
-	blk := &ethpb.SignedBlindedBeaconBlockBellatrix{}
-	err = blk.UnmarshalSSZ(bb)
+	vu, err := detect.FromBlock(bb)
 	if err != nil {
 		return nil, err
 	}
 
-	blockRoot, err := blk.Block.HashTreeRoot()
+	blk, err := vu.UnmarshalBlindedBeaconBlock(bb)
+	if err != nil {
+		return nil, err
+	}
+
+	blockRoot, err := blk.Block().HashTreeRoot()
+	if err != nil {
+		return nil, err
+	}
+
+	executionData, err := blk.Block().Body().Execution()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Eth1MapToEth2{
-		BlockNumber: blk.Block.Body.ExecutionPayloadHeader.BlockNumber,
-		BlockHash:   hexutil.Encode(blk.Block.Body.ExecutionPayloadHeader.BlockHash),
-		BlockSlot:   uint64(blk.Block.Slot),
+		BlockNumber: executionData.BlockNumber(),
+		BlockHash:   hexutil.Encode(executionData.BlockHash()),
+		BlockSlot:   uint64(blk.Block().Slot()),
 		BlockRoot:   hexutil.Encode(blockRoot[:]),
 	}, nil
 }
