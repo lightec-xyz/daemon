@@ -13,7 +13,11 @@ import (
 )
 
 func Test_GetHeadSlot(t *testing.T) {
-	cl, err := apiclient.NewClient("http://58.41.9.129:8970")
+	// cl, err := apiclient.NewClient("http://58.41.9.129:8970")
+
+	tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
+	cl, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
+
 	require.NoError(t, err)
 
 	headSlot, err := GetHeadSlot(cl)
@@ -23,9 +27,10 @@ func Test_GetHeadSlot(t *testing.T) {
 }
 
 func Test_GetEth1MapToEth2(t *testing.T) {
-	tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
+	// tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
+	// cl, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
 
-	cl, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
+	cl, err := apiclient.NewClient("http://58.41.9.129:8970")
 	require.NoError(t, err)
 
 	params.UseHoleskyNetworkConfig()
