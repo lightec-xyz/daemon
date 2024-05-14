@@ -117,6 +117,15 @@ func WriteDbProof(store store.IStore, txes []DbProof) error {
 	return nil
 }
 
+func UpdateProofStatus(store store.IStore, txId string, proofType common.ZkProofType, status common.ProofStatus) error {
+	err := UpdateProof(store, txId, "", proofType, status)
+	if err != nil {
+		logger.Error("put Proof tx error:%v %v", txId, err)
+		return err
+	}
+	return err
+}
+
 func UpdateProof(store store.IStore, txId string, proof string, proofType common.ZkProofType, status common.ProofStatus) error {
 	txProof := DbProof{
 		TxHash:    txId,

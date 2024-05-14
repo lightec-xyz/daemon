@@ -53,7 +53,7 @@ func (tt *TxType) String() string {
 	case RedeemTx:
 		return "redeem"
 	default:
-		return "Unknown"
+		return "unknown"
 	}
 }
 
@@ -71,7 +71,7 @@ func (ct *ChainType) String() string {
 	case Ethereum:
 		return "ethereum"
 	default:
-		return "Unknown"
+		return "unknown"
 	}
 }
 

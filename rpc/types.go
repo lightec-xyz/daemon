@@ -26,7 +26,7 @@ type Transaction struct {
 }
 
 type DestChainInfo struct {
-	Hash string
+	Hash string `json:"hash"`
 }
 
 type Utxo struct {

@@ -450,6 +450,25 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Debug("delete ungen proof tx: %v", txHash)
 			continue
 		}
+		txSlot, err := e.GetSlotByHash(txHash)
+		if err != nil {
+			logger.Error("get txSlot error: %v", err)
+			return err
+		}
+		finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
+		if err != nil {
+			logger.Error("get near tx slot finalized slot error: %v", err)
+			return err
+		}
+		if !ok {
+			logger.Warn("no find near %v tx slot finalized slot", txSlot)
+			continue
+		}
+		err = e.updateRedeemProofStatus(txHash, txSlot, common.ProofFinalized)
+		if err != nil {
+			logger.Error("update proof status error: %v %v", txHash, err)
+			return err
+		}
 		exists, err = CheckProof(e.fileStore, common.TxInEth2, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
@@ -461,12 +480,6 @@ func (e *EthereumAgent) CheckState() error {
 				logger.Error("try proof request error: %v", err)
 				return err
 			}
-		}
-		// todo
-		txSlot, err := e.GetSlotByHash(txHash)
-		if err != nil {
-			logger.Error("get txSlot error: %v", err)
-			return err
 		}
 		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, "")
 		if err != nil {
@@ -480,17 +493,7 @@ func (e *EthereumAgent) CheckState() error {
 				return err
 			}
 		}
-		finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
-		if err != nil {
-			logger.Error("get near tx slot finalized slot error: %v", err)
-			return err
-		}
-		if !ok {
-			logger.Warn("no find near %v tx slot finalized slot", txSlot)
-			continue
-		}
 		logger.Debug("%v find near %v tx slot finalized slot %v", txHash, txSlot, finalizedSlot)
-
 		exists, err = CheckProof(e.fileStore, common.BeaconHeaderFinalityType, finalizedSlot, "")
 		if err != nil {
 			logger.Error("check block header finality proof error: %v %v", finalizedSlot, err)
@@ -509,11 +512,22 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Error("try proof request error: %v", err)
 			return err
 		}
-
 	}
-
 	return nil
 
+}
+
+func (e *EthereumAgent) updateRedeemProofStatus(txHash string, index uint64, status common.ProofStatus) error {
+	id := common.NewProofId(common.RedeemTxType, index, txHash)
+	if !e.stateCache.Check(id) {
+		err := UpdateProof(e.store, txHash, "", common.RedeemTxType, status)
+		if err != nil {
+			logger.Error("update proof status error: %v %v", txHash, err)
+			return err
+		}
+		return err
+	}
+	return nil
 }
 
 func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64, txHash string) error {
