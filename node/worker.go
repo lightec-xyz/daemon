@@ -83,7 +83,7 @@ func (w *LocalWorker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockH
 		EndRoot:             req.EndRoot,
 		MiddleBeaconHeaders: middleHeader,
 	}
-	logger.Debug("len: %v", len(headers.MiddleBeaconHeaders))
+	//logger.Debug("len: %v", len(headers.MiddleBeaconHeaders))
 	proof, err := w.circuit.BeaconHeaderProve(headers)
 	if err != nil {
 		logger.Error("BlockHeaderProve error: %v", err)

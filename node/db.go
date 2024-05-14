@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"sort"
 	"strings"
 
 	"github.com/lightec-xyz/daemon/logger"
@@ -67,6 +68,16 @@ func WriteBitcoinTx(store store.IStore, txes []DbTx) error {
 
 func WriteDestHash(store store.IStore, key, value string) error {
 	return store.PutObj(DbDestId(key), value)
+}
+
+func ReadDestHash(store store.IStore, key string) (string, error) {
+	var value string
+	err := store.GetObj(DbDestId(key), &value)
+	if err != nil {
+		logger.Error("get dest hash error:%v", err)
+		return value, err
+	}
+	return value, nil
 }
 
 func ReadDbTx(store store.IStore, txId string) (DbTx, error) {
@@ -237,6 +248,7 @@ func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProo
 		}
 		unGenPreProofs = append(unGenPreProofs, &unGenProof)
 	}
+	sort.Slice(unGenPreProofs, func(i, j int) bool { return unGenPreProofs[i].Height < unGenPreProofs[j].Height })
 	return unGenPreProofs, nil
 }
 

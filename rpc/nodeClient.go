@@ -53,8 +53,8 @@ func (c *NodeClient) TransactionsByHeight(height uint64, network string) ([]stri
 	return result, nil
 }
 
-func (c *NodeClient) Transactions(txIds []string) ([]Transaction, error) {
-	var result []Transaction
+func (c *NodeClient) Transactions(txIds []string) ([]*Transaction, error) {
+	var result []*Transaction
 	err := c.call(&result, "zkbtc_transactions", txIds)
 	if err != nil {
 		return result, err
@@ -62,13 +62,13 @@ func (c *NodeClient) Transactions(txIds []string) ([]Transaction, error) {
 	return result, nil
 }
 
-func (c *NodeClient) Transaction(txHash string) (Transaction, error) {
+func (c *NodeClient) Transaction(txHash string) (*Transaction, error) {
 	var result Transaction
 	err := c.call(&result, "zkbtc_transaction", txHash)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
-	return result, nil
+	return &result, nil
 }
 
 func (c *NodeClient) ProofInfo(proofId []string) ([]ProofInfo, error) {

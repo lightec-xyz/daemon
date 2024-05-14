@@ -82,7 +82,7 @@ func (l *Local) Run() error {
 				return
 			}
 			count = count + 1
-			logger.Info("worker %v start generate Proof type: %v", l.worker.Id(), request.Id())
+			logger.Info("worker %v start generate Proof type: %v", l.Id, request.Id())
 			proofs, err := node.WorkerGenProof(l.worker, request)
 			if err != nil {
 				logger.Error("worker gen proof error:%v %v", request.Id(), err)
@@ -99,7 +99,7 @@ func (l *Local) Run() error {
 				return
 			}
 			for _, proof := range proofs {
-				logger.Info("success submit proof to server: %v_%v", submitProof.Id, proof.Id())
+				logger.Info("success submit proof to server: %v %v", submitProof.Id, proof.Id())
 			}
 			return
 		}

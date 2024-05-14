@@ -94,8 +94,8 @@ func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string,
 
 }
 
-func (h *Handler) Transactions(txIds []string) ([]rpc.Transaction, error) {
-	var txList []rpc.Transaction
+func (h *Handler) Transactions(txIds []string) ([]*rpc.Transaction, error) {
+	var txList []*rpc.Transaction
 	for _, txId := range txIds {
 		transaction, err := h.Transaction(txId)
 		if err != nil {
@@ -108,19 +108,32 @@ func (h *Handler) Transactions(txIds []string) ([]rpc.Transaction, error) {
 
 }
 
-func (h *Handler) Transaction(txHash string) (rpc.Transaction, error) {
+func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 	tx, err := ReadDbTx(h.store, txHash)
 	if err != nil {
 		logger.Error("read transaction error: %v %v", txHash, err)
-		return rpc.Transaction{}, err
+		return nil, err
 	}
-	transaction := rpc.Transaction{}
-	err = objParse(tx, &transaction)
+	destChainHash, err := ReadDestHash(h.store, txHash)
 	if err != nil {
-		logger.Error("parse transaction error: %v %v", txHash, err)
-		return rpc.Transaction{}, err
+		logger.Error("read dest chain hash error: %v %v", txHash, err)
+		//return nil, err
 	}
-	return transaction, err
+	dbProof, err := ReadDbProof(h.store, txHash)
+	if err != nil {
+		logger.Error("read dbProof error: %v %v", txHash, err)
+		//return nil, err
+	}
+	transaction := rpc.Transaction{
+		Height:        tx.Height,
+		Hash:          txHash,
+		DestChainHash: destChainHash,
+		Proof: rpc.ProofInfo{
+			Proof:  dbProof.Proof,
+			Status: dbProof.Status,
+		},
+	}
+	return &transaction, err
 }
 
 func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {

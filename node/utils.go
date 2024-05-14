@@ -46,12 +46,26 @@ func trimOx(id string) string {
 	return strings.TrimPrefix(id, "0x")
 }
 
-func txesToTxIds(txes []Transaction) []string {
+func txesToTxIds(txes []*Transaction) []string {
 	var txHashes []string
 	for _, tx := range txes {
 		txHashes = append(txHashes, tx.TxHash)
 	}
 	return txHashes
+}
+
+func txesToDbProofs(txes []*Transaction) []DbProof {
+	var dbProofs []DbProof
+	for _, tx := range txes {
+		dbProof := DbProof{
+			TxHash: tx.TxHash,
+		}
+		if tx.Proofed {
+			dbProof.Status = int(common.ProofSuccess)
+		}
+		dbProofs = append(dbProofs, dbProof)
+	}
+	return dbProofs
 }
 
 func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
@@ -64,14 +78,31 @@ func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
 	return dbProofs
 }
 
-func txesToDbTxes(txes []Transaction) []DbTx {
+func txesToDbTxes(txes []*Transaction) []DbTx {
 	var dbtxes []DbTx
 	for _, tx := range txes {
 		dbtxes = append(dbtxes, DbTx{
 			TxHash: tx.TxHash,
+			Height: int64(tx.Height),
 		})
 	}
 	return dbtxes
+}
+
+func txesToUnGenProofs(chainType ChainType, txes []*Transaction) []*DbUnGenProof {
+	var proofs []*DbUnGenProof
+	for _, tx := range txes {
+		if !tx.Proofed {
+			proofs = append(proofs, &DbUnGenProof{
+				ChainType: chainType,
+				ProofType: tx.ProofType,
+				TxHash:    tx.TxHash,
+				Height:    tx.Height,
+				TxIndex:   tx.TxIndex,
+			})
+		}
+	}
+	return proofs
 }
 
 func requestsToUnGenProofs(chainType ChainType, requests []*common.ZkProofRequest) []*DbUnGenProof {
@@ -86,19 +117,19 @@ func requestsToUnGenProofs(chainType ChainType, requests []*common.ZkProofReques
 	return proofs
 }
 
-func txesByAddrGroup(txes []Transaction) map[string][]DbTx {
+func txesByAddrGroup(txes []*Transaction) map[string][]DbTx {
 	txMap := make(map[string][]DbTx)
 	for _, tx := range txes {
-		if tx.Sender == "" {
+		if tx.From == "" {
 			continue
 		}
-		list, ok := txMap[tx.Sender]
+		list, ok := txMap[tx.From]
 		if ok {
 			list = append(list, DbTx{
 				TxHash: tx.TxHash,
 			})
 		} else {
-			txMap[tx.Sender] = []DbTx{
+			txMap[tx.From] = []DbTx{
 				{
 					TxHash: tx.TxHash,
 				},

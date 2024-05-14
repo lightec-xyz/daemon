@@ -53,7 +53,7 @@ const (
 	TestLogDepositAddr = "0x9d2aaea60dee441981edf44300c26f1946411548"
 	TestLogRedeemAddr  = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
 
-	TestTopicDepositAddr = "0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce"
+	TestTopicDepositAddr = "0xbfb6a0aa850eff6109c854ffb48321dcf37f02d6c7a44c46987a5ddf3419fc07"
 	TestTopicRedeemAddr  = "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"
 )
 
