@@ -87,6 +87,11 @@ func (b *BeaconAgent) Init() error {
 	return err
 }
 
+func (b *BeaconAgent) ScanBlock() error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (b *BeaconAgent) tryProofRequest(index uint64, reqType common.ZkProofType) error {
 	proofId := common.NewProofId(reqType, index, "")
 	exists := b.stateCache.Check(proofId)

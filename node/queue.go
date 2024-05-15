@@ -61,7 +61,7 @@ func (pq PriorityQueue) Len() int { return len(pq) }
 
 func (pq PriorityQueue) Less(i, j int) bool {
 	if pq[i].priority != pq[j].priority {
-		return pq[i].priority < pq[j].priority
+		return pq[i].priority > pq[j].priority
 	}
 	return pq[i].value.Index < pq[j].value.Index
 }

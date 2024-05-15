@@ -6,10 +6,11 @@ import (
 )
 
 const (
-	ProofPrefix         = "p_" // p_ + hash
-	TxPrefix            = "t_" // t_ + hash
-	DestChainHashPrefix = "d_" // d_ + hash
-	UnGenProofPrefix    = "u_" // u_ + hash
+	ProofPrefix         = "p_"  // p_ + hash
+	TxPrefix            = "t_"  // t_ + hash
+	DestChainHashPrefix = "d_"  // d_ + hash
+	UnGenProofPrefix    = "u_"  // u_ + hash
+	UnSubmitTxPrefix    = "us_" // s_ + hash
 )
 
 var (
@@ -38,6 +39,12 @@ type DbUnGenProof struct {
 	ChainType ChainType
 	Height    uint64
 	TxIndex   uint
+}
+
+type DbUnSubmitTx struct {
+	Hash      string
+	ProofType common.ZkProofType
+	Proof     string
 }
 
 type TxType int
@@ -103,6 +110,11 @@ func DbDestId(txId string) string {
 
 func DbUnGenProofId(chain ChainType, txId string) string {
 	pTxID := fmt.Sprintf("%s%d_%s", UnGenProofPrefix, chain, trimOx(txId))
+	return pTxID
+}
+
+func DbUnSubmitTxId(txId string) string {
+	pTxID := fmt.Sprintf("%s%s", UnSubmitTxPrefix, trimOx(txId))
 	return pTxID
 }
 

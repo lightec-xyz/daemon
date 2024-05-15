@@ -215,6 +215,47 @@ func WriteTxes(store store.IStore, txes []DbTx) error {
 	return nil
 }
 
+func WriteUnSubmitTx(store store.IStore, txes []DbUnSubmitTx) error {
+	batch := store.Batch()
+	for _, tx := range txes {
+		err := batch.BatchPutObj(DbUnSubmitTxId(tx.Hash), tx)
+		if err != nil {
+			logger.Error("put unsubmit tx error:%v", err)
+			return err
+		}
+	}
+	err := batch.BatchWriteObj()
+	if err != nil {
+		logger.Error("put unsubmit tx batch error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func ReadAllUnSubmitTxs(store store.IStore) ([]DbUnSubmitTx, error) {
+	var txes []DbUnSubmitTx
+	iterator := store.Iterator([]byte(UnSubmitTxPrefix), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var tx DbUnSubmitTx
+		err := store.GetObj(iterator.Key(), &tx)
+		if err != nil {
+			logger.Error("get unsubmit tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, tx)
+	}
+	err := iterator.Error()
+	if err != nil {
+		return nil, err
+	}
+	return txes, nil
+}
+
+func DeleteUnSubmitTx(store store.IStore, hash string) error {
+	return store.DeleteObj(DbUnSubmitTxId(hash))
+}
+
 func WriteUnGenProof(store store.IStore, chain ChainType, list []*DbUnGenProof) error {
 	batch := store.Batch()
 	for _, item := range list {

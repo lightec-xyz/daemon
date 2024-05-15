@@ -2,6 +2,7 @@ package node
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
@@ -76,6 +77,14 @@ func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
 		})
 	}
 	return dbProofs
+}
+
+func proofToUnSubmitTx(resp *common.ZkProofResponse) DbUnSubmitTx {
+	return DbUnSubmitTx{
+		Hash:      resp.TxHash,
+		ProofType: resp.ZkProofType,
+		Proof:     hex.EncodeToString(resp.Proof),
+	}
 }
 
 func txesToDbTxes(txes []*Transaction) []DbTx {

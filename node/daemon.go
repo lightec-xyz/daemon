@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"github.com/prysmaticlabs/prysm/v5/api/client"
 	"os"
 	"os/signal"
 	"strings"
@@ -40,12 +39,8 @@ type IAgent interface {
 }
 
 type IBeaconAgent interface {
-	ProofResponse(resp *common.ZkProofResponse) error
+	IAgent
 	FetchDataResponse(resp FetchDataResponse) error
-	CheckState() error
-	Init() error
-	Close() error
-	Name() string
 }
 
 type IManager interface {
@@ -170,9 +165,9 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	params.UseHoleskyNetworkConfig()
 	params.OverrideBeaconConfig(params.HoleskyConfig())
 
-	tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
-	beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
-	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	//tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
+	//beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
