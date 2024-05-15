@@ -92,7 +92,7 @@ func (f *Fetch) StoreLatestPeriod() error {
 }
 
 func (f *Fetch) canUpdateReq() bool {
-	return f.maxReqs.Load() < 5 // todo
+	return f.maxReqs.Load() < 3 // todo
 }
 
 func (f *Fetch) LightClientUpdate() error {

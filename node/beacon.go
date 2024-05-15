@@ -128,6 +128,7 @@ func (b *BeaconAgent) ScanBlock() error {
 }
 
 func (b *BeaconAgent) parseSlotInfo(slotInfo *beacon.Eth1MapToEth2) error {
+	logger.Debug("beacon slot: %v <-> eth number: %v", slotInfo.BlockSlot, slotInfo.BlockNumber)
 	err := WriteBeaconSlot(b.store, slotInfo.BlockNumber, slotInfo.BlockSlot)
 	if err != nil {
 		logger.Error("write slot error: %v %v ", slotInfo.BlockNumber, err)

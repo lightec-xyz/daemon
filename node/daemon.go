@@ -273,7 +273,8 @@ func (d *Daemon) Run() error {
 		// syncCommit proof
 		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
 		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
-		go DoTimerTask("beacon-checkData", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
+		go DoTimerTask("beacon-checkState", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
+		go DoTimerTask("beacon-scanBlock", 20*time.Second, d.beaconAgent.node.ScanBlock, d.exitSignal)
 		go DoTimerTask("fetch-finality-update", 1*time.Minute, d.fetch.FinalityUpdate, d.exitSignal)
 		go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 	}

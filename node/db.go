@@ -47,13 +47,21 @@ func WriteBeaconSlot(store store.IStore, number, slot uint64) error {
 	return store.PutObj(DbBeaconEthNumberKeyId(number), slot)
 }
 
-func ReadBeaconSlot(store store.IStore, number uint64) (uint64, error) {
-	var slot uint64
-	err := store.GetObj(DbBeaconEthNumberKeyId(number), &slot)
+func ReadBeaconSlot(store store.IStore, number uint64) (uint64, bool, error) {
+	id := DbBeaconEthNumberKeyId(number)
+	exists, err := store.HasObj(id)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
-	return slot, nil
+	if !exists {
+		return 0, false, nil
+	}
+	var slot uint64
+	err = store.GetObj(id, &slot)
+	if err != nil {
+		return 0, false, err
+	}
+	return slot, true, nil
 }
 
 func WriteBitcoinHeight(store store.IStore, height int64) error {

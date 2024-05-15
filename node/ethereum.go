@@ -458,10 +458,14 @@ func (e *EthereumAgent) CheckState() error {
 			logger.Debug("delete ungen proof tx: %v", txHash)
 			continue
 		}
-		txSlot, err := e.GetSlotByHash(txHash)
+		txSlot, ok, err := e.GetSlotByHash(txHash)
 		if err != nil {
 			logger.Error("get txSlot error: %v", err)
 			return err
+		}
+		if !ok {
+			logger.Warn("no find  tx %v beacon slot", txHash)
+			continue
 		}
 		finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
 		if err != nil {
@@ -659,17 +663,29 @@ func (e *EthereumAgent) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, er
 
 // todo
 
-func (e *EthereumAgent) GetSlotByHash(hash string) (uint64, error) {
+func (e *EthereumAgent) GetSlotByHash(hash string) (uint64, bool, error) {
 	txHash := ethCommon.HexToHash(hash)
 	receipt, err := e.ethClient.TransactionReceipt(context.Background(), txHash)
 	if err != nil {
-		return 0, err
+		logger.Error("get tx receipt error: %v %v", hash, err)
+		return 0, false, err
 	}
+	// todo
+	//beaconSlot, ok, err := ReadBeaconSlot(e.store, receipt.BlockNumber.Uint64())
+	//if err != nil {
+	//	logger.Error("get beacon slot error: %v %v", hash, err)
+	//	return 0, false, err
+	//}
+	//if !ok {
+	//	return 0, false, nil
+	//}
+	//return beaconSlot, true, nil
+
 	slot, err := commonUtiles.GetSlotOfEth1Block(receipt.BlockNumber.Uint64())
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
-	return slot, nil
+	return slot, true, nil
 }
 
 func (e *EthereumAgent) getRequestProofData(zkType common.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
