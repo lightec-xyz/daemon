@@ -31,12 +31,6 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
 		return nil, err
 	}
-	sort.Slice(dbTxes, func(i, j int) bool {
-		if dbTxes[i].Height == dbTxes[j].Height {
-			return dbTxes[i].TxIndex < dbTxes[j].TxIndex
-		}
-		return dbTxes[i].Height < dbTxes[j].Height
-	})
 	var rpcTxes []*rpc.Transaction
 	for _, tx := range dbTxes {
 		transaction, err := h.Transaction(tx.TxHash)
@@ -46,6 +40,12 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 		}
 		rpcTxes = append(rpcTxes, transaction)
 	}
+	sort.Slice(rpcTxes, func(i, j int) bool {
+		if dbTxes[i].Height == dbTxes[j].Height {
+			return dbTxes[i].TxIndex < dbTxes[j].TxIndex
+		}
+		return dbTxes[i].Height < dbTxes[j].Height
+	})
 	return rpcTxes, nil
 
 }
