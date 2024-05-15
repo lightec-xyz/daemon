@@ -30,7 +30,7 @@ func NewServer(name, addr string, handler interface{}) (*Server, error) {
 	rpcServer.SetBatchLimits(BatchRequestLimit, BatchResponseMaxSize)
 	httpServer := &http.Server{
 		Addr:           addr,
-		Handler:        rpcServer,
+		Handler:        CORSHandler(rpcServer),
 		ReadTimeout:    HttpReadTimeOut,
 		WriteTimeout:   HttpWriteTimeOut,
 		MaxHeaderBytes: MaxHeaderBytes,
@@ -81,6 +81,13 @@ func (s *Server) Shutdown() error {
 		}
 	}
 	return nil
+}
+
+func CORSHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		h.ServeHTTP(w, r)
+	})
 }
 
 func isPortOpen(endpoint string) bool {

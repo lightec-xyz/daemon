@@ -17,11 +17,19 @@ type ProfTaskResponse struct {
 }
 
 type Transaction struct {
-	Height        int64     `json:"height"`
-	Hash          string    `json:"hash"`
-	DestChainHash string    `json:"destChainHash"`
-	Proof         ProofInfo `json:"proof"`
+	Height    uint64        `json:"height"`
+	Hash      string        `json:"hash"`
+	ChainType string        `json:"chainType"`
+	TxType    string        `json:"txType"`
+	Amount    int64         `json:"amount"`
+	DestChain DestChainInfo `json:"destChain"`
+	Proof     ProofInfo     `json:"proof"`
 }
+
+type DestChainInfo struct {
+	Hash string `json:"hash"`
+}
+
 type Utxo struct {
 	TxId  string `json:"txId"`
 	Index uint32 `json:"index"`
@@ -185,9 +193,8 @@ type SyncCommRecursiveResponse struct {
 }
 
 type ProofInfo struct {
-	reqType   int    `json:"-"`
+	ProofType int    `json:"-"`
 	TxId      string `json:"txId"`
-	ProofType int    `json:"type"`
 	Proof     string `json:"proof"`
 	Status    int    `json:"status"`
 }

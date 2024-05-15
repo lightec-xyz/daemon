@@ -14,7 +14,7 @@ type Config struct {
 	MaxNums int         `json:"maxNums"`
 	Network string      `json:"network"`
 	DataDir string      `json:"datadir"`
-	Mode    common.Mode `json:"model"` // rpcServer | client
+	Mode    common.Mode `json:"mode"` // rpcServer | client
 }
 
 func (c *Config) Check() error {

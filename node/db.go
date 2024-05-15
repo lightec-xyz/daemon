@@ -10,6 +10,52 @@ import (
 	"github.com/lightec-xyz/daemon/store"
 )
 
+func WriteLatestBeaconSlot(store store.IStore, slot uint64) error {
+	return store.PutObj(beaconLatestKey, slot)
+}
+
+func ReadLatestBeaconSlot(store store.IStore) (uint64, bool, error) {
+	exists, err := store.HasObj(beaconLatestKey)
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
+	var slot uint64
+	err = store.GetObj(beaconLatestKey, &slot)
+	if err != nil {
+		return 0, false, err
+	}
+	return slot, true, nil
+}
+
+func WriteBeaconEthNumber(store store.IStore, slot, number uint64) error {
+	return store.PutObj(DbBeaconSlotKeyId(slot), number)
+}
+
+func ReadBeaconEthNumber(store store.IStore, slot uint64) (uint64, error) {
+	var number uint64
+	err := store.GetObj(DbBeaconSlotKeyId(slot), &number)
+	if err != nil {
+		return 0, err
+	}
+	return number, nil
+}
+
+func WriteBeaconSlot(store store.IStore, number, slot uint64) error {
+	return store.PutObj(DbBeaconEthNumberKeyId(number), slot)
+}
+
+func ReadBeaconSlot(store store.IStore, number uint64) (uint64, error) {
+	var slot uint64
+	err := store.GetObj(DbBeaconEthNumberKeyId(number), &slot)
+	if err != nil {
+		return 0, err
+	}
+	return slot, nil
+}
+
 func WriteBitcoinHeight(store store.IStore, height int64) error {
 	return store.PutObj(btcCurHeightKey, height)
 }
@@ -117,6 +163,15 @@ func WriteDbProof(store store.IStore, txes []DbProof) error {
 	return nil
 }
 
+func UpdateProofStatus(store store.IStore, txId string, proofType common.ZkProofType, status common.ProofStatus) error {
+	err := UpdateProof(store, txId, "", proofType, status)
+	if err != nil {
+		logger.Error("put Proof tx error:%v %v", txId, err)
+		return err
+	}
+	return err
+}
+
 func UpdateProof(store store.IStore, txId string, proof string, proofType common.ZkProofType, status common.ProofStatus) error {
 	txProof := DbProof{
 		TxHash:    txId,
@@ -206,6 +261,47 @@ func WriteTxes(store store.IStore, txes []DbTx) error {
 	return nil
 }
 
+func WriteUnSubmitTx(store store.IStore, txes []DbUnSubmitTx) error {
+	batch := store.Batch()
+	for _, tx := range txes {
+		err := batch.BatchPutObj(DbUnSubmitTxId(tx.Hash), tx)
+		if err != nil {
+			logger.Error("put unsubmit tx error:%v", err)
+			return err
+		}
+	}
+	err := batch.BatchWriteObj()
+	if err != nil {
+		logger.Error("put unsubmit tx batch error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func ReadAllUnSubmitTxs(store store.IStore) ([]DbUnSubmitTx, error) {
+	var txes []DbUnSubmitTx
+	iterator := store.Iterator([]byte(UnSubmitTxPrefix), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var tx DbUnSubmitTx
+		err := store.GetObj(iterator.Key(), &tx)
+		if err != nil {
+			logger.Error("get unsubmit tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, tx)
+	}
+	err := iterator.Error()
+	if err != nil {
+		return nil, err
+	}
+	return txes, nil
+}
+
+func DeleteUnSubmitTx(store store.IStore, hash string) error {
+	return store.DeleteObj(DbUnSubmitTxId(hash))
+}
+
 func WriteUnGenProof(store store.IStore, chain ChainType, list []*DbUnGenProof) error {
 	batch := store.Batch()
 	for _, item := range list {
@@ -261,7 +357,7 @@ func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) erro
 	return nil
 }
 
-func WriteAddrTxs(store store.IStore, addr string, txes []DbTx) error {
+func WriteTxesByAddr(store store.IStore, addr string, txes []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbAddrPrefixTxId(addr, tx.TxHash), tx)
@@ -278,7 +374,7 @@ func WriteAddrTxs(store store.IStore, addr string, txes []DbTx) error {
 	return nil
 }
 
-func ReadAddrTxs(store store.IStore, addr string) ([]DbTx, error) {
+func ReadTxesByAddr(store store.IStore, addr string) ([]DbTx, error) {
 	var txes []DbTx
 	iterator := store.Iterator([]byte(DbAddrPrefixTxId(addr, "")), nil)
 	defer iterator.Release()

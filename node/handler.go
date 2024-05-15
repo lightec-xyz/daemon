@@ -7,6 +7,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
+	"sort"
 	"strings"
 	"syscall"
 )
@@ -21,20 +22,24 @@ type Handler struct {
 	manager  IManager
 }
 
-func (h *Handler) TxesByAddr(addr, txType string) ([]rpc.Transaction, error) {
+func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 	if addr == "" || txType == "" {
 		return nil, fmt.Errorf("addr or txType is empty")
 	}
-	dbTxes, err := ReadAddrTxs(h.store, addr)
+	dbTxes, err := ReadTxesByAddr(h.store, addr)
 	if err != nil {
 		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
 		return nil, err
 	}
-	var rpcTxes []rpc.Transaction
+	sort.Slice(dbTxes, func(i, j int) bool { return dbTxes[i].Height < dbTxes[j].Height })
+	var rpcTxes []*rpc.Transaction
 	for _, tx := range dbTxes {
-		rpcTxes = append(rpcTxes, rpc.Transaction{
-			Hash: tx.TxHash,
-		})
+		transaction, err := h.Transaction(tx.TxHash)
+		if err != nil {
+			logger.Error("read transaction error: %v %v", tx.TxHash, err)
+			return nil, err
+		}
+		rpcTxes = append(rpcTxes, transaction)
 	}
 	return rpcTxes, nil
 
@@ -116,19 +121,25 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 	}
 	destChainHash, err := ReadDestHash(h.store, txHash)
 	if err != nil {
-		logger.Error("read dest chain hash error: %v %v", txHash, err)
+		//logger.Error("read dest chain hash error: %v %v", txHash, err)
 		//return nil, err
 	}
 	dbProof, err := ReadDbProof(h.store, txHash)
 	if err != nil {
-		logger.Error("read dbProof error: %v %v", txHash, err)
+		//logger.Error("read dbProof error: %v %v", txHash, err)
 		//return nil, err
 	}
 	transaction := rpc.Transaction{
-		Height:        tx.Height,
-		Hash:          txHash,
-		DestChainHash: destChainHash,
+		Height:    tx.Height,
+		Hash:      txHash,
+		TxType:    tx.TxType.String(),
+		ChainType: tx.ChainType.String(),
+		Amount:    tx.Amount,
+		DestChain: rpc.DestChainInfo{
+			Hash: destChainHash,
+		},
 		Proof: rpc.ProofInfo{
+			TxId:   txHash,
 			Proof:  dbProof.Proof,
 			Status: dbProof.Status,
 		},

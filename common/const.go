@@ -30,27 +30,27 @@ type ProofStatus int
 
 const (
 	ProofDefault ProofStatus = iota
-	ProofPending             // already not use now,placeholder compatible
+	ProofFinalized
+	ProofQueued
+	ProofGenerating
 	ProofSuccess
 	ProofFailed
-	ProofGenerating
-	ProofQueueWait
 )
 
 func (ps *ProofStatus) String() string {
 	switch *ps {
 	case ProofDefault:
 		return "ProofDefault"
-	case ProofPending:
-		return "ProofPending"
+	case ProofFinalized:
+		return "ProofFinalized"
+	case ProofQueued:
+		return "ProofQueued"
+	case ProofGenerating:
+		return "ProofGenerating"
 	case ProofSuccess:
 		return "ProofSuccess"
 	case ProofFailed:
 		return "ProofFailed"
-	case ProofGenerating:
-		return "ProofGenerating"
-	case ProofQueueWait:
-		return "ProofQueueWait"
 	default:
 		return "unknown"
 	}

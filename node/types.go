@@ -173,10 +173,10 @@ type Transaction struct {
 	To        string
 	Proofed   bool
 	ProofType common.ZkProofType
+	Amount    int64
 
 	// bitcoin
 	EthAddr string
-	Amount  int64
 	Utxo    []Utxo
 
 	// ethereum

@@ -2,6 +2,7 @@ package node
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
@@ -78,12 +79,23 @@ func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
 	return dbProofs
 }
 
+func proofToUnSubmitTx(resp *common.ZkProofResponse) DbUnSubmitTx {
+	return DbUnSubmitTx{
+		Hash:      resp.TxHash,
+		ProofType: resp.ZkProofType,
+		Proof:     hex.EncodeToString(resp.Proof),
+	}
+}
+
 func txesToDbTxes(txes []*Transaction) []DbTx {
 	var dbtxes []DbTx
 	for _, tx := range txes {
 		dbtxes = append(dbtxes, DbTx{
-			TxHash: tx.TxHash,
-			Height: int64(tx.Height),
+			TxHash:    tx.TxHash,
+			Height:    tx.Height,
+			TxType:    tx.TxType,
+			ChainType: tx.ChainType,
+			Amount:    tx.Amount,
 		})
 	}
 	return dbtxes
@@ -126,12 +138,20 @@ func txesByAddrGroup(txes []*Transaction) map[string][]DbTx {
 		list, ok := txMap[tx.From]
 		if ok {
 			list = append(list, DbTx{
-				TxHash: tx.TxHash,
+				TxHash:    tx.TxHash,
+				Height:    tx.Height,
+				TxType:    tx.TxType,
+				ChainType: tx.ChainType,
+				Amount:    tx.Amount,
 			})
 		} else {
 			txMap[tx.From] = []DbTx{
 				{
-					TxHash: tx.TxHash,
+					TxHash:    tx.TxHash,
+					Height:    tx.Height,
+					TxType:    tx.TxType,
+					ChainType: tx.ChainType,
+					Amount:    tx.Amount,
 				},
 			}
 		}

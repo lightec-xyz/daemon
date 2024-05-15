@@ -7,26 +7,22 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"log"
 	"math/big"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/lightec-xyz/daemon/common"
-	"github.com/lightec-xyz/daemon/logger"
-	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 )
 
 var err error
 var client *Client
 
 // var endpoint = "https://1rpc.io/54japjRWgXHfp58ud/sepolia"
-var endpoint = "https://1rpc.io/holesky"
+var endpoint = "https://ethereum-holesky-rpc.publicnode.com"
 
 // var endpoint = "http://127.0.0.1:8970"
 var zkBridgeAddr = "0xa7becea4ce9040336d7d4aad84e684d1daeabea1"
@@ -134,13 +130,13 @@ func TestClient_BlockNumber(t *testing.T) {
 func TestClient_GetLogs(t *testing.T) {
 	//563180
 	//563166
-	block, err := client.GetBlock(607368)
+	block, err := client.GetBlock(1545882)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//t.Log(block)
-	address := []string{"0x3ca427befe5b8b821c09a8d6425fbcee20f952f6", "0x96ffb80f74a646940569b599039e0fbd0b3a4711"}
-	topic := []string{"0x975dbbd59299029fdfc12db336ede29e2e2b2d117effa1a45be55f0b4f9cfbce", "0xb28ad0403b0a341130002b9eef334c5daa3c1002a73dd90d4626f7079d0a804a"}
+	address := []string{"0x9d2aaea60dee441981edf44300c26f1946411548", "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"}
+	topic := []string{"0xbfb6a0aa850eff6109c854ffb48321dcf37f02d6c7a44c46987a5ddf3419fc07", "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"}
 	logs, err := client.GetLogs(block.Hash().Hex(),
 		address, topic)
 	if err != nil {
@@ -148,36 +144,24 @@ func TestClient_GetLogs(t *testing.T) {
 	}
 	//t.Log(logs)
 	for _, log := range logs {
-		if log.TxHash.String() == "0x224c1c5834fd325da4dea93bdc68f2e09716910be6e10b30f60a1cf345c8a31a" {
-			t.Log(log.Address.Hex(), log.Address.String(), log.Index, log.Topics, fmt.Sprintf("%x", log.Data))
-			parseEthRedeem(log)
+		if log.TxHash.String() == "0xea7a29093b228e8d45ba54161689e1ae7c4caa1ce33fd618112eace20e2acf1a" {
+			txData, _, err := DecodeRedeemLog(log.Data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			transaction := btctx.NewTransaction()
+			err = transaction.Deserialize(bytes.NewReader(txData))
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println(transaction.TxHash().String())
+			//0x0020957ab85b710cb5b577171e23bb3492536c8029cc99511f3920d3cc13871a2327
+			for _, out := range transaction.TxOut {
+				t.Logf("%x %v \n", out.PkScript, out.Value)
+			}
 
 		}
 	}
-}
-
-func parseEthRedeem(log types.Log) (interface{}, error) {
-	btcTxId := strings.ToLower(log.Topics[1].Hex())
-	if len(log.Data) <= 64 {
-		return nil, nil
-	}
-
-	dataLength := log.Data[32:64]
-	l, err := strconv.ParseInt(fmt.Sprintf("%x", dataLength), 16, 32)
-	if err != nil {
-		logger.Error("parse data length error:%v", err)
-		return nil, err
-	}
-	txData := log.Data[64 : 64+l+1]
-	transaction := btctx.NewTransaction()
-	err = transaction.Deserialize(bytes.NewReader(txData))
-	if err != nil {
-		logger.Error("deserialize btc tx error:%v", err)
-		return nil, err
-	}
-	fmt.Println(btcTxId)
-	fmt.Println(transaction.TxHash().String())
-	return nil, nil
 }
 
 func TestPrivateKey(t *testing.T) {

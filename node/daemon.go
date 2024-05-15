@@ -2,24 +2,24 @@ package node
 
 import (
 	"fmt"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	"github.com/lightec-xyz/daemon/rpc/oasis"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
-	//btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
+
 	"github.com/prysmaticlabs/prysm/v5/config/params"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func init() {
@@ -39,12 +39,8 @@ type IAgent interface {
 }
 
 type IBeaconAgent interface {
-	ProofResponse(resp *common.ZkProofResponse) error
+	IAgent
 	FetchDataResponse(resp FetchDataResponse) error
-	CheckState() error
-	Init() error
-	Close() error
-	Name() string
 }
 
 type IManager interface {
@@ -144,7 +140,19 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new fileStorage error: %v", err)
 		return nil, err
 	}
-	beaconAgent, err := NewBeaconAgent(cfg, beaconClient, proofRequest, fileStore, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod, fetchDataResp)
+	// todo find a better way
+	params.UseHoleskyNetworkConfig()
+	params.OverrideBeaconConfig(params.HoleskyConfig())
+
+	//tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
+	//beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod, fetchDataResp)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
@@ -165,15 +173,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp))
 
-	// todo find a better way
-	params.UseHoleskyNetworkConfig()
-	params.OverrideBeaconConfig(params.HoleskyConfig())
-	beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro")
-	//beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
 	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, oasisClient, proofRequest, taskManager)
 	if err != nil {
 		logger.Error(err.Error())

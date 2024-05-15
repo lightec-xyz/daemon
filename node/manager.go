@@ -53,7 +53,7 @@ func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
 		logger.Info("queue receive gen Proof request:%v", req.Id())
 		m.proofQueue.Push(req)
-		err := m.UpdateProofStatus(req, common.ProofQueueWait)
+		err := m.UpdateProofStatus(req, common.ProofQueued)
 		if err != nil {
 			logger.Error("update Proof status error:%v %v", req.Id(), err)
 		}
@@ -377,7 +377,7 @@ func (m *manager) CheckPendingRequest() error {
 			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
 			m.proofQueue.Push(request)
 			m.pendingQueue.Delete(request.Id())
-			err := m.UpdateProofStatus(request, common.ProofQueueWait)
+			err := m.UpdateProofStatus(request, common.ProofQueued)
 			if err != nil {
 				logger.Error("update Proof status error:%v %v", request.Id(), err)
 			}

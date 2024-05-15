@@ -34,6 +34,11 @@ func NewTaskManager(keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bit
 	}, nil
 }
 
+func (t *TaskManager) init() error {
+	// todo
+	return nil
+}
+
 func (t *TaskManager) AddTask(resp *common.ZkProofResponse) {
 	logger.Info("add retry task: %v", resp.Id())
 	t.queue.Push(resp)

@@ -6,22 +6,27 @@ import (
 )
 
 const (
-	ProofPrefix         = "p_" // p_ + hash
-	TxPrefix            = "t_" // t_ + hash
-	DestChainHashPrefix = "d_" // d_ + hash
-	UnGenProofPrefix    = "u_" // u_ + hash
+	ProofPrefix           = "p_"  // p_ + hash
+	TxPrefix              = "t_"  // t_ + hash
+	DestChainHashPrefix   = "d_"  // d_ + hash
+	UnGenProofPrefix      = "u_"  // u_ + hash
+	UnSubmitTxPrefix      = "us_" // s_ + hash
+	BeaconSlotPrefix      = "bs_"
+	BeaconEthNumberPrefix = "bh_"
 )
 
 var (
 	btcCurHeightKey = []byte("btcCurHeight")
 	ethCurHeightKey = []byte("ethCurHeight")
+	beaconLatestKey = []byte("beaconLatest")
 )
 
 type DbTx struct {
 	TxHash    string
-	Height    int64
+	Height    uint64
 	TxType    TxType
 	ChainType ChainType
+	Amount    int64
 }
 
 type DbProof struct {
@@ -39,19 +44,47 @@ type DbUnGenProof struct {
 	TxIndex   uint
 }
 
-type TxType = int
+type DbUnSubmitTx struct {
+	Hash      string
+	ProofType common.ZkProofType
+	Proof     string
+}
+
+type TxType int
 
 const (
 	DepositTx TxType = iota + 1
 	RedeemTx
 )
 
-type ChainType = int
+func (tt *TxType) String() string {
+	switch *tt {
+	case DepositTx:
+		return "deposit"
+	case RedeemTx:
+		return "redeem"
+	default:
+		return "unknown"
+	}
+}
+
+type ChainType int
 
 const (
 	Bitcoin ChainType = iota + 1
 	Ethereum
 )
+
+func (ct *ChainType) String() string {
+	switch *ct {
+	case Bitcoin:
+		return "bitcoin"
+	case Ethereum:
+		return "ethereum"
+	default:
+		return "unknown"
+	}
+}
 
 func DbProofId(txId string) string {
 	pTxID := fmt.Sprintf("%s%s", ProofPrefix, trimOx(txId))
@@ -83,7 +116,21 @@ func DbUnGenProofId(chain ChainType, txId string) string {
 	return pTxID
 }
 
+func DbUnSubmitTxId(txId string) string {
+	pTxID := fmt.Sprintf("%s%s", UnSubmitTxPrefix, trimOx(txId))
+	return pTxID
+}
+
 func DbAddrPrefixTxId(addr string, txId string) string {
 	key := fmt.Sprintf("%s_%s", addr, trimOx(txId))
+	return key
+}
+
+func DbBeaconSlotKeyId(slot uint64) string {
+	key := fmt.Sprintf("%s%d", BeaconSlotPrefix, slot)
+	return key
+}
+func DbBeaconEthNumberKeyId(number uint64) string {
+	key := fmt.Sprintf("%s%d", BeaconEthNumberPrefix, number)
 	return key
 }

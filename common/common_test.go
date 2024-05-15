@@ -1,11 +1,12 @@
 package common
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lightec-xyz/daemon/logger"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
-	"strings"
-	"testing"
 )
 
 func TestHexToTxVar(t *testing.T) {
@@ -58,17 +59,6 @@ func TestUuid(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(uuid)
-}
-
-func TestGetSlot(t *testing.T) {
-	//1531905
-	//0x622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f
-	// 1434666
-	slot, err := GetSlot(1506311)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(slot)
 }
 
 func TestProofId(t *testing.T) {

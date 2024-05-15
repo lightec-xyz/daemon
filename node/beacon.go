@@ -7,7 +7,9 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"github.com/lightec-xyz/daemon/store"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
@@ -20,17 +22,21 @@ type BeaconAgent struct {
 	fileStore      *FileStorage
 	zkProofRequest chan []*common.ZkProofRequest
 	name           string
+	apiClient      *apiclient.Client
+	store          store.IStore
 	genesisPeriod  uint64
 	genesisSlot    uint64
 	stateCache     *CacheState
 }
 
-func NewBeaconAgent(cfg Config, beaconClient *beacon.Client, zkProofReq chan []*common.ZkProofRequest,
+func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *apiclient.Client, zkProofReq chan []*common.ZkProofRequest,
 	fileStore *FileStorage, genesisSlot, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,
+		apiClient:      apiClient,
 		name:           "beaconAgent",
+		store:          store,
 		stateCache:     NewCacheState(),
 		zkProofRequest: zkProofReq,
 		genesisPeriod:  genesisPeriod,
@@ -67,23 +73,71 @@ func (b *BeaconAgent) Init() error {
 			return err
 		}
 	}
-	genesisBootStrapExists, err := b.fileStore.CheckBootstrap()
+	slot, exists, err := ReadLatestBeaconSlot(b.store)
 	if err != nil {
-		logger.Error("check genesis Update error: %v", err)
+		logger.Error("read latest slot error: %v", err)
 		return err
 	}
-	if !genesisBootStrapExists {
-		logger.Warn("no find genesis update, send request genesis update")
+	if !exists || slot < b.genesisSlot {
+		err := WriteLatestBeaconSlot(b.store, b.genesisSlot)
+		if err != nil {
+			logger.Error("write latest slot error: %v", err)
+			return err
+		}
 	}
-	genesisUpdate, err := b.fileStore.CheckUpdate(b.genesisPeriod)
+	return err
+}
+
+func (b *BeaconAgent) ScanBlock() error {
+	slot, ok, err := ReadLatestBeaconSlot(b.store)
 	if err != nil {
-		logger.Error("check update error: %v", err)
+		logger.Error("read latest slot error: %v", err)
 		return err
 	}
-	if !genesisUpdate {
-		logger.Warn("no find %v first Index update, send request update", b.genesisPeriod)
+	if !ok {
+		return nil
 	}
-	// todo check Data
+	headSlot, err := beacon.GetHeadSlot(b.apiClient)
+	if err != nil {
+		logger.Error("get head slot error: %v", err)
+		return err
+	}
+	if headSlot <= slot {
+		logger.Warn("head slot %v, dbSlot: %v", headSlot, slot)
+		return nil
+	}
+	for index := slot + 1; index <= headSlot; index++ {
+		logger.Debug("beacon parse index: %v", index)
+		slotMapInfo, err := beacon.GetEth1MapToEth2(b.apiClient, index)
+		if err != nil {
+			logger.Error("get eth1 map to eth2 error: %v %v ", index, err)
+			return err
+		}
+		err = b.parseSlotInfo(slotMapInfo)
+		if err != nil {
+			logger.Error("parse slot info error: %v %v ", index, err)
+			return err
+		}
+		err = WriteLatestBeaconSlot(b.store, index)
+		if err != nil {
+			logger.Error("write latest slot error: %v %v ", index, err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *BeaconAgent) parseSlotInfo(slotInfo *beacon.Eth1MapToEth2) error {
+	err := WriteBeaconSlot(b.store, slotInfo.BlockNumber, slotInfo.BlockSlot)
+	if err != nil {
+		logger.Error("write slot error: %v %v ", slotInfo.BlockNumber, err)
+		return err
+	}
+	err = WriteBeaconEthNumber(b.store, slotInfo.BlockSlot, slotInfo.BlockNumber)
+	if err != nil {
+		logger.Error("write eth number error: %v %v ", slotInfo.BlockNumber, err)
+		return err
+	}
 	return err
 }
 

@@ -5,8 +5,23 @@ import (
 	"testing"
 )
 
-func TestQueue(t *testing.T) {
+func TestHeapQueue(t *testing.T) {
+	heapQueue := NewHeapQueue()
+	heapQueue.Push(&common.ZkProofRequest{Weight: 6, Index: 10})
+	heapQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 4})
+	heapQueue.Push(&common.ZkProofRequest{Weight: 10, Index: 9})
+	heapQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 6})
+	heapQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 10})
+	heapQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 4})
+	heapQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 9})
+	heapQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 6})
+	for heapQueue.Len() > 0 {
+		request, _ := heapQueue.Pop()
+		t.Log(request.Weight, request.Index)
+	}
+}
 
+func TestQueue(t *testing.T) {
 	queue := NewQueue()
 	queue.PushFront(1)
 	queue.PushFront(2)
