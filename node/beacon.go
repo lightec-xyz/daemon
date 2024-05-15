@@ -118,7 +118,7 @@ func (b *BeaconAgent) ScanBlock() error {
 			}
 			return err
 		}
-		err = b.parseSlotInfo(slotMapInfo)
+		err = b.saveSlotInfo(slotMapInfo)
 		if err != nil {
 			logger.Error("parse slot info error: %v %v ", index, err)
 			return err
@@ -132,16 +132,16 @@ func (b *BeaconAgent) ScanBlock() error {
 	return nil
 }
 
-func (b *BeaconAgent) parseSlotInfo(slotInfo *beacon.Eth1MapToEth2) error {
+func (b *BeaconAgent) saveSlotInfo(slotInfo *beacon.Eth1MapToEth2) error {
 	logger.Debug("beacon slot: %v <-> eth number: %v", slotInfo.BlockSlot, slotInfo.BlockNumber)
 	err := WriteBeaconSlot(b.store, slotInfo.BlockNumber, slotInfo.BlockSlot)
 	if err != nil {
-		logger.Error("write slot error: %v %v ", slotInfo.BlockNumber, err)
+		logger.Error("write slot error: %v %v %v ", slotInfo.BlockNumber, slotInfo.BlockSlot, err)
 		return err
 	}
 	err = WriteBeaconEthNumber(b.store, slotInfo.BlockSlot, slotInfo.BlockNumber)
 	if err != nil {
-		logger.Error("write eth number error: %v %v ", slotInfo.BlockNumber, err)
+		logger.Error("write eth number error: %v %v %v", slotInfo.BlockSlot, slotInfo.BlockNumber, err)
 		return err
 	}
 	return err
