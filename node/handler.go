@@ -41,10 +41,10 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 		rpcTxes = append(rpcTxes, transaction)
 	}
 	sort.Slice(rpcTxes, func(i, j int) bool {
-		if dbTxes[i].Height == dbTxes[j].Height {
-			return dbTxes[i].TxIndex < dbTxes[j].TxIndex
+		if rpcTxes[i].Height == rpcTxes[j].Height {
+			return rpcTxes[i].TxIndex < rpcTxes[j].TxIndex
 		}
-		return dbTxes[i].Height < dbTxes[j].Height
+		return rpcTxes[i].Height < rpcTxes[j].Height
 	})
 	return rpcTxes, nil
 
@@ -137,6 +137,7 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 	transaction := rpc.Transaction{
 		Height:    tx.Height,
 		Hash:      txHash,
+		TxIndex:   tx.TxIndex,
 		TxType:    tx.TxType.String(),
 		ChainType: tx.ChainType.String(),
 		Amount:    tx.Amount,

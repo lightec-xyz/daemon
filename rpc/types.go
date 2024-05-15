@@ -18,6 +18,7 @@ type ProfTaskResponse struct {
 
 type Transaction struct {
 	Height    uint64        `json:"height"`
+	TxIndex   uint          `json:"txIndex"`
 	Hash      string        `json:"hash"`
 	ChainType string        `json:"chainType"`
 	TxType    string        `json:"txType"`
