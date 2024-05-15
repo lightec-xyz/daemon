@@ -34,7 +34,7 @@ const (
 const (
 	LightecTestnet            = "testnet"
 	TestnetBtcOperatorAddress = "tb1qtysxx7zkmm5nwy0hv2mjxfrermsry2vjsygg0eqawwwp6gy4hl4s2tudtw"
-	TestnetBtcLockScript      = "0x0020957ab85b710cb5b577171e23bb3492536c8029cc99511f3920d3cc13871a2327"
+	TestnetBtcLockScript      = "00205920637856dee93711f762b72324791ee0322992811087e41d739c1d2095bfeb"
 	TestnetBtcMultiSigPublic1 = "0363f549d250342df02ee8b51ad6c9148dabc587c6569761ab58aa68488bd2e2c5"
 	TestnetBtcMultiSigPublic2 = "031cbb294f9955d80f65d9499feaeb5cb29d44c070adddd75cd48a40791d39b971"
 	TestnetBtcMultiSigPublic3 = "035c54e8287a7f7ba31886249fc89f295a4cb74cebf0d925f1eafe87f22fba57f9"
