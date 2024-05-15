@@ -13,7 +13,7 @@ type INode interface {
 	Transactions(txId []string) ([]*Transaction, error)
 	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
 	SubmitProof(req *common.SubmitProof) (string, error)
-	TxesByAddr(addr, txType string) ([]Transaction, error)
+	TxesByAddr(addr, txType string) ([]*Transaction, error)
 	Stop() error
 }
 

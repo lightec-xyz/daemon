@@ -226,7 +226,7 @@ func (e *EthereumAgent) saveTransaction(height int64, txes []*Transaction) error
 func (e *EthereumAgent) saveData(redeemTxes []*Transaction) error {
 	addrTxesMap := txesByAddrGroup(redeemTxes)
 	for addr, addrTxes := range addrTxesMap {
-		err := WriteAddrTxs(e.store, addr, addrTxes)
+		err := WriteTxesByAddr(e.store, addr, addrTxes)
 		if err != nil {
 			logger.Error("write addr txes error: %v %v", addr, err)
 			return err

@@ -16,8 +16,8 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
-func (c *NodeClient) TxesByAddr(addr, txType string) ([]Transaction, error) {
-	var result []Transaction
+func (c *NodeClient) TxesByAddr(addr, txType string) ([]*Transaction, error) {
+	var result []*Transaction
 	err := c.call(&result, "zkbtc_txesByAddr", addr, txType)
 	if err != nil {
 		return nil, err

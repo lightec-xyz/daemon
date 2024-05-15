@@ -92,7 +92,7 @@ func txesToDbTxes(txes []*Transaction) []DbTx {
 	for _, tx := range txes {
 		dbtxes = append(dbtxes, DbTx{
 			TxHash:    tx.TxHash,
-			Height:    int64(tx.Height),
+			Height:    tx.Height,
 			TxType:    tx.TxType,
 			ChainType: tx.ChainType,
 			Amount:    tx.Amount,
@@ -138,12 +138,20 @@ func txesByAddrGroup(txes []*Transaction) map[string][]DbTx {
 		list, ok := txMap[tx.From]
 		if ok {
 			list = append(list, DbTx{
-				TxHash: tx.TxHash,
+				TxHash:    tx.TxHash,
+				Height:    tx.Height,
+				TxType:    tx.TxType,
+				ChainType: tx.ChainType,
+				Amount:    tx.Amount,
 			})
 		} else {
 			txMap[tx.From] = []DbTx{
 				{
-					TxHash: tx.TxHash,
+					TxHash:    tx.TxHash,
+					Height:    tx.Height,
+					TxType:    tx.TxType,
+					ChainType: tx.ChainType,
+					Amount:    tx.Amount,
 				},
 			}
 		}

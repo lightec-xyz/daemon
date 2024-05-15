@@ -357,7 +357,7 @@ func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) erro
 	return nil
 }
 
-func WriteAddrTxs(store store.IStore, addr string, txes []DbTx) error {
+func WriteTxesByAddr(store store.IStore, addr string, txes []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txes {
 		err := batch.BatchPutObj(DbAddrPrefixTxId(addr, tx.TxHash), tx)
@@ -374,7 +374,7 @@ func WriteAddrTxs(store store.IStore, addr string, txes []DbTx) error {
 	return nil
 }
 
-func ReadAddrTxs(store store.IStore, addr string) ([]DbTx, error) {
+func ReadTxesByAddr(store store.IStore, addr string) ([]DbTx, error) {
 	var txes []DbTx
 	iterator := store.Iterator([]byte(DbAddrPrefixTxId(addr, "")), nil)
 	defer iterator.Release()
