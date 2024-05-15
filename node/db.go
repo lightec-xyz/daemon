@@ -374,8 +374,8 @@ func WriteTxesByAddr(store store.IStore, addr string, txes []DbTx) error {
 	return nil
 }
 
-func ReadTxesByAddr(store store.IStore, addr string) ([]DbTx, error) {
-	var txes []DbTx
+func ReadTxesByAddr(store store.IStore, addr string) ([]*DbTx, error) {
+	var txes []*DbTx
 	iterator := store.Iterator([]byte(DbAddrPrefixTxId(addr, "")), nil)
 	defer iterator.Release()
 	for iterator.Next() {
@@ -385,7 +385,7 @@ func ReadTxesByAddr(store store.IStore, addr string) ([]DbTx, error) {
 			logger.Error("get addr tx error:%v", err)
 			return nil, err
 		}
-		txes = append(txes, tx)
+		txes = append(txes, &tx)
 	}
 	err := iterator.Error()
 	if err != nil {
