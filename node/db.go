@@ -10,6 +10,52 @@ import (
 	"github.com/lightec-xyz/daemon/store"
 )
 
+func WriteLatestBeaconSlot(store store.IStore, slot uint64) error {
+	return store.PutObj(beaconLatestKey, slot)
+}
+
+func ReadLatestBeaconSlot(store store.IStore) (uint64, bool, error) {
+	exists, err := store.HasObj(beaconLatestKey)
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
+	var slot uint64
+	err = store.GetObj(beaconLatestKey, &slot)
+	if err != nil {
+		return 0, false, err
+	}
+	return slot, true, nil
+}
+
+func WriteBeaconEthNumber(store store.IStore, slot, number uint64) error {
+	return store.PutObj(DbBeaconSlotKeyId(slot), number)
+}
+
+func ReadBeaconEthNumber(store store.IStore, slot uint64) (uint64, error) {
+	var number uint64
+	err := store.GetObj(DbBeaconSlotKeyId(slot), &number)
+	if err != nil {
+		return 0, err
+	}
+	return number, nil
+}
+
+func WriteBeaconSlot(store store.IStore, number, slot uint64) error {
+	return store.PutObj(DbBeaconEthNumberKeyId(number), slot)
+}
+
+func ReadBeaconSlot(store store.IStore, number uint64) (uint64, error) {
+	var slot uint64
+	err := store.GetObj(DbBeaconEthNumberKeyId(number), &slot)
+	if err != nil {
+		return 0, err
+	}
+	return slot, nil
+}
+
 func WriteBitcoinHeight(store store.IStore, height int64) error {
 	return store.PutObj(btcCurHeightKey, height)
 }

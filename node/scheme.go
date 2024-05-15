@@ -6,16 +6,19 @@ import (
 )
 
 const (
-	ProofPrefix         = "p_"  // p_ + hash
-	TxPrefix            = "t_"  // t_ + hash
-	DestChainHashPrefix = "d_"  // d_ + hash
-	UnGenProofPrefix    = "u_"  // u_ + hash
-	UnSubmitTxPrefix    = "us_" // s_ + hash
+	ProofPrefix           = "p_"  // p_ + hash
+	TxPrefix              = "t_"  // t_ + hash
+	DestChainHashPrefix   = "d_"  // d_ + hash
+	UnGenProofPrefix      = "u_"  // u_ + hash
+	UnSubmitTxPrefix      = "us_" // s_ + hash
+	BeaconSlotPrefix      = "bs_"
+	BeaconEthNumberPrefix = "bh_"
 )
 
 var (
 	btcCurHeightKey = []byte("btcCurHeight")
 	ethCurHeightKey = []byte("ethCurHeight")
+	beaconLatestKey = []byte("beaconLatest")
 )
 
 type DbTx struct {
@@ -120,5 +123,14 @@ func DbUnSubmitTxId(txId string) string {
 
 func DbAddrPrefixTxId(addr string, txId string) string {
 	key := fmt.Sprintf("%s_%s", addr, trimOx(txId))
+	return key
+}
+
+func DbBeaconSlotKeyId(slot uint64) string {
+	key := fmt.Sprintf("%s%d", BeaconSlotPrefix, slot)
+	return key
+}
+func DbBeaconEthNumberKeyId(number uint64) string {
+	key := fmt.Sprintf("%s%d", BeaconEthNumberPrefix, number)
 	return key
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/prysmaticlabs/prysm/v5/api/client"
@@ -29,7 +30,17 @@ func Test_GetHeadSlot(t *testing.T) {
 func Test_GetEth1MapToEth2(t *testing.T) {
 	// tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
 	// cl, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			funcName(t)
+		}
+	}
+}
 
+func funcName(t *testing.T) {
 	cl, err := apiclient.NewClient("http://58.41.9.129:8970")
 	require.NoError(t, err)
 
@@ -45,6 +56,11 @@ func Test_GetEth1MapToEth2(t *testing.T) {
 
 	eth1MapToEth2, err := GetEth1MapToEth2(cl, finalizedSlot)
 	require.NoError(t, err)
-
-	fmt.Printf("eth1MapToEth2: %+v\n", eth1MapToEth2)
+	/*
+		slot:1653408,number:1546564
+		slot:1653408,number:1546564
+		slot:1653440,number:1546591
+		slot:1653440,number:1546591
+	*/
+	fmt.Printf("slot:%v,number:%v\n", eth1MapToEth2.BlockSlot, eth1MapToEth2.BlockNumber)
 }
