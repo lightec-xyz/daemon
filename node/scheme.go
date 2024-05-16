@@ -24,6 +24,7 @@ var (
 type DbTx struct {
 	TxHash    string
 	Height    uint64
+	TxIndex   uint
 	TxType    TxType
 	ChainType ChainType
 	Amount    int64

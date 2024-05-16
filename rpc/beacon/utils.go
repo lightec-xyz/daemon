@@ -36,7 +36,7 @@ func GetHeadSlot(cl *apiclient.Client) (uint64, error) {
 }
 
 func GetEth1MapToEth2(cl *apiclient.Client, slot uint64) (*Eth1MapToEth2, error) {
-	blockId := beacon.StateOrBlockId(fmt.Sprintf("%s", slot))
+	blockId := beacon.StateOrBlockId(fmt.Sprintf("%d", slot))
 
 	bb, err := cl.GetBlindedBlock(blockId)
 	if err != nil {
