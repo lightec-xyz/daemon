@@ -9,6 +9,7 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"math/big"
 	"strings"
+	"time"
 )
 
 func UUID() string {
@@ -84,6 +85,7 @@ func proofToUnSubmitTx(resp *common.ZkProofResponse) DbUnSubmitTx {
 		Hash:      resp.TxHash,
 		ProofType: resp.ZkProofType,
 		Proof:     hex.EncodeToString(resp.Proof),
+		Timestamp: time.Now().UnixNano(),
 	}
 }
 

@@ -6,14 +6,18 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
+	"github.com/lightec-xyz/daemon/store"
 )
 
-// Todo
+/*
+todo
+*/
 
 type TaskManager struct {
 	ethClient   *ethrpc.Client
 	btcClient   *bitcoin.Client
 	oasisClient *oasis.Client
+	store       store.IStore
 	queue       *SubmitQueue
 	address     string
 	keyStore    *KeyStore
@@ -35,7 +39,11 @@ func NewTaskManager(keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bit
 }
 
 func (t *TaskManager) init() error {
-	// todo
+	//allUnSubmitTxs, err := ReadAllUnSubmitTxs(t.store)
+	//if err != nil {
+	//	logger.Error("get unsubmit tx error:%v", err)
+	//	return err
+	//}
 	return nil
 }
 

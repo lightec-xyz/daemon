@@ -671,21 +671,21 @@ func (e *EthereumAgent) GetSlotByHash(hash string) (uint64, bool, error) {
 		return 0, false, err
 	}
 	// todo
-	//beaconSlot, ok, err := ReadBeaconSlot(e.store, receipt.BlockNumber.Uint64())
-	//if err != nil {
-	//	logger.Error("get beacon slot error: %v %v", hash, err)
-	//	return 0, false, err
-	//}
-	//if !ok {
-	//	return 0, false, nil
-	//}
-	//return beaconSlot, true, nil
-
-	slot, err := commonUtiles.GetSlotOfEth1Block(receipt.BlockNumber.Uint64())
+	beaconSlot, ok, err := ReadBeaconSlot(e.store, receipt.BlockNumber.Uint64())
 	if err != nil {
+		logger.Error("get beacon slot error: %v %v", hash, err)
 		return 0, false, err
 	}
-	return slot, true, nil
+	if !ok {
+		return 0, false, nil
+	}
+	return beaconSlot, true, nil
+
+	//slot, err := commonUtiles.GetSlotOfEth1Block(receipt.BlockNumber.Uint64())
+	//if err != nil {
+	//	return 0, false, err
+	//}
+	//return slot, true, nil
 }
 
 func (e *EthereumAgent) getRequestProofData(zkType common.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
