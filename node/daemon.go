@@ -159,7 +159,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	keyStore := NewKeyStore(cfg.EthPrivateKey)
 
-	taskManager, err := NewTaskManager(keyStore, ethClient, btcClient, oasisClient)
+	taskManager, err := NewTaskManager(storeDb, keyStore, ethClient, btcClient, oasisClient)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
