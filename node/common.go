@@ -221,7 +221,7 @@ func doProofRequestTask(name string, req chan []*common.ZkProofRequest, fn func(
 	}
 }
 
-func doFetchRespTask(name string, resp chan FetchDataResponse, fn func(resp FetchDataResponse) error, exit chan os.Signal) {
+func doFetchRespTask(name string, resp chan *FetchDataResponse, fn func(resp *FetchDataResponse) error, exit chan os.Signal) {
 	logger.Info("%v goroutine start ...", name)
 	for {
 		select {

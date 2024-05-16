@@ -40,7 +40,7 @@ func Test_GetEth1MapToEth2(t *testing.T) {
 	require.NotNil(t, headerResp)
 	finalizedSlot, err := strconv.Atoi(headerResp.Data.Header.Message.Slot)
 	require.NoError(t, err)
-	for index := finalizedSlot - 1000; index < finalizedSlot; index++ {
+	for index := 1482752; index < finalizedSlot; index++ {
 		eth1MapToEth2, err := GetEth1MapToEth2(cl, index)
 		if err != nil {
 			if strings.Contains(err.Error(), "404 NotFound response") {

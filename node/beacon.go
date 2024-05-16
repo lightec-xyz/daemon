@@ -31,7 +31,7 @@ type BeaconAgent struct {
 }
 
 func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *apiclient.Client, zkProofReq chan []*common.ZkProofRequest,
-	fileStore *FileStorage, genesisSlot, genesisPeriod uint64, fetchDataResp chan FetchDataResponse) (IBeaconAgent, error) {
+	fileStore *FileStorage, genesisSlot, genesisPeriod uint64) (IBeaconAgent, error) {
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,
@@ -108,7 +108,7 @@ func (b *BeaconAgent) ScanBlock() error {
 		return nil
 	}
 	for index := slot + 1; index <= headSlot; index++ {
-		logger.Debug("beacon parse index: %v", index)
+		//logger.Debug("beacon parse index: %v", index)
 		slotMapInfo, err := beacon.GetEth1MapToEth2(b.apiClient, index)
 		if err != nil {
 			logger.Error("get eth1 map to eth2 error: %v %v ", index, err)
@@ -284,7 +284,7 @@ func (b *BeaconAgent) CheckState() error {
 	return nil
 }
 
-func (b *BeaconAgent) FetchDataResponse(req FetchDataResponse) error {
+func (b *BeaconAgent) FetchDataResponse(req *FetchDataResponse) error {
 	logger.Debug("beacon fetch response fetchType: %v, Index: %v", req.UpdateType.String(), req.Index)
 	return nil
 }
