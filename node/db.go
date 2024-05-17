@@ -31,12 +31,12 @@ func ReadLatestBeaconSlot(store store.IStore) (uint64, bool, error) {
 }
 
 func WriteBeaconEthNumber(store store.IStore, slot, number uint64) error {
-	return store.PutObj(DbBeaconSlotKeyId(slot), number)
+	return store.PutObj(DbBeaconSlotId(slot), number)
 }
 
 func ReadBeaconEthNumber(store store.IStore, slot uint64) (uint64, error) {
 	var number uint64
-	err := store.GetObj(DbBeaconSlotKeyId(slot), &number)
+	err := store.GetObj(DbBeaconSlotId(slot), &number)
 	if err != nil {
 		return 0, err
 	}
@@ -44,11 +44,11 @@ func ReadBeaconEthNumber(store store.IStore, slot uint64) (uint64, error) {
 }
 
 func WriteBeaconSlot(store store.IStore, number, slot uint64) error {
-	return store.PutObj(DbBeaconEthNumberKeyId(number), slot)
+	return store.PutObj(DbBeaconEthNumberId(number), slot)
 }
 
 func ReadBeaconSlot(store store.IStore, number uint64) (uint64, bool, error) {
-	id := DbBeaconEthNumberKeyId(number)
+	id := DbBeaconEthNumberId(number)
 	exists, err := store.HasObj(id)
 	if err != nil {
 		return 0, false, err

@@ -36,6 +36,11 @@ func (f *Fetch) Init() error {
 		logger.Error("bootstrap error:%v", err)
 		return err
 	}
+	err = f.FinalityUpdate()
+	if err != nil {
+		logger.Error("finality update error:%v", err)
+		return err
+	}
 	err = f.StoreLatestPeriod()
 	if err != nil {
 		logger.Error("store latest Index error:%v", err)

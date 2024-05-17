@@ -49,6 +49,7 @@ type DbUnSubmitTx struct {
 	Hash      string
 	ProofType common.ZkProofType
 	Proof     string
+	Timestamp int64
 }
 
 type TxType int
@@ -127,11 +128,11 @@ func DbAddrPrefixTxId(addr string, txId string) string {
 	return key
 }
 
-func DbBeaconSlotKeyId(slot uint64) string {
+func DbBeaconSlotId(slot uint64) string {
 	key := fmt.Sprintf("%s%d", BeaconSlotPrefix, slot)
 	return key
 }
-func DbBeaconEthNumberKeyId(number uint64) string {
+func DbBeaconEthNumberId(number uint64) string {
 	key := fmt.Sprintf("%s%d", BeaconEthNumberPrefix, number)
 	return key
 }
