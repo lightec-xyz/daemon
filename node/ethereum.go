@@ -117,9 +117,9 @@ func (e *EthereumAgent) ScanBlock() error {
 		logger.Error("get eth block number error:%v", err)
 		return err
 	}
-	forked, err := e.ethClient.ChainFork(blockNumber)
+	forked, err := e.CheckChainFork(blockNumber)
 	if err != nil {
-		logger.Error("ethereum chain fork error:%v", err)
+		logger.Error("ethereum chain fork error:%v %v", blockNumber, err)
 		return err
 	}
 	if forked {
@@ -166,6 +166,11 @@ func (e *EthereumAgent) ScanBlock() error {
 
 	}
 	return nil
+}
+
+func (e *EthereumAgent) CheckChainFork(height uint64) (bool, error) {
+	// todo
+	return false, nil
 }
 
 func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {

@@ -101,9 +101,9 @@ func (b *BitcoinAgent) ScanBlock() error {
 		logger.Error("bitcoin client get block count error:%v", err)
 		return err
 	}
-	forked, err := b.btcClient.ChainFork(blockCount)
+	forked, err := b.CheckChainFork(blockCount)
 	if err != nil {
-		logger.Error("bitcoin chain fork error:%v", err)
+		logger.Error("bitcoin chain fork error:%v %v", blockCount, err)
 		return err
 	}
 	if forked {
@@ -147,6 +147,11 @@ func (b *BitcoinAgent) ScanBlock() error {
 
 	}
 	return nil
+}
+
+func (b *BitcoinAgent) CheckChainFork(height int64) (bool, error) {
+	// todo
+	return false, nil
 }
 
 func (b *BitcoinAgent) SendProofRequest(requests ...*common.ZkProofRequest) {
