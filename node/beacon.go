@@ -116,10 +116,6 @@ func (b *BeaconAgent) ScanBlock() error {
 				continue
 			}
 			logger.Error("get eth1 map to eth2 error: %v %v ", index, err)
-			if strings.Contains(err.Error(), "404 NotFound response") { // todo
-				logger.Warn("miss beacon slot %v info", index)
-				continue
-			}
 			return err
 		}
 		err = b.saveSlotInfo(slotMapInfo)

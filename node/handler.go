@@ -59,7 +59,7 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 	}
 	var response common.TaskResponse
 	if !ok {
-		logger.Warn("workerId: %v ,rpcServer maybe no new proof txManager", request.Id)
+		logger.Warn("workerId: %v ,rpcServer maybe no new proof task", request.Id)
 		response.CanGen = false
 		return &response, nil
 	}
