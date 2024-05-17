@@ -58,6 +58,36 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 	}, nil
 }
 
+func (e *Client) ChainFork(height uint64) (bool, error) {
+	block, err := e.Client.BlockByNumber(context.Background(), big.NewInt(int64(height)))
+	if err != nil {
+		return false, err
+	}
+	preHeight := height - 1
+	if preHeight < 0 {
+		return false, nil
+	}
+	preBlock, err := e.Client.BlockByNumber(context.Background(), big.NewInt(int64(preHeight)))
+	if err != nil {
+		return false, err
+	}
+	if block.ParentHash().Hex() != preBlock.Hash().Hex() {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (e *Client) CheckTx(txHash string) (bool, error) {
+	tx, err := e.Client.TransactionReceipt(context.Background(), ethcommon.HexToHash(txHash))
+	if err != nil {
+		return false, err
+	}
+	if tx.Status == types.ReceiptStatusSuccessful {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (e *Client) GetTxSender(txHash, blockHash string, index uint) (string, error) {
 	tx, pending, err := e.Client.TransactionByHash(context.Background(), ethcommon.HexToHash(txHash))
 	if err != nil {

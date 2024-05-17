@@ -101,7 +101,16 @@ func (b *BitcoinAgent) ScanBlock() error {
 		logger.Error("bitcoin client get block count error:%v", err)
 		return err
 	}
-	//todo
+	forked, err := b.btcClient.ChainFork(blockCount)
+	if err != nil {
+		logger.Error("bitcoin chain fork error:%v", err)
+		return err
+	}
+	if forked {
+		logger.Error("bitcoin chain forked,need to rollback %v ", blockCount, err)
+		// todo
+		//return nil
+	}
 	blockCount = blockCount - 1
 	if curHeight >= blockCount {
 		logger.Debug("btc current height:%d,node block count:%d", curHeight, blockCount)

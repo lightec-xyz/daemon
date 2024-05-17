@@ -117,8 +117,17 @@ func (e *EthereumAgent) ScanBlock() error {
 		logger.Error("get eth block number error:%v", err)
 		return err
 	}
+	forked, err := e.ethClient.ChainFork(blockNumber)
+	if err != nil {
+		logger.Error("ethereum chain fork error:%v", err)
+		return err
+	}
+	if forked {
+		logger.Error("ethereum chain forked,need to rollback %v", blockNumber, err)
+		// todo
+		//return nil
+	}
 	blockNumber = blockNumber - 3
-	//todo
 	if ethHeight >= int64(blockNumber) {
 		logger.Debug("eth current height:%d,latest block number :%d", ethHeight, blockNumber)
 		return nil

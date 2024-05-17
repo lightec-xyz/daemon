@@ -26,7 +26,35 @@ func basicAuth(username, password string) string {
 }
 
 func NewClient(url, user, pwd string) (*Client, error) {
-	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: false}, nil
+	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: true}, nil
+}
+
+func (c *Client) ChainFork(height int64) (bool, error) {
+	hash, err := c.GetBlockHash(height)
+	if err != nil {
+		return false, err
+	}
+	blockHeader, err := c.GetBlockHeader(hash)
+	if err != nil {
+		return false, err
+	}
+
+	preHeight := int64(height - 1)
+	if preHeight < 0 {
+		return false, nil
+	}
+	preHash, err := c.GetBlockHash(preHeight)
+	if err != nil {
+		return false, err
+	}
+	preBlockHeader, err := c.GetBlockHeader(preHash)
+	if err != nil {
+		return false, err
+	}
+	if blockHeader.Previousblockhash != preBlockHeader.Hash {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (c *Client) GetBlockHeader(hash string) (*types.BlockHeader, error) {
@@ -54,6 +82,18 @@ func (c *Client) GetBlockCount() (int64, error) {
 		return 0, err
 	}
 	return count, err
+}
+
+func (c *Client) GetBlockByNumber(height uint64) (*types.Block, error) {
+	blockHash, err := c.GetBlockHash(int64(height))
+	if err != nil {
+		return nil, err
+	}
+	block, err := c.GetBlock(blockHash)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
 
 func (c *Client) GetBlock(hash string) (*types.Block, error) {
