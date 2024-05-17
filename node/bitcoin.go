@@ -31,11 +31,11 @@ type BitcoinAgent struct {
 	keyStore        *KeyStore
 	minDepositValue float64
 	initHeight      int64
-	task            *TaskManager
+	txManager       *TxManager
 }
 
 func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, fileStore *FileStorage, btcClient *bitcoin.Client,
-	ethClient *ethereum.Client, btcProverClient *btcproverClient.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TaskManager) (IAgent, error) {
+	ethClient *ethereum.Client, btcProverClient *btcproverClient.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TxManager) (IAgent, error) {
 	return &BitcoinAgent{
 		btcClient:       btcClient,
 		ethClient:       ethClient,
@@ -49,7 +49,7 @@ func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore stor
 		submitTxEthAddr: submitTxEthAddr,
 		fileStore:       fileStore,
 		initHeight:      cfg.BtcInitHeight,
-		task:            task,
+		txManager:       task,
 		cache:           NewCacheState(),
 	}, nil
 }
@@ -271,7 +271,7 @@ func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		err := updateContractUtxoChange(b.ethClient, b.submitTxEthAddr, b.keyStore.GetPrivateKey(), []string{resp.TxHash}, resp.Proof)
 		if err != nil {
 			logger.Error("update utxo error: %v %v", proofId, err)
-			b.task.AddTask(resp)
+			b.txManager.AddTask(resp)
 			return err
 		}
 	default:

@@ -69,8 +69,8 @@ type Daemon struct {
 	nodeConfig        Config
 	exitSignal        chan os.Signal
 	manager           *WrapperManger
-	taskManager       *TaskManager // todo
-	disableRecurAgent bool         // true ,Only enable the function of generating recursive proofs
+	taskManager       *TxManager // todo
+	disableRecurAgent bool       // true ,Only enable the function of generating recursive proofs
 	disableTxAgent    bool
 	enableLocal       bool
 }
@@ -159,7 +159,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	keyStore := NewKeyStore(cfg.EthPrivateKey)
 
-	taskManager, err := NewTaskManager(storeDb, keyStore, ethClient, btcClient, oasisClient)
+	taskManager, err := NewTxManager(storeDb, keyStore, ethClient, btcClient, oasisClient)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -279,8 +279,8 @@ func (d *Daemon) Run() error {
 		go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 	}
 
-	// task manager
-	go DoTimerTask("task-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
+	// txManager manager
+	go DoTimerTask("txManager-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)

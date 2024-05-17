@@ -38,19 +38,19 @@ type EthereumAgent struct {
 	memoryStore      store.IStore
 	stateCache       *CacheState
 	fileStore        *FileStorage
-	taskManager      *TaskManager
+	taskManager      *TxManager
 	proofRequest     chan []*common.ZkProofRequest
 	multiAddressInfo MultiAddressInfo
 	logAddrFilter    EthAddrFilter
 	btcLockScript    string
 	initHeight       int64
-	task             *TaskManager
+	txManager        *TxManager
 	genesisPeriod    uint64
 	genesisSlot      uint64
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client, proofRequest chan []*common.ZkProofRequest, task *TaskManager) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client, proofRequest chan []*common.ZkProofRequest, task *TxManager) (IAgent, error) {
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
@@ -65,7 +65,7 @@ func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, st
 		initHeight:       cfg.EthInitHeight,
 		logAddrFilter:    cfg.EthAddrFilter,
 		btcLockScript:    cfg.BtcLockScript,
-		task:             task,
+		txManager:        task,
 		genesisPeriod:    genesisSlot / 8192,
 		genesisSlot:      genesisSlot,
 		stateCache:       NewCacheState(),
@@ -178,7 +178,7 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		_, err = RedeemBtcTx(e.btcClient, e.ethClient, e.oasisClient, resp.TxHash, resp.Proof)
 		if err != nil {
 			logger.Error("redeem btc tx error:%v %v", resp.TxHash, err)
-			e.task.AddTask(resp)
+			e.txManager.AddTask(resp)
 			return err
 		}
 	}

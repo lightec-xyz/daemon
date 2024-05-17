@@ -15,7 +15,7 @@ import (
 todo
 */
 
-type TaskManager struct {
+type TxManager struct {
 	ethClient   *ethrpc.Client
 	btcClient   *bitcoin.Client
 	oasisClient *oasis.Client
@@ -24,13 +24,13 @@ type TaskManager struct {
 	keyStore    *KeyStore
 }
 
-func NewTaskManager(store store.IStore, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client, oasisClient *oasis.Client) (*TaskManager, error) {
+func NewTxManager(store store.IStore, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client, oasisClient *oasis.Client) (*TxManager, error) {
 	address, err := keyStore.Address()
 	if err != nil {
 		logger.Error("get address error:%v", err)
 		return nil, err
 	}
-	return &TaskManager{
+	return &TxManager{
 		ethClient:   ethClient,
 		btcClient:   btcClient,
 		oasisClient: oasisClient,
@@ -40,7 +40,7 @@ func NewTaskManager(store store.IStore, keyStore *KeyStore, ethClient *ethrpc.Cl
 	}, nil
 }
 
-func (t *TaskManager) init() error {
+func (t *TxManager) init() error {
 	//allUnSubmitTxs, err := ReadAllUnSubmitTxs(t.store)
 	//if err != nil {
 	//	logger.Error("get unsubmit tx error:%v", err)
@@ -49,8 +49,8 @@ func (t *TaskManager) init() error {
 	return nil
 }
 
-func (t *TaskManager) AddTask(resp *common.ZkProofResponse) {
-	logger.Info("task manager add retry task: %v", resp.Id())
+func (t *TxManager) AddTask(resp *common.ZkProofResponse) {
+	logger.Info("txManager manager add retry task: %v", resp.Id())
 	unSubmitTx := NewDbUnSubmitTx(resp.TxHash, hex.EncodeToString(resp.Proof), resp.ZkProofType)
 	err := WriteUnSubmitTx(t.store, []DbUnSubmitTx{unSubmitTx})
 	if err != nil {
@@ -59,7 +59,7 @@ func (t *TaskManager) AddTask(resp *common.ZkProofResponse) {
 	}
 }
 
-func (t *TaskManager) Check() error {
+func (t *TxManager) Check() error {
 	unSubmitTxs, err := ReadAllUnSubmitTxs(t.store)
 	if err != nil {
 		logger.Error("read unsubmit tx error:%v", err)
@@ -84,7 +84,7 @@ func (t *TaskManager) Check() error {
 	return nil
 }
 
-func (t *TaskManager) RedeemZkbtc(hash, proof string) error {
+func (t *TxManager) RedeemZkbtc(hash, proof string) error {
 	proofBytes, err := hex.DecodeString(proof)
 	if err != nil {
 		logger.Error("decode proof error: %v %v", hash, err)
@@ -103,7 +103,7 @@ func (t *TaskManager) RedeemZkbtc(hash, proof string) error {
 	return nil
 }
 
-func (t *TaskManager) UpdateUtxoChange(hash, proof string) error {
+func (t *TxManager) UpdateUtxoChange(hash, proof string) error {
 	proofBytes, err := hex.DecodeString(proof)
 	if err != nil {
 		logger.Error("decode proof error: %v %v", hash, err)
@@ -122,7 +122,7 @@ func (t *TaskManager) UpdateUtxoChange(hash, proof string) error {
 	return nil
 }
 
-func (t *TaskManager) Close() error {
+func (t *TxManager) Close() error {
 	return nil
 }
 
