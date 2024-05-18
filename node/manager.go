@@ -107,6 +107,12 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 		proofId := response.Id()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
+		// todo
+		err = m.waitUpdateProofStatus(response)
+		if err != nil {
+			logger.Error("wait update Proof status error:%v", err)
+			return err
+		}
 
 	}
 	return nil
@@ -392,6 +398,18 @@ func (m *manager) Close() error {
 
 	return nil
 
+}
+
+// todo ,just temp use ,will remove
+func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
+	switch resp.ZkProofType {
+	case common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType:
+		time.Sleep(6 * time.Second)
+		return nil
+	default:
+
+	}
+	return nil
 }
 
 func NewZkProofResp(reqType common.ZkProofType, period uint64, proof common.ZkProof, witness []byte) *common.ZkProofResponse {

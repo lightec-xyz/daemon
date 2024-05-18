@@ -189,7 +189,11 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	}
 	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
 	e.stateCache.Delete(proofId)
-
+	// todo
+	err = e.checkPendingProofRequest()
+	if err != nil {
+		logger.Error("check pending proof request error:%v %v", resp.TxHash, err)
+	}
 	switch resp.ZkProofType {
 	case common.RedeemTxType:
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
@@ -201,13 +205,6 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		if err != nil {
 			logger.Error("redeem btc tx error:%v %v", resp.TxHash, err)
 			e.txManager.AddTask(resp)
-			return err
-		}
-	case common.BeaconHeaderFinalityType:
-		// todo
-		err := e.checkPendingProofRequest()
-		if err != nil {
-			logger.Error("check pending proof request error:%v %v", resp.TxHash, err)
 			return err
 		}
 	default:
@@ -500,7 +497,7 @@ func (e *EthereumAgent) checkPendingProofRequest() error {
 	}
 	for _, item := range unGenProofs {
 		txHash := item.TxHash
-		logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
+		//logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
 		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
