@@ -107,10 +107,11 @@ func (b *BitcoinAgent) ScanBlock() error {
 		return err
 	}
 	if forked {
-		logger.Error("bitcoin chain forked,need to rollback %v ", blockCount, err)
+		logger.Error("bitcoin chain forked,need to rollback %v %v ", blockCount, err)
 		// todo
 		//return nil
 	}
+	//todo
 	blockCount = blockCount - 1
 	if curHeight >= blockCount {
 		logger.Debug("btc current height:%d,node block count:%d", curHeight, blockCount)

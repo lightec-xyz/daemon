@@ -229,6 +229,7 @@ func (aq *ArrayQueue) Push(value *common.ZkProofRequest) {
 	aq.lock.Lock()
 	defer aq.lock.Unlock()
 	aq.list = append(aq.list, value)
+	aq.sortList()
 }
 func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
 	aq.lock.Lock()
@@ -236,7 +237,6 @@ func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
 	if len(aq.list) == 0 {
 		return nil, false
 	}
-	aq.sortList()
 	value := aq.list[0]
 	aq.list = aq.list[1:]
 	return value, true
@@ -247,7 +247,8 @@ func (aq *ArrayQueue) sortList() {
 		if aq.list[i].Weight != aq.list[j].Weight {
 			return aq.list[i].Weight > aq.list[j].Weight
 		}
-		return aq.list[i].Index < aq.list[j].Index
+		return false
+		//return aq.list[i].Index < aq.list[j].Index
 	})
 }
 

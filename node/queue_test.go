@@ -39,20 +39,24 @@ func TestQueue(t *testing.T) {
 
 func TestArrayQueue(t *testing.T) {
 	arrayQueue := NewArrayQueue()
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 10, Index: 6})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 10, Index: 4})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 10, Index: 9})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 10})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 5})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 7})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 7})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 88})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 6, Index: 6})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 4})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 9, Index: 9})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 10, Index: 10})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 4, Index: 5})
 	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 10})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 8})
-	arrayQueue.Pop()
-	arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
-		t.Log(value.Weight, value.Index)
-		return nil
-	})
-	t.Logf("lenghth: %v \n", arrayQueue.Len())
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 4})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 6})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 12})
+	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 1})
+	//arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
+	//	t.Log(value.Weight, value.Index)
+	//	return nil
+	//})
+	//t.Logf("lenghth: %v \n", arrayQueue.Len())
+
+	for arrayQueue.Len() > 0 {
+		request, _ := arrayQueue.Pop()
+		t.Log(request.Weight, request.Index)
+	}
 }
