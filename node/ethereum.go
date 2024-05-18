@@ -116,7 +116,6 @@ func (e *EthereumAgent) ScanBlock() error {
 	if !ok {
 		return fmt.Errorf("never should happen")
 	}
-
 	blockNumber, err := e.ethClient.BlockNumber(context.Background())
 	if err != nil {
 		logger.Error("get eth block number error:%v", err)
@@ -497,7 +496,7 @@ func (e *EthereumAgent) checkPendingProofRequest() error {
 	}
 	for _, item := range unGenProofs {
 		txHash := item.TxHash
-		//logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
+		logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
 		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
