@@ -22,7 +22,7 @@ type Fetch struct {
 	lock          sync.Mutex
 	maxReqs       *atomic.Int64
 	state         *CacheState
-	fetchResp     chan *FetchDataResponse
+	fetchResp     chan *FetchResponse
 }
 
 func (f *Fetch) Close() error {
@@ -49,7 +49,7 @@ func (f *Fetch) Init() error {
 	return nil
 }
 
-func NewFetch(client *beacon.Client, fileStore *FileStorage, genesisSlot uint64) (*Fetch, error) {
+func NewFetch(client *beacon.Client, fileStore *FileStorage, genesisSlot uint64, fetchResp chan *FetchResponse) (*Fetch, error) {
 	maxReqs := atomic.Int64{}
 	maxReqs.Store(0)
 	return &Fetch{
@@ -58,6 +58,7 @@ func NewFetch(client *beacon.Client, fileStore *FileStorage, genesisSlot uint64)
 		genesisSlot:   genesisSlot,
 		genesisPeriod: genesisSlot / 8192,
 		maxReqs:       &maxReqs,
+		fetchResp:     nil, // todo
 		state:         NewCacheState(),
 	}, nil
 }
@@ -72,7 +73,7 @@ func (f *Fetch) Bootstrap() error {
 }
 
 func (f *Fetch) FinalityUpdate() error {
-	logger.Debug("start finality update")
+	//logger.Debug("start finality update")
 	err := f.GetFinalityUpdate()
 	if err != nil {
 		logger.Error("get finality update error:%v", err)
@@ -132,8 +133,8 @@ func (f *Fetch) LightClientUpdate() error {
 
 func (f *Fetch) SendFetchResp(fetchType FetchType, index uint64) error {
 	if f.fetchResp != nil {
-		fetchResp := NewFetchDataResponse(fetchType, index)
-		logger.Debug("reply send fetch resp: %v", fetchResp.Id())
+		fetchResp := NewFetchResponse(fetchType, index)
+		logger.Debug("fetch send fetch resp: %v", fetchResp.Id())
 		f.fetchResp <- fetchResp
 	}
 	return nil
@@ -241,6 +242,11 @@ func (f *Fetch) GetFinalityUpdate() error {
 		return err
 	}
 	logger.Debug("success store finality update:%v", slot)
+	err = f.SendFetchResp(FinalityUpdateType, slot)
+	if err != nil {
+		logger.Error("send fetch resp error:%v", err)
+		return err
+	}
 	return nil
 }
 

@@ -284,7 +284,7 @@ func (b *BeaconAgent) CheckState() error {
 	return nil
 }
 
-func (b *BeaconAgent) FetchDataResponse(req *FetchDataResponse) error {
+func (b *BeaconAgent) FetchDataResponse(req *FetchResponse) error {
 	logger.Debug("beacon fetch response fetchType: %v, Index: %v", req.UpdateType.String(), req.Index)
 	return nil
 }

@@ -40,7 +40,7 @@ type IAgent interface {
 
 type IBeaconAgent interface {
 	IAgent
-	FetchDataResponse(resp *FetchDataResponse) error
+	FetchDataResponse(resp *FetchResponse) error
 }
 
 type IManager interface {
@@ -133,7 +133,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	btcProofResp := make(chan *common.ZkProofResponse, 10)
 	ethProofResp := make(chan *common.ZkProofResponse, 10)
 	syncCommitResp := make(chan *common.ZkProofResponse, 10)
-	fetchDataResp := make(chan *FetchDataResponse, 10)
+	fetchDataResp := make(chan *FetchResponse, 10)
 
 	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot)
 	if err != nil {
@@ -213,7 +213,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot)
+	fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, fetchDataResp)
 	if err != nil {
 		logger.Error("new fetch error: %v", err)
 		return nil, err
@@ -275,7 +275,7 @@ func (d *Daemon) Run() error {
 		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
 		go DoTimerTask("beacon-checkState", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
 		go DoTimerTask("beacon-scanBlock", 20*time.Second, d.beaconAgent.node.ScanBlock, d.exitSignal)
-		go DoTimerTask("fetch-finality-update", 1*time.Minute, d.fetch.FinalityUpdate, d.exitSignal)
+		go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
 		go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 	}
 
@@ -366,10 +366,10 @@ type WrapperBeacon struct {
 	scanPeriodTime    time.Duration // get node Index
 	checkDataTime     time.Duration
 	proofResponse     chan *common.ZkProofResponse
-	fetchDataResponse chan *FetchDataResponse
+	fetchDataResponse chan *FetchResponse
 }
 
-func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Duration, proofResponse chan *common.ZkProofResponse, fetchDataResp chan *FetchDataResponse) *WrapperBeacon {
+func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Duration, proofResponse chan *common.ZkProofResponse, fetchDataResp chan *FetchResponse) *WrapperBeacon {
 	return &WrapperBeacon{
 		node:              beacon,
 		scanPeriodTime:    scanPeriodTime,

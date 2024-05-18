@@ -22,7 +22,6 @@ import (
 	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 	"github.com/lightec-xyz/daemon/transaction/ethereum"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
-	commonUtiles "github.com/lightec-xyz/provers/utils"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
@@ -112,6 +111,7 @@ func (e *EthereumAgent) ScanBlock() error {
 	if !ok {
 		return fmt.Errorf("never should happen")
 	}
+
 	blockNumber, err := e.ethClient.BlockNumber(context.Background())
 	if err != nil {
 		logger.Error("get eth block number error:%v", err)
@@ -603,7 +603,8 @@ func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64,
 }
 
 func (e *EthereumAgent) getTxInEth2Data(txHash string) (*rpc.TxInEth2ProveRequest, bool, error) {
-	txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, commonUtiles.GetSlotOfEth1Block, txHash)
+	// todo
+	txData, err := ethblock.GenerateTxInEth2Proof(e.ethClient.Client, e.apiClient, e.getSlotByNumber, txHash)
 	if err != nil {
 		logger.Error("get tx data error: %v", err)
 		return nil, false, err
@@ -612,6 +613,17 @@ func (e *EthereumAgent) getTxInEth2Data(txHash string) (*rpc.TxInEth2ProveReques
 		TxHash: txHash,
 		TxData: txData,
 	}, true, nil
+}
+
+func (e *EthereumAgent) getSlotByNumber(number uint64) (uint64, error) {
+	slot, ok, err := ReadBeaconSlot(e.store, number)
+	if err != nil {
+		return 0, err
+	}
+	if !ok {
+		return 0, fmt.Errorf("no find %v slot", number)
+	}
+	return slot, nil
 }
 
 func (e *EthereumAgent) getBlockHeaderRequestData(index uint64) (*rpc.BlockHeaderRequest, bool, error) {
@@ -706,7 +718,12 @@ func (e *EthereumAgent) GetSlotByHash(hash string) (uint64, bool, error) {
 func (e *EthereumAgent) getRequestProofData(zkType common.ZkProofType, index uint64, txHash string) (interface{}, bool, error) {
 	switch zkType {
 	case common.TxInEth2:
-		return e.getTxInEth2Data(txHash)
+		data, ok, err := e.getTxInEth2Data(txHash)
+		if err != nil {
+			logger.Error("get tx in eth2 data error: %v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, err
 	case common.BeaconHeaderType:
 		return e.getBlockHeaderRequestData(index)
 	case common.RedeemTxType:
