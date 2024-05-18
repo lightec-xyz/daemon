@@ -248,6 +248,7 @@ func (aq *ArrayQueue) sortList() {
 			return aq.list[i].Weight > aq.list[j].Weight
 		}
 		return false
+		// todo
 		//return aq.list[i].Index < aq.list[j].Index
 	})
 }

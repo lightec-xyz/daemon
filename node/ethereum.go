@@ -438,8 +438,8 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (*Transaction, bool, error) {
 			return nil, false, err
 		}
 		blockNumber := log.BlockNumber
-		logger.Info("ethereum agent find redeem zkbtc height:%v,ethTxHash:%v,sender:%v,btcTxId:%v,amount:%v,input:%v,output:%v",
-			blockNumber, txHash, txSender, btcTxId, amount, formatUtxo(inputs), formatOut(outputs))
+		logger.Info("ethereum agent find redeem zkbtc height:%v, index: %v,ethTxHash:%v,sender:%v,btcTxId:%v,amount:%v,input:%v,output:%v",
+			blockNumber, log.TxIndex, txHash, txSender, btcTxId, amount, formatUtxo(inputs), formatOut(outputs))
 		redeemTx := NewRedeemEthTx(blockNumber, log.TxIndex, txHash, txSender, btcTxId, amount, inputs, outputs)
 		return redeemTx, true, nil
 	} else {
@@ -745,12 +745,19 @@ func (e *EthereumAgent) checkRequest(zkType common.ZkProofType, index uint64, tx
 			logger.Error("get tx receipt error: %v", err)
 			return false, err
 		}
-		txSlot, err := commonUtiles.GetSlotOfEth1Block(receipt.BlockNumber.Uint64())
+		txSlot, ok, err := ReadBeaconSlot(e.store, receipt.BlockNumber.Uint64())
 		if err != nil {
-			logger.Error("get slot error: %v", err)
+			logger.Error("get beacon slot error: %v %v", receipt.BlockNumber, err)
 			return false, err
 		}
-		// todo
+		if !ok {
+			return false, nil
+		}
+		//txSlot, err := commonUtiles.GetSlotOfEth1Block(receipt.BlockNumber.Uint64())
+		//if err != nil {
+		//	logger.Error("get slot error: %v", err)
+		//	return false, err
+		//}
 		if txSlot < finalizedSlot {
 			return true, nil
 		}
