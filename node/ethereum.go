@@ -455,9 +455,9 @@ func (e *EthereumAgent) CheckState() error {
 		logger.Error("read all ungen proof ids error: %v", err)
 		return err
 	}
-	for _, unGenProof := range unGenProofs {
-		txHash := unGenProof.TxHash
-		logger.Debug("start check redeem proof tx: %v", txHash)
+	for _, item := range unGenProofs {
+		txHash := item.TxHash
+		logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
 		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
