@@ -26,7 +26,7 @@ func basicAuth(username, password string) string {
 }
 
 func NewClient(url, user, pwd string) (*Client, error) {
-	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: true}, nil
+	return &Client{client: http.DefaultClient, url: url, token: basicAuth(user, pwd), debug: false}, nil
 }
 
 func (c *Client) ChainFork(height int64) (bool, error) {
