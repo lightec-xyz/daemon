@@ -758,7 +758,7 @@ func (e *EthereumAgent) checkRequest(zkType common.ZkProofType, index uint64, tx
 		//	logger.Error("get slot error: %v", err)
 		//	return false, err
 		//}
-		if txSlot < finalizedSlot {
+		if txSlot <= finalizedSlot {
 			return true, nil
 		}
 		logger.Warn("%v tx slot %v less than finalized slot %v", txHash, txSlot, finalizedSlot)
