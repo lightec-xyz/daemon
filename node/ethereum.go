@@ -476,12 +476,12 @@ func (e *EthereumAgent) FetchDataResponse(resp *FetchResponse) error {
 	return nil
 }
 func (e *EthereumAgent) CheckState() error {
-	// todo
-	//err := e.checkPendingProofRequest()
-	//if err != nil {
-	//	logger.Error("check pending proof error: %v", err)
-	//	return err
-	//}
+	//todo
+	err := e.checkPendingProofRequest()
+	if err != nil {
+		logger.Error("check pending proof error: %v", err)
+		return err
+	}
 	return nil
 
 }
@@ -492,8 +492,7 @@ func (e *EthereumAgent) checkPendingProofRequest() error {
 	}
 	defer e.canCheck.Store(true)
 	e.canCheck.Store(false)
-
-	logger.Debug("ethereum check state ...")
+	//logger.Debug("ethereum check state ...")
 	unGenProofs, err := ReadAllUnGenProofs(e.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
@@ -501,7 +500,7 @@ func (e *EthereumAgent) checkPendingProofRequest() error {
 	}
 	for _, item := range unGenProofs {
 		txHash := item.TxHash
-		logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
+		//logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
 		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
@@ -564,7 +563,7 @@ func (e *EthereumAgent) checkPendingProofRequest() error {
 				return err
 			}
 		}
-		logger.Debug("%v find near %v tx slot finalized slot %v", txHash, txSlot, finalizedSlot)
+		//logger.Debug("%v find near %v tx slot finalized slot %v", txHash, txSlot, finalizedSlot)
 		exists, err = CheckProof(e.fileStore, common.BeaconHeaderFinalityType, finalizedSlot, "")
 		if err != nil {
 			logger.Error("check block header finality proof error: %v %v", finalizedSlot, err)
