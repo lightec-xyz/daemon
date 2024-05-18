@@ -36,10 +36,6 @@ type IAgent interface {
 	CheckState() error
 	Close() error
 	Name() string
-}
-
-type IBeaconAgent interface {
-	IAgent
 	FetchDataResponse(resp *FetchResponse) error
 }
 
@@ -63,7 +59,6 @@ type IFetch interface {
 
 type Daemon struct {
 	agents            []*WrapperAgent
-	beaconAgent       *WrapperBeacon
 	fetch             IFetch
 	rpcServer         *rpc.Server
 	nodeConfig        Config
@@ -133,7 +128,10 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	btcProofResp := make(chan *common.ZkProofResponse, 10)
 	ethProofResp := make(chan *common.ZkProofResponse, 10)
 	syncCommitResp := make(chan *common.ZkProofResponse, 10)
-	fetchDataResp := make(chan *FetchResponse, 10)
+
+	ethFetchDataResp := make(chan *FetchResponse, 10)
+	beaconFetchDataResp := make(chan *FetchResponse, 10)
+	btcFetchDataResp := make(chan *FetchResponse, 10)
 
 	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot)
 	if err != nil {
@@ -151,12 +149,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-
-	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
-	if err != nil {
-		logger.Error("new node btcClient error:%v", err)
-		return nil, err
-	}
 	keyStore := NewKeyStore(cfg.EthPrivateKey)
 
 	taskManager, err := NewTxManager(storeDb, keyStore, ethClient, btcClient, oasisClient)
@@ -166,19 +158,26 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 
 	var agents []*WrapperAgent
+	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
+	if err != nil {
+		logger.Error("new node btcClient error:%v", err)
+		return nil, err
+	}
+	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 1*time.Minute, syncCommitResp, beaconFetchDataResp))
+
 	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient, proofRequest, keyStore, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp))
+	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
 	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, oasisClient, proofRequest, taskManager)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp))
+	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp, ethFetchDataResp))
 
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
@@ -213,7 +212,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, fetchDataResp)
+	fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
 	if err != nil {
 		logger.Error("new fetch error: %v", err)
 		return nil, err
@@ -229,7 +228,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		exitSignal:        exitSignal,
 		taskManager:       taskManager,
 		fetch:             fetch,
-		beaconAgent:       NewWrapperBeacon(beaconAgent, 1*time.Minute, 1*time.Minute, syncCommitResp, fetchDataResp),
 		manager:           NewWrapperManger(msgManager, proofRequest, 1*time.Minute),
 	}
 	return daemon, nil
@@ -254,13 +252,6 @@ func (d *Daemon) Init() error {
 			}
 		}
 	}
-	if !d.disableRecurAgent {
-		err = d.beaconAgent.node.Init()
-		if err != nil {
-			logger.Error("node agent init error %v", err)
-			return err
-		}
-	}
 	return nil
 }
 
@@ -269,15 +260,9 @@ func (d *Daemon) Run() error {
 	// rpc rpcServer
 	go d.rpcServer.Run()
 
-	if !d.disableRecurAgent {
-		// syncCommit proof
-		go doProofResponseTask("beacon-proofResponse", d.beaconAgent.proofResponse, d.beaconAgent.node.ProofResponse, d.exitSignal)
-		go doFetchRespTask("beacon-fetchDataResponse", d.beaconAgent.fetchDataResponse, d.beaconAgent.node.FetchDataResponse, d.exitSignal)
-		go DoTimerTask("beacon-checkState", d.beaconAgent.checkDataTime, d.beaconAgent.node.CheckState, d.exitSignal)
-		go DoTimerTask("beacon-scanBlock", 20*time.Second, d.beaconAgent.node.ScanBlock, d.exitSignal)
-		go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
-		go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
-	}
+	// fetch
+	go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
+	go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 
 	// txManager manager
 	go DoTimerTask("txManager-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
@@ -289,20 +274,16 @@ func (d *Daemon) Run() error {
 	}
 	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
 
-	if !d.disableTxAgent {
-		//tx Proof
-		for _, agent := range d.agents {
-			name := fmt.Sprintf("%s-submitProof", agent.node.Name())
-			go doProofResponseTask(name, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
-		}
-		//scan block with tx
-		for _, agent := range d.agents {
-			scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
-			go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
-			checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
-			go DoTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
-		}
+	for _, agent := range d.agents {
+		proofReplyName := fmt.Sprintf("%s-proofResponse", agent.node.Name())
+		go doProofResponseTask(proofReplyName, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
+		fetchName := fmt.Sprintf("%s-fetchResponse", agent.node.Name())
+		go doFetchRespTask(fetchName, agent.fetchResp, agent.node.FetchDataResponse, d.exitSignal)
 
+		scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
+		go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
+		checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
+		go DoTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
 	}
 
 	signal.Notify(d.exitSignal, syscall.SIGTERM, syscall.SIGQUIT)
@@ -333,12 +314,6 @@ func (d *Daemon) Close() error {
 		logger.Error("rpc rpcServer shutdown error:%v", err)
 	}
 	d.manager.manager.Close()
-	if d.disableRecurAgent {
-		err = d.beaconAgent.node.Close()
-		if err != nil {
-			logger.Error("node agent close error:%v", err)
-		}
-	}
 	if d.exitSignal != nil {
 		close(d.exitSignal)
 		//todo waitGroup
@@ -361,24 +336,6 @@ func NewWorkers(workers []WorkerConfig) ([]rpc.IWorker, error) {
 	return workersList, nil
 }
 
-type WrapperBeacon struct {
-	node              IBeaconAgent
-	scanPeriodTime    time.Duration // get node Index
-	checkDataTime     time.Duration
-	proofResponse     chan *common.ZkProofResponse
-	fetchDataResponse chan *FetchResponse
-}
-
-func NewWrapperBeacon(beacon IBeaconAgent, scanPeriodTime, checkDataTime time.Duration, proofResponse chan *common.ZkProofResponse, fetchDataResp chan *FetchResponse) *WrapperBeacon {
-	return &WrapperBeacon{
-		node:              beacon,
-		scanPeriodTime:    scanPeriodTime,
-		proofResponse:     proofResponse,
-		fetchDataResponse: fetchDataResp,
-		checkDataTime:     checkDataTime, // todo
-	}
-}
-
 type WrapperManger struct {
 	manager      IManager
 	proofRequest chan []*common.ZkProofRequest
@@ -397,14 +354,16 @@ type WrapperAgent struct {
 	node           IAgent
 	scanTime       time.Duration
 	proofResp      chan *common.ZkProofResponse
+	fetchResp      chan *FetchResponse
 	checkStateTime time.Duration
 }
 
-func NewWrapperAgent(agent IAgent, scanTime, checkState time.Duration, proofResp chan *common.ZkProofResponse) *WrapperAgent {
+func NewWrapperAgent(agent IAgent, scanTime, checkState time.Duration, proofResp chan *common.ZkProofResponse, fetch chan *FetchResponse) *WrapperAgent {
 	return &WrapperAgent{
 		node:           agent,
 		scanTime:       scanTime,
 		proofResp:      proofResp,
+		fetchResp:      fetch,
 		checkStateTime: checkState,
 	}
 }

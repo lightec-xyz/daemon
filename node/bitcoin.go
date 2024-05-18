@@ -34,6 +34,11 @@ type BitcoinAgent struct {
 	txManager       *TxManager
 }
 
+func (b *BitcoinAgent) FetchDataResponse(resp *FetchResponse) error {
+	// todo
+	return nil
+}
+
 func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, fileStore *FileStorage, btcClient *bitcoin.Client,
 	ethClient *ethereum.Client, btcProverClient *btcproverClient.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TxManager) (IAgent, error) {
 	return &BitcoinAgent{
@@ -496,7 +501,7 @@ func (b *BitcoinAgent) Close() error {
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
-	return "bitcoinAgent"
+	return BitcoinAgentName
 }
 
 func parseDepositTx(tx types.Tx, operatorAddr string, height uint64, minDepositValue float64) (*Transaction, bool, error) {

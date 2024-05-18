@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-var _ IBeaconAgent = (*BeaconAgent)(nil)
+var _ IAgent = (*BeaconAgent)(nil)
 
 type BeaconAgent struct {
 	beaconClient   *beacon.Client
@@ -31,12 +31,12 @@ type BeaconAgent struct {
 }
 
 func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *apiclient.Client, zkProofReq chan []*common.ZkProofRequest,
-	fileStore *FileStorage, genesisSlot, genesisPeriod uint64) (IBeaconAgent, error) {
+	fileStore *FileStorage, genesisSlot, genesisPeriod uint64) (IAgent, error) {
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,
 		apiClient:      apiClient,
-		name:           "beaconAgent",
+		name:           BeaconAgentName,
 		store:          store,
 		stateCache:     NewCacheState(),
 		zkProofRequest: zkProofReq,

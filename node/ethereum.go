@@ -448,7 +448,29 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (*Transaction, bool, error) {
 
 }
 
+func (e *EthereumAgent) FetchDataResponse(resp *FetchResponse) error {
+	logger.Debug("ethereum fetch response fetchType: %v", resp.Id())
+	if resp.UpdateType == FinalityUpdateType {
+		err := e.checkPendingProof()
+		if err != nil {
+			logger.Error("check pending proof error: %v", err)
+			return err
+		}
+	}
+	return nil
+}
 func (e *EthereumAgent) CheckState() error {
+	// todo
+	//err := e.checkPendingProof()
+	//if err != nil {
+	//	logger.Error("check pending proof error: %v", err)
+	//	return err
+	//}
+	return nil
+
+}
+
+func (e *EthereumAgent) checkPendingProof() error {
 	logger.Debug("ethereum check state ...")
 	unGenProofs, err := ReadAllUnGenProofs(e.store, Ethereum)
 	if err != nil {
@@ -541,7 +563,6 @@ func (e *EthereumAgent) CheckState() error {
 		}
 	}
 	return nil
-
 }
 
 func (e *EthereumAgent) updateRedeemProofStatus(txHash string, index uint64, status common.ProofStatus) error {
@@ -845,21 +866,7 @@ func (e *EthereumAgent) Close() error {
 	return nil
 }
 func (e *EthereumAgent) Name() string {
-	return "ethereumAgent"
-}
-
-func NewRedeemProofParam(txId string, txData *ethblock.TxInEth2ProofData) RedeemProofParam {
-	return RedeemProofParam{
-		TxHash: txId,
-	}
-}
-
-func NewRedeemProof(txId string, status common.ProofStatus) Proof {
-	return Proof{
-		TxHash:    txId,
-		ProofType: common.TxInEth2,
-		Status:    int(status),
-	}
+	return EthereumAgentName
 }
 
 func NewDepositEthTx(height uint64, txIndex uint, txHash, btcTxId string, utxo []Utxo, amount int64) *Transaction {

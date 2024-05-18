@@ -92,3 +92,7 @@ const RpcRegisterName = "zkbtc"
 
 const BitcoinNetwork = "bitcoin"
 const EthereumNetwork = "ethereum"
+
+const BitcoinAgentName = "bitcoinAgent"
+const EthereumAgentName = "ethereumAgent"
+const BeaconAgentName = "beaconAgent"
