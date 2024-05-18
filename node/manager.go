@@ -107,6 +107,7 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 		proofId := response.Id()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
+
 	}
 	return nil
 }
