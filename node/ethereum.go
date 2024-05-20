@@ -550,7 +550,7 @@ func (e *EthereumAgent) checkPendingProofRequest() error {
 			return err
 		}
 		if !exists {
-			err := e.tryProofRequest(common.BeaconHeaderType, txSlot, txHash)
+			err := e.tryProofRequest(common.BeaconHeaderType, txSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
