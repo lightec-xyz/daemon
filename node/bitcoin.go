@@ -111,7 +111,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		//return nil
 	}
 	//todo
-	blockCount = blockCount - 0
+	blockCount = blockCount - 1
 	if curHeight >= blockCount {
 		logger.Debug("btc current height:%d,node block count:%d", curHeight, blockCount)
 		return nil

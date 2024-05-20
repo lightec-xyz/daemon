@@ -132,7 +132,7 @@ func (e *EthereumAgent) ScanBlock() error {
 	//	return nil
 	//}
 	// todo
-	blockNumber = blockNumber - 0
+	blockNumber = blockNumber - 1
 	if ethHeight >= int64(blockNumber) {
 		logger.Debug("eth current height:%d,latest block number :%d", ethHeight, blockNumber)
 		return nil
