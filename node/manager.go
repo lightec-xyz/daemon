@@ -158,6 +158,7 @@ func (m *manager) DistributeRequest() error {
 				logger.Error("store Proof error:%v %v %v", req.ReqType.String(), req.Index, err)
 				return
 			}
+			defer worker.DelReqNum()
 			count := 0
 			for {
 				if count >= 1 {
@@ -206,7 +207,7 @@ func (m *manager) CacheRequest(request *common.ZkProofRequest) {
 }
 
 func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*common.ZkProofResponse, error) {
-	defer worker.DelReqNum()
+	//defer worker.DelReqNum()
 	var result []*common.ZkProofResponse
 	switch request.ReqType {
 	case common.DepositTxType:
