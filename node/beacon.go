@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-var _ IBeaconAgent = (*BeaconAgent)(nil)
+var _ IAgent = (*BeaconAgent)(nil)
 
 type BeaconAgent struct {
 	beaconClient   *beacon.Client
@@ -31,12 +31,12 @@ type BeaconAgent struct {
 }
 
 func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *apiclient.Client, zkProofReq chan []*common.ZkProofRequest,
-	fileStore *FileStorage, genesisSlot, genesisPeriod uint64) (IBeaconAgent, error) {
+	fileStore *FileStorage, genesisSlot, genesisPeriod uint64) (IAgent, error) {
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,
 		apiClient:      apiClient,
-		name:           "beaconAgent",
+		name:           BeaconAgentName,
 		store:          store,
 		stateCache:     NewCacheState(),
 		zkProofRequest: zkProofReq,
@@ -116,10 +116,6 @@ func (b *BeaconAgent) ScanBlock() error {
 				continue
 			}
 			logger.Error("get eth1 map to eth2 error: %v %v ", index, err)
-			if strings.Contains(err.Error(), "404 NotFound response") { // todo
-				logger.Warn("miss beacon slot %v info", index)
-				continue
-			}
 			return err
 		}
 		err = b.saveSlotInfo(slotMapInfo)
@@ -288,7 +284,7 @@ func (b *BeaconAgent) CheckState() error {
 	return nil
 }
 
-func (b *BeaconAgent) FetchDataResponse(req *FetchDataResponse) error {
+func (b *BeaconAgent) FetchDataResponse(req *FetchResponse) error {
 	logger.Debug("beacon fetch response fetchType: %v, Index: %v", req.UpdateType.String(), req.Index)
 	return nil
 }

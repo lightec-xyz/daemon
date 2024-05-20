@@ -44,6 +44,14 @@ func TestClient_Demo001(t *testing.T) {
 	t.Log(receipt.TransactionIndex)
 }
 
+func TestClient_ChainFork(t *testing.T) {
+	fork, err := client.ChainFork(596815)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(fork)
+}
+
 func TestClient_GetTxSender(t *testing.T) {
 	sender, err := client.GetTxSender("0xb19639d5c7c5804632f8ed92ca7e16d78cc1c6590a314b0aafee78793be223c6",
 		"0xf99ab49c39e77bd6274035cbc1d6db068e014d3dc8e8a6a4c988f327a9b417f1", 39)

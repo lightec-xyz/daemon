@@ -41,8 +41,16 @@ func init() {
 	}
 }
 
+func TestClient_ChainFork(t *testing.T) {
+	fork, err := client.ChainFork(2815990)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(fork)
+}
+
 func TestClient_GetBlockHeader(t *testing.T) {
-	header, err := client.GetBlockHeader("6dd9258faef568db4816b9cd61bd0b920772bc5f3e440f1f6c12baae64f44144")
+	header, err := client.GetBlockHeader("0000000076a52d67769bacb412a8172d3524fe2d4c2e7f9f93c7c72caa68cd76")
 	if err != nil {
 		panic(err)
 	}

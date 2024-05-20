@@ -1,0 +1,20 @@
+{
+  "datadir": "/Users/red/lworkspace/lightec/daemon/node/test/testnet/.daemon",
+  "network": "testnet",
+  "rpcbind": "127.0.0.1",
+  "rpcport": "9970",
+  "btcUser": "lightec",
+  "btcPwd": "Abcd1234",
+  "btcUrl": "http://18.116.118.39:18332",
+  "ethUrl": "https://ethereum-holesky-rpc.publicnode.com",
+  "beaconUrl": "http://58.41.9.129:8970",
+  "oasisUrl": "https://testnet.sapphire.oasis.dev",
+  "ethPrivateKey": "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
+  "btcInitHeight":2813330,
+  "ethInitHeight":1500350,
+  "enableLocalWorker": false,
+  "beaconInitSlot": 1482752,
+  "autoSubmit": true,
+  "disableRecursiveAgent": false,
+  "disableTxAgent": false
+}

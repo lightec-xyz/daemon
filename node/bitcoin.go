@@ -34,6 +34,11 @@ type BitcoinAgent struct {
 	txManager       *TxManager
 }
 
+func (b *BitcoinAgent) FetchDataResponse(resp *FetchResponse) error {
+	// todo
+	return nil
+}
+
 func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, fileStore *FileStorage, btcClient *bitcoin.Client,
 	ethClient *ethereum.Client, btcProverClient *btcproverClient.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore, task *TxManager) (IAgent, error) {
 	return &BitcoinAgent{
@@ -101,6 +106,16 @@ func (b *BitcoinAgent) ScanBlock() error {
 		logger.Error("bitcoin client get block count error:%v", err)
 		return err
 	}
+	forked, err := b.CheckChainFork(blockCount)
+	if err != nil {
+		logger.Error("bitcoin chain fork error:%v %v", blockCount, err)
+		return err
+	}
+	if forked {
+		logger.Error("bitcoin chain forked,need to rollback %v %v ", blockCount, err)
+		// todo
+		//return nil
+	}
 	//todo
 	blockCount = blockCount - 1
 	if curHeight >= blockCount {
@@ -138,6 +153,11 @@ func (b *BitcoinAgent) ScanBlock() error {
 
 	}
 	return nil
+}
+
+func (b *BitcoinAgent) CheckChainFork(height int64) (bool, error) {
+	// todo
+	return false, nil
 }
 
 func (b *BitcoinAgent) SendProofRequest(requests ...*common.ZkProofRequest) {
@@ -481,7 +501,7 @@ func (b *BitcoinAgent) Close() error {
 	return nil
 }
 func (b *BitcoinAgent) Name() string {
-	return "bitcoinAgent"
+	return BitcoinAgentName
 }
 
 func parseDepositTx(tx types.Tx, operatorAddr string, height uint64, minDepositValue float64) (*Transaction, bool, error) {

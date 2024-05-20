@@ -187,7 +187,7 @@ func DoTask(name string, fn func() error, exit chan os.Signal) {
 }
 
 func DoTimerTask(name string, interval time.Duration, fn func() error, exit chan os.Signal) {
-	logger.Info("%v ticker goroutine start ...", name)
+	logger.Debug("%v ticker goroutine start ...", name)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
@@ -205,11 +205,11 @@ func DoTimerTask(name string, interval time.Duration, fn func() error, exit chan
 }
 
 func doProofRequestTask(name string, req chan []*common.ZkProofRequest, fn func(req []*common.ZkProofRequest) error, exit chan os.Signal) {
-	logger.Info("%v goroutine start ...", name)
+	logger.Debug("%v goroutine start ...", name)
 	for {
 		select {
 		case <-exit:
-			logger.Info("%v goroutine exit now ...", name)
+			logger.Info("%v proof request goroutine exit now ...", name)
 			return
 		case request := <-req:
 			err := fn(request)
@@ -221,12 +221,12 @@ func doProofRequestTask(name string, req chan []*common.ZkProofRequest, fn func(
 	}
 }
 
-func doFetchRespTask(name string, resp chan *FetchDataResponse, fn func(resp *FetchDataResponse) error, exit chan os.Signal) {
-	logger.Info("%v goroutine start ...", name)
+func doFetchRespTask(name string, resp chan *FetchResponse, fn func(resp *FetchResponse) error, exit chan os.Signal) {
+	logger.Debug("%v goroutine start ...", name)
 	for {
 		select {
 		case <-exit:
-			logger.Info("%v goroutine exit now ...", name)
+			logger.Debug("%v fetch goroutine exit now ...", name)
 			return
 		case response := <-resp:
 			err := fn(response)
@@ -238,11 +238,11 @@ func doFetchRespTask(name string, resp chan *FetchDataResponse, fn func(resp *Fe
 }
 
 func doProofResponseTask(name string, resp chan *common.ZkProofResponse, fn func(resp *common.ZkProofResponse) error, exit chan os.Signal) {
-	logger.Info("%v goroutine start ...", name)
+	logger.Debug("%v goroutine start ...", name)
 	for {
 		select {
 		case <-exit:
-			logger.Info("%v goroutine exit now ...", name)
+			logger.Info("%v proof resp goroutine exit now ...", name)
 			return
 		case response := <-resp:
 			err := fn(response)

@@ -1,8 +1,20 @@
 package types
 
 type BlockHeader struct {
-	Hash   string `json:"hash"`
-	Height int64  `json:"height"`
+	Hash          string `json:"hash"`
+	Confirmations int    `json:"confirmations"`
+	Height        int    `json:"height"`
+	Version       int    `json:"version"`
+	VersionHex    string `json:"versionHex"`
+	Merkleroot    string `json:"merkleroot"`
+	//Time          int    `json:"time"`
+	//Mediantime    int    `json:"mediantime"`
+	//Nonce         int    `json:"nonce"`
+	//Bits          string `json:"bits"`
+	//Difficulty        string `json:"difficulty"`
+	Chainwork string `json:"chainwork"`
+	//NTx               int    `json:"nTx"`
+	Previousblockhash string `json:"previousblockhash"`
 }
 
 type Unspents struct {

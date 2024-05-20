@@ -95,14 +95,17 @@ type FetchType int
 const (
 	GenesisUpdateType FetchType = iota + 1
 	PeriodUpdateType
+	FinalityUpdateType
 )
 
 func (ft FetchType) String() string {
 	switch ft {
 	case GenesisUpdateType:
-		return "GenesisUpdateType"
+		return "genesisUpdateType"
 	case PeriodUpdateType:
-		return "PeriodUpdateType"
+		return "periodUpdateType"
+	case FinalityUpdateType:
+		return "finalityUpdateType"
 	default:
 		return "unknown"
 	}
@@ -116,18 +119,21 @@ type FetchRequest struct {
 	period     uint64
 }
 
-type FetchDataResponse struct {
+type FetchResponse struct {
 	FetchId    string
 	Index      uint64
 	UpdateType FetchType
 }
 
-func NewFetchDataResponse(updateType FetchType, index uint64) *FetchDataResponse {
-	id := fmt.Sprintf("%v_%v", updateType.String(), index)
-	return &FetchDataResponse{FetchId: id, Index: index, UpdateType: updateType}
+func NewFetchResponse(updateType FetchType, index uint64) *FetchResponse {
+	return &FetchResponse{FetchId: NewFetchId(updateType, index), Index: index, UpdateType: updateType}
 }
 
-func (f *FetchDataResponse) Id() string {
+func NewFetchId(updateType FetchType, index uint64) string {
+	return fmt.Sprintf("%v_%v", updateType.String(), index)
+}
+
+func (f *FetchResponse) Id() string {
 	return f.FetchId
 }
 

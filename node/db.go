@@ -352,7 +352,12 @@ func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProo
 		}
 		unGenPreProofs = append(unGenPreProofs, &unGenProof)
 	}
-	sort.Slice(unGenPreProofs, func(i, j int) bool { return unGenPreProofs[i].Height < unGenPreProofs[j].Height })
+	sort.Slice(unGenPreProofs, func(i, j int) bool {
+		if unGenPreProofs[i].Height != unGenPreProofs[j].Height {
+			return unGenPreProofs[i].Height < unGenPreProofs[j].Height
+		}
+		return unGenPreProofs[i].TxIndex < unGenPreProofs[j].TxIndex
+	})
 	return unGenPreProofs, nil
 }
 
