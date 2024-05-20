@@ -147,6 +147,7 @@ func txesByAddrGroup(txes []*Transaction) map[string][]DbTx {
 				Amount:    tx.Amount,
 				TxIndex:   tx.TxIndex,
 			})
+			txMap[tx.From] = list
 		} else {
 			txMap[tx.From] = []DbTx{
 				{
