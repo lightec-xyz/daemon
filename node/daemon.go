@@ -163,7 +163,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 15*time.Second, syncCommitResp, beaconFetchDataResp))
+	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 
 	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient, proofRequest, keyStore, taskManager)
 	if err != nil {
