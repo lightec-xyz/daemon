@@ -84,12 +84,6 @@ func (b *BitcoinAgent) Init() error {
 	return nil
 }
 
-// checkUnGenerateProof check uncompleted generate Proof tx,resend again
-func (b *BitcoinAgent) checkUnGenerateProof() error {
-	// todo
-	return nil
-}
-
 func (b *BitcoinAgent) ScanBlock() error {
 	logger.Debug("bitcoin scan block ...")
 	curHeight, ok, err := ReadBitcoinHeight(b.store)
@@ -117,7 +111,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		//return nil
 	}
 	//todo
-	blockCount = blockCount - 1
+	blockCount = blockCount - 0
 	if curHeight >= blockCount {
 		logger.Debug("btc current height:%d,node block count:%d", curHeight, blockCount)
 		return nil
