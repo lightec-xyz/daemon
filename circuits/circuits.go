@@ -473,7 +473,7 @@ type CircuitConfig struct {
 
 func debugProof() (*reLightCommon.Proof, error) {
 	// todo only just local debug
-	time.Sleep(15 * time.Second)
+	time.Sleep(5 * time.Second)
 	field := ecc.BN254.ScalarField()
 	w, err := witness.New(field)
 	if err != nil {

@@ -87,6 +87,7 @@ func (e *EthereumAgent) Init() error {
 			return err
 		}
 	}
+
 	// test rpc
 	_, err = e.ethClient.GetChainId()
 	if err != nil {
@@ -97,6 +98,11 @@ func (e *EthereumAgent) Init() error {
 	//err = WriteUnGenProof(e.store, Ethereum, []string{"622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f"})
 	//if err != nil {
 	//	logger.Error("write ungen proof error: %v", err)
+	//	return err
+	//}
+	//err = WriteEthereumHeight(e.store, 1583313)
+	//if err != nil {
+	//	logger.Error("%v", err)
 	//	return err
 	//}
 	return nil
@@ -127,8 +133,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		// todo
 		//return nil
 	}
-	//ethHeight = 1579679
-	//if ethHeight > 1579698 {
+	//if ethHeight > 1583329 {
 	//	return nil
 	//}
 	// todo
@@ -204,7 +209,7 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		}
 	default:
 		// todo
-		err = e.checkPendingProofRequest()
+		err = e.checkPendingProofRequest(nil)
 		if err != nil {
 			logger.Error("check pending proof request error:%v %v", resp.TxHash, err)
 		}
@@ -463,7 +468,7 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (*Transaction, bool, error) {
 func (e *EthereumAgent) FetchDataResponse(resp *FetchResponse) error {
 	logger.Debug("ethereum fetch response fetchType: %v", resp.Id())
 	if resp.UpdateType == FinalityUpdateType {
-		err := e.checkPendingProofRequest()
+		err := e.checkPendingProofRequest(resp)
 		if err != nil {
 			logger.Error("check pending proof error: %v", err)
 			return err
@@ -473,7 +478,7 @@ func (e *EthereumAgent) FetchDataResponse(resp *FetchResponse) error {
 }
 func (e *EthereumAgent) CheckState() error {
 	//todo
-	err := e.checkPendingProofRequest()
+	err := e.checkPendingProofRequest(nil)
 	if err != nil {
 		logger.Error("check pending proof error: %v", err)
 		return err
@@ -482,10 +487,18 @@ func (e *EthereumAgent) CheckState() error {
 
 }
 
-func (e *EthereumAgent) checkPendingProofRequest() error {
+func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 	//logger.Debug("ethereum check state ...")
 	e.lock.Lock()
 	defer e.lock.Unlock()
+	if data != nil {
+		// todo
+		err := e.fileStore.StoreFinalityUpdate(data.Index, data.data)
+		if err != nil {
+			logger.Error("store finality update error:%v", err)
+			return err
+		}
+	}
 	unGenProofs, err := ReadAllUnGenProofs(e.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)

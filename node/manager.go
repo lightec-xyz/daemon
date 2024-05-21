@@ -68,16 +68,16 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 	if m.proofQueue.Len() == 0 {
 		return nil, false, nil
 	}
-	//m.proofQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
-	//	logger.Debug("queryQueueReq: %v", value.Id())
-	//	return nil
-	//})
+	m.proofQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
+		logger.Debug("queryQueueReq: %v", value.Id())
+		return nil
+	})
 	request, ok := m.proofQueue.Pop()
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
 		return nil, false, fmt.Errorf("parse Proof request error")
 	}
-	//logger.Debug("get proof request:%v", request.Id())
+	logger.Debug("get proof request:%v", request.Id())
 
 	request.StartTime = time.Now()
 	m.pendingQueue.Push(request.Id(), request)
@@ -101,6 +101,8 @@ func (m *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.Pr
 }
 
 func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	for _, response := range responses {
 		chanResponse, err := m.getChanResponse(response.ZkProofType)
 		if err != nil {
@@ -118,9 +120,12 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 			logger.Error("wait update Proof status error:%v", err)
 			return err
 		}
-
 	}
 	return nil
+}
+
+func (m *manager) getProofRequest(reqType common.ZkProofType) (*common.ZkProofRequest, error) {
+	return nil, nil
 }
 
 // todo
