@@ -7,7 +7,6 @@ import (
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
-	"os"
 )
 
 type Local struct {
@@ -26,10 +25,15 @@ func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *n
 		logger.Error("new node client error:%v", err)
 		return nil, err
 	}
-	zkParamDir := os.Getenv(common.ZkParameterDir)
-	if zkParamDir == "" {
-		logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
-		return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
+	zkParamDir := common.GetEnvZkParameterDir()
+	debugMode := common.GetEnvDebugMode()
+	logger.Debug("DebugMode: %v", debugMode)
+
+	if !debugMode {
+		if zkParamDir == "" {
+			logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
+			return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
+		}
 	}
 	logger.Info("zkParamDir: %v", zkParamDir)
 	worker, err := node.NewLocalWorker(zkParamDir, datadir, num)
@@ -78,7 +82,6 @@ func (l *Local) Run() error {
 		count := 0
 		for {
 			defer l.worker.DelReqNum()
-			
 			if count >= 1 { // todo
 				logger.Error("retry gen proof too much time,stop generate this proof now: %v", request.Id())
 				return

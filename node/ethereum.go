@@ -127,8 +127,8 @@ func (e *EthereumAgent) ScanBlock() error {
 		// todo
 		//return nil
 	}
-	//ethHeight = 1577154
-	//if ethHeight > 1577161 {
+	//ethHeight = 1579679
+	//if ethHeight > 1579698 {
 	//	return nil
 	//}
 	// todo

@@ -243,7 +243,7 @@ func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
 }
 
 func (aq *ArrayQueue) sortList() {
-	sort.Slice(aq.list, func(i, j int) bool {
+	sort.SliceStable(aq.list, func(i, j int) bool {
 		if aq.list[i].Weight != aq.list[j].Weight {
 			return aq.list[i].Weight > aq.list[j].Weight
 		}

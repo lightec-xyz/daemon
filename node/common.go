@@ -96,6 +96,9 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 // todo refactor
 
 func RedeemBtcTx(btcClient *bitcoin.Client, ethClient *ethrpc.Client, oasisClient *oasis.Client, txHash string, proof []byte) (interface{}, error) {
+	if common.GetEnvDebugMode() {
+		return nil, nil
+	}
 	ethTxHash := ethcommon.HexToHash(txHash)
 	ethTx, _, err := ethClient.TransactionByHash(context.Background(), ethTxHash)
 	if err != nil {

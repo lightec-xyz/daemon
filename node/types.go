@@ -123,6 +123,7 @@ type FetchResponse struct {
 	FetchId    string
 	Index      uint64
 	UpdateType FetchType
+	data       interface{}
 }
 
 func NewFetchResponse(updateType FetchType, index uint64) *FetchResponse {

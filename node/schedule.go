@@ -57,7 +57,7 @@ func (m *Schedule) findBestWorker(work func(worker rpc.IWorker) error) (rpc.IWor
 	if len(tmpWorkers) == 0 {
 		return nil, false, nil
 	}
-	sort.Slice(tmpWorkers, func(i, j int) bool {
+	sort.SliceStable(tmpWorkers, func(i, j int) bool {
 		return tmpWorkers[i].CurrentNums() < tmpWorkers[j].CurrentNums()
 	})
 	bestWork := tmpWorkers[0]

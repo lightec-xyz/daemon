@@ -58,7 +58,7 @@ func (c *Config) Info() string {
 
 func NewClientModeConfig() Config {
 	return Config{
-		Url:     "http://127.0.0.1:7880",
+		Url:     "http://127.0.0.1:9970",
 		MaxNums: 1,
 		Mode:    common.Client,
 		Network: "local",

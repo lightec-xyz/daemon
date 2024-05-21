@@ -40,7 +40,7 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 		}
 		rpcTxes = append(rpcTxes, transaction)
 	}
-	sort.Slice(rpcTxes, func(i, j int) bool {
+	sort.SliceStable(rpcTxes, func(i, j int) bool {
 		if rpcTxes[i].Height == rpcTxes[j].Height {
 			return rpcTxes[i].TxIndex < rpcTxes[j].TxIndex
 		}

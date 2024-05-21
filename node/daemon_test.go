@@ -8,7 +8,7 @@ import (
 )
 
 func TestLocalDevDaemon(t *testing.T) {
-	cfgBytes, err := os.ReadFile("/Users/red/lworkspace/lightec/daemon/cmd/node/testnet.json")
+	cfgBytes, err := os.ReadFile("/Users/red/lworkspace/lightec/daemon/cmd/node/node_local.json")
 	if err != nil {
 		t.Fatal(err)
 	}

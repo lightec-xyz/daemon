@@ -68,12 +68,17 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 	if m.proofQueue.Len() == 0 {
 		return nil, false, nil
 	}
+	//m.proofQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
+	//	logger.Debug("queryQueueReq: %v", value.Id())
+	//	return nil
+	//})
 	request, ok := m.proofQueue.Pop()
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
 		return nil, false, fmt.Errorf("parse Proof request error")
 	}
-	//logger.Debug("get proof request:v", request.Id())
+	//logger.Debug("get proof request:%v", request.Id())
+
 	request.StartTime = time.Now()
 	m.pendingQueue.Push(request.Id(), request)
 	err := m.UpdateProofStatus(request, common.ProofGenerating)
