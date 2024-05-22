@@ -13,6 +13,9 @@ const (
 	UnSubmitTxPrefix      = "us_" // s_ + hash
 	BeaconSlotPrefix      = "bs_"
 	BeaconEthNumberPrefix = "bh_"
+
+	TxSlotPrefix         = "ts_"
+	TxFinalizeSlotPrefix = "tfs_"
 )
 
 var (
@@ -134,5 +137,15 @@ func DbBeaconSlotId(slot uint64) string {
 }
 func DbBeaconEthNumberId(number uint64) string {
 	key := fmt.Sprintf("%s%d", BeaconEthNumberPrefix, number)
+	return key
+}
+
+func DbTxSlotId(slot uint64, hash string) string {
+	key := fmt.Sprintf("%s%d_%s", TxSlotPrefix, slot, hash)
+	return key
+}
+
+func DbTxFinalizeSlotId(slot uint64, hash string) string {
+	key := fmt.Sprintf("%s%d_%s", TxFinalizeSlotPrefix, slot, hash)
 	return key
 }

@@ -329,6 +329,16 @@ func WriteUnGenProof(store store.IStore, chain ChainType, list []*DbUnGenProof) 
 
 // todo
 
+func ReadUnGenProof(store store.IStore, chainType ChainType, txId string) (*DbUnGenProof, error) {
+	var proof DbUnGenProof
+	err := store.GetObj(DbUnGenProofId(chainType, txId), &proof)
+	if err != nil {
+		logger.Error("read ungen Proof error:%v", err)
+		return nil, err
+	}
+	return &proof, nil
+}
+
 func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProof, error) {
 	var keys []string
 	queryPrefix := fmt.Sprintf("%s%d", UnGenProofPrefix, chainType)
@@ -410,4 +420,48 @@ func ReadTxesByAddr(store store.IStore, addr string) ([]*DbTx, error) {
 func getTxId(key string) string {
 	txId := key[strings.Index(key, "_")+1:]
 	return txId
+}
+
+func WriteTxSlot(store store.IStore, txSlot uint64, txHash string) error {
+	return store.PutObj(DbTxSlotId(txSlot, txHash), txHash)
+}
+
+func DeleteTxSlot(store store.IStore, txSlot uint64, txHash string) error {
+	return store.DeleteObj(DbTxSlotId(txSlot, txHash))
+}
+
+func ReadAllTxBySlot(store store.IStore, txSlot uint64) ([]string, error) {
+	var txes []string
+	iterator := store.Iterator([]byte(DbTxSlotId(txSlot, "")), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		txes = append(txes, getTxId(string(iterator.Key())))
+	}
+	err := iterator.Error()
+	if err != nil {
+		return nil, err
+	}
+	return txes, nil
+}
+
+func WriteTxFinalizedSlot(store store.IStore, txSlot uint64, txHash string) error {
+	return store.PutObj(DbTxFinalizeSlotId(txSlot, txHash), txHash)
+}
+
+func DeleteTxFinalizedSlot(store store.IStore, txSlot uint64, txHash string) error {
+	return store.DeleteObj(DbTxFinalizeSlotId(txSlot, txHash))
+}
+
+func ReadAllTxByFinalizedSlot(store store.IStore, finalizedSlot uint64) ([]string, error) {
+	var txes []string
+	iterator := store.Iterator([]byte(DbTxFinalizeSlotId(finalizedSlot, "")), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		txes = append(txes, getTxId(string(iterator.Key())))
+	}
+	err := iterator.Error()
+	if err != nil {
+		return nil, err
+	}
+	return txes, nil
 }
