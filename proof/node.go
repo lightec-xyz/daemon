@@ -133,5 +133,9 @@ func (node *Node) Close() error {
 			logger.Error(" proof worker node exit now: %v", err)
 		}
 	}
+	err := logger.Close()
+	if err != nil {
+		fmt.Printf("logger close error: %v", err)
+	}
 	return nil
 }

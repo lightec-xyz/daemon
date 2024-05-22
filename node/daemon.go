@@ -328,6 +328,10 @@ func (d *Daemon) Close() error {
 		//todo waitGroup
 		time.Sleep(5 * time.Second)
 	}
+	err = logger.Close()
+	if err != nil {
+		fmt.Printf("logger close error: %v \n", err)
+	}
 	return nil
 }
 

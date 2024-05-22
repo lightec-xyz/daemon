@@ -106,5 +106,6 @@ func (f *Fetch) Run() error {
 }
 
 func (f *Fetch) Close() error {
+	logger.Close()
 	return f.fetch.Close()
 }

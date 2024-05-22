@@ -40,7 +40,10 @@ func InitLogger(cfg *LogCfg) error {
 }
 
 func Close() error {
-	return logger.Close()
+	if logger != nil {
+		return logger.Close()
+	}
+	return nil
 }
 
 type LogCfg struct {
@@ -77,7 +80,6 @@ func (l *Logger) rotating() error {
 			err := l.rotatingLogger.Close()
 			if err != nil {
 				fmt.Printf("log rotating error: %v %v \n", fileName, err)
-				continue
 			}
 			l.rotatingLogger = newRotatingLogger(fileName)
 			timeLeft := daySecond - time.Now().Unix()%daySecond + 61
@@ -91,6 +93,9 @@ func (l *Logger) rotating() error {
 func newLogger(cfg *LogCfg) (*Logger, error) {
 	if cfg == nil {
 		cfg = defaultLogCfg()
+	}
+	if cfg.LogDir == "" {
+		cfg.LogDir = "logs"
 	}
 	var writeSyncers []zapcore.WriteSyncer
 	var rotatingLogger *lumberjack.Logger
