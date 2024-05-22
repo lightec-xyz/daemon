@@ -238,17 +238,21 @@ func (f *Fetch) GetFinalityUpdate() error {
 	if exists {
 		return nil
 	}
-	// todo
-	//err = f.fileStore.StoreFinalityUpdate(slot, finalityUpdate)
-	//if err != nil {
-	//	logger.Error("store finality update error:%v", err)
-	//	return err
-	//}
-	logger.Debug("success store finality update:%v", slot)
-	err = f.SendFetchResp(FinalityUpdateType, slot, finalityUpdate)
-	if err != nil {
-		logger.Error("send fetch resp error:%v", err)
-		return err
+	//todo
+	if f.ethFetchResp == nil {
+		logger.Debug("success store finality update:%v", slot)
+		err = f.fileStore.StoreFinalityUpdate(slot, finalityUpdate)
+		if err != nil {
+			logger.Error("store finality update error:%v", err)
+			return err
+		}
+	} else {
+		logger.Debug("send fetch finality update %v", slot)
+		err = f.SendFetchResp(FinalityUpdateType, slot, finalityUpdate)
+		if err != nil {
+			logger.Error("send fetch resp error:%v", err)
+			return err
+		}
 	}
 	return nil
 }

@@ -32,6 +32,7 @@ type EthereumAgent struct {
 	ethClient        *ethrpc.Client
 	oasisClient      *oasis.Client
 	apiClient        *apiclient.Client // todo temporary use
+	state            *State
 	beaconClient     *beacon.Client
 	store            store.IStore
 	memoryStore      store.IStore
@@ -50,7 +51,8 @@ type EthereumAgent struct {
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client, proofRequest chan []*common.ZkProofRequest, task *TxManager) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client,
+	proofRequest chan []*common.ZkProofRequest, task *TxManager, state *State) (IAgent, error) {
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
@@ -66,6 +68,7 @@ func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, st
 		logAddrFilter:    cfg.EthAddrFilter,
 		btcLockScript:    cfg.BtcLockScript,
 		txManager:        task,
+		state:            state,
 		genesisPeriod:    genesisSlot / 8192,
 		genesisSlot:      genesisSlot,
 		stateCache:       NewCacheState(),
@@ -499,6 +502,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 	}
+	logger.Debug("check pending request ....")
 	unGenProofs, err := ReadAllUnGenProofs(e.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
@@ -551,6 +555,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
+			e.state.AddTx(txHash)
 			err := e.tryProofRequest(common.TxInEth2, 0, txHash)
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
@@ -563,6 +568,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
+			e.state.AddTxSlot(txSlot, txHash)
 			err := e.tryProofRequest(common.BeaconHeaderType, txSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
@@ -576,6 +582,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
+			e.state.AddFinalizeSlot(finalizedSlot, txHash)
 			err := e.tryProofRequest(common.BeaconHeaderFinalityType, finalizedSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)

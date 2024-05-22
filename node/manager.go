@@ -1,10 +1,13 @@
 package node
 
 import (
+	"context"
 	"fmt"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
@@ -19,16 +22,19 @@ type manager struct {
 	fileStore      *FileStorage
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
+	beaconClient   *beacon.Client
 	store          store.IStore
 	memory         store.IStore
+	genesisPeriod  uint64
+	state          *State
 	btcProofResp   chan *common.ZkProofResponse
 	ethProofResp   chan *common.ZkProofResponse
 	syncCommitResp chan *common.ZkProofResponse
 	lock           sync.Mutex
 }
 
-func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
-	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage) (IManager, error) {
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
+	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, genesisPeriod uint64, state *State) (IManager, error) {
 	return &manager{
 		proofQueue:     NewArrayQueue(),
 		pendingQueue:   NewPendingQueue(),
@@ -41,6 +47,9 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofR
 		syncCommitResp: syncCommitteeProofResp,
 		btcClient:      btcClient,
 		ethClient:      ethClient,
+		beaconClient:   beaconClient,
+		genesisPeriod:  genesisPeriod,
+		state:          state,
 	}, nil
 }
 
@@ -124,8 +133,74 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	return nil
 }
 
-func (m *manager) getProofRequest(reqType common.ZkProofType) (*common.ZkProofRequest, error) {
-	return nil, nil
+func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.ZkProofRequest, bool, error) {
+	switch resp.ZkProofType {
+	case common.TxInEth2:
+		request, ok, err := m.GetRedeemRequest(resp.TxHash)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id())
+			return nil, false, err
+		}
+		return []*common.ZkProofRequest{request}, ok, nil
+	case common.BeaconHeaderType:
+		txes := m.state.GetTxSlot(resp.Period)
+		var result []*common.ZkProofRequest
+		for _, tx := range txes {
+			request, ok, err := m.GetRedeemRequest(tx)
+			if err != nil {
+				logger.Error("get redeem request error:%v %v", resp.Id())
+				return nil, false, err
+			}
+			if ok {
+				result = append(result, request)
+			}
+		}
+		if len(result) == 0 {
+			return nil, false, nil
+		}
+		return result, true, nil
+	case common.BeaconHeaderFinalityType:
+		txes := m.state.GetFinalizeSlot(resp.Period)
+		var result []*common.ZkProofRequest
+		for _, tx := range txes {
+			request, ok, err := m.GetRedeemRequest(tx)
+			if err != nil {
+				logger.Error("get redeem request error:%v %v", resp.Id())
+				return nil, false, err
+			}
+			if ok {
+				result = append(result, request)
+			}
+		}
+		if len(result) == 0 {
+			return nil, false, nil
+		}
+		return result, true, nil
+	default:
+		return nil, false, nil
+	}
+}
+
+func (m *manager) GetRedeemRequest(txHash string) (*common.ZkProofRequest, bool, error) {
+	// todo
+	txSlot, ok, err := m.GetSlotByHash(txHash)
+	if err != nil {
+		logger.Error("get slot by hash error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	data, ok, err := GetRedeemRequestData(m.fileStore, m.genesisPeriod, txSlot, txHash, m.beaconClient, m.ethClient.Client)
+	if err != nil {
+		logger.Error("get redeem request data error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := common.NewZkProofRequest(common.RedeemTxType, data, txSlot, txHash)
+	return request, true, nil
 }
 
 // todo
@@ -403,6 +478,25 @@ func (m *manager) CheckPendingRequest() error {
 		return nil
 	})
 	return nil
+}
+
+func (m *manager) GetSlotByHash(hash string) (uint64, bool, error) {
+	txHash := ethCommon.HexToHash(hash)
+	receipt, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
+	if err != nil {
+		logger.Error("get tx receipt error: %v %v", hash, err)
+		return 0, false, err
+	}
+	// todo
+	beaconSlot, ok, err := ReadBeaconSlot(m.store, receipt.BlockNumber.Uint64())
+	if err != nil {
+		logger.Error("get beacon slot error: %v %v", hash, err)
+		return 0, false, err
+	}
+	if !ok {
+		return 0, false, nil
+	}
+	return beaconSlot, true, nil
 }
 
 func (m *manager) Close() error {

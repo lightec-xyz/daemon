@@ -23,7 +23,7 @@ import (
 )
 
 func init() {
-	err := logger.InitLogger()
+	err := logger.InitLogger(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -173,7 +173,9 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
-	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, oasisClient, proofRequest, taskManager)
+	state := NewState()
+	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
+		beaconClient, oasisClient, proofRequest, taskManager, state)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -203,8 +205,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Warn("no local worker to generate proof")
 	}
 	schedule := NewSchedule(workers)
-	msgManager, err := NewManager(btcClient, ethClient, btcProofResp, ethProofResp, syncCommitResp,
-		storeDb, memoryStore, schedule, fileStore)
+	msgManager, err := NewManager(btcClient, ethClient, beaconClient, btcProofResp, ethProofResp, syncCommitResp,
+		storeDb, memoryStore, schedule, fileStore, cfg.GenesisSyncPeriod, state)
 	if err != nil {
 		logger.Error("new msgManager error: %v", err)
 		return nil, err
