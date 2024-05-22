@@ -65,12 +65,19 @@ func (t *TxManager) Check() error {
 		logger.Error("read unsubmit tx error:%v", err)
 		return err
 	}
+	skip := false
 	for _, tx := range unSubmitTxs {
 		switch tx.ProofType {
 		case common.VerifyTxType:
+			if skip {
+				continue
+			}
 			err := t.UpdateUtxoChange(tx.Hash, tx.Proof)
 			if err != nil {
 				logger.Error("update utxo error: %v %v", tx.ProofType.String(), tx.Hash)
+			}
+			if err == nil {
+				skip = true
 			}
 		case common.RedeemTxType:
 			err := t.RedeemZkbtc(tx.Hash, tx.Proof)
