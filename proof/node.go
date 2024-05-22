@@ -53,16 +53,39 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("read worker id error:%v", err)
 		return nil, err
 	}
+	debugMode := common.GetEnvDebugMode()
+	logger.Debug("DebugMode: %v", debugMode)
+	zkParameterDir := common.GetEnvZkParameterDir()
+	if !debugMode {
+		if zkParameterDir == "" {
+			return nil, fmt.Errorf("zkParameterDir is empty,please config  ZkParameterDir env")
+		}
+	}
 	if !exists {
+		if !debugMode {
+			// todo
+			logger.Debug("start check zk parameters md5 ...")
+			parameters, err := ReadParameters([]byte(common.ParametersStr))
+			if err != nil {
+				logger.Error("read parameters error:%v", err)
+				return nil, err
+			}
+			err = common.CheckZkParametersMd5(zkParameterDir, parameters)
+			if err != nil {
+				logger.Error("check zk parameters md5 error:%v", err)
+				return nil, err
+			}
+			logger.Debug("check zk parameters md5 end ...")
+		}
 		workerId = common.MustUUID()
-		err := WriteWorkerId(storeDb, workerId)
+		err = WriteWorkerId(storeDb, workerId)
 		if err != nil {
 			logger.Error("write worker id error:%v", err)
 			return nil, err
 		}
 	}
 	if cfg.Mode == common.Client {
-		local, err := NewLocal(cfg.Url, cfg.DataDir, workerId, cfg.MaxNums, storeDb, fileStorage)
+		local, err := NewLocal(zkParameterDir, cfg.Url, cfg.DataDir, workerId, cfg.MaxNums, storeDb, fileStorage)
 		if err != nil {
 			logger.Error("new local error:%v", err)
 			return nil, err

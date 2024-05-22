@@ -1,7 +1,7 @@
 package proof
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
@@ -19,23 +19,12 @@ type Local struct {
 	cacheProofs *node.ProofRespQueue
 }
 
-func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
+func NewLocal(zkParamDir, url, datadir, id string, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
 	client, err := rpc.NewNodeClient(url)
 	if err != nil {
 		logger.Error("new node client error:%v", err)
 		return nil, err
 	}
-	zkParamDir := common.GetEnvZkParameterDir()
-	debugMode := common.GetEnvDebugMode()
-	logger.Debug("DebugMode: %v", debugMode)
-
-	if !debugMode {
-		if zkParamDir == "" {
-			logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
-			return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
-		}
-	}
-	logger.Info("zkParamDir: %v", zkParamDir)
 	worker, err := node.NewLocalWorker(zkParamDir, datadir, num)
 	if err != nil {
 		logger.Error("new local worker error:%v", err)
@@ -129,4 +118,13 @@ func (l *Local) CheckState() error {
 
 func (l *Local) Close() error {
 	return nil
+}
+
+func ReadParameters(data []byte) ([]*common.Parameters, error) {
+	var result []*common.Parameters
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
