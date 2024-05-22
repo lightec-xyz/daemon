@@ -273,7 +273,7 @@ func (d *Daemon) Run() error {
 	go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 
 	if !d.debug {
-		go DoTimerTask("txManager-check", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
+		go DoTimerTask("txManager-check", 30*time.Second, d.taskManager.Check, d.exitSignal) // todo
 	}
 
 	// proof request manager
