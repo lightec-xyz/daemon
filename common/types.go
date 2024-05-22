@@ -60,6 +60,7 @@ func (r *ZkProofRequest) String() string {
 }
 
 type ZkProofResponse struct {
+	RespId      string
 	ZkProofType ZkProofType
 	Status      ProofStatus
 	Proof       ZkProof

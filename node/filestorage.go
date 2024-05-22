@@ -400,7 +400,7 @@ func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, 
 	for key, _ := range indexes {
 		tmpIndexes = append(tmpIndexes, key)
 	}
-	sort.Slice(tmpIndexes, func(i, j int) bool {
+	sort.SliceStable(tmpIndexes, func(i, j int) bool {
 		return tmpIndexes[i] < tmpIndexes[j]
 	})
 	var finalizedSlot uint64
@@ -532,7 +532,7 @@ func (fs *FileStorage) NeedGenBhfUpdateIndex() ([]uint64, error) {
 			needUpdateIndexes = append(needUpdateIndexes, key)
 		}
 	}
-	sort.Slice(needUpdateIndexes, func(i, j int) bool {
+	sort.SliceStable(needUpdateIndexes, func(i, j int) bool {
 		return needUpdateIndexes[i] < needUpdateIndexes[j]
 	})
 	return needUpdateIndexes, nil

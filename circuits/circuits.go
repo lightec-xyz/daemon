@@ -15,8 +15,6 @@ import (
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
 	"math/big"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -51,21 +49,13 @@ func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
 	unitConfig := unit.NewUnitConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	genesisConfig := genesis.NewGenesisConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
 	recursiveConfig := recursive.NewRecursiveConfig(cfg.DataDir, cfg.SrsDir, cfg.SubDir)
-	var zkDebug bool
-	var err error
-	zkDebugEnv := os.Getenv(common.ZkDebugEnv)
-	if zkDebugEnv != "" {
-		zkDebug, err = strconv.ParseBool(zkDebugEnv)
-		if err != nil {
-			return nil, err
-		}
-	}
+	debugMode := common.GetEnvDebugMode()
 	return &Circuit{
 		unit:      unit.NewUnit(unitConfig),
 		recursive: recursive.NewRecursive(recursiveConfig),
 		genesis:   genesis.NewGenesis(genesisConfig),
 		Cfg:       cfg,
-		debug:     zkDebug, // todo
+		debug:     debugMode, // todo
 	}, nil
 }
 
@@ -483,7 +473,7 @@ type CircuitConfig struct {
 
 func debugProof() (*reLightCommon.Proof, error) {
 	// todo only just local debug
-	time.Sleep(15 * time.Second)
+	time.Sleep(5 * time.Second)
 	field := ecc.BN254.ScalarField()
 	w, err := witness.New(field)
 	if err != nil {

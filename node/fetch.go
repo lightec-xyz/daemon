@@ -131,10 +131,10 @@ func (f *Fetch) LightClientUpdate() error {
 	return nil
 }
 
-func (f *Fetch) SendFetchResp(fetchType FetchType, index uint64) error {
+func (f *Fetch) SendFetchResp(fetchType FetchType, index uint64, data interface{}) error {
 	if fetchType == FinalityUpdateType {
 		if f.ethFetchResp != nil {
-			fetchResp := NewFetchResponse(fetchType, index)
+			fetchResp := NewFetchResponse(fetchType, index, data)
 			logger.Debug("fetch send fetch resp: %v", fetchResp.Id())
 			f.ethFetchResp <- fetchResp
 		}
@@ -238,13 +238,14 @@ func (f *Fetch) GetFinalityUpdate() error {
 	if exists {
 		return nil
 	}
-	err = f.fileStore.StoreFinalityUpdate(slot, finalityUpdate)
-	if err != nil {
-		logger.Error("store finality update error:%v", err)
-		return err
-	}
+	// todo
+	//err = f.fileStore.StoreFinalityUpdate(slot, finalityUpdate)
+	//if err != nil {
+	//	logger.Error("store finality update error:%v", err)
+	//	return err
+	//}
 	logger.Debug("success store finality update:%v", slot)
-	err = f.SendFetchResp(FinalityUpdateType, slot)
+	err = f.SendFetchResp(FinalityUpdateType, slot, finalityUpdate)
 	if err != nil {
 		logger.Error("send fetch resp error:%v", err)
 		return err

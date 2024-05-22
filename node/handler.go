@@ -40,7 +40,7 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 		}
 		rpcTxes = append(rpcTxes, transaction)
 	}
-	sort.Slice(rpcTxes, func(i, j int) bool {
+	sort.SliceStable(rpcTxes, func(i, j int) bool {
 		if rpcTxes[i].Height == rpcTxes[j].Height {
 			return rpcTxes[i].TxIndex < rpcTxes[j].TxIndex
 		}
@@ -59,7 +59,7 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 	}
 	var response common.TaskResponse
 	if !ok {
-		logger.Warn("workerId: %v ,rpcServer maybe no new proof txManager", request.Id)
+		logger.Warn("workerId: %v ,rpcServer maybe no new proof task", request.Id)
 		response.CanGen = false
 		return &response, nil
 	}

@@ -68,6 +68,7 @@ type Daemon struct {
 	disableRecurAgent bool       // true ,Only enable the function of generating recursive proofs
 	disableTxAgent    bool
 	enableLocal       bool
+	debug             bool
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
@@ -163,7 +164,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
 	}
-	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 1*time.Minute, syncCommitResp, beaconFetchDataResp))
+	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 
 	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient, proofRequest, keyStore, taskManager)
 	if err != nil {
@@ -179,13 +180,17 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp, ethFetchDataResp))
 
+	debugMode := common.GetEnvDebugMode()
+	logger.Info("current DebugMode :%v", debugMode)
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enabled")
-		zkParamDir := os.Getenv(common.ZkParameterDir) // todo
-		if zkParamDir == "" {
-			logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
-			return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
+		zkParamDir := common.GetEnvZkParameterDir() // todo
+		if !debugMode {
+			if zkParamDir == "" {
+				logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
+				return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
+			}
 		}
 		logger.Info("zkParamDir: %v", zkParamDir)
 		localWorker, err := NewLocalWorker(zkParamDir, "", 1)
@@ -228,6 +233,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		exitSignal:        exitSignal,
 		taskManager:       taskManager,
 		fetch:             fetch,
+		debug:             common.GetEnvDebugMode(),
 		manager:           NewWrapperManger(msgManager, proofRequest, 1*time.Minute),
 	}
 	return daemon, nil
@@ -264,8 +270,9 @@ func (d *Daemon) Run() error {
 	go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
 	go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 
-	// txManager manager
-	go DoTimerTask("txManager-manager", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
+	if !d.debug {
+		go DoTimerTask("txManager-check", 1*time.Minute, d.taskManager.Check, d.exitSignal) // todo
+	}
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)

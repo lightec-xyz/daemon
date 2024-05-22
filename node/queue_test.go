@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/common"
 	"testing"
 )
@@ -39,24 +40,30 @@ func TestQueue(t *testing.T) {
 
 func TestArrayQueue(t *testing.T) {
 	arrayQueue := NewArrayQueue()
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 6, Index: 6})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 5, Index: 4})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 9, Index: 9})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 10, Index: 10})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 4, Index: 5})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 10})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 4})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 6})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 12})
-	arrayQueue.Push(&common.ZkProofRequest{Weight: 7, Index: 1})
-	//arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
-	//	t.Log(value.Weight, value.Index)
-	//	return nil
-	//})
-	//t.Logf("lenghth: %v \n", arrayQueue.Len())
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "1"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 100, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderFinalityType, nil, 110, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "2"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 200, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "3"))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "4"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 300, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "5"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 400, ""))
 
+	arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
+		t.Log(value.Id())
+		return nil
+	})
+	fmt.Printf("*********** lenghth: %v  **************** \n", arrayQueue.Len())
+	i := 0
 	for arrayQueue.Len() > 0 {
 		request, _ := arrayQueue.Pop()
-		t.Log(request.Weight, request.Index)
+		t.Log(request.Id())
+		i++
+		if i == 3 {
+			t.Log("add")
+			arrayQueue.Push(common.NewZkProofRequest(common.RedeemTxType, nil, 100, "1"))
+		}
 	}
 }

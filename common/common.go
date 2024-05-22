@@ -159,3 +159,16 @@ func HexToReceiptVar(data []string) (*[receipt.MaxReceiptUint128Len]frontend.Var
 	}
 	return &res, nil
 }
+
+func GetEnvZkParameterDir() string {
+	zkParamDir := os.Getenv(ZkParameterDir)
+	return zkParamDir
+}
+
+func GetEnvDebugMode() bool {
+	zkDebugEnv := os.Getenv(ZkDebugEnv)
+	if zkDebugEnv == "1" {
+		return true
+	}
+	return false
+}
