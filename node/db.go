@@ -1,7 +1,7 @@
 package node
 
 import (
-	"fmt"
+	"github.com/lightec-xyz/daemon/codec"
 	"github.com/lightec-xyz/daemon/common"
 	"sort"
 	"strings"
@@ -96,8 +96,7 @@ func ReadBitcoinTxIds(store store.IStore, height int64) ([]string, error) {
 	for iterator.Next() {
 		txIds = append(txIds, getTxId(string(iterator.Key())))
 	}
-	err := iterator.Error()
-	if err != nil {
+	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
 	return txIds, nil
@@ -245,8 +244,7 @@ func ReadEthereumTxIds(store store.IStore, height int64) ([]string, error) {
 	for iterator.Next() {
 		txIds = append(txIds, getTxId(string(iterator.Key())))
 	}
-	err := iterator.Error()
-	if err != nil {
+	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
 	return txIds, nil
@@ -292,15 +290,14 @@ func ReadAllUnSubmitTxs(store store.IStore) ([]DbUnSubmitTx, error) {
 	defer iterator.Release()
 	for iterator.Next() {
 		var tx DbUnSubmitTx
-		err := store.GetObj(iterator.Key(), &tx)
+		err := codec.Unmarshal(iterator.Value(), &tx)
 		if err != nil {
 			logger.Error("get unsubmit tx error:%v", err)
 			return nil, err
 		}
 		txes = append(txes, tx)
 	}
-	err := iterator.Error()
-	if err != nil {
+	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
 	return txes, nil
@@ -340,35 +337,28 @@ func ReadUnGenProof(store store.IStore, chainType ChainType, txId string) (*DbUn
 }
 
 func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProof, error) {
-	var keys []string
-	queryPrefix := fmt.Sprintf("%s%d", UnGenProofPrefix, chainType)
-	iterator := store.Iterator([]byte(queryPrefix), nil)
+	iterator := store.Iterator([]byte(DbUnGenProofId(chainType, "")), nil)
 	defer iterator.Release()
+	var txes []*DbUnGenProof
 	for iterator.Next() {
-		keys = append(keys, string(iterator.Key()))
-	}
-	err := iterator.Error()
-	if err != nil {
-		logger.Error("read ungen Proof error:%v", err)
-		return nil, err
-	}
-	var unGenPreProofs []*DbUnGenProof
-	for _, key := range keys {
-		var unGenProof DbUnGenProof
-		err := store.GetObj(key, &unGenProof)
+		var tx DbUnGenProof
+		err := codec.Unmarshal(iterator.Value(), &tx)
 		if err != nil {
 			logger.Error("read ungen Proof error:%v", err)
 			return nil, err
 		}
-		unGenPreProofs = append(unGenPreProofs, &unGenProof)
+		txes = append(txes, &tx)
 	}
-	sort.SliceStable(unGenPreProofs, func(i, j int) bool {
-		if unGenPreProofs[i].Height == unGenPreProofs[j].Height {
-			return unGenPreProofs[i].TxIndex < unGenPreProofs[j].TxIndex
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+	sort.SliceStable(txes, func(i, j int) bool {
+		if txes[i].Height == txes[j].Height {
+			return txes[i].TxIndex < txes[j].TxIndex
 		}
-		return unGenPreProofs[i].Height < unGenPreProofs[j].Height
+		return txes[i].Height < txes[j].Height
 	})
-	return unGenPreProofs, nil
+	return txes, nil
 }
 
 func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) error {
@@ -403,15 +393,14 @@ func ReadTxesByAddr(store store.IStore, addr string) ([]*DbTx, error) {
 	defer iterator.Release()
 	for iterator.Next() {
 		var tx DbTx
-		err := store.GetObj(iterator.Key(), &tx)
+		err := codec.Unmarshal(iterator.Value(), &tx)
 		if err != nil {
 			logger.Error("get addr tx error:%v", err)
 			return nil, err
 		}
 		txes = append(txes, &tx)
 	}
-	err := iterator.Error()
-	if err != nil {
+	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
 	return txes, nil
@@ -422,45 +411,55 @@ func getTxId(key string) string {
 	return txId
 }
 
-func WriteTxSlot(store store.IStore, txSlot uint64, txHash string) error {
-	return store.PutObj(DbTxSlotId(txSlot, txHash), txHash)
+func WriteTxSlot(store store.IStore, txSlot uint64, tx *DbUnGenProof) error {
+	return store.PutObj(DbTxSlotId(txSlot, tx.TxHash), tx)
 }
 
 func DeleteTxSlot(store store.IStore, txSlot uint64, txHash string) error {
 	return store.DeleteObj(DbTxSlotId(txSlot, txHash))
 }
 
-func ReadAllTxBySlot(store store.IStore, txSlot uint64) ([]string, error) {
-	var txes []string
+func ReadAllTxBySlot(store store.IStore, txSlot uint64) ([]*DbUnGenProof, error) {
+	var txes []*DbUnGenProof
 	iterator := store.Iterator([]byte(DbTxSlotId(txSlot, "")), nil)
 	defer iterator.Release()
 	for iterator.Next() {
-		txes = append(txes, getTxId(string(iterator.Key())))
+		var tx DbUnGenProof
+		err := codec.Unmarshal(iterator.Value(), &tx)
+		if err != nil {
+			logger.Error("unmarshal tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, &tx)
 	}
-	err := iterator.Error()
-	if err != nil {
+	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
 	return txes, nil
 }
 
-func WriteTxFinalizedSlot(store store.IStore, txSlot uint64, txHash string) error {
-	return store.PutObj(DbTxFinalizeSlotId(txSlot, txHash), txHash)
+func WriteTxFinalizedSlot(store store.IStore, txSlot uint64, tx *DbUnGenProof) error {
+	return store.PutObj(DbTxFinalizeSlotId(txSlot, tx.TxHash), tx)
 }
 
 func DeleteTxFinalizedSlot(store store.IStore, txSlot uint64, txHash string) error {
 	return store.DeleteObj(DbTxFinalizeSlotId(txSlot, txHash))
 }
 
-func ReadAllTxByFinalizedSlot(store store.IStore, finalizedSlot uint64) ([]string, error) {
-	var txes []string
+func ReadAllTxByFinalizedSlot(store store.IStore, finalizedSlot uint64) ([]*DbUnGenProof, error) {
+	var txes []*DbUnGenProof
 	iterator := store.Iterator([]byte(DbTxFinalizeSlotId(finalizedSlot, "")), nil)
 	defer iterator.Release()
 	for iterator.Next() {
-		txes = append(txes, getTxId(string(iterator.Key())))
+		var tx DbUnGenProof
+		err := codec.Unmarshal(iterator.Value(), &tx)
+		if err != nil {
+			logger.Error("unmarshal tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, &tx)
 	}
-	err := iterator.Error()
-	if err != nil {
+	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
 	return txes, nil
