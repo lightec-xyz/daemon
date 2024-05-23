@@ -169,7 +169,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
-	state := NewState()
+	state := NewCacheState()
 	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
 		beaconClient, oasisClient, proofRequest, taskManager, state)
 	if err != nil {

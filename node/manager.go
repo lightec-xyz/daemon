@@ -24,7 +24,7 @@ type manager struct {
 	store          store.IStore
 	memory         store.IStore
 	genesisPeriod  uint64
-	state          *State
+	state          *CacheState
 	btcProofResp   chan *common.ZkProofResponse
 	ethProofResp   chan *common.ZkProofResponse
 	syncCommitResp chan *common.ZkProofResponse
@@ -32,7 +32,7 @@ type manager struct {
 }
 
 func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
-	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, genesisPeriod uint64, state *State) (IManager, error) {
+	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, genesisPeriod uint64, state *CacheState) (IManager, error) {
 	return &manager{
 		proofQueue:     NewArrayQueue(),
 		pendingQueue:   NewPendingQueue(),
@@ -118,6 +118,8 @@ func (m *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.Pr
 }
 
 func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
+	m.lock.Lock() // todo
+	defer m.lock.Unlock()
 	for _, response := range responses {
 		chanResponse, err := m.getChanResponse(response.ZkProofType)
 		if err != nil {
@@ -534,17 +536,24 @@ func (m *manager) Close() error {
 
 }
 
-// todo ,just temp use ,will remove
+// todo
 func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 	switch resp.ZkProofType {
 	case common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType:
-		go func() {
-			m.lock.Lock()
-			defer m.lock.Unlock()
-		}()
+		requests, ok, err := m.checkRedeemRequest(resp)
+		if err != nil {
+			logger.Error("check redeem request error:%v %v", resp.Id())
+			return err
+		}
+		if !ok {
+			return nil
+		}
+		for _, req := range requests {
+			logger.Debug("add redeem request:%v to queue", req.Id())
+			m.proofQueue.Push(req)
+		}
 		return nil
 	default:
-
 	}
 	return nil
 }
