@@ -21,7 +21,7 @@
 
     git clone https://<Token>@github.com/lightec-xyz/daemon
     cd daemon
-    git checkout v0.2.0
+    git checkout v0.2.1
     cd  daemon/cmd/generator && go build
 
 ## Environment
@@ -65,7 +65,7 @@ generator run config file
 ```
 git clone https://<Token>@github.com/lightec-xyz/provers.git
 cd provers 
-git checkout v0.2.0
+git checkout v0.2.1
 ```
 
 copy下面的脚本 放在provers 目录下并执行， 编译各个模块
