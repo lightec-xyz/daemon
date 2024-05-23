@@ -435,6 +435,12 @@ func ReadAllTxBySlot(store store.IStore, txSlot uint64) ([]*DbUnGenProof, error)
 	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
+	sort.SliceStable(txes, func(i, j int) bool {
+		if txes[i].Height == txes[j].Height {
+			return txes[i].TxIndex < txes[j].TxIndex
+		}
+		return txes[i].Height < txes[j].Height
+	})
 	return txes, nil
 }
 
@@ -462,5 +468,11 @@ func ReadAllTxByFinalizedSlot(store store.IStore, finalizedSlot uint64) ([]*DbUn
 	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
+	sort.SliceStable(txes, func(i, j int) bool {
+		if txes[i].Height == txes[j].Height {
+			return txes[i].TxIndex < txes[j].TxIndex
+		}
+		return txes[i].Height < txes[j].Height
+	})
 	return txes, nil
 }

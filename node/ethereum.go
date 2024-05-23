@@ -196,7 +196,6 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	}
 	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
 	e.stateCache.Delete(proofId)
-
 	switch resp.ZkProofType {
 	case common.RedeemTxType:
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
@@ -216,6 +215,29 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		if err != nil {
 			logger.Error("check pending proof request error:%v %v", resp.TxHash, err)
 		}
+	}
+	return nil
+}
+
+func (e *EthereumAgent) DeleteCacheTx(resp *common.ZkProofResponse) error {
+	err := DeleteTxSlot(e.store, resp.Period, resp.TxHash)
+	if err != nil {
+		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
+		return err
+	}
+	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(resp.Period)
+	if err != nil {
+		logger.Error("get latest slot error: %v", err)
+		return err
+	}
+	if !ok {
+		logger.Warn("no find latest slot")
+		return nil
+	}
+	err = DeleteTxFinalizedSlot(e.store, finalizedSlot, resp.TxHash)
+	if err != nil {
+		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
+		return err
 	}
 	return nil
 }
@@ -555,7 +577,6 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
-			e.state.AddTx(txHash)
 			err := e.tryProofRequest(common.TxInEth2, 0, txHash)
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
@@ -568,8 +589,12 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
-			e.state.AddTxSlot(txSlot, txHash)
-			err := e.tryProofRequest(common.BeaconHeaderType, txSlot, "")
+			err := WriteTxSlot(e.store, txSlot, item)
+			if err != nil {
+				logger.Error("write tx slot error: %v %v %v", txHash, txSlot, err)
+				return err
+			}
+			err = e.tryProofRequest(common.BeaconHeaderType, txSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
@@ -582,8 +607,12 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
-			e.state.AddFinalizeSlot(finalizedSlot, txHash)
-			err := e.tryProofRequest(common.BeaconHeaderFinalityType, finalizedSlot, "")
+			err := WriteTxFinalizedSlot(e.store, finalizedSlot, item)
+			if err != nil {
+				logger.Error("write tx finalized slot error: %v %v %v", finalizedSlot, txHash, err)
+				return err
+			}
+			err = e.tryProofRequest(common.BeaconHeaderFinalityType, finalizedSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
