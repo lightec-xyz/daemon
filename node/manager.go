@@ -143,10 +143,14 @@ func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.Zk
 		}
 		return []*common.ZkProofRequest{request}, ok, nil
 	case common.BeaconHeaderType:
-		txes := m.state.GetTxSlot(resp.Period)
+		txes, err := ReadAllTxBySlot(m.store, resp.Period)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id())
+			return nil, false, err
+		}
 		var result []*common.ZkProofRequest
 		for _, tx := range txes {
-			request, ok, err := m.GetRedeemRequest(tx)
+			request, ok, err := m.GetRedeemRequest(tx.TxHash)
 			if err != nil {
 				logger.Error("get redeem request error:%v %v", resp.Id())
 				return nil, false, err
@@ -160,10 +164,14 @@ func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.Zk
 		}
 		return result, true, nil
 	case common.BeaconHeaderFinalityType:
-		txes := m.state.GetFinalizeSlot(resp.Period)
+		txes, err := ReadAllTxByFinalizedSlot(m.store, resp.Period)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id())
+			return nil, false, err
+		}
 		var result []*common.ZkProofRequest
 		for _, tx := range txes {
-			request, ok, err := m.GetRedeemRequest(tx)
+			request, ok, err := m.GetRedeemRequest(tx.TxHash)
 			if err != nil {
 				logger.Error("get redeem request error:%v %v", resp.Id())
 				return nil, false, err

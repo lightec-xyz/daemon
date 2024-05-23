@@ -54,7 +54,7 @@ type LogCfg struct {
 
 type Logger struct {
 	cfg            *LogCfg
-	rotatingLogger *lumberjack.Logger
+	rotatingLogger *RotatingLogger
 	*zap.Logger
 	exit chan struct{}
 }
@@ -69,27 +69,6 @@ func (l *Logger) Close() error {
 
 }
 
-func (l *Logger) rotating() error {
-	daySecond := int64(86400)
-	timeLeft := daySecond - time.Now().Unix()%daySecond + 61
-	fileTimer := time.After(time.Duration(timeLeft) * time.Second)
-	for {
-		select {
-		case <-fileTimer:
-			fileName := fmt.Sprintf("%s/%s", l.cfg.LogDir, time.Now().Format("2006-01-02.log"))
-			err := l.rotatingLogger.Close()
-			if err != nil {
-				fmt.Printf("log rotating error: %v %v \n", fileName, err)
-			}
-			l.rotatingLogger = newRotatingLogger(fileName)
-			timeLeft := daySecond - time.Now().Unix()%daySecond + 61
-			fileTimer = time.After(time.Duration(timeLeft) * time.Second)
-		case <-l.exit:
-			return nil
-		}
-	}
-}
-
 func newLogger(cfg *LogCfg) (*Logger, error) {
 	if cfg == nil {
 		cfg = defaultLogCfg()
@@ -98,11 +77,14 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 		cfg.LogDir = "logs"
 	}
 	var writeSyncers []zapcore.WriteSyncer
-	var rotatingLogger *lumberjack.Logger
+	var rotatingLogger *RotatingLogger
 	var encoderConfig = newStdEncCfg()
+	var err error
 	if cfg.File {
-		fileName := fmt.Sprintf("%s/%s", cfg.LogDir, time.Now().Format("2006-01-02.log"))
-		rotatingLogger = newRotatingLogger(fileName)
+		rotatingLogger, err = NewRotatingLogger(cfg.LogDir)
+		if err != nil {
+			return nil, err
+		}
 		//encoderConfig = newFileEncCfg()
 		writeSyncers = append(writeSyncers, zapcore.AddSync(rotatingLogger))
 	}
@@ -115,15 +97,13 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 		zapcore.NewMultiWriteSyncer(writeSyncers...),
 		zap.DebugLevel,
 	)
+	go rotatingLogger.rotate()
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	l := &Logger{
 		Logger:         logger,
 		rotatingLogger: rotatingLogger,
 		cfg:            cfg,
 		exit:           make(chan struct{}, 1),
-	}
-	if cfg.File {
-		go l.rotating()
 	}
 	return l, nil
 }
@@ -162,7 +142,7 @@ func newFileEncCfg() zapcore.EncoderConfig {
 
 func defaultLogCfg() *LogCfg {
 	return &LogCfg{
-		LogDir:   "logs",
+		LogDir:   "logsDir",
 		IsStdout: true,
 		File:     false,
 	}

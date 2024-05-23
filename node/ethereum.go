@@ -198,10 +198,15 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	e.stateCache.Delete(proofId)
 	switch resp.ZkProofType {
 	case common.RedeemTxType:
+		err := e.DeleteRedeemCacheTx(resp)
+		if err != nil {
+			logger.Error("delete redeem cache tx error:%v %v", resp.TxHash, err)
+
+		}
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
 			logger.Error("update Proof error:%v %v", resp.TxHash, err)
-			return err
+
 		}
 		_, err = RedeemBtcTx(e.btcClient, e.ethClient, e.oasisClient, resp.TxHash, resp.Proof)
 		if err != nil {
@@ -219,7 +224,7 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	return nil
 }
 
-func (e *EthereumAgent) DeleteCacheTx(resp *common.ZkProofResponse) error {
+func (e *EthereumAgent) DeleteRedeemCacheTx(resp *common.ZkProofResponse) error {
 	err := DeleteTxSlot(e.store, resp.Period, resp.TxHash)
 	if err != nil {
 		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
@@ -231,7 +236,7 @@ func (e *EthereumAgent) DeleteCacheTx(resp *common.ZkProofResponse) error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find latest slot")
+		logger.Warn("no find latest slot: %v", resp.Period)
 		return nil
 	}
 	err = DeleteTxFinalizedSlot(e.store, finalizedSlot, resp.TxHash)
