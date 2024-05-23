@@ -391,9 +391,9 @@ func (m *manager) CheckPendingRequest() error {
 			return fmt.Errorf("request start time is zero")
 		}
 		currentTime := time.Now()
-		if currentTime.Sub(request.StartTime).Hours() >= 3 { // todo
+		if currentTime.Sub(request.StartTime).Minutes() >= 30 { // todo
 			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
-			m.proofQueue.Push(request)
+			m.proofQueue.Push(request) // todo
 			m.pendingQueue.Delete(request.Id())
 			err := m.UpdateProofStatus(request, common.ProofQueued)
 			if err != nil {
