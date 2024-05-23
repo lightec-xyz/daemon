@@ -79,16 +79,26 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 		logger.Debug("queryQueueReq: %v", value.Id())
 		return nil
 	})
+
 	request, ok := m.proofQueue.Pop()
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
 		return nil, false, fmt.Errorf("parse Proof request error")
 	}
-	logger.Debug("get proof request:%v", request.Id())
+	// todo
+	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.TxHash)
+	if err != nil {
+		logger.Error("check Proof error:%v %v", request.Id(), err)
+		return nil, false, err
+	}
+	if exists {
+		return nil, false, nil
+	}
 
+	logger.Debug("get proof request:%v", request.Id())
 	request.StartTime = time.Now()
 	m.pendingQueue.Push(request.Id(), request)
-	err := m.UpdateProofStatus(request, common.ProofGenerating)
+	err = m.UpdateProofStatus(request, common.ProofGenerating)
 	if err != nil {
 		logger.Error("update Proof status error:%v %v", request.Id(), err)
 	}
@@ -468,8 +478,19 @@ func (m *manager) CheckPendingRequest() error {
 			logger.Error("request start time is zero")
 			return fmt.Errorf("request start time is zero")
 		}
+		isTimeout := false
 		currentTime := time.Now()
-		if currentTime.Sub(request.StartTime).Minutes() >= 30 { // todo
+		switch request.ReqType {
+		case common.SyncComUnitType:
+			if currentTime.Sub(request.StartTime).Hours() >= 1.2 {
+				isTimeout = true
+			}
+		default:
+			if currentTime.Sub(request.StartTime).Minutes() >= 30 {
+				isTimeout = true
+			}
+		}
+		if isTimeout {
 			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
 			m.proofQueue.Push(request) // todo
 			m.pendingQueue.Delete(request.Id())
