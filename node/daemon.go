@@ -22,13 +22,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/config/params"
 )
 
-func init() {
-	err := logger.InitLogger(nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
 type IAgent interface {
 	ScanBlock() error
 	ProofResponse(resp *common.ZkProofResponse) error
@@ -72,8 +65,11 @@ type Daemon struct {
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
+	err := logger.InitLogger(nil)
+	if err != nil {
+		return nil, err
+	}
 	var submitTxEthAddr string
-	var err error
 	if cfg.EthPrivateKey != "" {
 		submitTxEthAddr, err = privateKeyToEthAddr(cfg.EthPrivateKey)
 		if err != nil {
