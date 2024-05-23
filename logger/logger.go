@@ -36,6 +36,7 @@ func InitLogger(cfg *LogCfg) error {
 		return fmt.Errorf("new logger error:%v", err)
 	}
 	logger = lg
+	go lg.rotatingLogger.rotate() // todo
 	return nil
 }
 
@@ -97,7 +98,7 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 		zapcore.NewMultiWriteSyncer(writeSyncers...),
 		zap.DebugLevel,
 	)
-	go rotatingLogger.rotate()
+
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	l := &Logger{
 		Logger:         logger,
