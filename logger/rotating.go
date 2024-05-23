@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sync"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type RotatingLogger struct {
 	logsDir  string
 	FileName string
 	exit     chan struct{}
+	lock     sync.Mutex // todo
 }
 
 func NewRotatingLogger(logDir string) (*RotatingLogger, error) {
@@ -50,16 +52,17 @@ func (rl *RotatingLogger) rotate() error {
 		select {
 		case <-fileTimer:
 			fileName := time.Now().Format("2006-01-02.log")
-			file, err := os.OpenFile(path.Join(rl.logsDir, fileName), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+			newfile, err := os.OpenFile(path.Join(rl.logsDir, fileName), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 			if err != nil {
 				log.Println("open file error:", err)
 
 			}
-			err = rl.file.Close()
+			tmpFile := rl.file
+			rl.file = newfile
+			err = tmpFile.Close()
 			if err != nil {
 				log.Printf("log file close error: %v \n", err)
 			}
-			rl.file = file
 			rl.FileName = fileName
 			timeLeft := daySecond - time.Now().Unix()%daySecond + 61
 			fileTimer = time.After(time.Duration(timeLeft) * time.Second)

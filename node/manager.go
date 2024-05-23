@@ -1,9 +1,7 @@
 package node
 
 import (
-	"context"
 	"fmt"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -110,8 +108,6 @@ func (m *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.Pr
 }
 
 func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
 	for _, response := range responses {
 		chanResponse, err := m.getChanResponse(response.ZkProofType)
 		if err != nil {
@@ -123,7 +119,6 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 		proofId := response.Id()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
-		// todo
 		err = m.waitUpdateProofStatus(response)
 		if err != nil {
 			logger.Error("wait update Proof status error:%v", err)
@@ -489,14 +484,19 @@ func (m *manager) CheckPendingRequest() error {
 }
 
 func (m *manager) GetSlotByHash(hash string) (uint64, bool, error) {
-	txHash := ethCommon.HexToHash(hash)
-	receipt, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
+	//txHash := ethCommon.HexToHash(hash)
+	//receipt, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
+	//if err != nil {
+	//	logger.Error("get tx receipt error: %v %v", hash, err)
+	//	return 0, false, err
+	//}
+	// todo
+	dbTx, err := ReadDbTx(m.store, hash)
 	if err != nil {
 		logger.Error("get tx receipt error: %v %v", hash, err)
 		return 0, false, err
 	}
-	// todo
-	beaconSlot, ok, err := ReadBeaconSlot(m.store, receipt.BlockNumber.Uint64())
+	beaconSlot, ok, err := ReadBeaconSlot(m.store, dbTx.Height)
 	if err != nil {
 		logger.Error("get beacon slot error: %v %v", hash, err)
 		return 0, false, err
@@ -517,7 +517,10 @@ func (m *manager) Close() error {
 func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 	switch resp.ZkProofType {
 	case common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType:
-		time.Sleep(6 * time.Second)
+		go func() {
+			m.lock.Lock()
+			defer m.lock.Unlock()
+		}()
 		return nil
 	default:
 
