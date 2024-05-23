@@ -644,11 +644,11 @@ func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		proofId := common.NewProofId(resp.ZkProofType, index, resp.TxHash)
 		b.stateCache.Delete(proofId)
 	}
-	err := StoreZkProof(b.fileStore, resp.ZkProofType, index, resp.TxHash, resp.Proof, resp.Witness)
-	if err != nil {
-		logger.Error("store proof error: %v", err)
-		return err
-	}
+	//err := StoreZkProof(b.fileStore, resp.ZkProofType, index, resp.TxHash, resp.Proof, resp.Witness)
+	//if err != nil {
+	//	logger.Error("store proof error: %v", err)
+	//	return err
+	//}
 	return nil
 }
 

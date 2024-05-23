@@ -549,8 +549,15 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 			return nil
 		}
 		for _, req := range requests {
-			logger.Debug("add redeem request:%v to queue", req.Id())
-			m.proofQueue.Push(req)
+			if !m.state.Check(req.Id()) {
+				logger.Debug("add redeem request:%v to queue", req.Id())
+				m.state.Store(req.Id(), nil)
+				m.proofQueue.Push(req)
+				err := m.UpdateProofStatus(req, common.ProofQueued)
+				if err != nil {
+					logger.Error("update Proof status error:%v %v", req.Id(), err)
+				}
+			}
 		}
 		return nil
 	default:

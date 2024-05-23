@@ -209,7 +209,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, schedule, exitSignal)
+	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, schedule, fileStore, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())

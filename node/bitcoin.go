@@ -268,13 +268,13 @@ func (b *BitcoinAgent) CheckChainProof(proofType common.ZkProofType, txHash stri
 func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive Proof resp: %v %v %v %x",
 		resp.ZkProofType.String(), resp.Period, resp.TxHash, resp.Proof)
-	err := StoreZkProof(b.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
-	if err != nil {
-		logger.Error("store Proof error: %v %v", resp.TxHash, err)
-		return err
-	}
+	//err := StoreZkProof(b.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
+	//if err != nil {
+	//	logger.Error("store Proof error: %v %v", resp.TxHash, err)
+	//	return err
+	//}
 	proofId := resp.TxHash
-	err = b.updateDepositProof(proofId, hex.EncodeToString(resp.Proof), resp.Status)
+	err := b.updateDepositProof(proofId, hex.EncodeToString(resp.Proof), resp.Status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", proofId, err)
 		return err

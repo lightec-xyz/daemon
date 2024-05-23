@@ -187,11 +187,11 @@ func (e *EthereumAgent) CheckChainFork(height uint64) (bool, error) {
 func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info(" ethereumAgent receive proof response: %v %v %v %x", resp.ZkProofType.String(),
 		resp.Period, resp.TxHash, resp.Proof)
-	err := StoreZkProof(e.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
-	if err != nil {
-		logger.Error("store zk proof error:%v", err)
-		return err
-	}
+	//err := StoreZkProof(e.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
+	//if err != nil {
+	//	logger.Error("store zk proof error:%v", err)
+	//	return err
+	//}
 	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
 	e.stateCache.Delete(proofId)
 	switch resp.ZkProofType {
@@ -228,6 +228,7 @@ func (e *EthereumAgent) DeleteRedeemCacheTx(resp *common.ZkProofResponse) error 
 		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
 		return err
 	}
+	logger.Debug("delete %v beaconHeader  cache", resp.TxHash)
 	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(resp.Period)
 	if err != nil {
 		logger.Error("get latest slot error: %v", err)
@@ -242,6 +243,7 @@ func (e *EthereumAgent) DeleteRedeemCacheTx(resp *common.ZkProofResponse) error 
 		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
 		return err
 	}
+	logger.Debug("delete %v beaconHeaderFinality  cache", resp.TxHash)
 	return nil
 }
 
