@@ -390,8 +390,19 @@ func (m *manager) CheckPendingRequest() error {
 			logger.Error("request start time is zero")
 			return fmt.Errorf("request start time is zero")
 		}
+		isTimeout := false
 		currentTime := time.Now()
-		if currentTime.Sub(request.StartTime).Minutes() >= 30 { // todo
+		switch request.ReqType {
+		case common.SyncComUnitType:
+			if currentTime.Sub(request.StartTime).Hours() >= 1.5 {
+				isTimeout = true
+			}
+		default:
+			if currentTime.Sub(request.StartTime).Minutes() >= 30 {
+				isTimeout = true
+			}
+		}
+		if isTimeout {
 			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
 			m.proofQueue.Push(request) // todo
 			m.pendingQueue.Delete(request.Id())
