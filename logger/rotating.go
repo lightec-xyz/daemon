@@ -34,7 +34,7 @@ func (rl *RotatingLogger) Write(p []byte) (n int, err error) {
 	}
 	return 0, nil
 }
-func (rl *RotatingLogger) Close() error {
+func (rl *RotatingLogger) Exit() error {
 	close(rl.exit)
 	if rl.file != nil {
 		return rl.file.Close()

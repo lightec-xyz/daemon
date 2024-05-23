@@ -57,14 +57,12 @@ type Logger struct {
 	cfg            *LogCfg
 	rotatingLogger *RotatingLogger
 	*zap.Logger
-	exit chan struct{}
 }
 
 func (l *Logger) Close() error {
-	close(l.exit)
 	_ = l.Sync()
 	if l.rotatingLogger != nil {
-		_ = l.rotatingLogger.Close()
+		_ = l.rotatingLogger.Exit()
 	}
 	return nil
 
@@ -104,7 +102,6 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 		Logger:         logger,
 		rotatingLogger: rotatingLogger,
 		cfg:            cfg,
-		exit:           make(chan struct{}, 1),
 	}
 	return l, nil
 }
