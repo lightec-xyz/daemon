@@ -20,8 +20,7 @@ type Local struct {
 	cacheProofs *node.ProofRespQueue
 }
 
-func NewLocal(url, datadir, id string, proofTypes []common.ZkProofType, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
-func NewLocal(zkParamDir, url, datadir, id string, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
+func NewLocal(zkParamDir, url, datadir, id string, proofTypes []common.ZkProofType, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
 	client, err := rpc.NewNodeClient(url)
 	if err != nil {
 		logger.Error("new node client error:%v", err)

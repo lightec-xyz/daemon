@@ -94,8 +94,7 @@ func NewNode(cfg Config) (*Node, error) {
 		}
 	}
 	if cfg.Mode == common.Client {
-		local, err := NewLocal(zkParameterDir, cfg.Url, cfg.DataDir, workerId, cfg.MaxNums, storeDb, fileStorage)
-		local, err := NewLocal(cfg.Url, cfg.DataDir, workerId, zkProofTypes, cfg.MaxNums, storeDb, fileStorage)
+		local, err := NewLocal(zkParameterDir, cfg.Url, cfg.DataDir, workerId, zkProofTypes, cfg.MaxNums, storeDb, fileStorage)
 		if err != nil {
 			logger.Error("new local error:%v", err)
 			return nil, err
