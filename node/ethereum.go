@@ -47,6 +47,7 @@ type EthereumAgent struct {
 	genesisPeriod    uint64
 	lock             sync.Mutex
 	genesisSlot      uint64
+	debug            bool
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
@@ -70,6 +71,7 @@ func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, st
 		genesisPeriod:    genesisSlot / 8192,
 		genesisSlot:      genesisSlot,
 		stateCache:       state,
+		debug:            common.GetEnvDebugMode(),
 	}, nil
 }
 
@@ -96,16 +98,13 @@ func (e *EthereumAgent) Init() error {
 		return err
 	}
 	// todo just test
-	//err = WriteUnGenProof(e.store, Ethereum, []string{"622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f"})
-	//if err != nil {
-	//	logger.Error("write ungen proof error: %v", err)
-	//	return err
-	//}
-	//err = WriteEthereumHeight(e.store, 1584946)
-	//if err != nil {
-	//	logger.Error("%v", err)
-	//	return err
-	//}
+	if e.debug {
+		err = WriteEthereumHeight(e.store, 1584946)
+		if err != nil {
+			logger.Error("%v", err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -134,9 +133,12 @@ func (e *EthereumAgent) ScanBlock() error {
 		// todo
 		//return nil
 	}
-	//if ethHeight > 1585877 {
-	//	return nil
-	//}
+	// todo
+	if e.debug {
+		if ethHeight > 1585877 {
+			return nil
+		}
+	}
 	// todo
 	blockNumber = blockNumber - 1
 	if ethHeight >= int64(blockNumber) {
