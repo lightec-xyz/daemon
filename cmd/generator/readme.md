@@ -21,7 +21,7 @@
 
     git clone https://<Token>@github.com/lightec-xyz/daemon
     cd daemon
-    git checkout -b red_dev orign/red_dv
+    git checkout v0.2.1
     cd  daemon/cmd/generator && go build
 
 ## Environment
