@@ -101,7 +101,7 @@ func (e *EthereumAgent) Init() error {
 	//	logger.Error("write ungen proof error: %v", err)
 	//	return err
 	//}
-	//err = WriteEthereumHeight(e.store, 1583313)
+	//err = WriteEthereumHeight(e.store, 1584946)
 	//if err != nil {
 	//	logger.Error("%v", err)
 	//	return err
@@ -134,7 +134,7 @@ func (e *EthereumAgent) ScanBlock() error {
 		// todo
 		//return nil
 	}
-	//if ethHeight > 1583329 {
+	//if ethHeight > 1585877 {
 	//	return nil
 	//}
 	// todo

@@ -57,19 +57,20 @@ type Item struct {
 
 type PriorityQueue []*Item
 
-func (pq PriorityQueue) Len() int { return len(pq) }
+func (pq *PriorityQueue) Len() int { return len(*pq) }
 
-func (pq PriorityQueue) Less(i, j int) bool {
-	if pq[i].priority != pq[j].priority {
-		return pq[i].priority > pq[j].priority
+func (pq *PriorityQueue) Less(i, j int) bool {
+	if (*pq)[i].priority == (*pq)[j].priority {
+		return false
 	}
-	return pq[i].value.Index < pq[j].value.Index
+	return (*pq)[i].priority > (*pq)[j].priority
+
 }
 
-func (pq PriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
+func (pq *PriorityQueue) Swap(i, j int) {
+	(*pq)[i], (*pq)[j] = (*pq)[j], (*pq)[i]
+	(*pq)[i].index = i
+	(*pq)[j].index = j
 }
 
 func (pq *PriorityQueue) Push(x any) {
@@ -89,7 +90,7 @@ func (pq *PriorityQueue) Pop() any {
 	return item
 }
 
-func (pq *PriorityQueue) update(item *Item, value *common.ZkProofRequest, priority int) {
+func (pq *PriorityQueue) Update(item *Item, value *common.ZkProofRequest, priority int) {
 	item.value = value
 	item.priority = priority
 	heap.Fix(pq, item.index)
@@ -240,6 +241,25 @@ func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
 	value := aq.list[0]
 	aq.list = aq.list[1:]
 	return value, true
+}
+
+func (aq *ArrayQueue) PopFn(fn func(req *common.ZkProofRequest) bool) (*common.ZkProofRequest, bool) {
+	aq.lock.Lock()
+	defer aq.lock.Unlock()
+	var newList []*common.ZkProofRequest
+	for index, value := range aq.list {
+		ok := fn(value)
+		if ok {
+			newList = append(newList, aq.list[0:index]...)
+			if index+1 < len(aq.list) {
+				newList = append(newList, aq.list[index+1:]...)
+			}
+			aq.list = newList
+			return value, true
+		}
+	}
+	return nil, false
+
 }
 
 func (aq *ArrayQueue) sortList() {

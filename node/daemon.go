@@ -280,6 +280,10 @@ func (d *Daemon) Run() error {
 	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
 
 	for _, agent := range d.agents {
+		// todo
+		if d.debug && agent.node.Name() == BitcoinAgentName || agent.node.Name() == BeaconAgentName {
+			continue
+		}
 		proofReplyName := fmt.Sprintf("%s-proofResponse", agent.node.Name())
 		go doProofResponseTask(proofReplyName, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
 		fetchName := fmt.Sprintf("%s-fetchResponse", agent.node.Name())

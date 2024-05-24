@@ -176,6 +176,8 @@ func ToZkProofType(str string) (ZkProofType, error) {
 		return UnitOuter, nil
 	case "BeaconHeaderFinalityType":
 		return BeaconHeaderFinalityType, nil
+	case "BeaconHeaderType":
+		return BeaconHeaderType, nil
 	default:
 		return 0, fmt.Errorf("uKnown zk proof type %v", str)
 	}

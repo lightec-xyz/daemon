@@ -79,7 +79,15 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 		logger.Debug("queryQueueReq: %v", value.Id())
 		return nil
 	})
-	request, ok := m.proofQueue.Pop()
+
+	request, ok := m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
+		for _, req := range proofTypes {
+			if request.ReqType == req {
+				return true
+			}
+		}
+		return false
+	})
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
 		return nil, false, fmt.Errorf("parse Proof request error")
@@ -144,21 +152,21 @@ func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.Zk
 	case common.TxInEth2:
 		request, ok, err := m.GetRedeemRequest(resp.TxHash)
 		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id())
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
 			return nil, false, err
 		}
 		return []*common.ZkProofRequest{request}, ok, nil
 	case common.BeaconHeaderType:
 		txes, err := ReadAllTxBySlot(m.store, resp.Period)
 		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id())
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
 			return nil, false, err
 		}
 		var result []*common.ZkProofRequest
 		for _, tx := range txes {
 			request, ok, err := m.GetRedeemRequest(tx.TxHash)
 			if err != nil {
-				logger.Error("get redeem request error:%v %v", resp.Id())
+				logger.Error("get redeem request error:%v %v", resp.Id(), err)
 				return nil, false, err
 			}
 			if ok {
@@ -172,14 +180,14 @@ func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.Zk
 	case common.BeaconHeaderFinalityType:
 		txes, err := ReadAllTxByFinalizedSlot(m.store, resp.Period)
 		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id())
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
 			return nil, false, err
 		}
 		var result []*common.ZkProofRequest
 		for _, tx := range txes {
 			request, ok, err := m.GetRedeemRequest(tx.TxHash)
 			if err != nil {
-				logger.Error("get redeem request error:%v %v", resp.Id())
+				logger.Error("get redeem request error:%v %v", resp.Id(), err)
 				return nil, false, err
 			}
 			if ok {
@@ -541,7 +549,7 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 	case common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType:
 		requests, ok, err := m.checkRedeemRequest(resp)
 		if err != nil {
-			logger.Error("check redeem request error:%v %v", resp.Id())
+			logger.Error("check redeem request error:%v %v", resp.Id(), err)
 			return err
 		}
 		if !ok {

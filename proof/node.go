@@ -17,6 +17,7 @@ import (
 type Node struct {
 	rpcServer *rpc.Server
 	mode      common.Mode
+	checkTime time.Duration
 	local     *Local
 	store     store.IStore
 	exit      chan os.Signal
@@ -99,12 +100,17 @@ func NewNode(cfg Config) (*Node, error) {
 			logger.Error("new local error:%v", err)
 			return nil, err
 		}
+		checkTime := 1 * time.Minute
+		if debugMode {
+			checkTime = 30 * time.Second
+		}
 		return &Node{
-			local: local,
-			mode:  cfg.Mode,
-			exit:  make(chan os.Signal, 1),
-			store: storeDb,
-			Id:    workerId,
+			local:     local,
+			checkTime: checkTime,
+			mode:      cfg.Mode,
+			exit:      make(chan os.Signal, 1),
+			store:     storeDb,
+			Id:        workerId,
 		}, nil
 	} else if cfg.Mode == common.Cluster {
 		host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
@@ -130,7 +136,7 @@ func NewNode(cfg Config) (*Node, error) {
 
 func (node *Node) Start() error {
 	if node.mode == common.Client {
-		go dnode.DoTimerTask("local-generator", 1*time.Minute, node.local.Run, node.exit)
+		go dnode.DoTimerTask("local-generator", node.checkTime, node.local.Run, node.exit)
 		go dnode.DoTimerTask("local-checkState", 1*time.Minute, node.local.CheckState, node.exit)
 	} else if node.mode == common.Cluster {
 		go node.rpcServer.Run()
