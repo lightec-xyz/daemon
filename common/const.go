@@ -1,5 +1,7 @@
 package common
 
+import "fmt"
+
 // env
 
 const (
@@ -139,5 +141,42 @@ func (zkpt *ZkProofType) Weight() ProofWeight {
 		return SixLevel
 	default:
 		return WeightDefault
+	}
+}
+
+var DefaultProofTypes = []ZkProofType{
+	DepositTxType,
+	RedeemTxType,
+	VerifyTxType,
+	SyncComGenesisType,
+	SyncComUnitType,
+	SyncComRecursiveType,
+	BeaconHeaderFinalityType,
+	BeaconHeaderType,
+	TxInEth2, // todo
+}
+
+func ToZkProofType(str string) (ZkProofType, error) {
+	switch str {
+	case "DepositTxType":
+		return DepositTxType, nil
+	case "RedeemTxType":
+		return RedeemTxType, nil
+	case "VerifyTxType":
+		return VerifyTxType, nil
+	case "SyncComGenesisType":
+		return SyncComGenesisType, nil
+	case "SyncComUnitType":
+		return SyncComUnitType, nil
+	case "SyncComRecursiveType":
+		return SyncComRecursiveType, nil
+	case "TxInEth2":
+		return TxInEth2, nil
+	case "UnitOuter":
+		return UnitOuter, nil
+	case "BeaconHeaderFinalityType":
+		return BeaconHeaderFinalityType, nil
+	default:
+		return 0, fmt.Errorf("uKnown zk proof type %v", str)
 	}
 }

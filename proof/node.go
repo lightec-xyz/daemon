@@ -61,6 +61,15 @@ func NewNode(cfg Config) (*Node, error) {
 			return nil, fmt.Errorf("zkParameterDir is empty,please config  ZkParameterDir env")
 		}
 	}
+	var zkProofTypes []common.ZkProofType
+	for _, proofType := range cfg.ProofType {
+		ptype, err := common.ToZkProofType(proofType)
+		if err != nil {
+			logger.Error("convert proof type error:%v %v", ptype, err)
+			return nil, err
+		}
+		zkProofTypes = append(zkProofTypes, ptype)
+	}
 	if !exists {
 		if !debugMode {
 			// todo
@@ -78,7 +87,7 @@ func NewNode(cfg Config) (*Node, error) {
 			logger.Debug("check zk parameters md5 end ...")
 		}
 		workerId = common.MustUUID()
-		err = WriteWorkerId(storeDb, workerId)
+		err := WriteWorkerId(storeDb, workerId)
 		if err != nil {
 			logger.Error("write worker id error:%v", err)
 			return nil, err
@@ -86,6 +95,7 @@ func NewNode(cfg Config) (*Node, error) {
 	}
 	if cfg.Mode == common.Client {
 		local, err := NewLocal(zkParameterDir, cfg.Url, cfg.DataDir, workerId, cfg.MaxNums, storeDb, fileStorage)
+		local, err := NewLocal(cfg.Url, cfg.DataDir, workerId, zkProofTypes, cfg.MaxNums, storeDb, fileStorage)
 		if err != nil {
 			logger.Error("new local error:%v", err)
 			return nil, err

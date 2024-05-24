@@ -53,7 +53,7 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	// Todo
-	zkProofRequest, ok, err := h.manager.GetProofRequest()
+	zkProofRequest, ok, err := h.manager.GetProofRequest(request.ProofType)
 	if err != nil {
 		logger.Error("get proof request error: %v %v", request.Id, err)
 		return nil, err
