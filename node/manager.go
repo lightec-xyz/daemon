@@ -81,6 +81,9 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	})
 
 	request, ok := m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
+		if len(proofTypes) == 0 {
+			return true
+		}
 		for _, req := range proofTypes {
 			if request.ReqType == req {
 				return true
