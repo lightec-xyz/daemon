@@ -61,7 +61,7 @@ func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	return nil
 }
 
-func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
+func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkProofRequest, bool, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	logger.Warn("current proof queue length: %v", m.proofQueue.Len())
@@ -72,7 +72,6 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 		logger.Debug("queryQueueReq: %v", value.Id())
 		return nil
 	})
-
 	request, ok := m.proofQueue.Pop()
 	if !ok {
 		logger.Error("should never happen,parse Proof request error")
@@ -140,7 +139,7 @@ func (m *manager) getProofRequest(reqType common.ZkProofType) (*common.ZkProofRe
 
 // todo
 func (m *manager) DistributeRequest() error {
-	request, ok, err := m.GetProofRequest()
+	request, ok, err := m.GetProofRequest(nil)
 	if err != nil {
 		logger.Error("get Proof request error:%v", err)
 		time.Sleep(10 * time.Second)

@@ -53,6 +53,15 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("read worker id error:%v", err)
 		return nil, err
 	}
+	var zkProofTypes []common.ZkProofType
+	for _, proofType := range cfg.ProofType {
+		ptype, err := common.ToZkProofType(proofType)
+		if err != nil {
+			logger.Error("convert proof type error:%v %v", ptype, err)
+			return nil, err
+		}
+		zkProofTypes = append(zkProofTypes, ptype)
+	}
 	if !exists {
 		workerId = common.MustUUID()
 		err := WriteWorkerId(storeDb, workerId)
@@ -62,7 +71,7 @@ func NewNode(cfg Config) (*Node, error) {
 		}
 	}
 	if cfg.Mode == common.Client {
-		local, err := NewLocal(cfg.Url, cfg.DataDir, workerId, cfg.MaxNums, storeDb, fileStorage)
+		local, err := NewLocal(cfg.Url, cfg.DataDir, workerId, zkProofTypes, cfg.MaxNums, storeDb, fileStorage)
 		if err != nil {
 			logger.Error("new local error:%v", err)
 			return nil, err

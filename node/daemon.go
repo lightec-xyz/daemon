@@ -43,7 +43,7 @@ type IManager interface {
 	Init() error
 	ReceiveRequest(requests []*common.ZkProofRequest) error
 	CheckPendingRequest() error
-	GetProofRequest() (*common.ZkProofRequest, bool, error)
+	GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkProofRequest, bool, error)
 	SendProofResponse(response []*common.ZkProofResponse) error
 	DistributeRequest() error
 	Close() error

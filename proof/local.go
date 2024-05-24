@@ -16,10 +16,11 @@ type Local struct {
 	store       store.IStore
 	fileStore   *node.FileStorage
 	exit        chan struct{}
+	proofTypes  []common.ZkProofType
 	cacheProofs *node.ProofRespQueue
 }
 
-func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
+func NewLocal(url, datadir, id string, proofTypes []common.ZkProofType, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
 	client, err := rpc.NewNodeClient(url)
 	if err != nil {
 		logger.Error("new node client error:%v", err)
@@ -48,6 +49,7 @@ func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *n
 		worker:      worker,
 		Id:          id,
 		store:       store,
+		proofTypes:  proofTypes,
 		exit:        make(chan struct{}, 1),
 		cacheProofs: node.NewProofRespQueue(),
 	}, nil
@@ -61,7 +63,7 @@ func (l *Local) Run() error {
 	}
 	request := common.TaskRequest{
 		Id:        l.Id,
-		ProofType: []common.ZkProofType{}, // Todo worker support which proof type
+		ProofType: l.proofTypes,
 	}
 	requestResp, err := l.client.GetZkProofTask(request)
 	if err != nil {
