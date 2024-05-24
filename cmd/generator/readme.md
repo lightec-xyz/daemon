@@ -38,7 +38,7 @@ set ZkParameterDir environment variables
 generator run config file
 
     {
-        "url": "https://test.apps.zkbtc.money/api",
+        "url": "https://testnet.zkbtc.money/api",
         "maxNums": 1,
         "network": "testnet",
         "datadir": "<local genetator storagte data dir>",
