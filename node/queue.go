@@ -246,6 +246,9 @@ func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
 func (aq *ArrayQueue) PopFn(fn func(req *common.ZkProofRequest) bool) (*common.ZkProofRequest, bool) {
 	aq.lock.Lock()
 	defer aq.lock.Unlock()
+	if len(aq.list) == 0 {
+		return nil, false
+	}
 	var newList []*common.ZkProofRequest
 	for index, value := range aq.list {
 		ok := fn(value)

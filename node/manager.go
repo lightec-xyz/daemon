@@ -92,8 +92,8 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 		return false
 	})
 	if !ok {
-		logger.Error("should never happen,parse Proof request error")
-		return nil, false, fmt.Errorf("parse Proof request error")
+		logger.Warn("no find match proof task")
+		return nil, false, nil
 	}
 	// todo
 	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.TxHash)
