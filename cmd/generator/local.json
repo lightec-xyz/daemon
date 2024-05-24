@@ -5,14 +5,6 @@
   "datadir": "/Users/red/lworkspace/lightec/daemon/proof/test",
   "model": "client",
   "proofType": [
-    "DepositTxType",
-    "RedeemTxType",
-    "VerifyTxType",
-    "SyncComGenesisType",
-    "SyncComUnitType",
-    "SyncComRecursiveType",
-    "TxInEth2",
-    "BeaconHeaderFinalityType",
-    "BeaconHeaderType"
+    "TxInEth2"
   ]
 }
