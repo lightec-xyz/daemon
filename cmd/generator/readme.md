@@ -45,7 +45,10 @@ generator run config file
         "model": "client"
     }
 
-update go version to v1.22.3 
+### update go version above v1.22.1
+```
+go version go1.22.3 darwin/arm64
+```
 
 
 ## Run
