@@ -8,7 +8,7 @@
 
     git clone https://<Token>@github.com/lightec-xyz/provers.git
     cd provers
-    git checkout v0.2.0   
+    git checkout v0.2.1
 
     git cloen https://<Token>@github.com/lightec-xyz/btc_provers.git
     cd btc_provers
@@ -44,6 +44,9 @@ generator run config file
         "datadir": "<local genetator storagte data dir>",
         "model": "client"
     }
+
+update go version to v1.22.3 
+
 
 ## Run
 
