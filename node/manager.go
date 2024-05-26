@@ -59,11 +59,13 @@ func (m *manager) Init() error {
 		return err
 	}
 	for _, request := range allPendingRequests {
-		logger.Debug("add pending request to pending queue:%v", request.Id())
-		m.pendingQueue.Push(request.Id(), request)
-		m.state.Store(request.Id(), nil)
-		// todo
-		err := DeletePendingRequest(m.store, request.Id())
+		logger.Info("load pending request:%v", request.Id())
+		_, err := m.CheckPendingRequest(request)
+		if err != nil {
+			logger.Error("check pending request error:%v", err)
+			return err
+		}
+		err = DeletePendingRequest(m.store, request.Id())
 		if err != nil {
 			logger.Error("delete pending request error:%v", err)
 		}
@@ -498,47 +500,51 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 	return false, nil
 }
 
-func (m *manager) CheckPendingRequest() error {
+func (m *manager) CheckState() error {
 	logger.Debug("check pending request now")
 	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
-		// todo
-		if request.StartTime.IsZero() {
-			logger.Error("request start time is zero")
-			return fmt.Errorf("request start time is zero")
-		}
-		isTimeout := false
-		currentTime := time.Now()
-		switch request.ReqType {
-		case common.SyncComUnitType:
-			if currentTime.Sub(request.StartTime).Hours() >= 1.3 {
-				isTimeout = true
-			}
-		default:
-			if currentTime.Sub(request.StartTime).Minutes() >= 30 {
-				isTimeout = true
-			}
-		}
-		if isTimeout {
-			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
-			m.proofQueue.Push(request) // todo
-			m.pendingQueue.Delete(request.Id())
-			err := m.UpdateProofStatus(request, common.ProofQueued)
-			if err != nil {
-				logger.Error("update Proof status error:%v %v", request.Id(), err)
-			}
+		_, err := m.CheckPendingRequest(request)
+		if err != nil {
+			logger.Error("check pending request error:%v", err)
+			return err
 		}
 		return nil
 	})
 	return nil
 }
+func (m *manager) CheckPendingRequest(request *common.ZkProofRequest) (bool, error) {
+	if request == nil {
+		return false, fmt.Errorf("request is nil")
+	}
+	if request.StartTime.IsZero() {
+		logger.Error("request start time is zero: %v", request.Id())
+		return false, fmt.Errorf("request start time is zero: %v", request.Id())
+	}
+	isTimeout := false
+	currentTime := time.Now()
+	switch request.ReqType {
+	case common.SyncComUnitType:
+		if currentTime.Sub(request.StartTime).Hours() >= 1.3 { // todo
+			isTimeout = true
+		}
+	default:
+		if currentTime.Sub(request.StartTime).Minutes() >= 30 { // todo
+			isTimeout = true
+		}
+	}
+	if isTimeout {
+		logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
+		m.proofQueue.Push(request) // todo
+		m.pendingQueue.Delete(request.Id())
+		err := m.UpdateProofStatus(request, common.ProofQueued)
+		if err != nil {
+			logger.Error("update Proof status error:%v %v", request.Id(), err)
+		}
+	}
+	return isTimeout, nil
+}
 
 func (m *manager) GetSlotByHash(hash string) (uint64, bool, error) {
-	//txHash := ethCommon.HexToHash(hash)
-	//receipt, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
-	//if err != nil {
-	//	logger.Error("get tx receipt error: %v %v", hash, err)
-	//	return 0, false, err
-	//}
 	// todo
 	dbTx, err := ReadDbTx(m.store, hash)
 	if err != nil {

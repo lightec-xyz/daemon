@@ -35,7 +35,7 @@ type IAgent interface {
 type IManager interface {
 	Init() error
 	ReceiveRequest(requests []*common.ZkProofRequest) error
-	CheckPendingRequest() error
+	CheckState() error
 	GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkProofRequest, bool, error)
 	SendProofResponse(response []*common.ZkProofResponse) error
 	DistributeRequest() error
@@ -278,7 +278,7 @@ func (d *Daemon) Run() error {
 	if d.enableLocal {
 		go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
 	}
-	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
+	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
 
 	for _, agent := range d.agents {
 		// todo
