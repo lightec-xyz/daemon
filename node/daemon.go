@@ -54,6 +54,7 @@ type Daemon struct {
 	agents            []*WrapperAgent
 	fetch             IFetch
 	rpcServer         *rpc.Server
+	wsServer          *rpc.Server
 	nodeConfig        Config
 	exitSignal        chan os.Signal
 	manager           *WrapperManger
@@ -218,6 +219,11 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	wsServer, err := rpc.NewWsServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcport, cfg.WsPort), rpcHandler)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
 	fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
 	if err != nil {
 		logger.Error("new fetch error: %v", err)
@@ -227,6 +233,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	daemon := &Daemon{
 		agents:            agents,
 		rpcServer:         server,
+		wsServer:          wsServer,
 		nodeConfig:        cfg,
 		disableRecurAgent: cfg.DisableRecursiveAgent,
 		disableTxAgent:    cfg.DisableTxAgent,
@@ -266,6 +273,8 @@ func (d *Daemon) Run() error {
 	logger.Info("start daemon")
 	// rpc rpcServer
 	go d.rpcServer.Run()
+	// ws server
+	go d.wsServer.Run()
 
 	// fetch
 	go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
@@ -314,6 +323,14 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
+	err := d.rpcServer.Shutdown()
+	if err != nil {
+		logger.Error("rpc rpcServer shutdown error:%v", err)
+	}
+	err = d.wsServer.Shutdown()
+	if err != nil {
+		logger.Error("ws server shutdown error:%v", err)
+	}
 	if d.disableTxAgent {
 		for _, agent := range d.agents {
 			if err := agent.node.Close(); err != nil {
@@ -321,10 +338,7 @@ func (d *Daemon) Close() error {
 			}
 		}
 	}
-	err := d.rpcServer.Shutdown()
-	if err != nil {
-		logger.Error("rpc rpcServer shutdown error:%v", err)
-	}
+
 	err = d.manager.manager.Close()
 	if err != nil {
 		logger.Error("manager close error:%v", err)
