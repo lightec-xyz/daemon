@@ -61,6 +61,7 @@ func (m *manager) Init() error {
 	for _, request := range allPendingRequests {
 		logger.Info("load pending request:%v", request.Id())
 		m.pendingQueue.Push(request.Id(), request)
+		m.state.Store(request.Id(), nil)
 		err = DeletePendingRequest(m.store, request.Id())
 		if err != nil {
 			logger.Error("delete pending request error:%v", err)

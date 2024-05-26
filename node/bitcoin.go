@@ -268,18 +268,19 @@ func (b *BitcoinAgent) CheckChainProof(proofType common.ZkProofType, txHash stri
 
 func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive Proof resp: %v %x", resp.Id(), resp.Proof)
-	proofId := resp.TxHash
-	err := b.updateDepositProof(proofId, hex.EncodeToString(resp.Proof), resp.Status)
-	if err != nil {
-		logger.Error("update Proof error: %v %v", proofId, err)
-		return err
-	}
+	b.cache.Delete(resp.Id())
 	switch resp.ZkProofType {
+	case common.DepositTxType:
+		err := b.updateDepositProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
+		if err != nil {
+			logger.Error("update Proof error: %v %v", resp.TxHash, err)
+			return err
+		}
 	case common.VerifyTxType:
-		logger.Info("start update utxo change: %v", proofId)
+		logger.Info("start update utxo change: %v", resp.TxHash)
 		err := updateContractUtxoChange(b.ethClient, b.submitTxEthAddr, b.keyStore.GetPrivateKey(), []string{resp.TxHash}, resp.Proof)
 		if err != nil {
-			logger.Error("update utxo error: %v %v", proofId, err)
+			logger.Error("update utxo error: %v %v", resp.TxHash, err)
 			b.txManager.AddTask(resp)
 			return err
 		}

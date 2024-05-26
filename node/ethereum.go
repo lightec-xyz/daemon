@@ -188,8 +188,7 @@ func (e *EthereumAgent) CheckChainFork(height uint64) (bool, error) {
 
 func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info(" ethereumAgent receive proof response: %v proof,%x", resp.Id(), resp.Proof)
-	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
-	e.stateCache.Delete(proofId)
+	e.stateCache.Delete(resp.Id())
 	switch resp.ZkProofType {
 	case common.RedeemTxType:
 		err := e.DeleteRedeemCacheTx(resp)

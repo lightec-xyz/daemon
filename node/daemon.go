@@ -65,7 +65,9 @@ type Daemon struct {
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
-	err := logger.InitLogger(nil)
+	err := logger.InitLogger(&logger.LogCfg{
+		File: true,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +235,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		taskManager:       taskManager,
 		fetch:             fetch,
 		debug:             common.GetEnvDebugMode(),
-		manager:           NewWrapperManger(msgManager, proofRequest, 1*time.Minute),
+		manager:           NewWrapperManger(msgManager, proofRequest, 2*time.Minute),
 	}
 	return daemon, nil
 }

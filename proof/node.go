@@ -25,7 +25,9 @@ type Node struct {
 }
 
 func NewNode(cfg Config) (*Node, error) {
-	err := logger.InitLogger(nil)
+	err := logger.InitLogger(&logger.LogCfg{
+		File: true,
+	})
 	if err != nil {
 		logger.Error("init logger error:%v", err)
 		return nil, err
