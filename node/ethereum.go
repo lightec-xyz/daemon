@@ -187,13 +187,7 @@ func (e *EthereumAgent) CheckChainFork(height uint64) (bool, error) {
 }
 
 func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
-	logger.Info(" ethereumAgent receive proof response: %v %v %v %x", resp.ZkProofType.String(),
-		resp.Period, resp.TxHash, resp.Proof)
-	//err := StoreZkProof(e.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
-	//if err != nil {
-	//	logger.Error("store zk proof error:%v", err)
-	//	return err
-	//}
+	logger.Info(" ethereumAgent receive proof response: %v proof,%x", resp.Id(), resp.Proof)
 	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
 	e.stateCache.Delete(proofId)
 	switch resp.ZkProofType {
@@ -215,11 +209,6 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 			return err
 		}
 	default:
-		// todo
-		//err = e.checkPendingProofRequest(nil)
-		//if err != nil {
-		//	logger.Error("check pending proof request error:%v %v", resp.TxHash, err)
-		//}
 	}
 	return nil
 }

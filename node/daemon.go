@@ -153,23 +153,24 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	state := NewCacheState()
 
 	var agents []*WrapperAgent
-	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
+	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, state, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
 	}
 	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 
-	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient, proofRequest, keyStore, taskManager)
+	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
+		proofRequest, keyStore, taskManager, state)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
-	state := NewCacheState()
 	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
 		beaconClient, oasisClient, proofRequest, taskManager, state)
 	if err != nil {

@@ -31,14 +31,14 @@ type BeaconAgent struct {
 }
 
 func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *apiclient.Client, zkProofReq chan []*common.ZkProofRequest,
-	fileStore *FileStorage, genesisSlot, genesisPeriod uint64) (IAgent, error) {
+	fileStore *FileStorage, state *CacheState, genesisSlot, genesisPeriod uint64) (IAgent, error) {
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,
 		apiClient:      apiClient,
 		name:           BeaconAgentName,
 		store:          store,
-		stateCache:     NewCacheState(),
+		stateCache:     state,
 		zkProofRequest: zkProofReq,
 		genesisPeriod:  genesisPeriod,
 		genesisSlot:    genesisSlot,
@@ -638,17 +638,12 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 
 func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	// todo
-	logger.Info("beacon Proof response type: %v, Index: %v", resp.ZkProofType.String(), resp.Period)
+	logger.Info("beacon Proof response type: %v, Index: %v", resp.Id(), resp.Period)
 	index := resp.Period
 	if resp.ZkProofType != common.UnitOuter {
 		proofId := common.NewProofId(resp.ZkProofType, index, resp.TxHash)
 		b.stateCache.Delete(proofId)
 	}
-	//err := StoreZkProof(b.fileStore, resp.ZkProofType, index, resp.TxHash, resp.Proof, resp.Witness)
-	//if err != nil {
-	//	logger.Error("store proof error: %v", err)
-	//	return err
-	//}
 	return nil
 }
 

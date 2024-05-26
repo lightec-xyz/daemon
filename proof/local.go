@@ -126,15 +126,23 @@ func (l *Local) Init() error {
 	}
 	for _, resp := range submitProofs {
 		for _, item := range resp.Data {
-			logger.Debug("load pending proof response: %v", item.Id())
+			logger.Debug("load pending proof response:%v %v", resp.Id, item.Id())
 		}
-		l.cacheProofs.Push(resp)
+		_, err := l.client.SubmitProof(resp)
+		if err != nil {
+			logger.Error("submit proof error again:%v %v", resp.Id, err)
+			l.cacheProofs.Push(resp)
+			logger.Debug("add proof response to pending queue:%v", resp.Id)
+		} else {
+			logger.Debug("success submit proof again:%v", resp.Id)
+		}
 		// todo
-		err := node.DeleteProofResponse(l.store, resp.Id)
+		err = node.DeleteProofResponse(l.store, resp.Id)
 		if err != nil {
 			logger.Error("delete proof response error:%v", err)
 			return err
 		}
+
 	}
 	return nil
 }
@@ -148,7 +156,7 @@ func (l *Local) Close() error {
 			return err
 		}
 		for _, item := range value.Data {
-			logger.Debug("write pending proof response: %v", item.Id())
+			logger.Debug("write pending proof response: %v %v", value.Id, item.Id())
 		}
 		return nil
 	})
