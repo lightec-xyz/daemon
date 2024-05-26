@@ -278,7 +278,7 @@ func (d *Daemon) Run() error {
 	if d.enableLocal {
 		go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
 	}
-	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
+	go DoTimerTask("manager-checkState", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
 
 	for _, agent := range d.agents {
 		// todo
@@ -323,7 +323,10 @@ func (d *Daemon) Close() error {
 	if err != nil {
 		logger.Error("rpc rpcServer shutdown error:%v", err)
 	}
-	d.manager.manager.Close()
+	err = d.manager.manager.Close()
+	if err != nil {
+		logger.Error("manager close error:%v", err)
+	}
 	if d.exitSignal != nil {
 		close(d.exitSignal)
 		//todo waitGroup

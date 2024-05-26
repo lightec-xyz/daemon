@@ -60,11 +60,7 @@ func (m *manager) Init() error {
 	}
 	for _, request := range allPendingRequests {
 		logger.Info("load pending request:%v", request.Id())
-		_, err := m.CheckPendingRequest(request)
-		if err != nil {
-			logger.Error("check pending request error:%v", err)
-			return err
-		}
+		m.pendingQueue.Push(request.Id(), request)
 		err = DeletePendingRequest(m.store, request.Id())
 		if err != nil {
 			logger.Error("delete pending request error:%v", err)
@@ -503,16 +499,21 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 func (m *manager) CheckState() error {
 	logger.Debug("check pending request now")
 	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
-		_, err := m.CheckPendingRequest(request)
+		timout, err := m.checkRequestTimeout(request)
 		if err != nil {
 			logger.Error("check pending request error:%v", err)
 			return err
+		}
+		if timout {
+			logger.Debug("%v timeout,add proof queue again", request.Id())
+			m.pendingQueue.Delete(request.Id())
+			m.proofQueue.Push(request)
 		}
 		return nil
 	})
 	return nil
 }
-func (m *manager) CheckPendingRequest(request *common.ZkProofRequest) (bool, error) {
+func (m *manager) checkRequestTimeout(request *common.ZkProofRequest) (bool, error) {
 	if request == nil {
 		return false, fmt.Errorf("request is nil")
 	}
@@ -530,15 +531,6 @@ func (m *manager) CheckPendingRequest(request *common.ZkProofRequest) (bool, err
 	default:
 		if currentTime.Sub(request.StartTime).Minutes() >= 30 { // todo
 			isTimeout = true
-		}
-	}
-	if isTimeout {
-		logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
-		m.proofQueue.Push(request) // todo
-		m.pendingQueue.Delete(request.Id())
-		err := m.UpdateProofStatus(request, common.ProofQueued)
-		if err != nil {
-			logger.Error("update Proof status error:%v %v", request.Id(), err)
 		}
 	}
 	return isTimeout, nil
