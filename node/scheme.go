@@ -14,8 +14,14 @@ const (
 	BeaconSlotPrefix      = "bs_"
 	BeaconEthNumberPrefix = "bh_"
 
-	TxSlotPrefix         = "ts_"
-	TxFinalizeSlotPrefix = "tfs_"
+	TxSlotPrefix           = "ts_"
+	TxFinalizeSlotPrefix   = "tfs_"
+	PendingReqPrefix       = "pr_"
+	PendingProofRespPrefix = "prp_"
+)
+
+const (
+	workerIdKey = "workerIdKey"
 )
 
 var (
@@ -147,5 +153,10 @@ func DbTxSlotId(slot uint64, hash string) string {
 
 func DbTxFinalizeSlotId(slot uint64, hash string) string {
 	key := fmt.Sprintf("%s%d_%s", TxFinalizeSlotPrefix, slot, hash)
+	return key
+}
+
+func DbPendingRequestId(id string) string {
+	key := fmt.Sprintf("%s%s", PendingReqPrefix, id)
 	return key
 }

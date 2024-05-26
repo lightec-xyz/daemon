@@ -118,7 +118,41 @@ func (l *Local) CheckState() error {
 	return nil
 }
 
+func (l *Local) Init() error {
+	submitProofs, err := node.ReadAllProofResponse(l.store)
+	if err != nil {
+		logger.Error("read all proof response error:%v", err)
+		return err
+	}
+	for _, resp := range submitProofs {
+		for _, item := range resp.Data {
+			logger.Debug("load pending proof response: %v", item.Id())
+		}
+		l.cacheProofs.Push(resp)
+		// todo
+		err := node.DeleteProofResponse(l.store, resp.Id)
+		if err != nil {
+			logger.Error("delete proof response error:%v", err)
+			return err
+		}
+	}
+	return nil
+}
+
 func (l *Local) Close() error {
+	logger.Debug("store cache data to db now ...")
+	l.cacheProofs.Iterator(func(value *common.SubmitProof) error {
+		err := node.WriteProofResponse(l.store, value)
+		if err != nil {
+			logger.Error("write proof response error:%v", err)
+			return err
+		}
+		for _, item := range value.Data {
+			logger.Debug("write pending proof response: %v", item.Id())
+		}
+		return nil
+	})
+
 	return nil
 }
 

@@ -49,7 +49,7 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("new store error:%v,dbPath:%s", err, cfg.DataDir)
 		return nil, err
 	}
-	workerId, exists, err := ReadWorkerId(storeDb)
+	workerId, exists, err := dnode.ReadWorkerId(storeDb)
 	if err != nil {
 		logger.Error("read worker id error:%v", err)
 		return nil, err
@@ -88,7 +88,7 @@ func NewNode(cfg Config) (*Node, error) {
 			logger.Debug("check zk parameters md5 end ...")
 		}
 		workerId = common.MustUUID()
-		err := WriteWorkerId(storeDb, workerId)
+		err := dnode.WriteWorkerId(storeDb, workerId)
 		if err != nil {
 			logger.Error("write worker id error:%v", err)
 			return nil, err
@@ -132,6 +132,15 @@ func NewNode(cfg Config) (*Node, error) {
 	}
 	return nil, fmt.Errorf("new node error: unknown model:%v", cfg.Mode)
 
+}
+
+func (node *Node) Init() error {
+	err := node.local.Init()
+	if err != nil {
+		logger.Error("local init error:%v", err)
+		return err
+	}
+	return nil
 }
 
 func (node *Node) Start() error {

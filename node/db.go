@@ -476,3 +476,80 @@ func ReadAllTxByFinalizedSlot(store store.IStore, finalizedSlot uint64) ([]*DbUn
 	})
 	return txes, nil
 }
+
+func WritePendingRequest(store store.IStore, id string, request *common.ZkProofRequest) error {
+	return store.PutObj(DbPendingRequestId(id), request)
+}
+
+func DeletePendingRequest(store store.IStore, id string) error {
+	return store.DeleteObj(DbPendingRequestId(id))
+}
+
+func ReadAllPendingRequests(store store.IStore) ([]*common.ZkProofRequest, error) {
+	var txes []*common.ZkProofRequest
+	iterator := store.Iterator([]byte(DbPendingRequestId("")), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var tx common.ZkProofRequest
+		err := codec.Unmarshal(iterator.Value(), &tx)
+		if err != nil {
+			logger.Error("unmarshal tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, &tx)
+	}
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+	return txes, nil
+}
+
+func WriteProofResponse(store store.IStore, resp *common.SubmitProof) error {
+	return store.PutObj(DbProofResponseId(resp.Id), resp)
+}
+
+func ReadAllProofResponse(store store.IStore) ([]*common.SubmitProof, error) {
+	var txes []*common.SubmitProof
+	iterator := store.Iterator([]byte(DbProofResponseId("")), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var tx common.SubmitProof
+		err := codec.Unmarshal(iterator.Value(), &tx)
+		if err != nil {
+			logger.Error("unmarshal tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, &tx)
+	}
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+	return txes, nil
+}
+func DeleteProofResponse(store store.IStore, requestId string) error {
+	return store.DeleteObj(DbProofResponseId(requestId))
+}
+
+func DbProofResponseId(requestId string) string {
+	return PendingProofRespPrefix + requestId
+}
+
+func ReadWorkerId(store store.IStore) (string, bool, error) {
+	exists, err := store.HasObj(workerIdKey)
+	if err != nil {
+		return "", false, err
+	}
+	if !exists {
+		return "", false, nil
+	}
+	var id string
+	err = store.GetObj(workerIdKey, &id)
+	if err != nil {
+		return "", false, err
+	}
+	return id, true, nil
+}
+
+func WriteWorkerId(store store.IStore, id string) error {
+	return store.PutObj(workerIdKey, id)
+}

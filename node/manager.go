@@ -52,7 +52,22 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconCli
 }
 
 func (m *manager) Init() error {
-
+	logger.Debug("manger load db state now ...")
+	allPendingRequests, err := ReadAllPendingRequests(m.store)
+	if err != nil {
+		logger.Error("read all pending requests error: %v", err)
+		return err
+	}
+	for _, request := range allPendingRequests {
+		logger.Debug("add pending request to pending queue:%v", request.Id())
+		m.pendingQueue.Push(request.Id(), request)
+		m.state.Store(request.Id(), nil)
+		// todo
+		err := DeletePendingRequest(m.store, request.Id())
+		if err != nil {
+			logger.Error("delete pending request error:%v", err)
+		}
+	}
 	return nil
 }
 
@@ -486,6 +501,7 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 func (m *manager) CheckPendingRequest() error {
 	logger.Debug("check pending request now")
 	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
+		// todo
 		if request.StartTime.IsZero() {
 			logger.Error("request start time is zero")
 			return fmt.Errorf("request start time is zero")
@@ -494,7 +510,7 @@ func (m *manager) CheckPendingRequest() error {
 		currentTime := time.Now()
 		switch request.ReqType {
 		case common.SyncComUnitType:
-			if currentTime.Sub(request.StartTime).Hours() >= 1.2 {
+			if currentTime.Sub(request.StartTime).Hours() >= 1.3 {
 				isTimeout = true
 			}
 		default:
@@ -541,7 +557,16 @@ func (m *manager) GetSlotByHash(hash string) (uint64, bool, error) {
 }
 
 func (m *manager) Close() error {
-
+	logger.Debug("manager start  cache state now ...")
+	m.pendingQueue.Iterator(func(value *common.ZkProofRequest) error {
+		logger.Debug("write pending request to db :%v", value.Id())
+		err := WritePendingRequest(m.store, value.Id(), value)
+		if err != nil {
+			logger.Error("write pending request error:%v %v", value.Id(), err)
+			return err
+		}
+		return nil
+	})
 	return nil
 
 }

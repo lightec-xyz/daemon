@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 func initStore() store.IStore {
@@ -16,6 +17,27 @@ func initStore() store.IStore {
 		panic(err)
 	}
 	return db
+}
+
+func TestPendingRequest(t *testing.T) {
+	iStore := initStore()
+	err := WritePendingRequest(iStore, "test01", &common.ZkProofRequest{
+		ZkId:      "test01",
+		StartTime: time.Now(),
+	})
+	assert.Nil(t, err)
+
+	ids, err := ReadAllPendingRequests(iStore)
+	assert.Nil(t, err)
+	t.Log(ids)
+	for _, id := range ids {
+		err := DeletePendingRequest(iStore, id.Id())
+		assert.Nil(t, err)
+	}
+	requests, err := ReadAllPendingRequests(iStore)
+	assert.Nil(t, err)
+	t.Log(requests)
+
 }
 
 func TestWriteUnGenProof(t *testing.T) {
