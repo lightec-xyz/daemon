@@ -10,7 +10,7 @@ var db IStore
 var err error
 
 func init() {
-	logger.InitLogger()
+	logger.InitLogger(nil)
 	db, err = NewStore("/Users/red/.daemon/testnet", 0, 0, "zkbtc", false)
 	if err != nil {
 		panic(err)

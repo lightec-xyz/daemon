@@ -378,95 +378,95 @@ func GetBhfUpdateData(fileStore *FileStorage, finalizedSlot, genesisPeriod uint6
 }
 
 func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, txHash string,
-	beaconClient *beacon.Client, ethClient *ethclient.Client) (rpc.RedeemRequest, bool, error) {
+	beaconClient *beacon.Client, ethClient *ethclient.Client) (*rpc.RedeemRequest, bool, error) {
 	txProof, ok, err := fileStore.GetTxProof(txHash)
 	if err != nil {
 		logger.Error("get tx proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txHash)
-		return rpc.RedeemRequest{}, false, nil
+		return nil, false, nil
 	}
 	blockHeaderProof, ok, err := fileStore.GetBeaconHeaderProof(txSlot)
 	if err != nil {
 		logger.Error("get block header proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txSlot)
-		return rpc.RedeemRequest{}, false, nil
+		return nil, false, nil
 	}
 	finalizedSlot, ok, err := fileStore.GetNearTxSlotFinalizedSlot(txSlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txSlot)
-		return rpc.RedeemRequest{}, false, nil
+		return nil, false, nil
 	}
 	bhfProof, ok, err := fileStore.GetBhfProof(finalizedSlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	if !ok {
 		logger.Warn("no find bhf update %v", finalizedSlot)
-		return rpc.RedeemRequest{}, false, nil
+		return nil, false, nil
 	}
 	genesisRoot, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
 	if err != nil {
 		logger.Error("get genesis root error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	if !ok {
 		logger.Warn("no find genesis root %v", genesisPeriod)
-		return rpc.RedeemRequest{}, false, nil
+		return nil, false, nil
 	}
 
 	var finalityUpdate *structs.LightClientUpdateWithVersion
 	ok, err = fileStore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
 	if err != nil {
 		logger.Error("get finality update error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	if !ok {
 		logger.Warn("no find finality update %v", finalizedSlot)
-		return rpc.RedeemRequest{}, false, nil
+		return nil, false, nil
 	}
 
 	attestedSlot, err := strconv.ParseUint(finalityUpdate.Data.AttestedHeader.Slot, 10, 64)
 	if err != nil {
 		logger.Error("parse slot error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	period := attestedSlot / common.SlotPerPeriod
 	currentRoot, ok, err := GetSyncCommitRootId(fileStore, period)
 	if err != nil {
 		logger.Error("get current root error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	beginID, endId, err := GetBeaconHeaderId(beaconClient, txSlot, finalizedSlot)
 	if err != nil {
 		logger.Error("get begin and end id error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	// todo need cache
 	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(ethClient, txHash)
 	if err != nil {
 		logger.Error("get tx and receipt error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	txVarHex, err := common.TxVarToHex(txVar)
 	if err != nil {
 		logger.Error("tx var to bytes error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 	receiptVarHex, err := common.ReceiptVarToHex(receiptVar)
 	if err != nil {
 		logger.Error("receipt var to bytes error: %v", err)
-		return rpc.RedeemRequest{}, false, err
+		return nil, false, err
 	}
 
 	redeemRequest := rpc.RedeemRequest{
@@ -484,7 +484,7 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		TxVar:            txVarHex,
 		ReceiptVar:       receiptVarHex,
 	}
-	return redeemRequest, true, nil
+	return &redeemRequest, true, nil
 
 }
 

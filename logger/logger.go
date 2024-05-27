@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"time"
 )
 
-var logger *zap.Logger
-var err error
+var logger *Logger
 
 func Debug(msg string, ctx ...interface{}) {
 	logger.Debug(fmt.Sprintf(msg, ctx...))
@@ -30,23 +30,94 @@ func Fatal(msg string, ctx ...interface{}) {
 	logger.Fatal(fmt.Sprintf(msg, ctx...))
 }
 
-func InitLogger() error {
-	logger, err = newLogger()
+func InitLogger(cfg *LogCfg) error {
+	lg, err := newLogger(cfg)
 	if err != nil {
 		return fmt.Errorf("new logger error:%v", err)
 	}
-	return err
+	logger = lg
+	return nil
 }
 
 func Close() error {
 	if logger != nil {
-		return logger.Sync()
+		return logger.Close()
 	}
 	return nil
 }
 
-func newLogger() (*zap.Logger, error) {
-	encoderConfig := zapcore.EncoderConfig{
+type LogCfg struct {
+	LogDir   string
+	IsStdout bool
+	File     bool
+}
+
+type Logger struct {
+	cfg            *LogCfg
+	rotatingLogger *RotatingLogger
+	*zap.Logger
+}
+
+func (l *Logger) Close() error {
+	_ = l.Sync()
+	if l.rotatingLogger != nil {
+		_ = l.rotatingLogger.Exit()
+	}
+	return nil
+
+}
+
+func newLogger(cfg *LogCfg) (*Logger, error) {
+	if cfg == nil {
+		cfg = defaultLogCfg()
+	}
+	if cfg.LogDir == "" {
+		cfg.LogDir = "logs"
+	}
+	var writeSyncers []zapcore.WriteSyncer
+	var rotatingLogger *RotatingLogger
+	var encoderConfig = newStdEncCfg()
+	var err error
+	if cfg.File {
+		rotatingLogger, err = NewRotatingLogger(cfg.LogDir)
+		if err != nil {
+			return nil, err
+		}
+		//encoderConfig = newFileEncCfg()
+		writeSyncers = append(writeSyncers, zapcore.AddSync(rotatingLogger))
+	}
+	if cfg.IsStdout {
+		writeSyncers = append(writeSyncers, zapcore.AddSync(os.Stdout))
+	}
+
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encoderConfig),
+		zapcore.NewMultiWriteSyncer(writeSyncers...),
+		zap.DebugLevel,
+	)
+	if rotatingLogger != nil {
+		go rotatingLogger.rotate() // todo
+	}
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	l := &Logger{
+		Logger:         logger,
+		rotatingLogger: rotatingLogger,
+		cfg:            cfg,
+	}
+	return l, nil
+}
+func newRotatingLogger(fileName string) *lumberjack.Logger {
+	return &lumberjack.Logger{
+		Filename:   fileName,
+		MaxSize:    100,
+		MaxBackups: 1,
+		MaxAge:     2,
+		Compress:   false,
+	}
+}
+
+func newStdEncCfg() zapcore.EncoderConfig {
+	return zapcore.EncoderConfig{
 		MessageKey:   "message",
 		LevelKey:     "level",
 		TimeKey:      "time",
@@ -55,13 +126,23 @@ func newLogger() (*zap.Logger, error) {
 		EncodeLevel:  zapcore.LowercaseColorLevelEncoder,
 		EncodeCaller: zapcore.ShortCallerEncoder,
 	}
+}
+func newFileEncCfg() zapcore.EncoderConfig {
+	return zapcore.EncoderConfig{
+		MessageKey:   "message",
+		LevelKey:     "level",
+		TimeKey:      "time",
+		CallerKey:    "caller",
+		EncodeTime:   zapcore.TimeEncoderOfLayout(time.RFC3339),
+		EncodeCaller: zapcore.ShortCallerEncoder,
+		EncodeLevel:  zapcore.LowercaseLevelEncoder,
+	}
+}
 
-	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.AddSync(os.Stdout),
-		zap.DebugLevel,
-	)
-
-	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	return logger, nil
+func defaultLogCfg() *LogCfg {
+	return &LogCfg{
+		LogDir:   "logsDir",
+		IsStdout: true,
+		File:     false,
+	}
 }

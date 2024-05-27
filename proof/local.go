@@ -1,7 +1,7 @@
 package proof
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
@@ -16,26 +16,16 @@ type Local struct {
 	store       store.IStore
 	fileStore   *node.FileStorage
 	exit        chan struct{}
+	proofTypes  []common.ZkProofType
 	cacheProofs *node.ProofRespQueue
 }
 
-func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
+func NewLocal(zkParamDir, url, datadir, id string, proofTypes []common.ZkProofType, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
 	client, err := rpc.NewNodeClient(url)
 	if err != nil {
 		logger.Error("new node client error:%v", err)
 		return nil, err
 	}
-	zkParamDir := common.GetEnvZkParameterDir()
-	debugMode := common.GetEnvDebugMode()
-	logger.Debug("DebugMode: %v", debugMode)
-
-	if !debugMode {
-		if zkParamDir == "" {
-			logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
-			return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
-		}
-	}
-	logger.Info("zkParamDir: %v", zkParamDir)
 	worker, err := node.NewLocalWorker(zkParamDir, datadir, num)
 	if err != nil {
 		logger.Error("new local worker error:%v", err)
@@ -48,6 +38,7 @@ func NewLocal(url, datadir, id string, num int, store store.IStore, fileStore *n
 		worker:      worker,
 		Id:          id,
 		store:       store,
+		proofTypes:  proofTypes,
 		exit:        make(chan struct{}, 1),
 		cacheProofs: node.NewProofRespQueue(),
 	}, nil
@@ -61,7 +52,7 @@ func (l *Local) Run() error {
 	}
 	request := common.TaskRequest{
 		Id:        l.Id,
-		ProofType: []common.ZkProofType{}, // Todo worker support which proof type
+		ProofType: l.proofTypes,
 	}
 	requestResp, err := l.client.GetZkProofTask(request)
 	if err != nil {
@@ -127,6 +118,57 @@ func (l *Local) CheckState() error {
 	return nil
 }
 
-func (l *Local) Close() error {
+func (l *Local) Init() error {
+	submitProofs, err := node.ReadAllProofResponse(l.store)
+	if err != nil {
+		logger.Error("read all proof response error:%v", err)
+		return err
+	}
+	for _, resp := range submitProofs {
+		for _, item := range resp.Data {
+			logger.Debug("load pending proof response:%v %v", resp.Id, item.Id())
+		}
+		_, err := l.client.SubmitProof(resp)
+		if err != nil {
+			logger.Error("submit proof error again:%v %v", resp.Id, err)
+			l.cacheProofs.Push(resp)
+			logger.Debug("add proof response to pending queue:%v", resp.Id)
+		} else {
+			logger.Debug("success submit proof again:%v", resp.Id)
+		}
+		// todo
+		err = node.DeleteProofResponse(l.store, resp.Id)
+		if err != nil {
+			logger.Error("delete proof response error:%v", err)
+			return err
+		}
+
+	}
 	return nil
+}
+
+func (l *Local) Close() error {
+	logger.Debug("store cache data to db now ...")
+	l.cacheProofs.Iterator(func(value *common.SubmitProof) error {
+		err := node.WriteProofResponse(l.store, value)
+		if err != nil {
+			logger.Error("write proof response error:%v", err)
+			return err
+		}
+		for _, item := range value.Data {
+			logger.Debug("write pending proof response: %v %v", value.Id, item.Id())
+		}
+		return nil
+	})
+
+	return nil
+}
+
+func ReadParameters(data []byte) ([]*common.Parameters, error) {
+	var result []*common.Parameters
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

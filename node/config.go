@@ -11,6 +11,7 @@ type RunConfig struct {
 	Datadir               string `json:"datadir"`
 	Rpcbind               string `json:"rpcbind"`
 	Rpcport               string `json:"rpcport"`
+	WsPort                string `json:"wsport"`
 	Network               string `json:"network"`
 	BtcUser               string `json:"btcUser"`
 	BtcPwd                string `json:"btcPwd"`
@@ -40,6 +41,9 @@ func (rc *RunConfig) Check() error {
 	}
 	if rc.Rpcport == "" {
 		rc.Rpcport = "9870"
+	}
+	if rc.WsPort == "" {
+		rc.WsPort = "9880"
 	}
 	if rc.Network == "" {
 		rc.Network = "testnet" // todo

@@ -30,6 +30,11 @@ var runCmd = &cobra.Command{
 			fmt.Printf("new node error: %v %v \n", cfgFile, err)
 			return
 		}
+		err = node.Init()
+		if err != nil {
+			fmt.Printf("init node error: %v %v \n", cfgFile, err)
+			return
+		}
 		err = node.Start()
 		if err != nil {
 			fmt.Printf("start node error: %v %v \n", cfgFile, err)

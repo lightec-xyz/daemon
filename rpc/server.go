@@ -3,8 +3,10 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"github.com/btcsuite/websocket"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/lightec-xyz/daemon/logger"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -83,6 +85,33 @@ func (s *Server) Shutdown() error {
 	return nil
 }
 
+func WsWrappHandler(h http.Handler, fn func(conn *websocket.Conn)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin:     wsHandshakeValidator([]string{"*"}),
+		}
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("upgrade ws conn error: %v", err)
+			return
+		}
+		fn(conn)
+		return
+	})
+}
+
+func wsHandshakeValidator(allowedOrigins []string) func(*http.Request) bool {
+	return func(r *http.Request) bool {
+		for _, origin := range allowedOrigins {
+			if origin == "*" {
+				return true
+			}
+		}
+		return false
+	}
+}
 func CORSHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
