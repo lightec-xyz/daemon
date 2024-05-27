@@ -67,7 +67,8 @@ type Daemon struct {
 
 func NewDaemon(cfg Config) (*Daemon, error) {
 	err := logger.InitLogger(&logger.LogCfg{
-		File: true,
+		File:     true,
+		IsStdout: true,
 	})
 	if err != nil {
 		return nil, err
