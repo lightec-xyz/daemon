@@ -26,34 +26,43 @@
 
 ## Environment
 
-download circuit config data
+download circuit config data and unzip it: 
+```sh
+rsync -avuP <userName>@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits.tar.zst <path-to-parent-dir-of-circuits>
+nohup tar --zstd -xvf circuits.tar.zst >log.log 2>&1 &
+```
 
-    // maybe you should Compressed file before download
-    scp -r <userName>@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits <lcoal circuit param file dir>
+If you have downloaded some files before, you can run the following command to complete incremental synchronization:
+
+```sh
+rsync -avzuP <userName>@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits <path-to-circuits-dir>
+```
 
 set ZkParameterDir environment variables
 
     export ZkParameterDir =<local circuit param file dir>
 
-generator run config file
-
-    {
-        "url": "https://testnet.zkbtc.money/api",
-        "maxNums": 1,
-        "network": "testnet",
-        "datadir": "<local genetator storagte data dir>",
-        "model": "client"
-    }
+generator run config file `testnet.json`:
+```json
+{
+    "url": "https://testnet.zkbtc.money/api",
+    "maxNums": 1,
+    "network": "testnet",
+    "datadir": "<local genetator storagte data dir>",
+    "model": "client"
+}
+```
 
 ### update go version above v1.22.1
-```
+```sh
 go version go1.22.3 darwin/arm64
 ```
 
 
 ## Run
-
-    ./generator --config ./testnet.json run
+```sh
+./generator --config ./testnet.json run
+```
 
 
 ## Setup circuits locally
