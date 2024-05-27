@@ -15,11 +15,12 @@ import (
 var _ rpc.INode = (*Handler)(nil)
 
 type Handler struct {
-	store    store.IStore
-	memoryDb store.IStore
-	exitCh   chan os.Signal
-	schedule *Schedule
-	manager  IManager
+	store     store.IStore
+	memoryDb  store.IStore
+	fileStore *FileStorage
+	exitCh    chan os.Signal
+	schedule  *Schedule
+	manager   IManager
 }
 
 func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
@@ -52,7 +53,7 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	// Todo
-	zkProofRequest, ok, err := h.manager.GetProofRequest()
+	zkProofRequest, ok, err := h.manager.GetProofRequest(request.ProofType)
 	if err != nil {
 		logger.Error("get proof request error: %v %v", request.Id, err)
 		return nil, err
@@ -73,6 +74,12 @@ func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//todo check
 	for _, item := range req.Data {
 		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.Id())
+		// todo
+		err := StoreZkProof(h.fileStore, item.ZkProofType, item.Period, item.TxHash, item.Proof, item.Witness)
+		if err != nil {
+			logger.Error("store zk proof error: %v %v", item.Id(), err)
+			return "", err
+		}
 	}
 	err := h.manager.SendProofResponse(req.Data)
 	if err != nil {
@@ -199,13 +206,14 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 	return daemonInfo, nil
 }
 
-func NewHandler(manager IManager, store, memoryDb store.IStore, schedule *Schedule, exitCh chan os.Signal) *Handler {
+func NewHandler(manager IManager, store, memoryDb store.IStore, schedule *Schedule, fileStore *FileStorage, exitCh chan os.Signal) *Handler {
 	return &Handler{
-		store:    store,
-		memoryDb: memoryDb,
-		exitCh:   exitCh,
-		schedule: schedule,
-		manager:  manager,
+		store:     store,
+		memoryDb:  memoryDb,
+		exitCh:    exitCh,
+		schedule:  schedule,
+		manager:   manager,
+		fileStore: fileStore,
 	}
 }
 

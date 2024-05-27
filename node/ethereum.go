@@ -47,10 +47,12 @@ type EthereumAgent struct {
 	genesisPeriod    uint64
 	lock             sync.Mutex
 	genesisSlot      uint64
+	debug            bool
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
-	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client, proofRequest chan []*common.ZkProofRequest, task *TxManager) (IAgent, error) {
+	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client,
+	proofRequest chan []*common.ZkProofRequest, task *TxManager, state *CacheState) (IAgent, error) {
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,
@@ -68,7 +70,8 @@ func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, st
 		txManager:        task,
 		genesisPeriod:    genesisSlot / 8192,
 		genesisSlot:      genesisSlot,
-		stateCache:       NewCacheState(),
+		stateCache:       state,
+		debug:            common.GetEnvDebugMode(),
 	}, nil
 }
 
@@ -95,16 +98,13 @@ func (e *EthereumAgent) Init() error {
 		return err
 	}
 	// todo just test
-	//err = WriteUnGenProof(e.store, Ethereum, []string{"622af9392653f10797297e2fa72c6236db55d28234fad5a12c098349a8c5bd3f"})
-	//if err != nil {
-	//	logger.Error("write ungen proof error: %v", err)
-	//	return err
-	//}
-	//err = WriteEthereumHeight(e.store, 1583313)
-	//if err != nil {
-	//	logger.Error("%v", err)
-	//	return err
-	//}
+	if e.debug {
+		err = WriteEthereumHeight(e.store, 1584946)
+		if err != nil {
+			logger.Error("%v", err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -133,9 +133,12 @@ func (e *EthereumAgent) ScanBlock() error {
 		// todo
 		//return nil
 	}
-	//if ethHeight > 1583329 {
-	//	return nil
-	//}
+	// todo
+	if e.debug {
+		if ethHeight > 1585877 {
+			return nil
+		}
+	}
 	// todo
 	blockNumber = blockNumber - 1
 	if ethHeight >= int64(blockNumber) {
@@ -184,22 +187,19 @@ func (e *EthereumAgent) CheckChainFork(height uint64) (bool, error) {
 }
 
 func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
-	logger.Info(" ethereumAgent receive proof response: %v %v %v %x", resp.ZkProofType.String(),
-		resp.Period, resp.TxHash, resp.Proof)
-	err := StoreZkProof(e.fileStore, resp.ZkProofType, resp.Period, resp.TxHash, resp.Proof, resp.Witness)
-	if err != nil {
-		logger.Error("store zk proof error:%v", err)
-		return err
-	}
-	proofId := common.NewProofId(resp.ZkProofType, resp.Period, resp.TxHash)
-	e.stateCache.Delete(proofId)
-
+	logger.Info(" ethereumAgent receive proof response: %v proof,%x", resp.Id(), resp.Proof)
+	e.stateCache.Delete(resp.Id())
 	switch resp.ZkProofType {
 	case common.RedeemTxType:
+		err := e.DeleteRedeemCacheTx(resp)
+		if err != nil {
+			logger.Error("delete redeem cache tx error:%v %v", resp.TxHash, err)
+
+		}
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
 			logger.Error("update Proof error:%v %v", resp.TxHash, err)
-			return err
+
 		}
 		_, err = RedeemBtcTx(e.btcClient, e.ethClient, e.oasisClient, resp.TxHash, resp.Proof)
 		if err != nil {
@@ -208,12 +208,32 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 			return err
 		}
 	default:
-		// todo
-		err = e.checkPendingProofRequest(nil)
-		if err != nil {
-			logger.Error("check pending proof request error:%v %v", resp.TxHash, err)
-		}
 	}
+	return nil
+}
+
+func (e *EthereumAgent) DeleteRedeemCacheTx(resp *common.ZkProofResponse) error {
+	err := DeleteTxSlot(e.store, resp.Period, resp.TxHash)
+	if err != nil {
+		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
+		return err
+	}
+	logger.Debug("delete %v beaconHeader  cache", resp.TxHash)
+	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(resp.Period)
+	if err != nil {
+		logger.Error("get latest slot error: %v", err)
+		return err
+	}
+	if !ok {
+		logger.Warn("no find latest slot: %v", resp.Period)
+		return nil
+	}
+	err = DeleteTxFinalizedSlot(e.store, finalizedSlot, resp.TxHash)
+	if err != nil {
+		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
+		return err
+	}
+	logger.Debug("delete %v beaconHeaderFinality  cache", resp.TxHash)
 	return nil
 }
 
@@ -499,6 +519,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 	}
+	logger.Debug("check pending request ....")
 	unGenProofs, err := ReadAllUnGenProofs(e.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
@@ -563,7 +584,12 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
-			err := e.tryProofRequest(common.BeaconHeaderType, txSlot, "")
+			err := WriteTxSlot(e.store, txSlot, item)
+			if err != nil {
+				logger.Error("write tx slot error: %v %v %v", txHash, txSlot, err)
+				return err
+			}
+			err = e.tryProofRequest(common.BeaconHeaderType, txSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
@@ -576,7 +602,12 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			return err
 		}
 		if !exists {
-			err := e.tryProofRequest(common.BeaconHeaderFinalityType, finalizedSlot, "")
+			err := WriteTxFinalizedSlot(e.store, finalizedSlot, item)
+			if err != nil {
+				logger.Error("write tx finalized slot error: %v %v %v", finalizedSlot, txHash, err)
+				return err
+			}
+			err = e.tryProofRequest(common.BeaconHeaderFinalityType, finalizedSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err

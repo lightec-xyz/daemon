@@ -50,7 +50,10 @@ type Fetch struct {
 
 func NewFetch(url, datadir string, genesisSlot uint64) (*Fetch, error) {
 	fmt.Printf("datadir: %v,beaconUrl: %v,genesisSlot: %v \n", datadir, url, genesisSlot)
-	err := logger.InitLogger()
+	err := logger.InitLogger(&logger.LogCfg{
+		LogDir: "logs",
+		File:   true,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +69,7 @@ func NewFetch(url, datadir string, genesisSlot uint64) (*Fetch, error) {
 		logger.Error("new fileStorage error: %v", err)
 		return nil, err
 	}
-	fetch, err := node.NewFetch(client, fileStorage, genesisSlot)
+	fetch, err := node.NewFetch(client, fileStorage, genesisSlot, nil)
 	if err != nil {
 		logger.Error("new fetch error: %v", err)
 		return nil, err
@@ -103,5 +106,6 @@ func (f *Fetch) Run() error {
 }
 
 func (f *Fetch) Close() error {
+	logger.Close()
 	return f.fetch.Close()
 }

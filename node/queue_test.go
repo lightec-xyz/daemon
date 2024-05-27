@@ -18,7 +18,7 @@ func TestHeapQueue(t *testing.T) {
 	heapQueue.Push(&common.ZkProofRequest{Weight: 1, Index: 6})
 	for heapQueue.Len() > 0 {
 		request, _ := heapQueue.Pop()
-		t.Log(request.Weight, request.Index)
+		t.Log(request.Weight, request.Index, heapQueue.Len())
 	}
 }
 
@@ -56,14 +56,17 @@ func TestArrayQueue(t *testing.T) {
 		return nil
 	})
 	fmt.Printf("*********** lenghth: %v  **************** \n", arrayQueue.Len())
-	i := 0
 	for arrayQueue.Len() > 0 {
-		request, _ := arrayQueue.Pop()
-		t.Log(request.Id())
-		i++
-		if i == 3 {
-			t.Log("add")
-			arrayQueue.Push(common.NewZkProofRequest(common.RedeemTxType, nil, 100, "1"))
+		request, ok := arrayQueue.PopFn(func(req *common.ZkProofRequest) bool {
+			if req.ReqType == common.BeaconHeaderType {
+				return true
+			}
+			return false
+
+		})
+		if ok {
+			t.Log(request.Id())
 		}
+
 	}
 }

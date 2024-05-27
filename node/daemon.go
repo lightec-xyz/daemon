@@ -22,13 +22,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/config/params"
 )
 
-func init() {
-	err := logger.InitLogger()
-	if err != nil {
-		panic(err)
-	}
-}
-
 type IAgent interface {
 	ScanBlock() error
 	ProofResponse(resp *common.ZkProofResponse) error
@@ -42,8 +35,8 @@ type IAgent interface {
 type IManager interface {
 	Init() error
 	ReceiveRequest(requests []*common.ZkProofRequest) error
-	CheckPendingRequest() error
-	GetProofRequest() (*common.ZkProofRequest, bool, error)
+	CheckState() error
+	GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkProofRequest, bool, error)
 	SendProofResponse(response []*common.ZkProofResponse) error
 	DistributeRequest() error
 	Close() error
@@ -61,6 +54,7 @@ type Daemon struct {
 	agents            []*WrapperAgent
 	fetch             IFetch
 	rpcServer         *rpc.Server
+	wsServer          *rpc.Server
 	nodeConfig        Config
 	exitSignal        chan os.Signal
 	manager           *WrapperManger
@@ -72,8 +66,13 @@ type Daemon struct {
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
+	err := logger.InitLogger(&logger.LogCfg{
+		File: true,
+	})
+	if err != nil {
+		return nil, err
+	}
 	var submitTxEthAddr string
-	var err error
 	if cfg.EthPrivateKey != "" {
 		submitTxEthAddr, err = privateKeyToEthAddr(cfg.EthPrivateKey)
 		if err != nil {
@@ -157,23 +156,26 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	state := NewCacheState()
 
 	var agents []*WrapperAgent
-	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
+	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, state, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
 	}
 	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 
-	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient, proofRequest, keyStore, taskManager)
+	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
+		proofRequest, keyStore, taskManager, state)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
-	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient, beaconClient, oasisClient, proofRequest, taskManager)
+	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
+		beaconClient, oasisClient, proofRequest, taskManager, state)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -203,16 +205,21 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Warn("no local worker to generate proof")
 	}
 	schedule := NewSchedule(workers)
-	msgManager, err := NewManager(btcClient, ethClient, btcProofResp, ethProofResp, syncCommitResp,
-		storeDb, memoryStore, schedule, fileStore)
+	msgManager, err := NewManager(btcClient, ethClient, beaconClient, btcProofResp, ethProofResp, syncCommitResp,
+		storeDb, memoryStore, schedule, fileStore, cfg.GenesisSyncPeriod, state)
 	if err != nil {
 		logger.Error("new msgManager error: %v", err)
 		return nil, err
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, schedule, exitSignal)
+	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, schedule, fileStore, exitSignal)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	wsServer, err := rpc.NewWsServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcport, cfg.WsPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -226,6 +233,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	daemon := &Daemon{
 		agents:            agents,
 		rpcServer:         server,
+		wsServer:          wsServer,
 		nodeConfig:        cfg,
 		disableRecurAgent: cfg.DisableRecursiveAgent,
 		disableTxAgent:    cfg.DisableTxAgent,
@@ -234,7 +242,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		taskManager:       taskManager,
 		fetch:             fetch,
 		debug:             common.GetEnvDebugMode(),
-		manager:           NewWrapperManger(msgManager, proofRequest, 1*time.Minute),
+		manager:           NewWrapperManger(msgManager, proofRequest, 2*time.Minute),
 	}
 	return daemon, nil
 }
@@ -265,6 +273,8 @@ func (d *Daemon) Run() error {
 	logger.Info("start daemon")
 	// rpc rpcServer
 	go d.rpcServer.Run()
+	// ws server
+	go d.wsServer.Run()
 
 	// fetch
 	go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
@@ -279,9 +289,13 @@ func (d *Daemon) Run() error {
 	if d.enableLocal {
 		go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
 	}
-	go DoTimerTask("manager-checkPending", d.manager.checkTime, d.manager.manager.CheckPendingRequest, d.exitSignal)
+	go DoTimerTask("manager-checkState", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
 
 	for _, agent := range d.agents {
+		// todo
+		if d.debug && agent.node.Name() == BitcoinAgentName || agent.node.Name() == BeaconAgentName {
+			continue
+		}
 		proofReplyName := fmt.Sprintf("%s-proofResponse", agent.node.Name())
 		go doProofResponseTask(proofReplyName, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
 		fetchName := fmt.Sprintf("%s-fetchResponse", agent.node.Name())
@@ -309,6 +323,14 @@ func (d *Daemon) Run() error {
 }
 
 func (d *Daemon) Close() error {
+	err := d.rpcServer.Shutdown()
+	if err != nil {
+		logger.Error("rpc rpcServer shutdown error:%v", err)
+	}
+	err = d.wsServer.Shutdown()
+	if err != nil {
+		logger.Error("ws server shutdown error:%v", err)
+	}
 	if d.disableTxAgent {
 		for _, agent := range d.agents {
 			if err := agent.node.Close(); err != nil {
@@ -316,15 +338,19 @@ func (d *Daemon) Close() error {
 			}
 		}
 	}
-	err := d.rpcServer.Shutdown()
+
+	err = d.manager.manager.Close()
 	if err != nil {
-		logger.Error("rpc rpcServer shutdown error:%v", err)
+		logger.Error("manager close error:%v", err)
 	}
-	d.manager.manager.Close()
 	if d.exitSignal != nil {
 		close(d.exitSignal)
 		//todo waitGroup
 		time.Sleep(5 * time.Second)
+	}
+	err = logger.Close()
+	if err != nil {
+		fmt.Printf("logger close error: %v \n", err)
 	}
 	return nil
 }

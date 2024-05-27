@@ -5,6 +5,7 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
@@ -19,16 +20,19 @@ type manager struct {
 	fileStore      *FileStorage
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
+	beaconClient   *beacon.Client
 	store          store.IStore
 	memory         store.IStore
+	genesisPeriod  uint64
+	state          *CacheState
 	btcProofResp   chan *common.ZkProofResponse
 	ethProofResp   chan *common.ZkProofResponse
 	syncCommitResp chan *common.ZkProofResponse
 	lock           sync.Mutex
 }
 
-func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
-	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage) (IManager, error) {
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
+	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, genesisPeriod uint64, state *CacheState) (IManager, error) {
 	return &manager{
 		proofQueue:     NewArrayQueue(),
 		pendingQueue:   NewPendingQueue(),
@@ -41,11 +45,28 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, btcProofR
 		syncCommitResp: syncCommitteeProofResp,
 		btcClient:      btcClient,
 		ethClient:      ethClient,
+		beaconClient:   beaconClient,
+		genesisPeriod:  genesisPeriod,
+		state:          state,
 	}, nil
 }
 
 func (m *manager) Init() error {
-
+	logger.Debug("manger load db state now ...")
+	allPendingRequests, err := ReadAllPendingRequests(m.store)
+	if err != nil {
+		logger.Error("read all pending requests error: %v", err)
+		return err
+	}
+	for _, request := range allPendingRequests {
+		logger.Info("load pending request:%v", request.Id())
+		m.pendingQueue.Push(request.Id(), request)
+		m.state.Store(request.Id(), nil)
+		err = DeletePendingRequest(m.store, request.Id())
+		if err != nil {
+			logger.Error("delete pending request error:%v", err)
+		}
+	}
 	return nil
 }
 
@@ -61,7 +82,7 @@ func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	return nil
 }
 
-func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
+func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkProofRequest, bool, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	logger.Warn("current proof queue length: %v", m.proofQueue.Len())
@@ -73,10 +94,20 @@ func (m *manager) GetProofRequest() (*common.ZkProofRequest, bool, error) {
 		return nil
 	})
 
-	request, ok := m.proofQueue.Pop()
+	request, ok := m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
+		if len(proofTypes) == 0 {
+			return true
+		}
+		for _, req := range proofTypes {
+			if request.ReqType == req {
+				return true
+			}
+		}
+		return false
+	})
 	if !ok {
-		logger.Error("should never happen,parse Proof request error")
-		return nil, false, fmt.Errorf("parse Proof request error")
+		logger.Warn("no find match proof task")
+		return nil, false, nil
 	}
 	// todo
 	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.TxHash)
@@ -111,7 +142,7 @@ func (m *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.Pr
 }
 
 func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
-	m.lock.Lock()
+	m.lock.Lock() // todo
 	defer m.lock.Unlock()
 	for _, response := range responses {
 		chanResponse, err := m.getChanResponse(response.ZkProofType)
@@ -124,7 +155,6 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 		proofId := response.Id()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
-		// todo
 		err = m.waitUpdateProofStatus(response)
 		if err != nil {
 			logger.Error("wait update Proof status error:%v", err)
@@ -134,13 +164,87 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	return nil
 }
 
-func (m *manager) getProofRequest(reqType common.ZkProofType) (*common.ZkProofRequest, error) {
-	return nil, nil
+func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.ZkProofRequest, bool, error) {
+	switch resp.ZkProofType {
+	case common.TxInEth2:
+		request, ok, err := m.GetRedeemRequest(resp.TxHash)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			return nil, false, err
+		}
+		return []*common.ZkProofRequest{request}, ok, nil
+	case common.BeaconHeaderType:
+		txes, err := ReadAllTxBySlot(m.store, resp.Period)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			return nil, false, err
+		}
+		var result []*common.ZkProofRequest
+		for _, tx := range txes {
+			request, ok, err := m.GetRedeemRequest(tx.TxHash)
+			if err != nil {
+				logger.Error("get redeem request error:%v %v", resp.Id(), err)
+				return nil, false, err
+			}
+			if ok {
+				result = append(result, request)
+			}
+		}
+		if len(result) == 0 {
+			return nil, false, nil
+		}
+		return result, true, nil
+	case common.BeaconHeaderFinalityType:
+		txes, err := ReadAllTxByFinalizedSlot(m.store, resp.Period)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			return nil, false, err
+		}
+		var result []*common.ZkProofRequest
+		for _, tx := range txes {
+			request, ok, err := m.GetRedeemRequest(tx.TxHash)
+			if err != nil {
+				logger.Error("get redeem request error:%v %v", resp.Id(), err)
+				return nil, false, err
+			}
+			if ok {
+				result = append(result, request)
+			}
+		}
+		if len(result) == 0 {
+			return nil, false, nil
+		}
+		return result, true, nil
+	default:
+		return nil, false, nil
+	}
+}
+
+func (m *manager) GetRedeemRequest(txHash string) (*common.ZkProofRequest, bool, error) {
+	// todo
+	txSlot, ok, err := m.GetSlotByHash(txHash)
+	if err != nil {
+		logger.Error("get slot by hash error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	data, ok, err := GetRedeemRequestData(m.fileStore, m.genesisPeriod, txSlot, txHash, m.beaconClient, m.ethClient.Client)
+	if err != nil {
+		logger.Error("get redeem request data error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := common.NewZkProofRequest(common.RedeemTxType, data, txSlot, txHash)
+	return request, true, nil
 }
 
 // todo
 func (m *manager) DistributeRequest() error {
-	request, ok, err := m.GetProofRequest()
+	request, ok, err := m.GetProofRequest(nil)
 	if err != nil {
 		logger.Error("get Proof request error:%v", err)
 		time.Sleep(10 * time.Second)
@@ -393,53 +497,104 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 	return false, nil
 }
 
-func (m *manager) CheckPendingRequest() error {
+func (m *manager) CheckState() error {
 	logger.Debug("check pending request now")
 	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
-		if request.StartTime.IsZero() {
-			logger.Error("request start time is zero")
-			return fmt.Errorf("request start time is zero")
+		timout, err := m.checkRequestTimeout(request)
+		if err != nil {
+			logger.Error("check pending request error:%v", err)
+			return err
 		}
-		isTimeout := false
-		currentTime := time.Now()
-		switch request.ReqType {
-		case common.SyncComUnitType:
-			if currentTime.Sub(request.StartTime).Hours() >= 1.2 {
-				isTimeout = true
-			}
-		default:
-			if currentTime.Sub(request.StartTime).Minutes() >= 30 {
-				isTimeout = true
-			}
-		}
-		if isTimeout {
-			logger.Warn("gen proof request timeout:%v %v,add to queue again", request.ReqType.String(), request.Index)
-			m.proofQueue.Push(request) // todo
+		if timout {
+			logger.Debug("%v timeout,add proof queue again", request.Id())
 			m.pendingQueue.Delete(request.Id())
-			err := m.UpdateProofStatus(request, common.ProofQueued)
-			if err != nil {
-				logger.Error("update Proof status error:%v %v", request.Id(), err)
-			}
+			m.proofQueue.Push(request)
 		}
 		return nil
 	})
 	return nil
 }
+func (m *manager) checkRequestTimeout(request *common.ZkProofRequest) (bool, error) {
+	if request == nil {
+		return false, fmt.Errorf("request is nil")
+	}
+	if request.StartTime.IsZero() {
+		logger.Error("request start time is zero: %v", request.Id())
+		return false, fmt.Errorf("request start time is zero: %v", request.Id())
+	}
+	isTimeout := false
+	currentTime := time.Now()
+	switch request.ReqType {
+	case common.SyncComUnitType:
+		if currentTime.Sub(request.StartTime).Hours() >= 1.3 { // todo
+			isTimeout = true
+		}
+	default:
+		if currentTime.Sub(request.StartTime).Minutes() >= 30 { // todo
+			isTimeout = true
+		}
+	}
+	return isTimeout, nil
+}
+
+func (m *manager) GetSlotByHash(hash string) (uint64, bool, error) {
+	// todo
+	dbTx, err := ReadDbTx(m.store, hash)
+	if err != nil {
+		logger.Error("get tx receipt error: %v %v", hash, err)
+		return 0, false, err
+	}
+	beaconSlot, ok, err := ReadBeaconSlot(m.store, dbTx.Height)
+	if err != nil {
+		logger.Error("get beacon slot error: %v %v", hash, err)
+		return 0, false, err
+	}
+	if !ok {
+		return 0, false, nil
+	}
+	return beaconSlot, true, nil
+}
 
 func (m *manager) Close() error {
-
+	logger.Debug("manager start  cache state now ...")
+	m.pendingQueue.Iterator(func(value *common.ZkProofRequest) error {
+		logger.Debug("write pending request to db :%v", value.Id())
+		err := WritePendingRequest(m.store, value.Id(), value)
+		if err != nil {
+			logger.Error("write pending request error:%v %v", value.Id(), err)
+			return err
+		}
+		return nil
+	})
 	return nil
 
 }
 
-// todo ,just temp use ,will remove
+// todo
 func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 	switch resp.ZkProofType {
 	case common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType:
-		time.Sleep(6 * time.Second)
+		requests, ok, err := m.checkRedeemRequest(resp)
+		if err != nil {
+			logger.Error("check redeem request error:%v %v", resp.Id(), err)
+			return err
+		}
+		if !ok {
+			return nil
+		}
+		for _, req := range requests {
+			if !m.state.Check(req.Id()) {
+				logger.Debug("add redeem request:%v to queue", req.Id())
+				m.state.Store(req.Id(), nil)
+				m.proofQueue.Push(req)
+				err := m.UpdateProofStatus(req, common.ProofQueued)
+				if err != nil {
+					logger.Error("update Proof status error:%v %v", req.Id(), err)
+				}
+			}
+		}
 		return nil
 	default:
-
 	}
 	return nil
 }

@@ -20,7 +20,7 @@ var genCmd = &cobra.Command{
 }
 
 func init() {
-	err := logger.InitLogger()
+	err := logger.InitLogger(nil)
 	if err != nil {
 		panic(err)
 	}
