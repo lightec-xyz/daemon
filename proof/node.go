@@ -26,10 +26,10 @@ type Node struct {
 
 func NewNode(cfg Config) (*Node, error) {
 	err := logger.InitLogger(&logger.LogCfg{
-		File: true,
+		File:     true,
+		IsStdout: true,
 	})
 	if err != nil {
-		logger.Error("init logger error:%v", err)
 		return nil, err
 	}
 	err = cfg.Check()
@@ -76,18 +76,18 @@ func NewNode(cfg Config) (*Node, error) {
 	if !exists {
 		if !debugMode {
 			// todo
-			logger.Debug("start check zk parameters md5 ...")
-			parameters, err := ReadParameters([]byte(common.ParametersStr))
-			if err != nil {
-				logger.Error("read parameters error:%v", err)
-				return nil, err
-			}
-			err = common.CheckZkParametersMd5(zkParameterDir, parameters)
-			if err != nil {
-				logger.Error("check zk parameters md5 error:%v", err)
-				return nil, err
-			}
-			logger.Debug("check zk parameters md5 end ...")
+			//logger.Debug("start check zk parameters md5 ...")
+			//parameters, err := ReadParameters([]byte(common.ParametersStr))
+			//if err != nil {
+			//	logger.Error("read parameters error:%v", err)
+			//	return nil, err
+			//}
+			//err = common.CheckZkParametersMd5(zkParameterDir, parameters)
+			//if err != nil {
+			//	logger.Error("check zk parameters md5 error:%v", err)
+			//	return nil, err
+			//}
+			//logger.Debug("check zk parameters md5 end ...")
 		}
 		workerId = common.MustUUID()
 		err := dnode.WriteWorkerId(storeDb, workerId)

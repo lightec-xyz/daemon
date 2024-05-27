@@ -18,7 +18,7 @@ func TestLogger(t *testing.T) {
 
 func TestLoggerWithFile(t *testing.T) {
 	err := InitLogger(&LogCfg{
-		LogDir:   "logs",
+		LogDir:   "./logs",
 		IsStdout: true,
 		File:     true,
 	})

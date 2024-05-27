@@ -71,9 +71,6 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 	if cfg == nil {
 		cfg = defaultLogCfg()
 	}
-	if cfg.LogDir == "" {
-		cfg.LogDir = "logs"
-	}
 	var writeSyncers []zapcore.WriteSyncer
 	var rotatingLogger *RotatingLogger
 	var encoderConfig = newStdEncCfg()
@@ -141,7 +138,7 @@ func newFileEncCfg() zapcore.EncoderConfig {
 
 func defaultLogCfg() *LogCfg {
 	return &LogCfg{
-		LogDir:   "logsDir",
+		LogDir:   "./logs",
 		IsStdout: true,
 		File:     false,
 	}
