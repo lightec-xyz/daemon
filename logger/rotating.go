@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"log"
 	"os"
 	"path"
@@ -17,6 +19,23 @@ type RotatingLogger struct {
 }
 
 func NewRotatingLogger(logDir string) (*RotatingLogger, error) {
+	if logDir == "" {
+		dir, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		logDir = fmt.Sprintf("%s/logs", dir)
+	}
+	exists, err := common.FileExists(logDir)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		err := os.MkdirAll(logDir, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+	}
 	fileName := time.Now().Format("2006-01-02.log")
 	file, err := os.OpenFile(path.Join(logDir, fileName), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {

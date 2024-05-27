@@ -29,7 +29,6 @@ func NewNode(cfg Config) (*Node, error) {
 		File: true,
 	})
 	if err != nil {
-		logger.Error("init logger error:%v", err)
 		return nil, err
 	}
 	err = cfg.Check()
