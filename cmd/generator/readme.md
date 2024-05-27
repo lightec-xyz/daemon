@@ -44,7 +44,8 @@ set ZkParameterDir environment variables
 export ZkParameterDir=<local circuit param file dir>
 ```
 
-generator run config file `testnet.json`: if proofType is empty,the worker will support all proofType task.
+generator running config file `testnet.json`, if proofType is empty,the worker will support all proofType task.
+
 ```json
 {
   "url": "http://127.0.0.1:9970",
