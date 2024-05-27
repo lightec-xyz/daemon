@@ -2,7 +2,7 @@ module github.com/lightec-xyz/daemon
 
 go 1.22
 
-toolchain go1.22.0
+toolchain go1.22.1
 
 require (
 	github.com/blockcypher/gobcy/v2 v2.0.5
