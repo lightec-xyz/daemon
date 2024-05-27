@@ -219,7 +219,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	wsServer, err := rpc.NewWsServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcport, cfg.WsPort), rpcHandler)
+	wsServer, err := rpc.NewWsServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.WsPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -293,8 +293,10 @@ func (d *Daemon) Run() error {
 
 	for _, agent := range d.agents {
 		// todo
-		if d.debug && agent.node.Name() == BitcoinAgentName || agent.node.Name() == BeaconAgentName {
-			continue
+		if d.debug {
+			if agent.node.Name() == BitcoinAgentName || agent.node.Name() == BeaconAgentName {
+				continue
+			}
 		}
 		proofReplyName := fmt.Sprintf("%s-proofResponse", agent.node.Name())
 		go doProofResponseTask(proofReplyName, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
