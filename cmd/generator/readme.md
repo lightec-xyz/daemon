@@ -45,14 +45,25 @@ set ZkParameterDir environment variables
 export ZkParameterDir=<local circuit param file dir>
 ```
 
-generator run config file `testnet.json`:
+generator run config file `testnet.json`: if proofType is empty,the worker will support all proofType task.
 ```json
 {
-    "url": "https://testnet.zkbtc.money/api",
-    "maxNums": 1,
-    "network": "testnet",
-    "datadir": "<local genetator storagte data dir>",
-    "model": "client"
+  "url": "http://127.0.0.1:9970",
+  "maxNums": 1,
+  "network": "testnet",
+  "datadir": "<localdatadir>",
+  "model": "client",
+  "proofType": [
+    "DepositTxType",
+    "RedeemTxType",
+    "VerifyTxType",
+    "SyncComGenesisType",
+    "SyncComUnitType",
+    "SyncComRecursiveType",
+    "TxInEth2",
+    "BeaconHeaderFinalityType",
+    "BeaconHeaderType"
+  ]
 }
 ```
 
