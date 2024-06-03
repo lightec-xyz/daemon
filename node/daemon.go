@@ -220,11 +220,13 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	logger.Debug("rpcServer: listen on %v,port  %v", cfg.Rpcbind, cfg.Rpcport)
 	wsServer, err := rpc.NewWsServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.WsPort), rpcHandler)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	logger.Debug("wsServer: listen on %v,port  %v", cfg.Rpcbind, cfg.WsPort)
 	fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
 	if err != nil {
 		logger.Error("new fetch error: %v", err)
