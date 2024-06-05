@@ -39,7 +39,11 @@ func NewNode(cfg Config) (*Node, error) {
 	}
 	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
 	logger.Info("dbPath:%s", dbPath)
-
+	zkProofTypes, err := toZkProofType(cfg.ProofType)
+	if err != nil {
+		logger.Error("convert proof type error:%v", err)
+		return nil, err
+	}
 	fileStorage, err := dnode.NewFileStorage(cfg.DataDir, 0)
 	if err != nil {
 		logger.Error("new fileStorage error:%v", err)
@@ -64,35 +68,45 @@ func NewNode(cfg Config) (*Node, error) {
 			return nil, fmt.Errorf("zkParameterDir is empty,please config  ZkParameterDir env")
 		}
 	}
-	var zkProofTypes []common.ZkProofType
-	for _, proofType := range cfg.ProofType {
-		ptype, err := common.ToZkProofType(proofType)
-		if err != nil {
-			logger.Error("convert proof type error:%v %v", ptype, err)
-			return nil, err
-		}
-		zkProofTypes = append(zkProofTypes, ptype)
-	}
+
 	if !exists {
-		if !debugMode {
-			// todo
-			//logger.Debug("start check zk parameters md5 ...")
-			//parameters, err := ReadParameters([]byte(common.ParametersStr))
-			//if err != nil {
-			//	logger.Error("read parameters error:%v", err)
-			//	return nil, err
-			//}
-			//err = common.CheckZkParametersMd5(zkParameterDir, parameters)
-			//if err != nil {
-			//	logger.Error("check zk parameters md5 error:%v", err)
-			//	return nil, err
-			//}
-			//logger.Debug("check zk parameters md5 end ...")
-		}
 		workerId = common.MustUUID()
 		err := dnode.WriteWorkerId(storeDb, workerId)
 		if err != nil {
 			logger.Error("write worker id error:%v", err)
+			return nil, err
+		}
+	}
+	verified, err := dnode.ReadZkParamVerify(storeDb)
+	if err != nil {
+		logger.Error("read zkParamVerify error:%v", err)
+		return nil, err
+	}
+	if !verified && !debugMode {
+		logger.Debug("**** start check zk parameters md5 ****")
+		parameters, err := ReadParameters([]byte(common.ParametersStr)) // todo get from http server
+		if err != nil {
+			logger.Error("read parameters error:%v", err)
+			return nil, err
+		}
+		for _, item := range parameters {
+			path := zkParameterDir + "/" + item.FileName
+			logger.Debug("start verify zk file: %v ", path)
+			fileBytes, err := os.ReadFile(path)
+			if err != nil {
+				logger.Error("read zk file error: %v %v", path, err)
+				return nil, fmt.Errorf("read zk file error: %v %v", path, err)
+			}
+			fileMd5 := common.HexMd5(fileBytes)
+			if fileMd5 != item.Hash {
+				logger.Error("check zk md5 not match: %v %v %v", path, fileMd5, item.Hash)
+				return nil, fmt.Errorf("check zk md5 not match: %v %v %v", path, fileMd5, item.Hash)
+			}
+		}
+		logger.Debug("**** check zk parameters md5 end ****")
+		err = dnode.WriteZkParamVerify(storeDb, true)
+		if err != nil {
+			logger.Error("write zkParamVerify error:%v", err)
 			return nil, err
 		}
 	}

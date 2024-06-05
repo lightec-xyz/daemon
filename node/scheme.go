@@ -22,6 +22,7 @@ const (
 
 const (
 	workerIdKey = "workerIdKey"
+	zkVerifyKey = "zkVerifyKey"
 )
 
 var (

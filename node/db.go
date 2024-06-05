@@ -553,3 +553,23 @@ func ReadWorkerId(store store.IStore) (string, bool, error) {
 func WriteWorkerId(store store.IStore, id string) error {
 	return store.PutObj(workerIdKey, id)
 }
+
+func ReadZkParamVerify(store store.IStore) (bool, error) {
+	exists, err := store.HasObj(zkVerifyKey)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, nil
+	}
+	var verify bool
+	err = store.GetObj(zkVerifyKey, &verify)
+	if err != nil {
+		return false, err
+	}
+	return verify, nil
+}
+
+func WriteZkParamVerify(store store.IStore, verify bool) error {
+	return store.PutObj(zkVerifyKey, verify)
+}
