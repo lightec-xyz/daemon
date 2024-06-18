@@ -9,14 +9,10 @@ import (
 )
 
 type ICircuit interface {
-	// todo per 32 slot to generate proof
 	BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recursiveProof, recursiveWitness, outerProof,
 		outerWitness string, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*common.Proof, error)
-	// todo find redeem tx,immediately to generate proof
 	TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error)
-	// todo only container rededm tx, we should need generate prof
 	BeaconHeaderProve(header proverType.BeaconHeaderChain) (*common.Proof, error)
-	// todo submit to eth contract proof
 	RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot, currentSCSSZRoot string,
 		txVar, receiptVar []string) (*common.Proof, error)
 	DepositProve(data *btcproverUtils.GrandRollupProofData) (*common.Proof, error)

@@ -29,6 +29,7 @@ type LocalWorker struct {
 func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) {
 	config := circuits.CircuitConfig{
 		DataDir: setupDir,
+		Debug:   common.GetEnvDebugMode(),
 	}
 	circuit, err := circuits.NewCircuit(&config)
 	if err != nil {

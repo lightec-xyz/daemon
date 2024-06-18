@@ -27,7 +27,7 @@ func TestCbor(t *testing.T) {
 }
 
 func TestCbor_Demo(t *testing.T) {
-	data := "woheni"
+	data := "hello"
 	t.Log([]byte(data))
 	bytes, err := cbor.Marshal(data)
 	if err != nil {
