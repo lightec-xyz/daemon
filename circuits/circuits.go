@@ -6,9 +6,14 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/frontend"
+	"github.com/lightec-xyz/btc_provers/circuits/constant"
 	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
+	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/bulk"
+	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/packed"
+	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/wrap"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	"github.com/lightec-xyz/chainark"
 	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
@@ -16,6 +21,7 @@ import (
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
 	"math/big"
+	"path/filepath"
 	"time"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -39,25 +45,78 @@ type Circuit struct {
 }
 
 func (c *Circuit) BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*reLightCommon.Proof, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("current zk circuit BtcBulkProve")
+	if c.debug {
+		logger.Warn("current zk circuit BtcBulkProve prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := bulk.Prove(c.Cfg.DataDir, data)
+	if err != nil {
+		logger.Error("btc bulk prove error:%v", err)
+		return nil, err
+	}
+	return proof, nil
 }
 
 func (c *Circuit) BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*reLightCommon.Proof, error) {
-	//TODO implement me
-	panic("implement me")
+	logger.Debug("current zk circuit BtcPackedRequest")
+	if c.debug {
+		logger.Warn("current zk circuit btcPack prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := packed.Prove(c.Cfg.DataDir, data)
+	if err != nil {
+		logger.Error("btc pack prove error:%v", err)
+		return nil, err
+	}
+	return proof, nil
 }
 
-func (c *Circuit) BtcWrapProve(proof, witness, beginHash, endHash string, nbBlocks uint64) (*reLightCommon.Proof, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
-	return &Circuit{
-		Cfg:   cfg,
-		debug: cfg.Debug,
-	}, nil
+func (c *Circuit) BtcWrapProve(flag, hexProof, hexWitness, beginHash, endHash string, nbBlocks uint64) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit BtcWrapProve")
+	if c.debug {
+		logger.Warn("current zk circuit BtcWrapProve prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := HexToProof(hexProof)
+	if err != nil {
+		logger.Error("parse proof error:%v", err)
+		return nil, err
+	}
+	witness, err := HexToWitness(hexWitness)
+	if err != nil {
+		logger.Error("parse witness error:%v", err)
+		return nil, err
+	}
+	beginId, err := HashToLinkageId(beginHash)
+	if err != nil {
+		logger.Error("parse beginId error:%v", err)
+		return nil, err
+	}
+	endId, err := HashToLinkageId(endHash)
+	if err != nil {
+		logger.Error("parse endId error:%v", err)
+		return nil, err
+	}
+	var vkPath string
+	if flag == "bulk" {
+		vkPath = filepath.Join(c.Cfg.SetupDir, constant.BlockHeaderBulkOuterVkFile)
+	} else if flag == "pack" {
+		vkPath = filepath.Join(c.Cfg.SetupDir, constant.BlockHeaderPackedVkFile)
+	} else {
+		return nil, fmt.Errorf("unknown flag")
+	}
+	verifyingKey, err := utils.ReadVk(vkPath)
+	if err != nil {
+		logger.Error("read vk error:%v", err)
+		return nil, err
+	}
+	result, err := wrap.Prove(c.Cfg.DataDir, verifyingKey, proof, witness, beginId, endId, nbBlocks)
+	if err != nil {
+		logger.Error("btc wrap prove error:%v", err)
+		return nil, err
+	}
+	return result, nil
 }
 
 func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot,
@@ -378,6 +437,13 @@ func (c *Circuit) UpdateChangeProve(data *btcproverUtils.GrandRollupProofData) (
 	return proof, nil
 }
 
+func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
+	return &Circuit{
+		Cfg:   cfg,
+		debug: cfg.Debug,
+	}, nil
+}
+
 func SyncCommitRoot(update *utils.SyncCommitteeUpdate) ([]byte, error) {
 	ok, err := common.VerifyLightClientUpdate(update)
 	if err != nil {
@@ -510,6 +576,16 @@ func debugProof() (*reLightCommon.Proof, error) {
 		Proof: proof,
 		Wit:   w,
 	}, nil
+}
+
+func HashToLinkageId(hash string) (chainark.LinkageID, error) {
+	beginHashBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		return chainark.LinkageID{}, err
+	}
+	linkageID := chainark.LinkageIDFromBytes(beginHashBytes, constant.IdBitsPerVar)
+	return linkageID, nil
+
 }
 
 func GetGenesisSCSSZRoot(root string) ([2]frontend.Variable, error) {

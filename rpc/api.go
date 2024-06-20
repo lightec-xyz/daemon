@@ -30,6 +30,9 @@ type IProof interface {
 	BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error)
 	BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error)
 
+	BtcBulkProve(data *BtcBulkRequest) (*BtcBulkResponse, error)
+	BtcPackedRequest(data *BtcPackedRequest) (*BtcPackResponse, error)
+	BtcWrapProve(data *BtcWrapRequest) (*BtcWrapResponse, error)
 	ProofInfo(proofId string) (ProofInfo, error)
 }
 

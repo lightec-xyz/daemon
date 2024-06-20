@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
@@ -47,6 +48,34 @@ type NodeInfo struct {
 }
 
 //------
+
+type BtcBulkRequest struct {
+	Data *btcprovertypes.BlockHeaderChain
+}
+
+type BtcBulkResponse struct {
+	Proof   []byte
+	Witness []byte
+}
+
+type BtcPackedRequest struct {
+	Data *btcprovertypes.BlockHeaderChain
+}
+
+type BtcPackResponse struct {
+	Proof   []byte
+	Witness []byte
+}
+
+type BtcWrapRequest struct {
+	Flag, Proof, Witness, BeginHash, EndHash string
+	NbBlocks                                 uint64
+}
+
+type BtcWrapResponse struct {
+	Proof   []byte
+	Witness []byte
+}
 
 type TxInEth2ProveRequest struct {
 	Version string

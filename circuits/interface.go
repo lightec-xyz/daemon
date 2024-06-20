@@ -28,5 +28,5 @@ type ICircuit interface {
 
 	BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
 
-	BtcWrapProve(proof, witness, beginHash, endHash string, nbBlocks uint64) (*common.Proof, error)
+	BtcWrapProve(flag, proof, witness, beginHash, endHash string, nbBlocks uint64) (*common.Proof, error)
 }

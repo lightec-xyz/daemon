@@ -22,6 +22,21 @@ type Handler struct {
 	lock        sync.Mutex
 }
 
+func (h *Handler) BtcBulkProve(data *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) BtcPackedRequest(data *rpc.BtcPackedRequest) (*rpc.BtcPackResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) BtcWrapProve(data *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h *Handler) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
 	//TODO implement me
 	panic("implement me")

@@ -26,10 +26,70 @@ type LocalWorker struct {
 	wid         string
 }
 
+func (w *LocalWorker) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
+	proof, err := w.circuit.BtcBulkProve(req.Data)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.BtcBulkResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+}
+
+func (w *LocalWorker) BtcPackedRequest(req *rpc.BtcPackedRequest) (*rpc.BtcPackResponse, error) {
+	proof, err := w.circuit.BtcPackProve(req.Data)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.BtcPackResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+
+}
+
+func (w *LocalWorker) BtcWrapProve(req *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
+	proof, err := w.circuit.BtcWrapProve(req.Flag, req.Proof, req.Witness, req.BeginHash, req.EndHash, req.NbBlocks)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.BtcWrapResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+
+}
+
 func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) {
 	config := circuits.CircuitConfig{
-		DataDir: setupDir,
-		Debug:   common.GetEnvDebugMode(),
+		DataDir:  setupDir,
+		SetupDir: setupDir,
+		Debug:    common.GetEnvDebugMode(),
 	}
 	circuit, err := circuits.NewCircuit(&config)
 	if err != nil {
@@ -359,6 +419,21 @@ type Worker struct {
 	currentNums int
 	lock        sync.Mutex
 	wid         string
+}
+
+func (w *Worker) BtcBulkProve(data *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) BtcPackedRequest(data *rpc.BtcPackedRequest) (*rpc.BtcPackResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) BtcWrapProve(data *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {

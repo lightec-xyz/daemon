@@ -15,6 +15,21 @@ type ProofClient struct {
 	timeout time.Duration
 }
 
+func (p *ProofClient) BtcBulkProve(data *BtcBulkRequest) (*BtcBulkResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) BtcPackedRequest(data *BtcPackedRequest) (*BtcPackResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) BtcWrapProve(data *BtcWrapRequest) (*BtcWrapResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (p *ProofClient) TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error) {
 	//TODO implement me
 	panic("implement me")

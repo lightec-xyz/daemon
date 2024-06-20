@@ -95,6 +95,9 @@ const (
 	BeaconHeaderFinalityType //BeaconHeaderFinalityUpdate
 	UnitOuter
 	BeaconHeaderType
+	BtcBulkType
+	BtcPackedType
+	BtcWrapType
 )
 
 func (zkpt *ZkProofType) String() string {
@@ -119,6 +122,12 @@ func (zkpt *ZkProofType) String() string {
 		return "BeaconHeaderFinalityType"
 	case BeaconHeaderType:
 		return "BeaconHeaderType"
+	case BtcPackedType:
+		return "BtcPackedType"
+	case BtcWrapType:
+		return "BtcWrapType"
+	case BtcBulkType:
+		return "BtcBulkType"
 	default:
 		return "unKnown"
 	}
@@ -178,6 +187,12 @@ func ToZkProofType(str string) (ZkProofType, error) {
 		return BeaconHeaderFinalityType, nil
 	case "BeaconHeaderType":
 		return BeaconHeaderType, nil
+	case "BtcBulkType":
+		return BtcBulkType, nil
+	case "BtcPackedType":
+		return BtcPackedType, nil
+	case "BtcWrapType":
+		return BtcWrapType, nil
 	default:
 		return 0, fmt.Errorf("uKnown zk proof type %v", str)
 	}

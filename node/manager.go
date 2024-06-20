@@ -465,6 +465,48 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		}
 		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, response.Proof, response.Witness)
 		result = append(result, zkbProofResponse)
+
+	case common.BtcPackedType:
+		var packedRequest rpc.BtcPackedRequest
+		err := common.ParseObj(request.Data, &packedRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcPackedRequest error:%v", err)
+		}
+		response, err := worker.BtcPackedRequest(&packedRequest)
+		if err != nil {
+			logger.Error("gen btcPacked Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+	case common.BtcBulkType:
+		var bulkRequest rpc.BtcBulkRequest
+		err := common.ParseObj(request.Data, &bulkRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcBulkRequest error:%v", err)
+		}
+		response, err := worker.BtcBulkProve(&bulkRequest)
+		if err != nil {
+			logger.Error("gen btcBulk Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+
+	case common.BtcWrapType:
+		var wrapRequest rpc.BtcWrapRequest
+		err := common.ParseObj(request.Data, &wrapRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcWrapRequest error:%v", err)
+		}
+		response, err := worker.BtcWrapProve(&wrapRequest)
+		if err != nil {
+			logger.Error("gen btcWrap Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewZkProofResp(request.ReqType, request.Index, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+
 	default:
 		logger.Error("never should happen Proof type:%v", request.ReqType)
 		return nil, fmt.Errorf("never should happen Proof type:%v", request.ReqType)
