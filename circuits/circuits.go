@@ -7,6 +7,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/frontend"
 	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
+	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
@@ -35,6 +36,21 @@ var _ ICircuit = (*Circuit)(nil)
 type Circuit struct {
 	Cfg   *CircuitConfig
 	debug bool
+}
+
+func (c *Circuit) BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*reLightCommon.Proof, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *Circuit) BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*reLightCommon.Proof, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *Circuit) BtcWrapProve(proof, witness, beginHash, endHash string, nbBlocks uint64) (*reLightCommon.Proof, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
