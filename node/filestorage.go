@@ -42,10 +42,14 @@ const (
 	RequestTable      Table = "request"
 	DepositTable      Table = "deposit"
 	VerifyTable       Table = "verify"
+	BtcBulkTable      Table = "btcBulk"
+	BtcPackedTable    Table = "btcPack"
+	BtcWrapTable      Table = "btcWrap"
 )
 
 var InitStoreTables = []Table{PeriodTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
-	FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable}
+	FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable,
+	BtcBulkTable, BtcPackedTable, BtcWrapTable}
 
 type FileStorage struct {
 	RootPath      string
@@ -369,6 +373,60 @@ func (fs *FileStorage) GetVerifyProof(txHash string) (*StoreProof, bool, error) 
 	exist, err := fs.Get(VerifyTable, txHash, &storeProof)
 	if err != nil {
 		logger.Error("get verify proof error:%v %v", txHash, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcBulkProof(index uint64, proof, witness []byte) error {
+	return fs.Store(BtcBulkTable, parseKey(index), newStoreProof(common.BtcBulkType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcBulkProof(index uint64) (bool, error) {
+	return fs.Check(BtcBulkTable, parseKey(index))
+}
+
+func (fs *FileStorage) GetBtcBulkProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcBulkTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc bulk proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcPackedProof(index uint64, proof, witness []byte) error {
+	return fs.Store(BtcPackedTable, parseKey(index), newStoreProof(common.BtcPackedType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcPackedProof(index uint64) (bool, error) {
+	return fs.Check(BtcPackedTable, parseKey(index))
+}
+
+func (fs *FileStorage) GetBtcPackedProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcPackedTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc packed proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcWrapProof(index uint64, proof, witness []byte) error {
+	return fs.Store(BtcWrapTable, parseKey(index), newStoreProof(common.BtcWrapType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcWrapProof(index uint64) (bool, error) {
+	return fs.Check(BtcWrapTable, parseKey(index))
+}
+
+func (fs *FileStorage) GetBtcWrapProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcWrapTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc wrap proof error:%v %v", index, err)
 		return nil, false, err
 	}
 	return &storeProof, exist, nil

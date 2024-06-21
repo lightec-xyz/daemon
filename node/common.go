@@ -61,6 +61,12 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64,
 		return fileStore.CheckDepositProof(txHash)
 	case common.VerifyTxType:
 		return fileStore.CheckVerifyProof(txHash)
+	case common.BtcBulkType:
+		return fileStore.CheckBtcBulkProof(index)
+	case common.BtcPackedType:
+		return fileStore.CheckBtcPackedProof(index)
+	case common.BtcWrapType:
+		return fileStore.CheckBtcWrapProof(index)
 	default:
 		return false, fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
@@ -88,6 +94,12 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 		return fileStore.StoreDepositProof(txHash, proof, witness)
 	case common.VerifyTxType:
 		return fileStore.StoreVerifyProof(txHash, proof, witness)
+	case common.BtcBulkType:
+		return fileStore.StoreBtcBulkProof(index, proof, witness)
+	case common.BtcPackedType:
+		return fileStore.StoreBtcPackedProof(index, proof, witness)
+	case common.BtcWrapType:
+		return fileStore.StoreBtcWrapProof(index, proof, witness)
 	default:
 		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}

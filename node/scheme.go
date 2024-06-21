@@ -53,6 +53,7 @@ type DbUnGenProof struct {
 	ChainType ChainType
 	Height    uint64
 	TxIndex   uint
+	Amount    uint64
 }
 
 type DbUnSubmitTx struct {

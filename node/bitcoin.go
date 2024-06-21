@@ -366,37 +366,110 @@ func (b *BitcoinAgent) CheckState() error {
 		logger.Error("read unGen proof error:%v", err)
 		return err
 	}
-	for _, proof := range unGenProofs {
-		logger.Debug("bitcoin check ungen proof: %v %v", proof.ProofType.String(), proof.TxHash)
-		if proof.ProofType == 0 || proof.TxHash == "" {
-			logger.Warn("unGenProof error:%v %v", proof.ProofType.String(), proof.TxHash)
-			err := DeleteUnGenProof(b.store, Bitcoin, proof.TxHash)
+	for _, unGenTx := range unGenProofs {
+		logger.Debug("bitcoin check ungen proof: %v %v", unGenTx.ProofType.String(), unGenTx.TxHash)
+		if unGenTx.ProofType == 0 || unGenTx.TxHash == "" {
+			logger.Warn("unGenProof error:%v %v", unGenTx.ProofType.String(), unGenTx.TxHash)
+			err := DeleteUnGenProof(b.store, Bitcoin, unGenTx.TxHash)
 			if err != nil {
-				logger.Error("delete ungen proof error:%v %v", proof.TxHash, err)
+				logger.Error("delete ungen proof error:%v %v", unGenTx.TxHash, err)
 			}
 			continue
 		}
-		exists, err := CheckProof(b.fileStore, proof.ProofType, 0, proof.TxHash)
+		exists, err := CheckProof(b.fileStore, common.DepositTxType, 0, unGenTx.TxHash)
 		if err != nil {
-			logger.Error("check proof error:%v %v", proof.TxHash, err)
+			logger.Error("check proof error:%v %v", unGenTx.TxHash, err)
 			return nil
 		}
 		if exists {
-			logger.Debug("%v %v proof exists ,delete ungen proof now", proof.ProofType.String(), proof.TxHash)
-			err = DeleteUnGenProof(b.store, Bitcoin, proof.TxHash)
+			logger.Debug("%v %v proof exists ,delete ungen proof now", unGenTx.ProofType.String(), unGenTx.TxHash)
+			err = DeleteUnGenProof(b.store, Bitcoin, unGenTx.TxHash)
 			if err != nil {
-				logger.Error("delete ungen proof error:%v %v", proof.TxHash, err)
+				logger.Error("delete ungen proof error:%v %v", unGenTx.TxHash, err)
 				return nil
 			}
 			continue
 		}
-		err = b.tryProofRequest(proof.ProofType, proof.TxHash)
+
+		ok, confirms, err := b.CheckTxConfirms(unGenTx.TxHash, unGenTx.Amount)
 		if err != nil {
-			logger.Error("try proof request error:%v %v", proof.TxHash, err)
+			logger.Error("check tx confirms error: %v", unGenTx.TxHash, err)
+			return err
+		}
+		if !ok {
+			logger.Warn("wait tx %v confirm: %v %v", unGenTx.TxHash, unGenTx.Amount, confirms)
+			continue
+		}
+		if confirms <= 48 {
+			exists, err := CheckProof(b.fileStore, common.BtcBulkType, unGenTx.Height, unGenTx.TxHash)
+			if err != nil {
+				logger.Error(err.Error())
+				return err
+			}
+			if !exists {
+				err := b.tryProofRequest(common.BtcBulkType, unGenTx.TxHash)
+				if err != nil {
+					logger.Error("try proof request error:%v %v", unGenTx.TxHash, err)
+					return nil
+				}
+			}
+			continue
+
+		} else {
+			exists, err := CheckProof(b.fileStore, common.BtcPackedType, unGenTx.Height, unGenTx.TxHash)
+			if err != nil {
+				logger.Error(err.Error())
+				return err
+			}
+			if !exists {
+				err := b.tryProofRequest(common.BtcPackedType, unGenTx.TxHash)
+				if err != nil {
+					logger.Error(err.Error())
+					return err
+				}
+				continue
+			}
+		}
+		wrapExists, err := CheckProof(b.fileStore, common.BtcWrapType, unGenTx.Height, unGenTx.TxHash)
+		if err != nil {
+			logger.Error("check proof error:%v %v", unGenTx.TxHash, err)
+			return err
+		}
+		if !wrapExists {
+			err := b.tryProofRequest(common.BtcWrapType, unGenTx.TxHash)
+			if err != nil {
+				logger.Error("try proof request error:%v %v", unGenTx.TxHash, err)
+				return nil
+			}
+			continue
+		}
+		err = b.tryProofRequest(common.DepositTxType, unGenTx.TxHash)
+		if err != nil {
+			logger.Error("try proof request error:%v %v", unGenTx.TxHash, err)
 			return nil
 		}
 	}
 	return nil
+}
+
+func (b *BitcoinAgent) CheckTxConfirms(hash string, amount uint64) (bool, int, error) {
+	needConfirms := 0
+	if amount < 100000000 {
+		needConfirms = 1
+	} else if amount < 200000000 {
+		needConfirms = 2
+	} else {
+		needConfirms = 3
+	}
+	tx, err := b.btcClient.GetTransaction(hash)
+	if err != nil {
+		logger.Error("get tx error:%v %v", hash, err)
+		return false, 0, err
+	}
+	if tx.Confirmations >= needConfirms {
+		return true, needConfirms, nil
+	}
+	return false, 0, nil
 }
 
 func (b *BitcoinAgent) tryProofRequest(proofType common.ZkProofType, txHash string) error {
