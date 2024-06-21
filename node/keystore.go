@@ -4,25 +4,38 @@ import "github.com/lightec-xyz/daemon/logger"
 
 // todo
 
+const (
+	SecretKey = "secretKey"
+)
+
 type KeyStore struct {
-	privateKey string
+	memguard *Memguard
+	address  string
 }
 
-func NewKeyStore(privateKey string) *KeyStore {
-	return &KeyStore{
-		privateKey: privateKey,
+func NewKeyStore(privateKey string) (*KeyStore, error) {
+	memguard := NewMemguard()
+	address, err := privateKeyToEthAddr(privateKey)
+	if err != nil {
+		logger.Error("privateKeyToEthAddr error:%v", err)
+		return nil, err
 	}
+	memguard.Store(SecretKey, []byte(privateKey))
+	return &KeyStore{
+		memguard: memguard,
+		address:  address,
+	}, nil
 }
 
 func (k *KeyStore) Address() (string, error) {
-	address, err := privateKeyToEthAddr(k.privateKey)
-	if err != nil {
-		logger.Error("privateKeyToEthAddr error:%v", err)
-		return "", err
-	}
-	return address, nil
+	return k.address, nil
 }
 
 func (k *KeyStore) GetPrivateKey() string {
-	return k.privateKey
+	bytes, err := k.memguard.Load(SecretKey)
+	if err != nil {
+		logger.Error("get private key error:%v", err)
+		return ""
+	}
+	return string(bytes)
 }

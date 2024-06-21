@@ -23,10 +23,7 @@ type ICircuit interface {
 	RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness string,
 		beginId, relayId, endId []byte) (*common.Proof, error)
 	UpdateChangeProve(data *btcproverUtils.GrandRollupProofData) (*common.Proof, error)
-
 	BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
-
 	BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
-
 	BtcWrapProve(flag, proof, witness, beginHash, endHash string, nbBlocks uint64) (*common.Proof, error)
 }
