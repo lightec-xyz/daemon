@@ -156,7 +156,7 @@ func GetBtcWrapData(filestore *FileStorage, client *bitcoin.Client, start, end u
 	var proof *StoreProof
 	var ok bool
 	var flag string
-	if nRequired > 48 {
+	if nRequired > 48 { // todo
 		proof, ok, err = filestore.GetBtcBulkProof(start, end)
 		if err != nil {
 			logger.Error("get btc bulk proof error: %v", err)

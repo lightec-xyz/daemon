@@ -224,7 +224,7 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 					BlockHash: blockHash,
 					Data:      proofData,
 				}
-				requests = append(requests, common.NewZkProofRequest(common.VerifyTxType, data, 0, tx.Txid))
+				requests = append(requests, common.NewZkProofRequest(common.VerifyTxType, data, 0, 0, tx.Txid))
 			}
 			redeemTxes = append(redeemTxes, redeemTx)
 			continue
@@ -253,7 +253,7 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 					BlockHash: blockHash,
 					Data:      proofData,
 				}
-				requests = append(requests, common.NewZkProofRequest(common.DepositTxType, data, 0, tx.Txid))
+				requests = append(requests, common.NewZkProofRequest(common.DepositTxType, data, 0, 0, tx.Txid))
 			}
 			depositTxes = append(depositTxes, depositTx)
 		}
@@ -474,7 +474,7 @@ func (b *BitcoinAgent) CheckTxConfirms(hash string, amount uint64) (bool, int, e
 }
 
 func (b *BitcoinAgent) tryProofRequest(proofType common.ZkProofType, index, end uint64, txHash string) error {
-	proofId := common.NewProofId(proofType, index, txHash)
+	proofId := common.NewProofId(proofType, index, end, txHash)
 	exists := b.cache.Check(proofId)
 	if exists {
 		logger.Debug("proof request exists: %v", proofId)
@@ -496,7 +496,7 @@ func (b *BitcoinAgent) tryProofRequest(proofType common.ZkProofType, index, end 
 	if !ok {
 		return nil
 	}
-	zkProofRequest := common.NewZkProofRequest(proofType, data, index, txHash)
+	zkProofRequest := common.NewZkProofRequest(proofType, data, index, end, txHash)
 	b.SendProofRequest(zkProofRequest)
 	return nil
 }

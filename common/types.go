@@ -38,12 +38,12 @@ type ZkProofRequest struct {
 	EndTime    time.Time
 }
 
-func NewZkProofRequest(reqType ZkProofType, data interface{}, period uint64, txHash string) *ZkProofRequest {
+func NewZkProofRequest(reqType ZkProofType, data interface{}, index, end uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
-		ZkId:       NewProofId(reqType, period, txHash), // todo
+		ZkId:       NewProofId(reqType, index, end, txHash), // todo
 		ReqType:    reqType,
 		Data:       data,
-		Index:      period,
+		Index:      index,
 		TxHash:     txHash,
 		Weight:     reqType.Weight(),
 		Status:     ProofDefault,
@@ -65,27 +65,38 @@ type ZkProofResponse struct {
 	Status      ProofStatus
 	Proof       ZkProof
 	Witness     []byte
-	Period      uint64
+	Index       uint64
 	End         uint64
 	TxHash      string
 }
 
 func (zkp *ZkProofResponse) Id() string {
-	return NewProofId(zkp.ZkProofType, zkp.Period, zkp.TxHash)
+	return NewProofId(zkp.ZkProofType, zkp.Index, zkp.End, zkp.TxHash)
 }
 
 func (zkResp *ZkProofResponse) String() string {
-	return fmt.Sprintf("ZkProofType:%v Index:%v Proof:%v", zkResp.ZkProofType, zkResp.Period, zkResp.Proof)
+	return fmt.Sprintf("ZkProofType:%v Index:%v Proof:%v", zkResp.ZkProofType, zkResp.Index, zkResp.Proof)
 }
 
-func NewProofId(reqType ZkProofType, period uint64, txHash string) string {
-	if txHash == "" {
-		return fmt.Sprintf("%v_%v", reqType.String(), period)
+func NewProofId(reqType ZkProofType, index, end uint64, txHash string) string {
+	/* example
+	1. only hash
+	2. only index
+	3. start_end
+	4. index+hash
+	*/
+
+	id := reqType.String()
+	if index != 0 {
+		id = fmt.Sprintf("%v_%v", id, index)
 	}
-	if period == 0 {
-		return fmt.Sprintf("%v_%v", reqType.String(), txHash)
+	if end != 0 {
+		id = fmt.Sprintf("%v_%v", id, end)
 	}
-	return fmt.Sprintf("%v_%v_%v", reqType.String(), period, txHash)
+	if txHash != "" {
+		id = fmt.Sprintf("%v_%v", id, txHash)
+	}
+	return id
 }
 
 func ParseProofId(id string) (ZkProofType, uint64, string, error) {

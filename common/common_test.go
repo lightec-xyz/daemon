@@ -62,12 +62,19 @@ func TestUuid(t *testing.T) {
 }
 
 func TestProofId(t *testing.T) {
-	proofId := NewProofId(DepositTxType, 100, "")
+	proofId := NewProofId(DepositTxType, 0, 0, "")
 	t.Log(proofId)
-	proofId1 := NewProofId(DepositTxType, 0, "test")
+	proofId1 := NewProofId(DepositTxType, 100, 0, "")
 	t.Log(proofId1)
-	proofId2 := NewProofId(DepositTxType, 100, "test")
+	proofId2 := NewProofId(DepositTxType, 100, 101, "")
 	t.Log(proofId2)
+	proofId3 := NewProofId(DepositTxType, 100, 101, "sdfsdfsdf")
+	t.Log(proofId3)
+	proofId4 := NewProofId(DepositTxType, 0, 0, "sdfsdfsdf")
+	t.Log(proofId4)
+	proofId5 := NewProofId(DepositTxType, 100, 0, "sdfsdfsdf")
+	t.Log(proofId5)
+
 	zkProofType, index, txHash, err := ParseProofId(proofId)
 	if err != nil {
 		t.Fatal(err)

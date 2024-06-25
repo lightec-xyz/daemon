@@ -213,19 +213,19 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 }
 
 func (e *EthereumAgent) DeleteRedeemCacheTx(resp *common.ZkProofResponse) error {
-	err := DeleteTxSlot(e.store, resp.Period, resp.TxHash)
+	err := DeleteTxSlot(e.store, resp.Index, resp.TxHash)
 	if err != nil {
 		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
 		return err
 	}
 	logger.Debug("delete %v beaconHeader  cache", resp.TxHash)
-	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(resp.Period)
+	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(resp.Index)
 	if err != nil {
 		logger.Error("get latest slot error: %v", err)
 		return err
 	}
 	if !ok {
-		logger.Warn("no find latest slot: %v", resp.Period)
+		logger.Warn("no find latest slot: %v", resp.Index)
 		return nil
 	}
 	err = DeleteTxFinalizedSlot(e.store, finalizedSlot, resp.TxHash)
@@ -624,7 +624,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 }
 
 func (e *EthereumAgent) updateRedeemProofStatus(txHash string, index uint64, status common.ProofStatus) error {
-	id := common.NewProofId(common.RedeemTxType, index, txHash)
+	id := common.NewProofId(common.RedeemTxType, index, 0, txHash)
 	if !e.stateCache.Check(id) {
 		err := UpdateProof(e.store, txHash, "", common.RedeemTxType, status)
 		if err != nil {
@@ -637,7 +637,7 @@ func (e *EthereumAgent) updateRedeemProofStatus(txHash string, index uint64, sta
 }
 
 func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64, txHash string) error {
-	proofId := common.NewProofId(zkType, index, txHash)
+	proofId := common.NewProofId(zkType, index, 0, txHash)
 	exists := e.stateCache.Check(proofId)
 	if exists {
 		logger.Debug("proof request exists: %v", proofId)
@@ -671,7 +671,7 @@ func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64,
 		logger.Debug("proof request data not prepared: %v", proofId)
 		return nil
 	}
-	proofRequest := common.NewZkProofRequest(zkType, data, index, txHash)
+	proofRequest := common.NewZkProofRequest(zkType, data, index, 0, txHash)
 	err = e.sendZkProofRequest(proofRequest)
 	if err != nil {
 		logger.Error("send zk proof request error: %v", err)

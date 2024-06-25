@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/daemon/common"
 	"log"
 	"os"
 	"path"
@@ -26,7 +25,7 @@ func NewRotatingLogger(logDir string) (*RotatingLogger, error) {
 		}
 		logDir = fmt.Sprintf("%s/logs", dir)
 	}
-	exists, err := common.FileExists(logDir)
+	exists, err := FileExists(logDir)
 	if err != nil {
 		return nil, err
 	}
@@ -89,4 +88,15 @@ func (rl *RotatingLogger) rotate() error {
 			return nil
 		}
 	}
+}
+
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("stat error: %v", err)
 }

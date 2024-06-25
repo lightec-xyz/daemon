@@ -151,7 +151,7 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 			return err
 		}
 		chanResponse <- response
-		logger.Info("send Proof response:%v %v %v", response.ZkProofType.String(), response.Period, response.TxHash)
+		logger.Info("send Proof response:%v %v %v", response.ZkProofType.String(), response.Index, response.TxHash)
 		proofId := response.Id()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
@@ -174,7 +174,7 @@ func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.Zk
 		}
 		return []*common.ZkProofRequest{request}, ok, nil
 	case common.BeaconHeaderType:
-		txes, err := ReadAllTxBySlot(m.store, resp.Period)
+		txes, err := ReadAllTxBySlot(m.store, resp.Index)
 		if err != nil {
 			logger.Error("get redeem request error:%v %v", resp.Id(), err)
 			return nil, false, err
@@ -195,7 +195,7 @@ func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.Zk
 		}
 		return result, true, nil
 	case common.BeaconHeaderFinalityType:
-		txes, err := ReadAllTxByFinalizedSlot(m.store, resp.Period)
+		txes, err := ReadAllTxByFinalizedSlot(m.store, resp.Index)
 		if err != nil {
 			logger.Error("get redeem request error:%v %v", resp.Id(), err)
 			return nil, false, err
@@ -238,7 +238,7 @@ func (m *manager) GetRedeemRequest(txHash string) (*common.ZkProofRequest, bool,
 	if !ok {
 		return nil, false, nil
 	}
-	request := common.NewZkProofRequest(common.RedeemTxType, data, txSlot, txHash)
+	request := common.NewZkProofRequest(common.RedeemTxType, data, txSlot, 0, txHash)
 	return request, true, nil
 }
 
@@ -514,7 +514,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 	}
 
 	for _, item := range result {
-		logger.Info("send zkProof:%v %v", item.Period, item.ZkProofType.String())
+		logger.Info("send zkProof:%v %v", item.Index, item.ZkProofType.String())
 	}
 	return result, nil
 
@@ -644,7 +644,7 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 func NewZkProofResp(reqType common.ZkProofType, period uint64, proof common.ZkProof, witness []byte) *common.ZkProofResponse {
 	return &common.ZkProofResponse{
 		ZkProofType: reqType,
-		Period:      period,
+		Index:       period,
 		Proof:       proof,
 		Witness:     witness,
 		Status:      common.ProofSuccess,
@@ -664,7 +664,7 @@ func NewZkTxProofResp(reqType common.ZkProofType, txHash string, proof common.Zk
 func NewProofResp(reqType common.ZkProofType, period uint64, txHash string, proof common.ZkProof, witness []byte) *common.ZkProofResponse {
 	return &common.ZkProofResponse{
 		ZkProofType: reqType,
-		Period:      period,
+		Index:       period,
 		Proof:       proof,
 		TxHash:      txHash,
 		Witness:     witness,

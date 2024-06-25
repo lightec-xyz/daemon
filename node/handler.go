@@ -75,7 +75,7 @@ func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	for _, item := range req.Data {
 		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.Id())
 		// todo
-		err := StoreZkProof(h.fileStore, item.ZkProofType, item.Period, item.End, item.TxHash, item.Proof, item.Witness)
+		err := StoreZkProof(h.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
 		if err != nil {
 			logger.Error("store zk proof error: %v %v", item.Id(), err)
 			return "", err

@@ -148,7 +148,7 @@ func (b *BeaconAgent) saveSlotInfo(slotInfo *beacon.Eth1MapToEth2) error {
 }
 
 func (b *BeaconAgent) tryProofRequest(index uint64, reqType common.ZkProofType) error {
-	proofId := common.NewProofId(reqType, index, "")
+	proofId := common.NewProofId(reqType, index, 0, "")
 	exists := b.stateCache.Check(proofId)
 	if exists {
 		return nil
@@ -180,7 +180,7 @@ func (b *BeaconAgent) tryProofRequest(index uint64, reqType common.ZkProofType) 
 		return nil
 	}
 	b.stateCache.Store(proofId, true)
-	request := common.NewZkProofRequest(reqType, data, index, "")
+	request := common.NewZkProofRequest(reqType, data, index, 0, "")
 	b.zkProofRequest <- []*common.ZkProofRequest{request}
 	logger.Info("beacon success send Proof request: %v", request.Id())
 
@@ -638,10 +638,10 @@ func (b *BeaconAgent) getRecursiveGenesisData(period uint64) (interface{}, bool,
 
 func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	// todo
-	logger.Info("beacon Proof response type: %v, Index: %v", resp.Id(), resp.Period)
-	index := resp.Period
+	logger.Info("beacon Proof response type: %v, Index: %v", resp.Id(), resp.Index)
+	index := resp.Index
 	if resp.ZkProofType != common.UnitOuter {
-		proofId := common.NewProofId(resp.ZkProofType, index, resp.TxHash)
+		proofId := common.NewProofId(resp.ZkProofType, index, 0, resp.TxHash)
 		b.stateCache.Delete(proofId)
 	}
 	return nil
