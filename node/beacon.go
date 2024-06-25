@@ -161,7 +161,7 @@ func (b *BeaconAgent) tryProofRequest(index uint64, reqType common.ZkProofType) 
 	if !ok {
 		return nil
 	}
-	proofExists, err := CheckProof(b.fileStore, reqType, index, "")
+	proofExists, err := CheckProof(b.fileStore, reqType, index, 0, "")
 	if err != nil {
 		logger.Error(err.Error())
 		return err

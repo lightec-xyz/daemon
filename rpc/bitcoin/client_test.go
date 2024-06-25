@@ -49,8 +49,19 @@ func TestClient_ChainFork(t *testing.T) {
 	t.Log(fork)
 }
 
+//0000002025363a2b289104da8086678a32f757ea7e54e1e2409cc3770a000000000000007d34af177c079bfacff9eb453169bfeec3432e73ec8bfc92ed46df2097cd39e6cd384766ffff001dd78fd16f
+//01000000b5fbf970bf362cc3203d71022d0764ce966a9d5cee7615354e273624000000008c209cca50575be7aad6faf11c26af9d91fc91f9bf953c1e7d4fca44e44be3fa3d286f49ffff001d2e18e5ed
+
 func TestClient_GetBlockHeader(t *testing.T) {
 	header, err := client.GetBlockHeader("0000000076a52d67769bacb412a8172d3524fe2d4c2e7f9f93c7c72caa68cd76")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(header)
+}
+
+func TestClient_GetHexBlockHeader(t *testing.T) {
+	header, err := client.GetHexBlockHeader("0000000076a52d67769bacb412a8172d3524fe2d4c2e7f9f93c7c72caa68cd76")
 	if err != nil {
 		panic(err)
 	}

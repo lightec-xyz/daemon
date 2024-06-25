@@ -66,6 +66,7 @@ type ZkProofResponse struct {
 	Proof       ZkProof
 	Witness     []byte
 	Period      uint64
+	End         uint64
 	TxHash      string
 }
 

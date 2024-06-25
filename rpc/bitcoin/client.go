@@ -59,9 +59,22 @@ func (c *Client) ChainFork(height int64) (bool, error) {
 
 func (c *Client) GetBlockHeader(hash string) (*types.BlockHeader, error) {
 	var header = &types.BlockHeader{}
-	err := c.call(GETBLOCKHEADER, NewParams(hash), &header)
+	err := c.call(GETBLOCKHEADER, NewParams(hash, true), &header)
 	if err != nil {
 		return nil, err
+	}
+	return header, err
+}
+
+func (c *Client) GetHexBlockHeader(height int64) (string, error) {
+	hash, err := c.GetBlockHash(height)
+	if err != nil {
+		return "", err
+	}
+	var header string
+	err = c.call(GETBLOCKHEADER, NewParams(hash, false), &header)
+	if err != nil {
+		return "", err
 	}
 	return header, err
 }

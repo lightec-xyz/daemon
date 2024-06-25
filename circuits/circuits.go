@@ -99,9 +99,9 @@ func (c *Circuit) BtcWrapProve(flag, hexProof, hexWitness, beginHash, endHash st
 		return nil, err
 	}
 	var vkPath string
-	if flag == "bulk" {
+	if flag == BtcBulk {
 		vkPath = filepath.Join(c.Cfg.SetupDir, constant.BlockHeaderBulkOuterVkFile)
-	} else if flag == "pack" {
+	} else if flag == BtcPacked {
 		vkPath = filepath.Join(c.Cfg.SetupDir, constant.BlockHeaderPackedVkFile)
 	} else {
 		return nil, fmt.Errorf("unknown flag")

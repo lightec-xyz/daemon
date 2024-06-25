@@ -378,17 +378,17 @@ func (fs *FileStorage) GetVerifyProof(txHash string) (*StoreProof, bool, error) 
 	return &storeProof, exist, nil
 }
 
-func (fs *FileStorage) StoreBtcBulkProof(index uint64, proof, witness []byte) error {
-	return fs.Store(BtcBulkTable, parseKey(index), newStoreProof(common.BtcBulkType, index, "", proof, witness))
+func (fs *FileStorage) StoreBtcBulkProof(index, end uint64, proof, witness []byte) error {
+	return fs.Store(BtcBulkTable, parseKey(index, end), newStoreProof(common.BtcBulkType, index, "", proof, witness))
 }
 
-func (fs *FileStorage) CheckBtcBulkProof(index uint64) (bool, error) {
-	return fs.Check(BtcBulkTable, parseKey(index))
+func (fs *FileStorage) CheckBtcBulkProof(index, end uint64) (bool, error) {
+	return fs.Check(BtcBulkTable, parseKey(index, end))
 }
 
-func (fs *FileStorage) GetBtcBulkProof(index uint64) (*StoreProof, bool, error) {
+func (fs *FileStorage) GetBtcBulkProof(index, end uint64) (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.Get(BtcBulkTable, parseKey(index), &storeProof)
+	exist, err := fs.Get(BtcBulkTable, parseKey(index, end), &storeProof)
 	if err != nil {
 		logger.Error("get btc bulk proof error:%v %v", index, err)
 		return nil, false, err
@@ -609,6 +609,15 @@ func CreateFileStore(root, name string) (*store.FileStore, error) {
 func (fs *FileStorage) GetRootPath() string {
 	return fs.RootPath
 }
-func parseKey(key interface{}) string {
-	return fmt.Sprintf("%v", key)
+func parseKey(keys ...interface{}) string {
+	var key string
+	for index, tmp := range keys {
+		if index == 0 {
+			key = fmt.Sprintf("%v", tmp)
+		} else {
+			key = key + fmt.Sprintf("_%v", tmp)
+		}
+	}
+	return key
+
 }

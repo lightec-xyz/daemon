@@ -110,7 +110,7 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 		return nil, false, nil
 	}
 	// todo
-	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.TxHash)
+	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, 0, request.TxHash)
 	if err != nil {
 		logger.Error("check Proof error:%v %v", request.Id(), err)
 		return nil, false, err

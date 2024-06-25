@@ -16,3 +16,12 @@ func TestFileStorage(t *testing.T) {
 	}
 	t.Log(finalizedSlot)
 }
+
+func TestParseKey(t *testing.T) {
+	key := parseKey(1)
+	t.Log(key)
+	k1 := parseKey(100, 200)
+	t.Log(k1)
+	k2 := parseKey(100, 200, 300)
+	t.Log(k2)
+}

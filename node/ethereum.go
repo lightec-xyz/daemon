@@ -528,7 +528,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 	for _, item := range unGenProofs {
 		txHash := item.TxHash
 		logger.Debug("start check redeem proof tx: %v %v %v", txHash, item.Height, item.TxIndex)
-		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, txHash)
+		exists, err := CheckProof(e.fileStore, common.RedeemTxType, 0, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
 			return err
@@ -566,7 +566,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			logger.Error("update proof status error: %v %v", txHash, err)
 			return err
 		}
-		exists, err = CheckProof(e.fileStore, common.TxInEth2, 0, txHash)
+		exists, err = CheckProof(e.fileStore, common.TxInEth2, 0, 0, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
 			return err
@@ -578,7 +578,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 				return err
 			}
 		}
-		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, "")
+		exists, err = CheckProof(e.fileStore, common.BeaconHeaderType, txSlot, 0, "")
 		if err != nil {
 			logger.Error("check block header proof error: %v", err)
 			return err
@@ -596,7 +596,7 @@ func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
 			}
 		}
 		//logger.Debug("%v find near %v tx slot finalized slot %v", txHash, txSlot, finalizedSlot)
-		exists, err = CheckProof(e.fileStore, common.BeaconHeaderFinalityType, finalizedSlot, "")
+		exists, err = CheckProof(e.fileStore, common.BeaconHeaderFinalityType, finalizedSlot, 0, "")
 		if err != nil {
 			logger.Error("check block header finality proof error: %v %v", finalizedSlot, err)
 			return err
@@ -643,7 +643,7 @@ func (e *EthereumAgent) tryProofRequest(zkType common.ZkProofType, index uint64,
 		logger.Debug("proof request exists: %v", proofId)
 		return nil
 	}
-	exists, err := CheckProof(e.fileStore, zkType, index, txHash)
+	exists, err := CheckProof(e.fileStore, zkType, index, 0, txHash)
 	if err != nil {
 		logger.Error("check proof error: %v", err)
 		return err

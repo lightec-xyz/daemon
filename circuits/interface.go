@@ -9,6 +9,11 @@ import (
 	"github.com/lightec-xyz/reLight/circuits/utils"
 )
 
+const (
+	BtcBulk   = "bulk"
+	BtcPacked = "packed"
+)
+
 type ICircuit interface {
 	BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recursiveProof, recursiveWitness, outerProof,
 		outerWitness string, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*common.Proof, error)

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
+	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -40,7 +42,7 @@ func BeaconBlockHeaderToSlotAndRoot(header *structs.BeaconBlockHeader) (uint64, 
 
 }
 
-func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string) (bool, error) {
+func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index, end uint64, txHash string) (bool, error) {
 	switch zkType {
 	case common.SyncComGenesisType:
 		return fileStore.CheckGenesisProof()
@@ -63,7 +65,7 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64,
 	case common.VerifyTxType:
 		return fileStore.CheckVerifyProof(txHash)
 	case common.BtcBulkType:
-		return fileStore.CheckBtcBulkProof(index)
+		return fileStore.CheckBtcBulkProof(index, end)
 	case common.BtcPackedType:
 		return fileStore.CheckBtcPackedProof(index)
 	case common.BtcWrapType:
@@ -73,7 +75,7 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64,
 	}
 }
 
-func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint64, txHash string, proof, witness []byte) error {
+func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end uint64, txHash string, proof, witness []byte) error {
 	switch zkType {
 	case common.SyncComUnitType:
 		return fileStore.StoreUnitProof(index, proof, witness)
@@ -96,7 +98,7 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 	case common.VerifyTxType:
 		return fileStore.StoreVerifyProof(txHash, proof, witness)
 	case common.BtcBulkType:
-		return fileStore.StoreBtcBulkProof(index, proof, witness)
+		return fileStore.StoreBtcBulkProof(index, end, proof, witness)
 	case common.BtcPackedType:
 		return fileStore.StoreBtcPackedProof(index, proof, witness)
 	case common.BtcWrapType:
@@ -106,14 +108,84 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 	}
 }
 
-func GetBtcMidBlockHeader(client *bitcoin.Client, start, end int) (*rpc.BtcBulkRequest, error) {
-	// todo
-	return nil, nil
+func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*rpc.BtcBulkRequest, error) {
+	startHash, err := client.GetBlockHash(int64(start))
+	if err != nil {
+		logger.Error("get block header error: %v %v", start, err)
+		return nil, err
+	}
+	endHash, err := client.GetBlockHash(int64(end))
+	if err != nil {
+		logger.Error("get block header error: %v %v", end, err)
+		return nil, err
+	}
+	var middleHeaders []string
+	for index := start + 1; index <= end; index++ {
+		header, err := client.GetHexBlockHeader(int64(index))
+		if err != nil {
+			logger.Error("get block header error: %v", err)
+			return nil, err
+		}
+		middleHeaders = append(middleHeaders, header)
+	}
+	data := &btcprovertypes.BlockHeaderChain{
+		BeginHeight:        start,
+		BeginHash:          startHash,
+		EndHeight:          end,
+		EndHash:            endHash,
+		MiddleBlockHeaders: middleHeaders,
+	}
+	return &rpc.BtcBulkRequest{
+		Data: data,
+	}, nil
+
 }
 
-func GetBtcWrapData(client *bitcoin.Client, index int) (*rpc.BtcWrapRequest, error) {
-
-	return nil, nil
+func GetBtcWrapData(filestore *FileStorage, client *bitcoin.Client, start, end uint64) (*rpc.BtcWrapRequest, error) {
+	startHash, err := client.GetBlockHash(int64(start))
+	if err != nil {
+		logger.Error("get block header error: %v %v", start, err)
+		return nil, err
+	}
+	endHash, err := client.GetBlockHash(int64(end))
+	if err != nil {
+		logger.Error("get block header error: %v %v", end, err)
+		return nil, err
+	}
+	nRequired := start - end
+	var proof *StoreProof
+	var ok bool
+	var flag string
+	if nRequired > 48 {
+		proof, ok, err = filestore.GetBtcBulkProof(start, end)
+		if err != nil {
+			logger.Error("get btc bulk proof error: %v", err)
+			return nil, err
+		}
+		if !ok {
+			return nil, err
+		}
+		flag = circuits.BtcBulk
+	} else {
+		proof, ok, err = filestore.GetBtcPackedProof(start)
+		if err != nil {
+			logger.Error("get btc bulk proof error: %v", err)
+			return nil, err
+		}
+		if !ok {
+			return nil, err
+		}
+		flag = circuits.BtcPacked
+	}
+	data := &rpc.BtcWrapRequest{
+		Flag:      flag,
+		Proof:     proof.Proof,
+		Witness:   proof.Witness,
+		BeginHash: startHash,
+		EndHash:   endHash,
+		NbBlocks:  nRequired,
+	}
+	return data, nil
 }
 
 // todo refactor
