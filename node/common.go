@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
@@ -103,6 +104,16 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index uint6
 	default:
 		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
+}
+
+func GetBtcMidBlockHeader(client *bitcoin.Client, start, end int) (*rpc.BtcBulkRequest, error) {
+	// todo
+	return nil, nil
+}
+
+func GetBtcWrapData(client *bitcoin.Client, index int) (*rpc.BtcWrapRequest, error) {
+
+	return nil, nil
 }
 
 // todo refactor

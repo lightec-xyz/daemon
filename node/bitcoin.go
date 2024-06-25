@@ -516,6 +516,29 @@ func (b *BitcoinAgent) getRequestData(proofType common.ZkProofType, txHash strin
 			return nil, false, err
 		}
 		return data, ok, nil
+
+	case common.BtcBulkType:
+		midBlockHeader, err := GetBtcMidBlockHeader(b.btcClient, 0, 0)
+		if err != nil {
+			logger.Error("get mid block header error:%v %v", txHash, err)
+			return nil, false, err
+		}
+		return midBlockHeader, true, nil
+	case common.BtcPackedType:
+		midBlockHeader, err := GetBtcMidBlockHeader(b.btcClient, 0, 0)
+		if err != nil {
+			logger.Error("get mid block header error:%v %v", txHash, err)
+			return nil, false, err
+		}
+		return midBlockHeader, true, nil
+	case common.BtcWrapType:
+		btcWrapData, err := GetBtcWrapData(b.btcClient, 0)
+		if err != nil {
+			logger.Error("get btc wrap data error:%v %v", txHash, err)
+			return nil, false, err
+		}
+		return btcWrapData, true, nil
+
 	default:
 		return nil, false, fmt.Errorf("unknown proof type: %v", proofType)
 	}
