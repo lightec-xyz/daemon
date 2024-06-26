@@ -30,6 +30,7 @@ type ZkProofRequest struct {
 	ReqType    ZkProofType
 	Data       interface{}
 	Index      uint64
+	End        uint64
 	TxHash     string
 	Status     ProofStatus
 	Weight     ProofWeight // todo
@@ -44,6 +45,7 @@ func NewZkProofRequest(reqType ZkProofType, data interface{}, index, end uint64,
 		ReqType:    reqType,
 		Data:       data,
 		Index:      index,
+		End:        end,
 		TxHash:     txHash,
 		Weight:     reqType.Weight(),
 		Status:     ProofDefault,
@@ -71,7 +73,7 @@ type ZkProofResponse struct {
 }
 
 func (zkp *ZkProofResponse) Id() string {
-	return NewProofId(zkp.ZkProofType, zkp.Index, zkp.End, zkp.TxHash)
+	return zkp.RespId
 }
 
 func (zkResp *ZkProofResponse) String() string {
@@ -80,10 +82,10 @@ func (zkResp *ZkProofResponse) String() string {
 
 func NewProofId(reqType ZkProofType, index, end uint64, txHash string) string {
 	/* example
-	1. only hash
-	2. only index
-	3. start_end
-	4. index+hash
+	1. type_hash
+	2. type_index
+	3. type_index_end
+	4. type_index_end_hash
 	*/
 
 	id := reqType.String()

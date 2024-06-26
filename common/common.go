@@ -13,6 +13,22 @@ import (
 	"reflect"
 )
 
+func ReverseBytes(data []byte) []byte {
+	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
+		data[i], data[j] = data[j], data[i]
+	}
+	return data
+}
+
+func ReverseHex(data string) (string, error) {
+	hexBytes, err := hex.DecodeString(data)
+	if err != nil {
+		return "", err
+	}
+	bytes := ReverseBytes(hexBytes)
+	return hex.EncodeToString(bytes), nil
+}
+
 func HexToBytes(data string) ([]byte, error) {
 	if data[0:2] == "0x" {
 		data = data[2:]

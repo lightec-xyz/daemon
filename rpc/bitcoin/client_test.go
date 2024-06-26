@@ -61,7 +61,7 @@ func TestClient_GetBlockHeader(t *testing.T) {
 }
 
 func TestClient_GetHexBlockHeader(t *testing.T) {
-	header, err := client.GetHexBlockHeader("0000000076a52d67769bacb412a8172d3524fe2d4c2e7f9f93c7c72caa68cd76")
+	header, err := client.GetHexBlockHeader(2606823)
 	if err != nil {
 		panic(err)
 	}

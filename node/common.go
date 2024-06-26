@@ -6,6 +6,7 @@ import (
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/lightec-xyz/btc_provers/circuits/constant"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
@@ -114,26 +115,42 @@ func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*rpc.BtcBu
 		logger.Error("get block header error: %v %v", start, err)
 		return nil, err
 	}
+	beginHash, err := common.ReverseHex(startHash)
+	if err != nil {
+		logger.Error("reverse hex error: %v", err)
+		return nil, err
+	}
 	endHash, err := client.GetBlockHash(int64(end))
 	if err != nil {
 		logger.Error("get block header error: %v %v", end, err)
 		return nil, err
 	}
+	eHash, err := common.ReverseHex(endHash)
+	if err != nil {
+		logger.Error("reverse hex error: %v", err)
+		return nil, err
+	}
+
 	var middleHeaders []string
 	for index := start + 1; index <= end; index++ {
 		header, err := client.GetHexBlockHeader(int64(index))
 		if err != nil {
-			logger.Error("get block header error: %v", err)
+			logger.Error("get block header error: %v %v", index, err)
 			return nil, err
 		}
 		middleHeaders = append(middleHeaders, header)
 	}
 	data := &btcprovertypes.BlockHeaderChain{
 		BeginHeight:        start,
-		BeginHash:          startHash,
+		BeginHash:          beginHash,
 		EndHeight:          end,
-		EndHash:            endHash,
+		EndHash:            eHash,
 		MiddleBlockHeaders: middleHeaders,
+	}
+	err = data.Verify()
+	if err != nil {
+		logger.Error("verify block header error: %v", err)
+		return nil, err
 	}
 	return &rpc.BtcBulkRequest{
 		Data: data,
@@ -156,7 +173,7 @@ func GetBtcWrapData(filestore *FileStorage, client *bitcoin.Client, start, end u
 	var proof *StoreProof
 	var ok bool
 	var flag string
-	if nRequired > 48 { // todo
+	if nRequired <= constant.MaxNbBlockPerBulk { // todo
 		proof, ok, err = filestore.GetBtcBulkProof(start, end)
 		if err != nil {
 			logger.Error("get btc bulk proof error: %v", err)

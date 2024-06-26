@@ -32,6 +32,7 @@ type BitcoinAgent struct {
 	minDepositValue float64
 	initHeight      int64
 	txManager       *TxManager
+	debug           bool
 }
 
 func (b *BitcoinAgent) FetchDataResponse(resp *FetchResponse) error {
@@ -57,6 +58,7 @@ func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore stor
 		initHeight:      cfg.BtcInitHeight,
 		txManager:       task,
 		cache:           state,
+		debug:           common.GetEnvDebugMode(),
 	}, nil
 }
 
@@ -81,6 +83,14 @@ func (b *BitcoinAgent) Init() error {
 		logger.Error(" bitcoin json rpc get block count error:%v", err)
 		return err
 	}
+	if b.debug {
+		err = WriteBitcoinHeight(b.store, 2835035)
+		if err != nil {
+			logger.Error("write btc height error: %v %v", 2835035, err)
+			return err
+		}
+	}
+
 	logger.Info("init bitcoin agent completed")
 	return nil
 }
@@ -111,6 +121,12 @@ func (b *BitcoinAgent) ScanBlock() error {
 		// todo
 		//return nil
 	}
+	if b.debug {
+		blockCount = 2835038
+		if curHeight >= 2835037 {
+			return nil
+		}
+	}
 	//todo
 	blockCount = blockCount - 1
 	if curHeight >= blockCount {
@@ -118,9 +134,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 		return nil
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
-		if index%10 == 0 {
-			logger.Debug("bitcoin parse block height:%d", index)
-		}
+		logger.Debug("bitcoin parse block height:%d", index)
 		depositTxes, redeemTxes, proofRequests, err := b.parseBlock(uint64(index))
 		if err != nil {
 			logger.Error("bitcoin agent parse block error: %v %v", index, err)
@@ -243,17 +257,17 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 			if proofed {
 				depositTx.Proofed = true
 			} else {
-				proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
-				if err != nil {
-					logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
-					return nil, nil, nil, err
-				}
-				data := rpc.DepositRequest{
-					TxHash:    tx.Txid,
-					BlockHash: blockHash,
-					Data:      proofData,
-				}
-				requests = append(requests, common.NewZkProofRequest(common.DepositTxType, data, 0, 0, tx.Txid))
+				//proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
+				//if err != nil {
+				//	logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
+				//	return nil, nil, nil, err
+				//}
+				//data := rpc.DepositRequest{
+				//	TxHash:    tx.Txid,
+				//	BlockHash: blockHash,
+				//	Data:      proofData,
+				//}
+				//requests = append(requests, common.NewZkProofRequest(common.DepositTxType, data, 0, 0, tx.Txid))
 			}
 			depositTxes = append(depositTxes, depositTx)
 		}
@@ -376,78 +390,80 @@ func (b *BitcoinAgent) CheckState() error {
 			}
 			continue
 		}
-		exists, err := CheckProof(b.fileStore, common.DepositTxType, 0, 0, tx.TxHash)
-		if err != nil {
-			logger.Error("check proof error:%v %v", tx.TxHash, err)
-			return nil
-		}
-		if exists {
-			logger.Debug("%v %v proof exists ,delete ungen proof now", tx.ProofType.String(), tx.TxHash)
-			err = DeleteUnGenProof(b.store, Bitcoin, tx.TxHash)
+		if tx.ProofType == common.DepositTxType {
+			exists, err := CheckProof(b.fileStore, common.DepositTxType, 0, 0, tx.TxHash)
 			if err != nil {
-				logger.Error("delete ungen proof error:%v %v", tx.TxHash, err)
+				logger.Error("check proof error:%v %v", tx.TxHash, err)
 				return nil
 			}
-			continue
-		}
-
-		ok, confirms, err := b.CheckTxConfirms(tx.TxHash, tx.Amount)
-		if err != nil {
-			logger.Error("check tx confirms error: %v %v", tx.TxHash, err)
-			return err
-		}
-		if !ok {
-			logger.Warn("wait tx %v confirm: %v %v", tx.TxHash, tx.Amount, confirms)
-			continue
-		}
-		endHeight := tx.Height + uint64(confirms)
-		if confirms <= 48 {
-			exists, err := CheckProof(b.fileStore, common.BtcBulkType, tx.Height, 0, tx.TxHash)
-			if err != nil {
-				logger.Error(err.Error())
-				return err
-			}
-			if !exists {
-				err := b.tryProofRequest(common.BtcBulkType, tx.Height, endHeight, tx.TxHash)
+			if exists {
+				logger.Debug("%v %v proof exists ,delete ungen proof now", tx.ProofType.String(), tx.TxHash)
+				err = DeleteUnGenProof(b.store, Bitcoin, tx.TxHash)
 				if err != nil {
-					logger.Error("try proof request error:%v %v", tx.TxHash, err)
+					logger.Error("delete ungen proof error:%v %v", tx.TxHash, err)
 					return nil
 				}
+				continue
 			}
-			continue
 
-		} else {
-			exists, err := CheckProof(b.fileStore, common.BtcPackedType, tx.Height, 0, tx.TxHash)
+			ok, confirms, err := b.CheckTxConfirms(tx.TxHash, tx.Amount)
 			if err != nil {
-				logger.Error(err.Error())
+				logger.Error("check tx confirms error: %v %v", tx.TxHash, err)
 				return err
 			}
-			if !exists {
-				err := b.tryProofRequest(common.BtcPackedType, tx.Height, endHeight, tx.TxHash)
+			if !ok {
+				logger.Warn("wait tx %v confirm: %v %v", tx.TxHash, tx.Amount, confirms)
+				continue
+			}
+			endHeight := tx.Height + uint64(confirms)
+			if confirms <= 48 {
+				exists, err := CheckProof(b.fileStore, common.BtcBulkType, tx.Height, endHeight, "")
 				if err != nil {
 					logger.Error(err.Error())
 					return err
 				}
+				if !exists {
+					err := b.tryProofRequest(common.BtcBulkType, tx.Height, endHeight, "")
+					if err != nil {
+						logger.Error("try proof request error:%v %v", tx.TxHash, err)
+						return nil
+					}
+					continue
+				}
+
+			} else {
+				exists, err := CheckProof(b.fileStore, common.BtcPackedType, tx.Height, endHeight, "")
+				if err != nil {
+					logger.Error(err.Error())
+					return err
+				}
+				if !exists {
+					err := b.tryProofRequest(common.BtcPackedType, tx.Height, endHeight, "")
+					if err != nil {
+						logger.Error(err.Error())
+						return err
+					}
+					continue
+				}
+			}
+			wrapExists, err := CheckProof(b.fileStore, common.BtcWrapType, tx.Height, endHeight, "")
+			if err != nil {
+				logger.Error("check proof error:%v %v", tx.TxHash, err)
+				return err
+			}
+			if !wrapExists {
+				err := b.tryProofRequest(common.BtcWrapType, tx.Height, endHeight, "")
+				if err != nil {
+					logger.Error("try proof request error:%v %v", tx.TxHash, err)
+					return nil
+				}
 				continue
 			}
-		}
-		wrapExists, err := CheckProof(b.fileStore, common.BtcWrapType, tx.Height, 0, tx.TxHash)
-		if err != nil {
-			logger.Error("check proof error:%v %v", tx.TxHash, err)
-			return err
-		}
-		if !wrapExists {
-			err := b.tryProofRequest(common.BtcWrapType, tx.Height, endHeight, tx.TxHash)
+			err = b.tryProofRequest(common.DepositTxType, tx.Height, endHeight, tx.TxHash)
 			if err != nil {
 				logger.Error("try proof request error:%v %v", tx.TxHash, err)
 				return nil
 			}
-			continue
-		}
-		err = b.tryProofRequest(common.DepositTxType, tx.Height, endHeight, tx.TxHash)
-		if err != nil {
-			logger.Error("try proof request error:%v %v", tx.TxHash, err)
-			return nil
 		}
 	}
 	return nil

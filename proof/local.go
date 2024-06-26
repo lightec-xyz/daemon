@@ -95,7 +95,7 @@ func (l *Local) Run() error {
 				return
 			}
 			for _, proof := range proofs {
-				logger.Info("success submit proof to server: %v %v", submitProof.Id, proof.Id())
+				logger.Info("success submit proof to server: workerId %v,proofId %v", submitProof.WorkerId, proof.Id())
 			}
 			return
 		}

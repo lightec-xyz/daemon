@@ -51,18 +51,16 @@ type IFetch interface {
 }
 
 type Daemon struct {
-	agents            []*WrapperAgent
-	fetch             IFetch
-	rpcServer         *rpc.Server
-	wsServer          *rpc.Server
-	nodeConfig        Config
-	exitSignal        chan os.Signal
-	manager           *WrapperManger
-	taskManager       *TxManager // todo
-	disableRecurAgent bool       // true ,Only enable the function of generating recursive proofs
-	disableTxAgent    bool
-	enableLocal       bool
-	debug             bool
+	agents      []*WrapperAgent
+	fetch       IFetch
+	rpcServer   *rpc.Server
+	wsServer    *rpc.Server
+	nodeConfig  Config
+	exitSignal  chan os.Signal
+	manager     *WrapperManger
+	taskManager *TxManager // todo
+	enableLocal bool
+	debug       bool
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
@@ -163,28 +161,36 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	state := NewCacheState()
 
 	var agents []*WrapperAgent
-	beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, state, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
-	if err != nil {
-		logger.Error("new node btcClient error:%v", err)
-		return nil, err
-	}
-	agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 
-	btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
-		proofRequest, keyStore, taskManager, state)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
+	if false {
+		beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, state, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
+		if err != nil {
+			logger.Error("new node btcClient error:%v", err)
+			return nil, err
+		}
+		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 	}
-	agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
-	ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
-		beaconClient, oasisClient, proofRequest, taskManager, state)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
+	if true {
+		btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
+			proofRequest, keyStore, taskManager, state)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, err
+		}
+		agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
+
 	}
-	agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp, ethFetchDataResp))
+
+	if false {
+		ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
+			beaconClient, oasisClient, proofRequest, taskManager, state)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, err
+		}
+		agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp, ethFetchDataResp))
+	}
 
 	debugMode := common.GetEnvDebugMode()
 	logger.Info("current DebugMode :%v", debugMode)
@@ -230,25 +236,24 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	logger.Debug("wsServer: listen on %v,port  %v", cfg.Rpcbind, cfg.WsPort)
-	fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
-	if err != nil {
-		logger.Error("new fetch error: %v", err)
-		return nil, err
-	}
+
+	//fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
+	//if err != nil {
+	//	logger.Error("new fetch error: %v", err)
+	//	return nil, err
+	//}
 
 	daemon := &Daemon{
-		agents:            agents,
-		rpcServer:         server,
-		wsServer:          wsServer,
-		nodeConfig:        cfg,
-		disableRecurAgent: cfg.DisableRecursiveAgent,
-		disableTxAgent:    cfg.DisableTxAgent,
-		enableLocal:       cfg.EnableLocalWorker,
-		exitSignal:        exitSignal,
-		taskManager:       taskManager,
-		fetch:             fetch,
-		debug:             common.GetEnvDebugMode(),
-		manager:           NewWrapperManger(msgManager, proofRequest, 2*time.Minute),
+		agents:      agents,
+		rpcServer:   server,
+		wsServer:    wsServer,
+		nodeConfig:  cfg,
+		enableLocal: cfg.EnableLocalWorker,
+		exitSignal:  exitSignal,
+		taskManager: taskManager,
+		fetch:       nil,
+		debug:       common.GetEnvDebugMode(),
+		manager:     NewWrapperManger(msgManager, proofRequest, 2*time.Minute),
 	}
 	return daemon, nil
 }
@@ -259,17 +264,17 @@ func (d *Daemon) Init() error {
 		logger.Error("manager init error %v", err)
 		return err
 	}
-	if !d.disableTxAgent {
-		err := d.fetch.Init()
+	if d.fetch != nil {
+		err = d.fetch.Init()
 		if err != nil {
 			logger.Error("fetch init error %v", err)
 			return err
 		}
-		for _, agent := range d.agents {
-			if err := agent.node.Init(); err != nil {
-				logger.Error("%v:init agent error %v", agent.node.Name(), err)
-				return err
-			}
+	}
+	for _, agent := range d.agents {
+		if err := agent.node.Init(); err != nil {
+			logger.Error("%v:init agent error %v", agent.node.Name(), err)
+			return err
 		}
 	}
 	return nil
@@ -283,8 +288,10 @@ func (d *Daemon) Run() error {
 	go d.wsServer.Run()
 
 	// fetch
-	go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
-	go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
+	if d.fetch != nil {
+		go DoTimerTask("fetch-finality-update", 40*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
+		go DoTimerTask("fetch-update", 1*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
+	}
 
 	if !d.debug {
 		go DoTimerTask("txManager-check", 30*time.Second, d.taskManager.Check, d.exitSignal) // todo
@@ -298,12 +305,6 @@ func (d *Daemon) Run() error {
 	go DoTimerTask("manager-checkState", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
 
 	for _, agent := range d.agents {
-		// todo
-		if d.debug {
-			if agent.node.Name() == BitcoinAgentName || agent.node.Name() == BeaconAgentName {
-				continue
-			}
-		}
 		proofReplyName := fmt.Sprintf("%s-proofResponse", agent.node.Name())
 		go doProofResponseTask(proofReplyName, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
 		fetchName := fmt.Sprintf("%s-fetchResponse", agent.node.Name())
@@ -339,14 +340,11 @@ func (d *Daemon) Close() error {
 	if err != nil {
 		logger.Error("ws server shutdown error:%v", err)
 	}
-	if d.disableTxAgent {
-		for _, agent := range d.agents {
-			if err := agent.node.Close(); err != nil {
-				logger.Error("%v:close agent error %v", agent.node.Name(), err)
-			}
+	for _, agent := range d.agents {
+		if err := agent.node.Close(); err != nil {
+			logger.Error("%v:close agent error %v", agent.node.Name(), err)
 		}
 	}
-
 	err = d.manager.manager.Close()
 	if err != nil {
 		logger.Error("manager close error:%v", err)

@@ -113,6 +113,7 @@ func txesToUnGenProofs(chainType ChainType, txes []*Transaction) []*DbUnGenProof
 				TxHash:    tx.TxHash,
 				Height:    tx.Height,
 				TxIndex:   tx.TxIndex,
+				Amount:    uint64(tx.Amount),
 			})
 		}
 	}

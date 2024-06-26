@@ -40,16 +40,16 @@ func TestQueue(t *testing.T) {
 
 func TestArrayQueue(t *testing.T) {
 	arrayQueue := NewArrayQueue()
-	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "1"))
-	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 100, ""))
-	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderFinalityType, nil, 110, ""))
-	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "2"))
-	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 200, ""))
-	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "3"))
-	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "4"))
-	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 300, ""))
-	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, "5"))
-	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 400, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, 0, "1"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 100, 0, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderFinalityType, nil, 110, 0, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, 0, "2"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 200, 0, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, 0, "3"))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, 0, "4"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 300, 0, ""))
+	arrayQueue.Push(common.NewZkProofRequest(common.TxInEth2, nil, 0, 0, "5"))
+	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 400, 0, ""))
 
 	arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
 		t.Log(value.Id())
