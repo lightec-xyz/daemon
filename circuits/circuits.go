@@ -46,6 +46,11 @@ type Circuit struct {
 
 func (c *Circuit) BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit BtcBulkProve")
+	err := data.Verify()
+	if err != nil {
+		logger.Error("verify error:%v", err)
+		return nil, err
+	}
 	if c.debug {
 		logger.Warn("current zk circuit BtcBulkProve prove is debug,skip prove")
 		return debugProof()

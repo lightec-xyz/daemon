@@ -109,28 +109,18 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 	}
 }
 
-func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*rpc.BtcBulkRequest, error) {
-	startHash, err := client.GetBlockHash(int64(start))
+func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*btcprovertypes.BlockHeaderChain, error) {
+	startHash, err := GetReverseHash(client, start)
 	if err != nil {
 		logger.Error("get block header error: %v %v", start, err)
 		return nil, err
 	}
-	beginHash, err := common.ReverseHex(startHash)
-	if err != nil {
-		logger.Error("reverse hex error: %v", err)
-		return nil, err
-	}
-	endHash, err := client.GetBlockHash(int64(end))
+
+	endHash, err := GetReverseHash(client, end)
 	if err != nil {
 		logger.Error("get block header error: %v %v", end, err)
 		return nil, err
 	}
-	eHash, err := common.ReverseHex(endHash)
-	if err != nil {
-		logger.Error("reverse hex error: %v", err)
-		return nil, err
-	}
-
 	var middleHeaders []string
 	for index := start + 1; index <= end; index++ {
 		header, err := client.GetHexBlockHeader(int64(index))
@@ -142,9 +132,9 @@ func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*rpc.BtcBu
 	}
 	data := &btcprovertypes.BlockHeaderChain{
 		BeginHeight:        start,
-		BeginHash:          beginHash,
+		BeginHash:          startHash,
 		EndHeight:          end,
-		EndHash:            eHash,
+		EndHash:            endHash,
 		MiddleBlockHeaders: middleHeaders,
 	}
 	err = data.Verify()
@@ -152,24 +142,36 @@ func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*rpc.BtcBu
 		logger.Error("verify block header error: %v", err)
 		return nil, err
 	}
-	return &rpc.BtcBulkRequest{
-		Data: data,
-	}, nil
+	return data, nil
 
 }
 
+func GetReverseHash(client *bitcoin.Client, height uint64) (string, error) {
+	hash, err := client.GetBlockHash(int64(height))
+	if err != nil {
+		logger.Error("get block header error: %v %v", height, err)
+		return "", err
+	}
+	reverseHash, err := common.ReverseHex(hash)
+	if err != nil {
+		logger.Error("reverse hex error: %v", err)
+		return "", err
+	}
+	return reverseHash, nil
+}
+
 func GetBtcWrapData(filestore *FileStorage, client *bitcoin.Client, start, end uint64) (*rpc.BtcWrapRequest, error) {
-	startHash, err := client.GetBlockHash(int64(start))
+	startHash, err := GetReverseHash(client, start)
 	if err != nil {
 		logger.Error("get block header error: %v %v", start, err)
 		return nil, err
 	}
-	endHash, err := client.GetBlockHash(int64(end))
+	endHash, err := GetReverseHash(client, end)
 	if err != nil {
 		logger.Error("get block header error: %v %v", end, err)
 		return nil, err
 	}
-	nRequired := start - end
+	nRequired := end - start
 	var proof *StoreProof
 	var ok bool
 	var flag string
