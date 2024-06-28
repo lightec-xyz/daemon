@@ -96,3 +96,7 @@ const EthereumNetwork = "ethereum"
 const BitcoinAgentName = "bitcoinAgent"
 const EthereumAgentName = "ethereumAgent"
 const BeaconAgentName = "beaconAgent"
+
+const (
+	GeneratorVersion = "1.0.0"
+)

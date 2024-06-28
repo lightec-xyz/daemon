@@ -10,6 +10,7 @@ type TaskRequest struct {
 	Id        string
 	MaxNums   int
 	ProofType []ZkProofType
+	Version   string
 }
 
 type TaskResponse struct {
@@ -21,6 +22,7 @@ type SubmitProof struct {
 	Data     []*ZkProofResponse
 	WorkerId string
 	Id       string
+	Version  string
 }
 
 type ZkProof []byte

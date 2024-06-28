@@ -11,10 +11,10 @@
   "beaconUrl": "http://58.41.9.129:8970",
   "oasisUrl": "https://testnet.sapphire.oasis.dev",
   "ethPrivateKey": "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-  "btcInitHeight": 2816655,
-  "ethInitHeight": 1582764,
+  "btcInitHeight": 2818009,
+  "ethInitHeight": 1809284,
   "enableLocalWorker": false,
-  "beaconInitSlot": 1482752,
+  "beaconInitSlot": 1955640,
   "autoSubmit": true,
   "disableRecursiveAgent": false,
   "disableTxAgent": false

@@ -53,6 +53,11 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
 	// Todo
+	if request.Version != GeneratorVersion {
+		logger.Error("id: %v current version: %v, unsupported version: %v", request.Id, GeneratorVersion, request.Version)
+		return nil, fmt.Errorf("current version: %v, unsupported version: %v", GeneratorVersion, request.Version)
+	}
+
 	zkProofRequest, ok, err := h.manager.GetProofRequest(request.ProofType)
 	if err != nil {
 		logger.Error("get proof request error: %v %v", request.Id, err)
@@ -71,7 +76,10 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 }
 
 func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
-	//todo check
+	//if req.Version != GeneratorVersion {
+	//	logger.Error("id: %v current version: %v, unsupported version: %v", req.Id, GeneratorVersion, req.Version)
+	//	return "", fmt.Errorf("current version: %v, unsupported version: %v", GeneratorVersion, req.Version)
+	//}
 	for _, item := range req.Data {
 		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.Id())
 		// todo

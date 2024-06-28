@@ -53,6 +53,7 @@ func (l *Local) Run() error {
 	request := common.TaskRequest{
 		Id:        l.Id,
 		ProofType: l.proofTypes,
+		Version:   node.GeneratorVersion,
 	}
 	requestResp, err := l.client.GetZkProofTask(request)
 	if err != nil {
@@ -85,7 +86,7 @@ func (l *Local) Run() error {
 				continue
 			}
 			logger.Info("complete generate Proof type: %v", request.Id())
-			submitProof := common.SubmitProof{Id: common.MustUUID(), WorkerId: l.Id, Data: proofs}
+			submitProof := common.SubmitProof{Id: common.MustUUID(), WorkerId: l.Id, Data: proofs, Version: node.GeneratorVersion}
 			_, err = l.client.SubmitProof(&submitProof)
 			if err != nil {
 				for _, proof := range proofs {

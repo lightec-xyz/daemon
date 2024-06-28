@@ -58,7 +58,7 @@ func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore stor
 		initHeight:      cfg.BtcInitHeight,
 		txManager:       task,
 		cache:           state,
-		debug:           common.GetEnvDebugMode(),
+		debug:           true, //common.GetEnvDebugMode(),
 	}, nil
 }
 
