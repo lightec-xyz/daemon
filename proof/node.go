@@ -89,9 +89,9 @@ func NewNode(cfg Config) (*Node, error) {
 			logger.Error("read parameters error:%v", err)
 			return nil, err
 		}
-		for _, item := range parameters {
+		for index, item := range parameters {
 			path := zkParameterDir + "/" + item.FileName
-			logger.Debug("start verify zk file: %v ", path)
+			logger.Debug("start verify zk file:%v %v ", index, path)
 			fileBytes, err := os.ReadFile(path)
 			if err != nil {
 				logger.Error("read zk file error: %v %v", path, err)

@@ -1,7 +1,7 @@
 package node
 
 import (
-	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
+	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"time"
 )
 
