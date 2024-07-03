@@ -20,33 +20,57 @@ type ProofClient struct {
 }
 
 func (p *ProofClient) BtcBulkProve(data *BtcBulkRequest) (*BtcBulkResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var result BtcBulkResponse
+	err := p.call(&result, "zkbtc_btcBulkProve", data)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (p *ProofClient) BtcPackedRequest(data *BtcPackedRequest) (*BtcPackResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var result BtcPackResponse
+	err := p.call(&result, "zkbtc_btcPackedRequest", data)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (p *ProofClient) BtcWrapProve(data *BtcWrapRequest) (*BtcWrapResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var result BtcWrapResponse
+	err := p.call(&result, "zkbtc_btcWrapProve", data)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (p *ProofClient) TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var result TxInEth2ProveResponse
+	err := p.call(&result, "zkbtc_txInEth2Prove", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (p *ProofClient) BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var result BlockHeaderResponse
+	err := p.call(&result, "zkbtc_blockHeaderProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (p *ProofClient) BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var result BlockHeaderFinalityResponse
+	err := p.call(&result, "zkbtc_blockHeaderFinalityProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (p *ProofClient) GenDepositProof(req DepositRequest) (DepositResponse, error) {
@@ -188,11 +212,7 @@ func NewWsProofClient(url string) (*ProofClient, error) {
 	}, nil
 }
 
-func NewCustomWsProofClient(url string, close func()) (*ProofClient, error) {
-	conn, err := ws.NewWsConn(url, nil, close, true)
-	if err != nil {
-		return nil, err
-	}
+func NewCustomWsProofClient(conn *ws.Conn) (*ProofClient, error) {
 	return &ProofClient{
 		conn:    conn,
 		timeout: 60 * time.Second,

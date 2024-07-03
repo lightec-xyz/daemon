@@ -2,11 +2,8 @@ package proof
 
 import (
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
-	"sync"
-	"sync/atomic"
 )
 
 var _ rpc.IProof = (*Handler)(nil)
@@ -14,10 +11,6 @@ var _ rpc.IProof = (*Handler)(nil)
 type Handler struct {
 	memoryStore store.IStore
 	store       store.IStore
-	maxNums     int // The maximum number of proofs that can be generated at the same time
-	proofs      *sync.Map
-	currentNums atomic.Int64
-	lock        sync.Mutex
 	worker      rpc.IWorker
 }
 
@@ -151,13 +144,10 @@ func (h *Handler) DelReqNum() {
 	h.worker.DelReqNum()
 }
 
-func NewHandler(store, memoryStore store.IStore, max int) *Handler {
-	// todo
-	worker := node.NewWorker(nil, max)
+func NewHandler(store, memoryStore store.IStore, worker rpc.IWorker) *Handler {
 	return &Handler{
 		memoryStore: memoryStore,
 		store:       store,
-		maxNums:     max,
 		worker:      worker,
 	}
 }

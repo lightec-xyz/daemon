@@ -131,7 +131,13 @@ func NewNode(cfg Config) (*Node, error) {
 	} else if cfg.Mode == common.Cluster {
 		host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
 		memoryStore := store.NewMemoryStore()
-		handler := NewHandler(storeDb, memoryStore, cfg.MaxNums)
+		// todo
+		worker, err := dnode.NewLocalWorker("", "", cfg.MaxNums)
+		if err != nil {
+			logger.Error("new local worker error:%v", err)
+			return nil, err
+		}
+		handler := NewHandler(storeDb, memoryStore, worker)
 		logger.Info("proof worker info: %v", cfg.Info())
 		server, err := rpc.NewWsServer(RpcRegisterName, host, handler)
 		if err != nil {
