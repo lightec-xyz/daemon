@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/rpc"
 	"os"
 	"testing"
 )
@@ -65,5 +66,15 @@ func TestDemo(t *testing.T) {
 	}
 	t.Log(startHeader)
 	t.Log(middleHeader[4:36])
+
+}
+
+func TestWsServer(t *testing.T) {
+	handler := &Handler{}
+	server, err := rpc.NewWsServer("test", "127.0.0.1:", handler)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(server)
 
 }

@@ -421,48 +421,28 @@ type Worker struct {
 	wid         string
 }
 
-func (w *Worker) BtcBulkProve(data *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (w *Worker) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
+	return w.client.BtcBulkProve(req)
 }
 
-func (w *Worker) BtcPackedRequest(data *rpc.BtcPackedRequest) (*rpc.BtcPackResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (w *Worker) BtcPackedRequest(req *rpc.BtcPackedRequest) (*rpc.BtcPackResponse, error) {
+	return w.client.BtcPackedRequest(req)
 }
 
-func (w *Worker) BtcWrapProve(data *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (w *Worker) BtcWrapProve(req *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
+	return w.client.BtcWrapProve(req)
 }
 
 func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
-
-	//TODO implement me
-	panic("implement me")
+	return w.client.TxInEth2Prove(req)
 }
 
 func (w *Worker) BlockHeaderProve(req *rpc.BlockHeaderRequest) (*rpc.BlockHeaderResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	return w.client.BlockHeaderProve(req)
 }
 
 func (w *Worker) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) (*rpc.BlockHeaderFinalityResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (w *Worker) Id() string {
-	return w.wid
-}
-
-func NewWorker(client rpc.IProof, parallelNums int) *Worker {
-	return &Worker{
-		client:      client,
-		maxNums:     parallelNums,
-		currentNums: 0,
-		wid:         UUID(),
-	}
+	return w.client.BlockHeaderFinalityProve(req)
 }
 
 func (w *Worker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
@@ -513,6 +493,17 @@ func (w *Worker) AddReqNum() {
 	w.currentNums++
 }
 
+func (w *Worker) Id() string {
+	return w.wid
+}
+func NewWorker(client rpc.IProof, parallelNums int) *Worker {
+	return &Worker{
+		client:      client,
+		maxNums:     parallelNums,
+		currentNums: 0,
+		wid:         UUID(),
+	}
+}
 func ParseObj(src, dst interface{}) error {
 	if reflect.ValueOf(dst).Kind() != reflect.Ptr {
 		return fmt.Errorf("dst must be a pointer")

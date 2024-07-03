@@ -2,8 +2,10 @@ package rpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/lightec-xyz/daemon/rpc/ws"
 	"reflect"
 	"time"
 )
@@ -13,6 +15,8 @@ var _ IProof = (*ProofClient)(nil)
 type ProofClient struct {
 	*rpc.Client
 	timeout time.Duration
+	conn    *ws.Conn
+	custom  bool
 }
 
 func (p *ProofClient) BtcBulkProve(data *BtcBulkRequest) (*BtcBulkResponse, error) {
@@ -130,9 +134,36 @@ func (p *ProofClient) call(result interface{}, method string, args ...interface{
 	if vi.Kind() != reflect.Ptr {
 		return fmt.Errorf("result must be pointer")
 	}
+	if p.custom {
+		return p.customCall(result, method, args...)
+	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), p.timeout)
 	defer cancelFunc()
 	return p.CallContext(ctx, result, method, args...)
+}
+
+func (p *ProofClient) customCall(result interface{}, method string, args ...interface{}) error {
+	vi := reflect.ValueOf(result)
+	if vi.Kind() != reflect.Ptr {
+		return fmt.Errorf("result must be pointer")
+	}
+	params, err := json.Marshal(args)
+	if err != nil {
+		return err
+	}
+	response, err := p.conn.Call(ws.Message{
+		Id:     time.Now().UnixNano(),
+		Method: method,
+		Data:   params,
+	})
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewProofClient(url string) (IProof, error) {
@@ -154,5 +185,17 @@ func NewWsProofClient(url string) (*ProofClient, error) {
 	return &ProofClient{
 		Client:  client,
 		timeout: 3 * time.Hour,
+	}, nil
+}
+
+func NewCustomWsProofClient(url string, close func()) (*ProofClient, error) {
+	conn, err := ws.NewWsConn(url, nil, close, true)
+	if err != nil {
+		return nil, err
+	}
+	return &ProofClient{
+		conn:    conn,
+		timeout: 60 * time.Second,
+		custom:  true,
 	}, nil
 }

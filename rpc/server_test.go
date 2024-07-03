@@ -8,11 +8,12 @@ import (
 )
 
 func TestWsSimpleServer(t *testing.T) {
-	server, err := NewSimpleWsServer("wsSimpleSever", "localhost:8080", func(conn *websocket.Conn) {
+	server, err := NewCustomWsServer("wsSimpleSever", "localhost:8080", func(conn *websocket.Conn) {
 		c := ws.NewConn(conn, func(body []byte) {
 			t.Log("server receive", string(body))
-			time.Sleep(3 * time.Second)
 
+		}, func() {
+			t.Log("server close")
 		}, false)
 		c.Run()
 
@@ -35,6 +36,8 @@ func TestWsSimpleServer(t *testing.T) {
 func TestWsClient(t *testing.T) {
 	conn, err := ws.NewWsConn("ws://localhost:8080", func(body []byte) {
 		t.Log("client receive", string(body))
+	}, func() {
+		t.Log("client close")
 	}, false)
 	if err != nil {
 		t.Fatal(err)

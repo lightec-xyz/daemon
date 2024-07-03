@@ -65,7 +65,7 @@ func NewWsServer(name, addr string, handler interface{}) (*Server, error) {
 	return &Server{httpServer: httpServer, name: name}, nil
 }
 
-func NewSimpleWsServer(name, addr string, fn WsFn) (*Server, error) {
+func NewCustomWsServer(name, addr string, fn WsFn) (*Server, error) {
 	isOpen := isPortOpen(addr)
 	if isOpen {
 		return nil, fmt.Errorf("port is open:%v", addr)

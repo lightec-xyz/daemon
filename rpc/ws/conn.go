@@ -9,48 +9,93 @@ import (
 	"time"
 )
 
+const (
+	ModeClient = "client"
+	ModeServer = "server"
+)
+
 type Conn struct {
 	conn      *websocket.Conn
 	writeByte chan []byte
 	exit      chan struct{}
-	cache     *sync.Map
+	notifySig *sync.Map
 	fn        func(body []byte)
+	close     func()
 	waitReply bool
 	timeout   time.Duration
+	mode      string
+	lock      sync.Mutex
+	closing   bool
 }
 
-func NewWsConn(endpoint string, fn func(body []byte), waitReply bool) (*Conn, error) {
+func NewWsConn(endpoint string, fn func(body []byte), close func(), waitReply bool) (*Conn, error) {
 	//url := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
 	conn, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
+	timeout := 60 * time.Second
+	conn.SetPingHandler(nil)
+	conn.SetPongHandler(func(appData string) error {
+		err := conn.SetReadDeadline(time.Now().Add(timeout))
+		return err
+	})
 	return &Conn{
 		conn:      conn,
 		writeByte: make(chan []byte, 10),
 		exit:      make(chan struct{}, 1),
-		cache:     new(sync.Map),
-		timeout:   20 * time.Second,
+		notifySig: new(sync.Map),
+		timeout:   timeout,
 		fn:        fn,
+		close:     close,
 		waitReply: waitReply,
+		mode:      ModeClient,
 	}, nil
 }
 
-func NewConn(conn *websocket.Conn, fn func(body []byte), waitReply bool) *Conn {
+func NewConn(conn *websocket.Conn, fn func(body []byte), close func(), waitReply bool) *Conn {
+	timeout := 60 * time.Second
+	conn.SetPingHandler(nil)
+	conn.SetPongHandler(func(appData string) error {
+		err := conn.SetReadDeadline(time.Now().Add(timeout))
+		return err
+	})
 	return &Conn{
 		conn:      conn,
 		writeByte: make(chan []byte, 10),
 		exit:      make(chan struct{}, 1),
-		cache:     new(sync.Map),
-		timeout:   20 * time.Second,
+		notifySig: new(sync.Map),
+		timeout:   timeout,
 		fn:        fn,
+		close:     close,
 		waitReply: waitReply,
+		mode:      ModeServer,
 	}
 }
 
 func (w *Conn) Run() {
 	go w.read()
 	go w.write()
+	go w.heart()
+
+}
+
+func (w *Conn) heart() {
+	ticker := time.NewTicker(w.timeout / 2)
+	for {
+		select {
+		case <-w.exit:
+			return
+		case <-ticker.C:
+			err := w.conn.WriteMessage(websocket.PingMessage, nil)
+			if err != nil {
+				err := w.Close()
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (w *Conn) read() {
@@ -61,8 +106,10 @@ func (w *Conn) read() {
 		default:
 			messageType, data, err := w.conn.ReadMessage()
 			if err != nil {
-				time.Sleep(200 * time.Millisecond) //todo
-				continue
+				err := w.Close()
+				if err != nil {
+					return
+				}
 			}
 			switch messageType {
 			case websocket.TextMessage:
@@ -75,11 +122,11 @@ func (w *Conn) read() {
 					if err != nil {
 						continue
 					}
-					if msg, ok := w.cache.Load(req.Id); ok {
+					if msg, ok := w.notifySig.Load(req.Id); ok {
 						if value, ok := msg.(chan []byte); ok {
 							value <- req.Data
 						}
-						w.cache.Delete(req.Id)
+						w.notifySig.Delete(req.Id)
 					}
 				}
 			}
@@ -96,7 +143,6 @@ func (w *Conn) write() {
 			if ok {
 				err := w.conn.WriteMessage(websocket.TextMessage, data)
 				if err != nil {
-					time.Sleep(500 * time.Millisecond) //todo
 					continue
 				}
 			}
@@ -119,18 +165,18 @@ func (w *Conn) Call(req Message) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	msgSig := make(chan []byte, 1)
-	w.cache.Store(req.Id, msgSig)
+	resp := make(chan []byte, 1)
+	w.notifySig.Store(req.Id, resp)
 	w.writeByte <- bytes
 	select {
-	case data := <-msgSig:
-		if _, ok := w.cache.Load(req.Id); ok {
-			w.cache.Delete(req.Id)
+	case data := <-resp:
+		if _, ok := w.notifySig.Load(req.Id); ok {
+			w.notifySig.Delete(req.Id)
 		}
 		return data, nil
 	case <-ctx.Done():
-		if _, ok := w.cache.Load(req.Id); ok {
-			w.cache.Delete(req.Id)
+		if _, ok := w.notifySig.Load(req.Id); ok {
+			w.notifySig.Delete(req.Id)
 		}
 		return nil, fmt.Errorf("ws execute timeout")
 	}
@@ -138,10 +184,19 @@ func (w *Conn) Call(req Message) ([]byte, error) {
 }
 
 func (w *Conn) Close() error {
+	if w.closing {
+		return nil
+	}
+	w.lock.Lock()
+	w.closing = true
+	defer w.lock.Unlock()
 	close(w.exit)
 	err := w.conn.Close()
 	if err != nil {
-		return err
+
+	}
+	if w.close != nil {
+		w.close()
 	}
 	return nil
 }
