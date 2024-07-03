@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -37,15 +38,19 @@ func newHandler(h interface{}) *handler {
 }
 
 func (h *handler) call(name string, args ...interface{}) (interface{}, error) {
-	//argsByte, err := json.Marshal(args)
-	//if err != nil {
-	//	return nil, err
-	//}
+	var argsByte []byte
+	var err error
+	if len(args) != 0 {
+		argsByte, err = json.Marshal(args)
+		if err != nil {
+			return nil, err
+		}
+	}
 	call, ok := h.calls[name]
 	if !ok {
 		return nil, fmt.Errorf("no such method: %s", name)
 	}
-	result, err := call.call(nil)
+	result, err := call.call(argsByte)
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +65,18 @@ type call struct {
 }
 
 func (c *call) call(obj []byte) (interface{}, error) {
-	//args, err := parseJsonToArgs(json.NewDecoder(bytes.NewReader(obj)), c.argTypes)
-	//if err != nil {
-	//	return nil, err
-	//}
-	var args []reflect.Value
-	args = append(args, c.rcvr)
-	out := c.fn.Call(args)
+	var fullArgs []reflect.Value
+	if c.rcvr.IsValid() {
+		fullArgs = append(fullArgs, c.rcvr)
+	}
+	if len(obj) != 0 {
+		args, err := parseJsonArrayToArgs(obj, c.argTypes)
+		if err != nil {
+			return nil, err
+		}
+		fullArgs = append(fullArgs, args...)
+	}
+	out := c.fn.Call(fullArgs)
 	if len(out) == 0 {
 		return nil, nil
 	} else if len(out) == 1 {
@@ -100,40 +110,6 @@ func newCall(name string, receiver, fn reflect.Value) *call {
 	return c
 }
 
-type testHandler struct {
-	name  string
-	count int
-}
-
-func (t *testHandler) Version(req Request) (*Response, error) {
-	fmt.Printf("version req: %v", req)
-	return &Response{"Success"}, nil
-}
-
-func (t *testHandler) Add(name string, count int) (string, error) {
-	t.name = name
-	t.count = count
-	return "", nil
-}
-
-func (t *testHandler) Info() (string, error) {
-	info := fmt.Sprintf("info %v:%v", t.name, t.count)
-	return info, nil
-}
-
-func (t *testHandler) Test() error {
-	fmt.Printf("test: \n")
-	return nil
-}
-
-type Request struct {
-	Height int
-}
-
-type Response struct {
-	Msg string
-}
-
 func formatName(name string) string {
 	ret := []rune(name)
 	if len(ret) > 0 {
@@ -142,8 +118,16 @@ func formatName(name string) string {
 	return string(ret)
 }
 
-func parseJsonToArgs(dec *json.Decoder, types []reflect.Type) ([]reflect.Value, error) {
+func parseJsonArrayToArgs(params []byte, types []reflect.Type) ([]reflect.Value, error) {
+	dec := json.NewDecoder(bytes.NewReader(params))
 	args := make([]reflect.Value, 0, len(types))
+	token, err := dec.Token()
+	if err != nil {
+		return args, err
+	}
+	if token != json.Delim('[') {
+		return args, fmt.Errorf("expected '['")
+	}
 	for i := 0; dec.More(); i++ {
 		if i >= len(types) {
 			return args, fmt.Errorf("too many arguments, want at most %d", len(types))
@@ -158,6 +142,6 @@ func parseJsonToArgs(dec *json.Decoder, types []reflect.Type) ([]reflect.Value, 
 		args = append(args, argval.Elem())
 	}
 	// Read end of args array.
-	_, err := dec.Token()
+	_, err = dec.Token()
 	return args, err
 }

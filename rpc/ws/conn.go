@@ -9,35 +9,51 @@ import (
 	"time"
 )
 
-type WsClient struct {
+type Conn struct {
 	conn      *websocket.Conn
 	writeByte chan []byte
 	exit      chan struct{}
 	cache     *sync.Map
+	fn        func(body []byte)
+	waitReply bool
 	timeout   time.Duration
 }
 
-func NewWsClient(endpoint string) (*WsClient, error) {
+func NewWsConn(endpoint string, fn func(body []byte), waitReply bool) (*Conn, error) {
 	//url := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
 	conn, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &WsClient{
+	return &Conn{
 		conn:      conn,
 		writeByte: make(chan []byte, 10),
 		exit:      make(chan struct{}, 1),
 		cache:     new(sync.Map),
 		timeout:   20 * time.Second,
+		fn:        fn,
+		waitReply: waitReply,
 	}, nil
 }
 
-func (w *WsClient) Run() {
+func NewConn(conn *websocket.Conn, fn func(body []byte), waitReply bool) *Conn {
+	return &Conn{
+		conn:      conn,
+		writeByte: make(chan []byte, 10),
+		exit:      make(chan struct{}, 1),
+		cache:     new(sync.Map),
+		timeout:   20 * time.Second,
+		fn:        fn,
+		waitReply: waitReply,
+	}
+}
+
+func (w *Conn) Run() {
 	go w.read()
 	go w.write()
 }
 
-func (w *WsClient) read() {
+func (w *Conn) read() {
 	for {
 		select {
 		case <-w.exit:
@@ -50,23 +66,28 @@ func (w *WsClient) read() {
 			}
 			switch messageType {
 			case websocket.TextMessage:
-				var req Message
-				err := json.Unmarshal(data, &req)
-				if err != nil {
-					continue
+				if w.fn != nil {
+					w.fn(data)
 				}
-				if msg, ok := w.cache.Load(req.Id); ok {
-					if value, ok := msg.(chan []byte); ok {
-						value <- req.Data
+				if w.waitReply {
+					var req Message
+					err := json.Unmarshal(data, &req)
+					if err != nil {
+						continue
 					}
-					w.cache.Delete(req.Id)
+					if msg, ok := w.cache.Load(req.Id); ok {
+						if value, ok := msg.(chan []byte); ok {
+							value <- req.Data
+						}
+						w.cache.Delete(req.Id)
+					}
 				}
 			}
 		}
 	}
 }
 
-func (w *WsClient) write() {
+func (w *Conn) write() {
 	for {
 		select {
 		case <-w.exit:
@@ -83,7 +104,15 @@ func (w *WsClient) write() {
 	}
 }
 
-func (w *WsClient) Execute(req Message) ([]byte, error) {
+func (w *Conn) Write(data []byte) error {
+	w.writeByte <- data
+	return nil
+}
+
+func (w *Conn) Call(req Message) ([]byte, error) {
+	if !w.waitReply {
+		return nil, fmt.Errorf("need set waitReploy to true")
+	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), w.timeout)
 	defer cancelFunc()
 	bytes, err := json.Marshal(req)
@@ -108,7 +137,11 @@ func (w *WsClient) Execute(req Message) ([]byte, error) {
 
 }
 
-func (w *WsClient) Close() error {
+func (w *Conn) Close() error {
 	close(w.exit)
-	return w.conn.Close()
+	err := w.conn.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }

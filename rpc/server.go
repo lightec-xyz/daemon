@@ -3,8 +3,8 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/btcsuite/websocket"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/gorilla/websocket"
 	"github.com/lightec-xyz/daemon/logger"
 	"log"
 	"net"
@@ -65,6 +65,28 @@ func NewWsServer(name, addr string, handler interface{}) (*Server, error) {
 	return &Server{httpServer: httpServer, name: name}, nil
 }
 
+func NewSimpleWsServer(name, addr string, fn WsFn) (*Server, error) {
+	isOpen := isPortOpen(addr)
+	if isOpen {
+		return nil, fmt.Errorf("port is open:%v", addr)
+	}
+	if fn == nil {
+		return nil, fmt.Errorf("fn is nil")
+	}
+	rpcHandler := WsWrappHandler(fn)
+	httpServer := &http.Server{
+		Addr:           addr,
+		Handler:        rpcHandler,
+		ReadTimeout:    HttpReadTimeOut,
+		WriteTimeout:   HttpWriteTimeOut,
+		MaxHeaderBytes: MaxHeaderBytes,
+		IdleTimeout:    3 * time.Hour,
+	}
+	return &Server{httpServer: httpServer, name: name}, nil
+}
+
+type WsFn func(conn *websocket.Conn)
+
 func (s *Server) Run() error {
 	err := s.httpServer.ListenAndServe()
 	if err != nil {
@@ -85,7 +107,7 @@ func (s *Server) Shutdown() error {
 	return nil
 }
 
-func WsWrappHandler(h http.Handler, fn func(conn *websocket.Conn)) http.Handler {
+func WsWrappHandler(fn func(conn *websocket.Conn)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,

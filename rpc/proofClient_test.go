@@ -27,7 +27,7 @@ func TestProofClient_GenZkProof(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(depositProof)
-	redeemProof, err := client.GenRedeemProof(RedeemRequest{})
+	redeemProof, err := client.GenRedeemProof(&RedeemRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
