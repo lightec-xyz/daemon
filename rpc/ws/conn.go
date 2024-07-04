@@ -18,6 +18,7 @@ type Fn func(req Message) (Message, error)
 
 // todo
 type Conn struct {
+	Name      string
 	conn      *websocket.Conn
 	writeByte chan []byte
 	exit      chan struct{}
@@ -116,6 +117,7 @@ func (w *Conn) read() {
 			}
 			switch messageType {
 			case websocket.TextMessage:
+				fmt.Printf("read: %v \n", string(data))
 				var req Message
 				err := json.Unmarshal(data, &req)
 				if err != nil {

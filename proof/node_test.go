@@ -58,16 +58,15 @@ func TestClusterModeProof(t *testing.T) {
 func TestWsServer(t *testing.T) {
 	var proofClient *rpc.ProofClient
 	var err error
-	server, err := rpc.NewCustomWsServer("test", "127.0.0.1:8080", func(conn *websocket.Conn) {
+	server, err := rpc.NewCustomWsServer("test", "127.0.0.1:8080", func(conn *websocket.Conn) error {
 		t.Log("new connection")
-		wsConn := ws.NewConn(conn, func(req ws.Message) (ws.Message, error) {
-			return ws.Message{}, nil
-		}, nil, true)
+		wsConn := ws.NewConn(conn, nil, nil, true)
 		wsConn.Run()
 		proofClient, err = rpc.NewCustomWsProofClient(wsConn)
 		if err != nil {
-			return
+			return err
 		}
+		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -79,9 +78,10 @@ func TestWsServer(t *testing.T) {
 				t.Log("send new req")
 				proof, err := proofClient.GenVerifyProof(rpc.VerifyRequest{})
 				if err != nil {
+					t.Log(err)
 					continue
 				}
-				t.Log(proof)
+				t.Logf("response: %v \n", proof)
 			}
 		}
 	}()
@@ -94,12 +94,22 @@ func TestWsServer(t *testing.T) {
 }
 
 func TestWsClient(t *testing.T) {
-	_, err := rpc.NewCustomWsProofClientByUrl("ws://127.0.0.1:8080", func(req ws.Message) (ws.Message, error) {
-		return ws.Message{}, nil
-	})
+	conn, err := ws.NewClientConn("ws://127.0.0.1:8080", func(req ws.Message) (ws.Message, error) {
+		t.Logf("clinet receive new req: %v \n", req)
+		response := rpc.VerifyResponse{
+			TxHash: "testVerifyResp",
+		}
+		data, err := json.Marshal(response)
+		if err != nil {
+			return ws.Message{}, err
+		}
+		t.Logf("clinet response: %v \n", string(data))
+		return ws.NewRespMessage(req.Id, req.Method, data), nil
+	}, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
+	go conn.Run()
 	exit := make(chan struct{})
 	<-exit
 }

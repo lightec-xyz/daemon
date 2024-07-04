@@ -68,7 +68,6 @@ func NewNode(cfg Config) (*Node, error) {
 			return nil, fmt.Errorf("zkParameterDir is empty,please config  ZkParameterDir env")
 		}
 	}
-
 	if !exists {
 		workerId = common.MustUUID()
 		err := dnode.WriteWorkerId(storeDb, workerId)

@@ -2,8 +2,10 @@ package node
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/ws"
 	"sort"
 	"strings"
 	"sync"
@@ -38,9 +40,21 @@ func (m *Schedule) AddWorker(endpoint string, nums int) error {
 	} else {
 		return fmt.Errorf("unSupport protocol: %v", endpoint)
 	}
-
 	newWorker := NewWorker(client, nums)
 	m.Workers = append(m.Workers, newWorker)
+	return nil
+}
+
+func (m *Schedule) AddWsWorker(conn *websocket.Conn) error {
+	wsConn := ws.NewConn(conn, nil, nil, true)
+	wsConn.Run()
+	proofClient, err := rpc.NewCustomWsProofClient(wsConn)
+	if err != nil {
+		logger.Error("new worker error:%v", err)
+		return err
+	}
+	worker := NewWorker(proofClient, 1)
+	m.Workers = append(m.Workers, worker)
 	return nil
 }
 

@@ -14,6 +14,11 @@ type Handler struct {
 	worker      rpc.IWorker
 }
 
+func (h *Handler) Close() error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h *Handler) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
 	response, err := h.worker.BtcBulkProve(req)
 	if err != nil {

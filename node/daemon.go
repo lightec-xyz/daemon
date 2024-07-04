@@ -224,7 +224,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	exitSignal := make(chan os.Signal, 1)
 
 	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, schedule, fileStore, exitSignal)
-	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler)
+	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, schedule.AddWsWorker)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -236,13 +236,11 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	logger.Debug("wsServer: listen on %v,port  %v", cfg.Rpcbind, cfg.WsPort)
-
 	//fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
 	//if err != nil {
 	//	logger.Error("new fetch error: %v", err)
 	//	return nil, err
 	//}
-
 	daemon := &Daemon{
 		agents:      agents,
 		rpcServer:   server,
@@ -251,7 +249,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		enableLocal: cfg.EnableLocalWorker,
 		exitSignal:  exitSignal,
 		taskManager: taskManager,
-		fetch:       nil,
+		fetch:       nil, // todo
 		debug:       common.GetEnvDebugMode(),
 		manager:     NewWrapperManger(msgManager, proofRequest, 2*time.Minute),
 	}

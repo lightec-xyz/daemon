@@ -26,6 +26,11 @@ type LocalWorker struct {
 	wid         string
 }
 
+func (w *LocalWorker) Close() error {
+	// todo
+	return nil
+}
+
 func (w *LocalWorker) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
 	proof, err := w.circuit.BtcBulkProve(req.Data)
 	if err != nil {
@@ -419,6 +424,13 @@ type Worker struct {
 	currentNums int
 	lock        sync.Mutex
 	wid         string
+}
+
+func (w *Worker) Close() error {
+	if w.client != nil {
+		return w.client.Close()
+	}
+	return nil
 }
 
 func (w *Worker) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {

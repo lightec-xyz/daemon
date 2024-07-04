@@ -13,12 +13,16 @@ import (
 	"time"
 )
 
+const (
+	WsConnPath = "/ws"
+)
+
 type Server struct {
 	httpServer *http.Server
 	name       string
 }
 
-func NewServer(name, addr string, handler interface{}) (*Server, error) {
+func NewServer(name, addr string, handler interface{}, wsHandler WsFn) (*Server, error) {
 	isOpen := isPortOpen(addr)
 	if isOpen {
 		return nil, fmt.Errorf("port is open:%v", addr)
@@ -29,10 +33,16 @@ func NewServer(name, addr string, handler interface{}) (*Server, error) {
 		logger.Error("register name error:%v %v", name, err)
 		return nil, err
 	}
+	var middlewareHandler http.Handler
+	if wsHandler == nil {
+		middlewareHandler = CORSHandler(rpcServer)
+	} else {
+		WsConnHandler(CORSHandler(rpcServer), wsHandler)
+	}
 	rpcServer.SetBatchLimits(BatchRequestLimit, BatchResponseMaxSize)
 	httpServer := &http.Server{
 		Addr:           addr,
-		Handler:        CORSHandler(rpcServer),
+		Handler:        middlewareHandler,
 		ReadTimeout:    HttpReadTimeOut,
 		WriteTimeout:   HttpWriteTimeOut,
 		MaxHeaderBytes: MaxHeaderBytes,
@@ -85,7 +95,7 @@ func NewCustomWsServer(name, addr string, fn WsFn) (*Server, error) {
 	return &Server{httpServer: httpServer, name: name}, nil
 }
 
-type WsFn func(conn *websocket.Conn)
+type WsFn func(conn *websocket.Conn) error
 
 func (s *Server) Run() error {
 	err := s.httpServer.ListenAndServe()
@@ -107,19 +117,17 @@ func (s *Server) Shutdown() error {
 	return nil
 }
 
-func WsWrappHandler(fn func(conn *websocket.Conn)) http.Handler {
+func WsWrappHandler(fn func(conn *websocket.Conn) error) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin:     wsHandshakeValidator([]string{"*"}),
+			CheckOrigin: wsHandshakeValidator([]string{"*"}),
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Printf("upgrade ws conn error: %v", err)
 			return
 		}
-		fn(conn)
+		err = fn(conn)
 		return
 	})
 }
@@ -141,6 +149,27 @@ func CORSHandler(h http.Handler) http.Handler {
 	})
 }
 
+func WsConnHandler(h http.Handler, fn func(conn *websocket.Conn) error) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == WsConnPath {
+			var upgrader = websocket.Upgrader{
+				CheckOrigin: wsHandshakeValidator([]string{"*"}),
+			}
+			conn, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				log.Printf("upgrade ws conn error: %v", err)
+				return
+			}
+			err = fn(conn)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			return
+		} else {
+			h.ServeHTTP(w, r)
+		}
+	})
+}
 func isPortOpen(endpoint string) bool {
 	split := strings.Split(endpoint, ":")
 	if len(split) != 2 {
