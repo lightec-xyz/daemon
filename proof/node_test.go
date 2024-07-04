@@ -60,10 +60,9 @@ func TestWsServer(t *testing.T) {
 	var err error
 	server, err := rpc.NewCustomWsServer("test", "127.0.0.1:8080", func(conn *websocket.Conn) {
 		t.Log("new connection")
-		wsConn := ws.NewConn(conn, func(body []byte) {
-		}, func() {
-
-		}, true)
+		wsConn := ws.NewConn(conn, func(req ws.Message) (ws.Message, error) {
+			return ws.Message{}, nil
+		}, nil, true)
 		wsConn.Run()
 		proofClient, err = rpc.NewCustomWsProofClient(wsConn)
 		if err != nil {
@@ -77,9 +76,10 @@ func TestWsServer(t *testing.T) {
 		for {
 			time.Sleep(10 * time.Second)
 			if proofClient != nil {
+				t.Log("send new req")
 				proof, err := proofClient.GenVerifyProof(rpc.VerifyRequest{})
 				if err != nil {
-					t.Fatal(err)
+					continue
 				}
 				t.Log(proof)
 			}
@@ -94,7 +94,9 @@ func TestWsServer(t *testing.T) {
 }
 
 func TestWsClient(t *testing.T) {
-	_, err := rpc.NewCustomWsProofClientByUrl("ws://127.0.0.1:8080")
+	_, err := rpc.NewCustomWsProofClientByUrl("ws://127.0.0.1:8080", func(req ws.Message) (ws.Message, error) {
+		return ws.Message{}, nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

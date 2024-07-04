@@ -14,12 +14,15 @@ const (
 	ModeServer = "server"
 )
 
+type Fn func(req Message) (Message, error)
+
+// todo
 type Conn struct {
 	conn      *websocket.Conn
 	writeByte chan []byte
 	exit      chan struct{}
-	notifySig *sync.Map
-	fn        func(body []byte)
+	notify    *sync.Map
+	fn        Fn
 	close     func()
 	waitReply bool
 	timeout   time.Duration
@@ -28,7 +31,7 @@ type Conn struct {
 	closing   bool
 }
 
-func NewWsConn(endpoint string, fn func(body []byte), close func(), waitReply bool) (*Conn, error) {
+func NewClientConn(endpoint string, fn Fn, close func(), waitReply bool) (*Conn, error) {
 	//url := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
 	conn, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 	if err != nil {
@@ -44,7 +47,7 @@ func NewWsConn(endpoint string, fn func(body []byte), close func(), waitReply bo
 		conn:      conn,
 		writeByte: make(chan []byte, 10),
 		exit:      make(chan struct{}, 1),
-		notifySig: new(sync.Map),
+		notify:    new(sync.Map),
 		timeout:   timeout,
 		fn:        fn,
 		close:     close,
@@ -53,7 +56,7 @@ func NewWsConn(endpoint string, fn func(body []byte), close func(), waitReply bo
 	}, nil
 }
 
-func NewConn(conn *websocket.Conn, fn func(body []byte), close func(), waitReply bool) *Conn {
+func NewConn(conn *websocket.Conn, fn Fn, close func(), waitReply bool) *Conn {
 	timeout := 60 * time.Second
 	conn.SetPingHandler(nil)
 	conn.SetPongHandler(func(appData string) error {
@@ -64,7 +67,7 @@ func NewConn(conn *websocket.Conn, fn func(body []byte), close func(), waitReply
 		conn:      conn,
 		writeByte: make(chan []byte, 10),
 		exit:      make(chan struct{}, 1),
-		notifySig: new(sync.Map),
+		notify:    new(sync.Map),
 		timeout:   timeout,
 		fn:        fn,
 		close:     close,
@@ -113,20 +116,24 @@ func (w *Conn) read() {
 			}
 			switch messageType {
 			case websocket.TextMessage:
+				var req Message
+				err := json.Unmarshal(data, &req)
+				if err != nil {
+					continue
+				}
+				// todo
 				if w.fn != nil {
-					w.fn(data)
+					go func(req Message) {
+						reply, _ := w.fn(req)
+						w.Write(reply)
+					}(req)
 				}
 				if w.waitReply {
-					var req Message
-					err := json.Unmarshal(data, &req)
-					if err != nil {
-						continue
-					}
-					if msg, ok := w.notifySig.Load(req.Id); ok {
+					if msg, ok := w.notify.Load(req.Id); ok {
 						if value, ok := msg.(chan []byte); ok {
 							value <- req.Data
 						}
-						w.notifySig.Delete(req.Id)
+						w.notify.Delete(req.Id)
 					}
 				}
 			}
@@ -150,33 +157,43 @@ func (w *Conn) write() {
 	}
 }
 
-func (w *Conn) Write(data []byte) error {
+func (w *Conn) Write(req Message) error {
+	data, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
 	w.writeByte <- data
 	return nil
 }
 
-func (w *Conn) Call(req Message) ([]byte, error) {
+func (w *Conn) Call(method string, args ...interface{}) ([]byte, error) {
 	if !w.waitReply {
 		return nil, fmt.Errorf("need set waitReploy to true")
 	}
-	ctx, cancelFunc := context.WithTimeout(context.Background(), w.timeout)
-	defer cancelFunc()
+	params, err := json.Marshal(args)
+	if err != nil {
+		return nil, err
+	}
+	req := NewReqMessage(method, params)
 	bytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), w.timeout)
+	defer cancelFunc()
+
 	resp := make(chan []byte, 1)
-	w.notifySig.Store(req.Id, resp)
+	w.notify.Store(req.Id, resp)
 	w.writeByte <- bytes
 	select {
 	case data := <-resp:
-		if _, ok := w.notifySig.Load(req.Id); ok {
-			w.notifySig.Delete(req.Id)
+		if _, ok := w.notify.Load(req.Id); ok {
+			w.notify.Delete(req.Id)
 		}
 		return data, nil
 	case <-ctx.Done():
-		if _, ok := w.notifySig.Load(req.Id); ok {
-			w.notifySig.Delete(req.Id)
+		if _, ok := w.notify.Load(req.Id); ok {
+			w.notify.Delete(req.Id)
 		}
 		return nil, fmt.Errorf("ws execute timeout")
 	}

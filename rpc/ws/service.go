@@ -8,10 +8,8 @@ import (
 	"unicode"
 )
 
-/*
-todo
-just a simple rpc service,need more check and test
-*/
+// Service todo
+// just a simple rpc service,need more check and test
 type Service struct {
 	calls map[string]*call
 }
@@ -32,7 +30,6 @@ func NewService(h interface{}) *Service {
 		}
 		calls[name] = cb
 	}
-
 	return &Service{
 		calls: calls,
 	}
@@ -58,6 +55,11 @@ func (h *Service) Call(name string, args ...interface{}) (interface{}, error) {
 	return result, nil
 }
 
+func (h *Service) Check(method string) bool {
+	_, ok := h.calls[method]
+	return ok
+}
+
 type call struct {
 	name     string
 	fn       reflect.Value  // the function
@@ -66,12 +68,13 @@ type call struct {
 }
 
 func (c *call) call(obj []byte) (interface{}, error) {
+	// todo
 	var fullArgs []reflect.Value
 	if c.rcvr.IsValid() {
 		fullArgs = append(fullArgs, c.rcvr)
 	}
 	if len(obj) != 0 {
-		args, err := parseJsonArrayToArgs(obj, c.argTypes)
+		args, err := parseJsonToArgs(obj, c.argTypes)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +122,8 @@ func formatName(name string) string {
 	return string(ret)
 }
 
-func parseJsonArrayToArgs(params []byte, types []reflect.Type) ([]reflect.Value, error) {
+func parseJsonToArgs(params []byte, types []reflect.Type) ([]reflect.Value, error) {
+	// todo
 	dec := json.NewDecoder(bytes.NewReader(params))
 	args := make([]reflect.Value, 0, len(types))
 	token, err := dec.Token()

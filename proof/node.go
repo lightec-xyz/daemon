@@ -167,7 +167,7 @@ func (node *Node) Init() error {
 
 func (node *Node) Start() error {
 	if node.mode == common.Client {
-		go dnode.DoTimerTask("generator", node.checkTime, node.local.Run, node.exit)
+		go dnode.DoTimerTask("generator", node.checkTime, node.local.Polling, node.exit)
 		go dnode.DoTimerTask("checkState", 30*time.Second, node.local.CheckState, node.exit)
 	} else if node.mode == common.Cluster {
 		go node.rpcServer.Run()

@@ -44,9 +44,3 @@ type IWorker interface {
 	CurrentNums() int
 	Id() string
 }
-
-// ICRequest Todo
-type ICRequest interface {
-	DepositProofReq() (IDepositRequest, error)
-	DepositResponse(data DepositResponse) error
-}

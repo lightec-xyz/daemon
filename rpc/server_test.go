@@ -9,9 +9,9 @@ import (
 
 func TestWsSimpleServer(t *testing.T) {
 	server, err := NewCustomWsServer("wsSimpleSever", "localhost:8080", func(conn *websocket.Conn) {
-		c := ws.NewConn(conn, func(body []byte) {
-			t.Log("server receive", string(body))
+		c := ws.NewConn(conn, func(body []byte) ([]byte, bool, error) {
 
+			return nil, false, nil
 		}, func() {
 			t.Log("server close")
 		}, false)
@@ -20,7 +20,7 @@ func TestWsSimpleServer(t *testing.T) {
 		go func() {
 			for {
 				time.Sleep(3 * time.Second)
-				c.Write([]byte("hello"))
+				c.Write(ws.NewReqMessage("server", []byte("hello")))
 			}
 		}()
 	})
@@ -34,8 +34,8 @@ func TestWsSimpleServer(t *testing.T) {
 }
 
 func TestWsClient(t *testing.T) {
-	conn, err := ws.NewWsConn("ws://localhost:8080", func(body []byte) {
-		t.Log("client receive", string(body))
+	conn, err := ws.NewClientConn("ws://localhost:8080", func(body []byte) ([]byte, bool, error) {
+		return nil, false, nil
 	}, func() {
 		t.Log("client close")
 	}, false)
@@ -46,7 +46,7 @@ func TestWsClient(t *testing.T) {
 	go func() {
 		for {
 			time.Sleep(3 * time.Second)
-			conn.Write([]byte("hello"))
+			conn.Write(ws.NewReqMessage("client", []byte("hello")))
 		}
 	}()
 	sig := make(chan struct{})

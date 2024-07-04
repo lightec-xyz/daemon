@@ -43,8 +43,36 @@ func NewLocal(zkParamDir, url, datadir, id string, proofTypes []common.ZkProofTy
 		cacheProofs: node.NewProofRespQueue(),
 	}, nil
 }
+func (l *Local) Init() error {
+	submitProofs, err := node.ReadAllProofResponse(l.store)
+	if err != nil {
+		logger.Error("read all proof response error:%v", err)
+		return err
+	}
+	for _, resp := range submitProofs {
+		for _, item := range resp.Data {
+			logger.Debug("load pending proof response:%v %v", resp.Id, item.Id())
+		}
+		_, err := l.client.SubmitProof(resp)
+		if err != nil {
+			logger.Error("submit proof error again:%v %v", resp.Id, err)
+			l.cacheProofs.Push(resp)
+			logger.Debug("add proof response to pending queue:%v", resp.Id)
+		} else {
+			logger.Debug("success submit proof again:%v", resp.Id)
+		}
+		// todo
+		err = node.DeleteProofResponse(l.store, resp.Id)
+		if err != nil {
+			logger.Error("delete proof response error:%v", err)
+			return err
+		}
 
-func (l *Local) Run() error {
+	}
+	return nil
+}
+
+func (l *Local) Polling() error {
 	logger.Debug("generator proof run")
 	if l.worker.CurrentNums() >= l.worker.MaxNums() {
 		logger.Warn("maxNums limit reached, wait proof generated")
@@ -119,35 +147,6 @@ func (l *Local) CheckState() error {
 	return nil
 }
 
-func (l *Local) Init() error {
-	submitProofs, err := node.ReadAllProofResponse(l.store)
-	if err != nil {
-		logger.Error("read all proof response error:%v", err)
-		return err
-	}
-	for _, resp := range submitProofs {
-		for _, item := range resp.Data {
-			logger.Debug("load pending proof response:%v %v", resp.Id, item.Id())
-		}
-		_, err := l.client.SubmitProof(resp)
-		if err != nil {
-			logger.Error("submit proof error again:%v %v", resp.Id, err)
-			l.cacheProofs.Push(resp)
-			logger.Debug("add proof response to pending queue:%v", resp.Id)
-		} else {
-			logger.Debug("success submit proof again:%v", resp.Id)
-		}
-		// todo
-		err = node.DeleteProofResponse(l.store, resp.Id)
-		if err != nil {
-			logger.Error("delete proof response error:%v", err)
-			return err
-		}
-
-	}
-	return nil
-}
-
 func (l *Local) Close() error {
 	logger.Debug("store cache data to db now ...")
 	l.cacheProofs.Iterator(func(value *common.SubmitProof) error {
@@ -161,7 +160,6 @@ func (l *Local) Close() error {
 		}
 		return nil
 	})
-
 	return nil
 }
 

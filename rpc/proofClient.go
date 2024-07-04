@@ -171,15 +171,7 @@ func (p *ProofClient) customCall(result interface{}, method string, args ...inte
 	if vi.Kind() != reflect.Ptr {
 		return fmt.Errorf("result must be pointer")
 	}
-	params, err := json.Marshal(args)
-	if err != nil {
-		return err
-	}
-	response, err := p.conn.Call(ws.Message{
-		Id:     time.Now().UnixNano(),
-		Method: method,
-		Data:   params,
-	})
+	response, err := p.conn.Call(method, args...)
 	if err != nil {
 		return err
 	}
@@ -192,7 +184,7 @@ func (p *ProofClient) customCall(result interface{}, method string, args ...inte
 
 func (p *ProofClient) Close() error {
 	if p.conn != nil {
-		err := p.Close()
+		err := p.conn.Close()
 		if err != nil {
 			return err
 		}
@@ -230,8 +222,8 @@ func NewCustomWsProofClient(conn *ws.Conn) (*ProofClient, error) {
 	}, nil
 }
 
-func NewCustomWsProofClientByUrl(url string) (*ProofClient, error) {
-	conn, err := ws.NewWsConn(url, nil, nil, true)
+func NewCustomWsProofClientByUrl(url string, fn ws.Fn) (*ProofClient, error) {
+	conn, err := ws.NewClientConn(url, fn, nil, true)
 	if err != nil {
 		return nil, err
 	}
