@@ -190,6 +190,16 @@ func (p *ProofClient) customCall(result interface{}, method string, args ...inte
 	return nil
 }
 
+func (p *ProofClient) Close() error {
+	if p.conn != nil {
+		err := p.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func NewProofClient(url string) (IProof, error) {
 	client, err := rpc.DialHTTP(url)
 	if err != nil {
@@ -213,6 +223,20 @@ func NewWsProofClient(url string) (*ProofClient, error) {
 }
 
 func NewCustomWsProofClient(conn *ws.Conn) (*ProofClient, error) {
+	return &ProofClient{
+		conn:    conn,
+		timeout: 60 * time.Second,
+		custom:  true,
+	}, nil
+}
+
+func NewCustomWsProofClientByUrl(url string) (*ProofClient, error) {
+	conn, err := ws.NewWsConn(url, nil, nil, true)
+	if err != nil {
+		return nil, err
+	}
+	// todo
+	conn.Run()
 	return &ProofClient{
 		conn:    conn,
 		timeout: 60 * time.Second,

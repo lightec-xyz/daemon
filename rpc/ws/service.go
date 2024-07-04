@@ -8,14 +8,15 @@ import (
 	"unicode"
 )
 
-// todo
-// just a simple test handler
-
-type handler struct {
+/*
+todo
+just a simple rpc service,need more check and test
+*/
+type Service struct {
 	calls map[string]*call
 }
 
-func newHandler(h interface{}) *handler {
+func NewService(h interface{}) *Service {
 	calls := make(map[string]*call)
 	receiver := reflect.ValueOf(h)
 	typ := receiver.Type()
@@ -32,12 +33,12 @@ func newHandler(h interface{}) *handler {
 		calls[name] = cb
 	}
 
-	return &handler{
+	return &Service{
 		calls: calls,
 	}
 }
 
-func (h *handler) call(name string, args ...interface{}) (interface{}, error) {
+func (h *Service) Call(name string, args ...interface{}) (interface{}, error) {
 	var argsByte []byte
 	var err error
 	if len(args) != 0 {
@@ -83,9 +84,9 @@ func (c *call) call(obj []byte) (interface{}, error) {
 		return nil, out[0].Interface().(error)
 	} else if len(out) == 2 {
 		if out[1].IsNil() {
-			return out[0], nil
+			return out[0].Interface(), nil
 		}
-		return out[0], out[1].Interface().(error)
+		return nil, out[1].Interface().(error)
 	} else {
 		return nil, fmt.Errorf("return value more than 2")
 	}

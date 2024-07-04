@@ -87,6 +87,7 @@ func (h *Handler) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, e
 }
 
 func (h *Handler) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
+	logger.Debug("gen verify proof ")
 	response, err := h.worker.GenVerifyProof(req)
 	if err != nil {
 		logger.Error("gen verify proof error:%v", err)
