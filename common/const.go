@@ -63,6 +63,7 @@ type Mode string
 const (
 	Client  Mode = "client"
 	Cluster Mode = "cluster"
+	Custom  Mode = "custom"
 )
 
 type ProofWeight int

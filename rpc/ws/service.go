@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sync"
 	"unicode"
 )
 
 // Service todo
 // just a simple rpc service,need more check and test
 type Service struct {
-	calls map[string]*call
+	calls *sync.Map // map[string]*call
 }
 
 func NewService(h interface{}) *Service {
-	calls := make(map[string]*call)
+	calls := new(sync.Map)
 	receiver := reflect.ValueOf(h)
 	typ := receiver.Type()
 	for m := 0; m < typ.NumMethod(); m++ {
@@ -24,11 +25,11 @@ func NewService(h interface{}) *Service {
 			continue
 		}
 		name := formatName(method.Name)
-		cb := newCall(name, receiver, method.Func)
-		if cb == nil {
+		cl := newCall(name, receiver, method.Func)
+		if cl == nil {
 			continue
 		}
-		calls[name] = cb
+		calls.Store(name, cl)
 	}
 	return &Service{
 		calls: calls,
@@ -44,7 +45,7 @@ func (h *Service) Call(name string, args ...interface{}) (interface{}, error) {
 			return nil, err
 		}
 	}
-	call, ok := h.calls[name]
+	call, ok := h.GetCall(name)
 	if !ok {
 		return nil, fmt.Errorf("no such method: %s", name)
 	}
@@ -55,8 +56,21 @@ func (h *Service) Call(name string, args ...interface{}) (interface{}, error) {
 	return result, nil
 }
 
+func (h *Service) GetCall(method string) (*call, bool) {
+	value, ok := h.calls.Load(method)
+	if !ok {
+		return nil, false
+	}
+	call, ok := value.(*call)
+	if !ok {
+		return nil, false
+	}
+	return call, true
+
+}
+
 func (h *Service) Check(method string) bool {
-	_, ok := h.calls[method]
+	_, ok := h.calls.Load(method)
 	return ok
 }
 

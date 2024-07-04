@@ -3,5 +3,5 @@
   "maxNums": 1,
   "network": "testnet",
   "datadir": "/Users/red/lworkspace/lightec/daemon/proof/test",
-  "model": "client"
+  "mode": "client"
 }
