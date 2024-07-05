@@ -3,7 +3,6 @@ package proof
 import (
 	"encoding/json"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/gorilla/websocket"
 	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
@@ -15,7 +14,8 @@ import (
 
 func init() {
 	err := logger.InitLogger(&logger.LogCfg{
-		File: false,
+		File:     false,
+		IsStdout: true,
 	})
 	if err != nil {
 		panic(err)
@@ -74,9 +74,9 @@ func TestCustomModeProof(t *testing.T) {
 func TestWsServer(t *testing.T) {
 	var proofClient *rpc.ProofClient
 	var err error
-	server, err := rpc.NewCustomWsServer("zkbtc", "127.0.0.1:8080", func(conn *websocket.Conn) error {
+	server, err := rpc.NewCustomWsServer("zkbtc", "127.0.0.1:8080", func(opt *rpc.WsOpt) error {
 		t.Log("new connection")
-		wsConn := ws.NewConn(conn, nil, nil, true)
+		wsConn := ws.NewConn(opt.Conn, nil, nil, true)
 		wsConn.Run()
 		proofClient, err = rpc.NewCustomWsProofClient(wsConn)
 		if err != nil {

@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/ws"
@@ -53,8 +52,8 @@ func (m *Schedule) AddWorker(endpoint string, nums int) error {
 	return nil
 }
 
-func (m *Schedule) AddWsWorker(conn *websocket.Conn) error {
-	wsConn := ws.NewConn(conn, nil, nil, true)
+func (m *Schedule) AddWsWorker(opt *rpc.WsOpt) error {
+	wsConn := ws.NewConn(opt.Conn, nil, nil, true)
 	wsConn.Run()
 	proofClient, err := rpc.NewCustomWsProofClient(wsConn)
 	if err != nil {

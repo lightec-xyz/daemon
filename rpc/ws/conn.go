@@ -205,8 +205,5 @@ func (w *Conn) Close() error {
 	err := w.conn.Close()
 	if err != nil {
 	}
-	if w.close != nil {
-		w.close()
-	}
 	return nil
 }

@@ -95,7 +95,12 @@ func NewCustomWsServer(name, addr string, fn WsFn) (*Server, error) {
 	return &Server{httpServer: httpServer, name: name}, nil
 }
 
-type WsFn func(conn *websocket.Conn) error
+type WsFn func(opt *WsOpt) error
+
+type WsOpt struct {
+	Id   string
+	Conn *websocket.Conn
+}
 
 func (s *Server) Run() error {
 	err := s.httpServer.ListenAndServe()
@@ -117,17 +122,18 @@ func (s *Server) Shutdown() error {
 	return nil
 }
 
-func WsWrappHandler(fn func(conn *websocket.Conn) error) http.Handler {
+func WsWrappHandler(fn func(opt *WsOpt) error) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			CheckOrigin: wsHandshakeValidator([]string{"*"}),
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Printf("upgrade ws conn error: %v", err)
+			log.Printf("upgrade ws Conn error: %v", err)
 			return
 		}
-		err = fn(conn)
+		// todo
+		err = fn(&WsOpt{Conn: conn})
 		return
 	})
 }
@@ -149,20 +155,21 @@ func CORSHandler(h http.Handler) http.Handler {
 	})
 }
 
-func WsConnHandler(h http.Handler, fn func(conn *websocket.Conn) error) http.Handler {
+func WsConnHandler(h http.Handler, fn func(opt *WsOpt) error) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == WsConnPath {
 			// todo
-			logger.Debug("new ws conn coming: %v", r.URL.Path)
 			var upgrader = websocket.Upgrader{
 				CheckOrigin: wsHandshakeValidator([]string{"*"}),
 			}
+			id := r.URL.Query().Get("id")
 			conn, err := upgrader.Upgrade(w, r, nil)
+			logger.Debug("new ws Conn coming: %v id: %v", r.URL.Path, id)
 			if err != nil {
-				log.Printf("upgrade ws conn error: %v", err)
+				log.Printf("upgrade ws Conn error: %v", err)
 				return
 			}
-			err = fn(conn)
+			err = fn(&WsOpt{Id: id, Conn: conn})
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			}

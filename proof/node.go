@@ -125,7 +125,8 @@ func NewNode(cfg Config) (*Node, error) {
 		}, nil
 	} else if cfg.Mode == common.Custom {
 		handler := NewHandler(storeDb, memoryStore, worker)
-		server, err := NewServer(cfg.Url, cfg.Mode, handler)
+		url := fmt.Sprintf("%v?id=%v", cfg.Url, workerId)
+		server, err := NewServer(url, cfg.Mode, handler)
 		if err != nil {
 			logger.Error("new server error:%v", err)
 			return nil, err

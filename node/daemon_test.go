@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/gorilla/websocket"
 	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -16,7 +15,8 @@ import (
 
 func init() {
 	err := logger.InitLogger(&logger.LogCfg{
-		File: false,
+		File:     false,
+		IsStdout: true,
 	})
 	if err != nil {
 		panic(err)
@@ -55,9 +55,9 @@ func TestLocalDevDaemon(t *testing.T) {
 
 func TestServer(t *testing.T) {
 	handler := NewHandler(nil, nil, nil, nil, nil, nil)
-	server, err := rpc.NewServer(RpcRegisterName, "127.0.0.1:8970", handler, func(conn *websocket.Conn) error {
-		t.Log("new connection")
-		newConn := ws.NewConn(conn, nil, nil, true)
+	server, err := rpc.NewServer(RpcRegisterName, "127.0.0.1:8970", handler, func(opt *rpc.WsOpt) error {
+		t.Logf("new connection: %v \n", opt.Id)
+		newConn := ws.NewConn(opt.Conn, nil, nil, true)
 		go newConn.Run()
 		go func() {
 			for {

@@ -17,7 +17,7 @@ func NewCustomServer(url string, handler interface{}) (*CustomServer, error) {
 	service := NewService(handler)
 	wsConn, err := ws.NewClientConn(url, service.Call, nil, false)
 	if err != nil {
-		logger.Error("new client conn error:%v %v", url, err)
+		logger.Error("new client Conn error:%v %v", url, err)
 		return nil, err
 	}
 	return &CustomServer{

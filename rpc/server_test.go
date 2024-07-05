@@ -1,17 +1,15 @@
 package rpc
 
 import (
-	"github.com/gorilla/websocket"
 	"github.com/lightec-xyz/daemon/rpc/ws"
 	"testing"
 	"time"
 )
 
 func TestWsSimpleServer(t *testing.T) {
-	server, err := NewCustomWsServer("wsSimpleSever", "localhost:8080", func(conn *websocket.Conn) {
-		c := ws.NewConn(conn, func(body []byte) ([]byte, bool, error) {
-
-			return nil, false, nil
+	server, err := NewCustomWsServer("wsSimpleSever", "localhost:8080", func(opt *WsOpt) error {
+		c := ws.NewConn(opt.Conn, func(req ws.Message) (ws.Message, error) {
+			return ws.Message{}, nil
 		}, func() {
 			t.Log("server close")
 		}, false)
@@ -23,6 +21,7 @@ func TestWsSimpleServer(t *testing.T) {
 				c.Write(ws.NewReqMessage("server", []byte("hello")))
 			}
 		}()
+		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -34,8 +33,8 @@ func TestWsSimpleServer(t *testing.T) {
 }
 
 func TestWsClient(t *testing.T) {
-	conn, err := ws.NewClientConn("ws://localhost:8080", func(body []byte) ([]byte, bool, error) {
-		return nil, false, nil
+	conn, err := ws.NewClientConn("ws://localhost:8080", func(req ws.Message) (ws.Message, error) {
+		return ws.Message{}, nil
 	}, func() {
 		t.Log("client close")
 	}, false)
