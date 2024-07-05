@@ -34,6 +34,7 @@ type IProof interface {
 	BtcPackedRequest(data *BtcPackedRequest) (*BtcPackResponse, error)
 	BtcWrapProve(data *BtcWrapRequest) (*BtcWrapResponse, error)
 	ProofInfo(proofId string) (ProofInfo, error)
+	SupportProofType() []common.ZkProofType
 	Close() error
 }
 

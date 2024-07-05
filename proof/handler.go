@@ -1,6 +1,7 @@
 package proof
 
 import (
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
@@ -12,6 +13,10 @@ type Handler struct {
 	memoryStore store.IStore
 	store       store.IStore
 	worker      rpc.IWorker
+}
+
+func (h *Handler) SupportProofType() []common.ZkProofType {
+	return nil
 }
 
 func (h *Handler) Close() error {

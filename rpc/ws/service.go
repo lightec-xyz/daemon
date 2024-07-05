@@ -90,7 +90,7 @@ func (c *call) call(param []byte) (interface{}, error) {
 	if len(out) == 0 {
 		return nil, nil
 	} else if len(out) == 1 {
-		return nil, out[0].Interface().(error)
+		return out[0].Interface(), nil
 	} else if len(out) == 2 {
 		if out[1].IsNil() {
 			return out[0].Interface(), nil

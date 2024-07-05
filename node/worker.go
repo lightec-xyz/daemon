@@ -26,6 +26,10 @@ type LocalWorker struct {
 	wid         string
 }
 
+func (w *LocalWorker) SupportProofType() []common.ZkProofType {
+	return nil
+}
+
 func (w *LocalWorker) Close() error {
 	// todo
 	return nil
@@ -424,6 +428,10 @@ type Worker struct {
 	currentNums int
 	lock        sync.Mutex
 	wid         string
+}
+
+func (w *Worker) SupportProofType() []common.ZkProofType {
+	return nil
 }
 
 func (w *Worker) Close() error {

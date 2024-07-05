@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/rpc/ws"
 	"reflect"
 	"time"
@@ -17,6 +18,15 @@ type ProofClient struct {
 	timeout time.Duration
 	conn    *ws.Conn
 	custom  bool
+}
+
+func (p *ProofClient) SupportProofType() []common.ZkProofType {
+	var result []common.ZkProofType
+	err := p.call(&result, "zkbtc_supportProofType")
+	if err != nil {
+		return nil
+	}
+	return result
 }
 
 func (p *ProofClient) BtcBulkProve(data *BtcBulkRequest) (*BtcBulkResponse, error) {

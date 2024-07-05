@@ -10,19 +10,17 @@ import (
 func TestService(t *testing.T) {
 	node := testService{}
 	service := NewService(&node)
-	info, err := service.Call("info")
+	info, err := service.Call("info", nil)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Log(info)
-	res, err := service.Call("add", "abel", 100)
+	res, err := service.Call("add", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(res)
-	result, err := service.Call("version", Request{
-		Height: 100,
-	})
+	result, err := service.Call("version", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
