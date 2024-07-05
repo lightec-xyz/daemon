@@ -26,9 +26,18 @@ func NewCustomServer(url string, handler interface{}) (*CustomServer, error) {
 	}, nil
 }
 
+func (s *CustomServer) Run() error {
+	s.conn.Run()
+	return nil
+}
+
 func (s *CustomServer) Close() error {
-	s.service.Close()
-	s.conn.Close()
+	if s.service != nil {
+		s.service.Close()
+	}
+	if s.conn != nil {
+		s.conn.Close()
+	}
 	return nil
 }
 

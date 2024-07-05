@@ -20,23 +20,17 @@ type Local struct {
 	cacheProofs *node.ProofRespQueue
 }
 
-func NewLocal(zkParamDir, url, datadir, id string, proofTypes []common.ZkProofType, num int, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
+func NewLocal(url string, worker rpc.IWorker, proofTypes []common.ZkProofType, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
 	client, err := rpc.NewNodeClient(url)
 	if err != nil {
 		logger.Error("new node client error:%v", err)
 		return nil, err
 	}
-	worker, err := node.NewLocalWorker(zkParamDir, datadir, num)
-	if err != nil {
-		logger.Error("new local worker error:%v", err)
-		return nil, err
-	}
-	logger.Info("workerId: %v", id)
 	return &Local{
 		client:      client,
 		fileStore:   fileStore,
 		worker:      worker,
-		Id:          id,
+		Id:          worker.Id(),
 		store:       store,
 		proofTypes:  proofTypes,
 		exit:        make(chan struct{}, 1),
@@ -72,7 +66,7 @@ func (l *Local) Init() error {
 	return nil
 }
 
-func (l *Local) Polling() error {
+func (l *Local) polling() error {
 	logger.Debug("generator proof run")
 	if l.worker.CurrentNums() >= l.worker.MaxNums() {
 		logger.Warn("maxNums limit reached, wait proof generated")

@@ -5,7 +5,6 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	dnode "github.com/lightec-xyz/daemon/node"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
 	"os/signal"
@@ -15,13 +14,10 @@ import (
 
 // Node Todo
 type Node struct {
-	rpcServer *rpc.Server
-	mode      common.Mode
-	checkTime time.Duration
-	local     *Local
-	store     store.IStore
-	exit      chan os.Signal
-	Id        string
+	server *Server
+	local  *Local
+	mode   common.Mode
+	exit   chan os.Signal
 }
 
 func NewNode(cfg Config) (*Node, error) {
@@ -39,6 +35,7 @@ func NewNode(cfg Config) (*Node, error) {
 	}
 	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
 	logger.Info("dbPath:%s", dbPath)
+	logger.Info("mode:%v", cfg.Mode)
 	zkProofTypes, err := toZkProofType(cfg.ProofType)
 	if err != nil {
 		logger.Error("convert proof type error:%v", err)
@@ -55,18 +52,18 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("new store error:%v,dbPath:%s", err, cfg.DataDir)
 		return nil, err
 	}
-	workerId, exists, err := dnode.ReadWorkerId(storeDb)
-	if err != nil {
-		logger.Error("read worker id error:%v", err)
-		return nil, err
-	}
 	debugMode := common.GetEnvDebugMode()
 	logger.Debug("DebugMode: %v", debugMode)
 	zkParameterDir := common.GetEnvZkParameterDir()
 	if !debugMode {
 		if zkParameterDir == "" {
-			return nil, fmt.Errorf("zkParameterDir is empty,please config  ZkParameterDir env")
+			return nil, fmt.Errorf("zkParameterDir is empty,please config ZkParameterDir env")
 		}
+	}
+	workerId, exists, err := dnode.ReadWorkerId(storeDb)
+	if err != nil {
+		logger.Error("read worker id error:%v", err)
+		return nil, err
 	}
 	if !exists {
 		workerId = common.MustUUID()
@@ -109,46 +106,33 @@ func NewNode(cfg Config) (*Node, error) {
 			return nil, err
 		}
 	}
+	worker, err := dnode.NewLocalWorker(zkParameterDir, cfg.DataDir, cfg.MaxNums)
+	if err != nil {
+		logger.Error("new local worker error:%v", err)
+		return nil, err
+	}
 	if cfg.Mode == common.Client {
-		local, err := NewLocal(zkParameterDir, cfg.Url, cfg.DataDir, workerId, zkProofTypes, cfg.MaxNums, storeDb, fileStorage)
+		local, err := NewLocal(cfg.Url, worker, zkProofTypes, storeDb, fileStorage)
 		if err != nil {
 			logger.Error("new local error:%v", err)
 			return nil, err
 		}
-		checkTime := 1 * time.Minute
-		if debugMode {
-			checkTime = 30 * time.Second
-		}
 		return &Node{
-			local:     local,
-			checkTime: checkTime,
-			mode:      cfg.Mode,
-			exit:      make(chan os.Signal, 1),
-			store:     storeDb,
-			Id:        workerId,
+			local: local,
+			mode:  cfg.Mode,
+			exit:  make(chan os.Signal, 1),
 		}, nil
-	} else if cfg.Mode == common.Cluster {
-		host := fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort)
-		memoryStore := store.NewMemoryStore()
-		// todo
-		worker, err := dnode.NewLocalWorker("", "", cfg.MaxNums)
+	} else if cfg.Mode == common.Cluster || cfg.Mode == common.Custom {
+		handler := NewHandler(storeDb, store.NewMemoryStore(), worker)
+		server, err := NewServer(cfg.Url, cfg.Mode, handler)
 		if err != nil {
-			logger.Error("new local worker error:%v", err)
-			return nil, err
-		}
-		handler := NewHandler(storeDb, memoryStore, worker)
-		logger.Info("proof worker info: %v", cfg.Info())
-		server, err := rpc.NewWsServer(RpcRegisterName, host, handler)
-		if err != nil {
-			logger.Error("new rpc rpcServer error:%v", err)
+			logger.Error("new server error:%v", err)
 			return nil, err
 		}
 		return &Node{
-			rpcServer: server,
-			mode:      cfg.Mode,
-			exit:      make(chan os.Signal, 1),
-			store:     storeDb,
-			Id:        workerId,
+			server: server,
+			mode:   cfg.Mode,
+			exit:   make(chan os.Signal, 1),
 		}, nil
 	}
 	return nil, fmt.Errorf("new node error: unknown model:%v", cfg.Mode)
@@ -166,10 +150,10 @@ func (node *Node) Init() error {
 
 func (node *Node) Start() error {
 	if node.mode == common.Client {
-		go dnode.DoTimerTask("generator", node.checkTime, node.local.Polling, node.exit)
+		go dnode.DoTimerTask("generator", 30*time.Second, node.local.polling, node.exit)
 		go dnode.DoTimerTask("checkState", 30*time.Second, node.local.CheckState, node.exit)
 	} else if node.mode == common.Cluster {
-		go node.rpcServer.Run()
+		go node.server.Run()
 	}
 	logger.Info("proof worker node start now ....")
 	signal.Notify(node.exit, syscall.SIGTERM, syscall.SIGQUIT)
@@ -189,8 +173,8 @@ func (node *Node) Start() error {
 
 func (node *Node) Close() error {
 	logger.Warn("proof worker node exit now ....")
-	if node.rpcServer != nil {
-		err := node.rpcServer.Shutdown()
+	if node.server != nil {
+		err := node.server.Close()
 		if err != nil {
 			logger.Error(" proof worker node exit now: %v", err)
 		}

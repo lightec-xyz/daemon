@@ -15,8 +15,8 @@ type Handler struct {
 }
 
 func (h *Handler) Close() error {
-	//TODO implement me
-	panic("implement me")
+	err := h.worker.Close()
+	return err
 }
 
 func (h *Handler) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
