@@ -1,14 +1,27 @@
 package node
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/lightec-xyz/daemon/common"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/gorilla/websocket"
+	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/ws"
 	"os"
 	"testing"
+	"time"
 )
+
+func init() {
+	err := logger.InitLogger(&logger.LogCfg{
+		File: false,
+	})
+	if err != nil {
+		panic(err)
+	}
+}
 
 func TestLocalDevDaemon(t *testing.T) {
 	cfgBytes, err := os.ReadFile("/Users/red/lworkspace/lightec/daemon/cmd/node/local.json")
@@ -40,41 +53,38 @@ func TestLocalDevDaemon(t *testing.T) {
 	}
 }
 
-func TestDemo(t *testing.T) {
-	startHeader, err := hex.DecodeString("0000000000005fcfce1ba578d04676b167575b4890c4e75ce86d0b92b7078a50")
+func TestServer(t *testing.T) {
+	handler := NewHandler(nil, nil, nil, nil, nil, nil)
+	server, err := rpc.NewServer(RpcRegisterName, "127.0.0.1:8970", handler, func(conn *websocket.Conn) error {
+		t.Log("new connection")
+		newConn := ws.NewConn(conn, nil, nil, true)
+		go newConn.Run()
+		go func() {
+			for {
+				time.Sleep(5 * time.Second)
+				client, err := rpc.NewCustomWsProofClient(newConn)
+				if err != nil {
+					t.Error(err)
+					continue
+				}
+				result, err := client.GenVerifyProof(rpc.VerifyRequest{
+					TxHash:    "testhash",
+					BlockHash: "blockHash",
+					Data: &btcproverUtils.GrandRollupProofData{
+						GenesisHash: &chainhash.Hash{},
+					}})
+				if err != nil {
+					t.Error(err)
+					continue
+				}
+				t.Log(result)
+			}
+		}()
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(startHeader)
-	common.ReverseBytes(startHeader)
-
-	middleHeader, err := hex.DecodeString("00409135508a07b7920b6de85ce7c490485b5767b17646d078a51bcecf5f00000000000056ad3b883149e96c495487cf1f5fe39296cf92b7ac12d8cb0a9dbc5cc0066b8a588c7b66f0ff0f1bdfa65698")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(middleHeader[4:36])
-	t.Log(startHeader)
-
-	t.Log("---------------------------")
-	startHeader, err = hex.DecodeString("b5fbf970bf362cc3203d71022d0764ce966a9d5cee7615354e27362400000000")
-	if err != nil {
-		t.Fatal(err)
-	}
-	middleHeader, err = hex.DecodeString("01000000b5fbf970bf362cc3203d71022d0764ce966a9d5cee7615354e273624000000008c209cca50575be7aad6faf11c26af9d91fc91f9bf953c1e7d4fca44e44be3fa3d286f49ffff001d2e18e5ed")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(startHeader)
-	t.Log(middleHeader[4:36])
-
-}
-
-func TestWsServer(t *testing.T) {
-	handler := &Handler{}
-	server, err := rpc.NewWsServer("test", "127.0.0.1:", handler)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(server)
+	server.Run()
 
 }

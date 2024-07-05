@@ -56,13 +56,13 @@ func (s *Service) Close() error {
 }
 
 func (s *Service) Call(req ws.Message) (ws.Message, error) {
-	exists := s.CheckMethod(req.Method)
+	logger.Debug("service call method: %s", req.Method)
+	method, exists := s.CheckMethod(req.Method)
 	if !exists {
 		logger.Error("no such method: %s", req.Method)
 		return ws.NewErrorMsg(req.Id, req.Method, fmt.Sprintf("no such method %s", req.Method)), fmt.Errorf("no such method: %s", req.Method)
 	}
-
-	result, err := s.rpcService.Call(req.Method, req.Data)
+	result, err := s.rpcService.Call(method, req.Data)
 	if err != nil {
 		logger.Error("call error:%v %v", req.Method, err)
 		return ws.NewErrorMsg(req.Id, req.Method, err.Error()), err
@@ -79,8 +79,8 @@ func (s *Service) Call(req ws.Message) (ws.Message, error) {
 	}
 }
 
-func (s *Service) CheckMethod(method string) bool {
+func (s *Service) CheckMethod(method string) (string, bool) {
 	_, after, _ := strings.Cut(method, "_")
 	exists := s.rpcService.Check(after)
-	return exists
+	return after, exists
 }

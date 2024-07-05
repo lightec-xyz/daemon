@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestClientModeProof(t *testing.T) {
-	config := NewClientModeConfig()
+	config := NewTestClientModeConfig()
 	node, err := NewNode(config)
 	if err != nil {
 		t.Fatal(err)
@@ -39,8 +39,24 @@ func TestClientModeProof(t *testing.T) {
 }
 
 func TestClusterModeProof(t *testing.T) {
-	config := NewClusterModeConfig()
+	config := NewTestClusterModeConfig()
 
+	node, err := NewNode(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = node.Init()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = node.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCustomModeProof(t *testing.T) {
+	config := NewTestCustomModeConfig()
 	node, err := NewNode(config)
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +74,7 @@ func TestClusterModeProof(t *testing.T) {
 func TestWsServer(t *testing.T) {
 	var proofClient *rpc.ProofClient
 	var err error
-	server, err := rpc.NewCustomWsServer("test", "127.0.0.1:8080", func(conn *websocket.Conn) error {
+	server, err := rpc.NewCustomWsServer("zkbtc", "127.0.0.1:8080", func(conn *websocket.Conn) error {
 		t.Log("new connection")
 		wsConn := ws.NewConn(conn, nil, nil, true)
 		wsConn.Run()
@@ -94,7 +110,7 @@ func TestWsServer(t *testing.T) {
 }
 
 func TestWsClient(t *testing.T) {
-	conn, err := ws.NewClientConn("ws://127.0.0.1:8080", func(req ws.Message) (ws.Message, error) {
+	conn, err := ws.NewClientConn("ws://127.0.0.1:8970/ws", func(req ws.Message) (ws.Message, error) {
 		t.Logf("clinet receive new req: %v \n", req)
 		response := rpc.VerifyResponse{
 			TxHash: "testVerifyResp",
@@ -106,6 +122,7 @@ func TestWsClient(t *testing.T) {
 		t.Logf("clinet response: %v \n", string(data))
 		return ws.NewRespMessage(req.Id, req.Method, data), nil
 	}, nil, false)
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,13 +139,17 @@ func TestRpcHandler(t *testing.T) {
 	handler := NewHandler(nil, nil, worker)
 	service := ws.NewService(handler)
 	t.Log(service)
-	result, err := service.Call("genVerifyProof", rpc.VerifyRequest{
+	request := rpc.VerifyRequest{
 		TxHash:    "testhash",
 		BlockHash: "blockHash",
 		Data: &btcproverUtils.GrandRollupProofData{
 			GenesisHash: &chainhash.Hash{},
-		},
-	})
+		}}
+	param, err := json.Marshal([]interface{}{request})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := service.Call("genVerifyProof", param)
 	if err != nil {
 		t.Fatal(err)
 	}

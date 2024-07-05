@@ -33,7 +33,7 @@ type Conn struct {
 }
 
 func NewClientConn(endpoint string, fn Fn, close func(), waitReply bool) (*Conn, error) {
-	//url := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
+	//url := url.URL{Scheme: "ws", Host: "localhost:8970", Path: "/ws"}
 	conn, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (w *Conn) read() {
 				if w.waitReply {
 					if msg, ok := w.notify.Load(req.Id); ok {
 						if value, ok := msg.(chan []byte); ok {
-							value <- req.Data
+							value <- data
 						}
 						w.notify.Delete(req.Id)
 					}
@@ -192,7 +192,15 @@ func (w *Conn) Call(method string, args ...interface{}) ([]byte, error) {
 		if _, ok := w.notify.Load(req.Id); ok {
 			w.notify.Delete(req.Id)
 		}
-		return data, nil
+		var reply Message
+		err := json.Unmarshal(data, &reply)
+		if err != nil {
+			return nil, err
+		}
+		if reply.Error != "" {
+			return nil, fmt.Errorf("%v", reply.Error)
+		}
+		return reply.Data, nil
 	case <-ctx.Done():
 		if _, ok := w.notify.Load(req.Id); ok {
 			w.notify.Delete(req.Id)

@@ -31,6 +31,9 @@ func Fatal(msg string, ctx ...interface{}) {
 }
 
 func InitLogger(cfg *LogCfg) error {
+	if logger != nil {
+		return nil
+	}
 	lg, err := newLogger(cfg)
 	if err != nil {
 		return fmt.Errorf("new logger error:%v", err)

@@ -37,7 +37,7 @@ func NewServer(name, addr string, handler interface{}, wsHandler WsFn) (*Server,
 	if wsHandler == nil {
 		middlewareHandler = CORSHandler(rpcServer)
 	} else {
-		WsConnHandler(CORSHandler(rpcServer), wsHandler)
+		middlewareHandler = WsConnHandler(rpcServer, wsHandler)
 	}
 	rpcServer.SetBatchLimits(BatchRequestLimit, BatchResponseMaxSize)
 	httpServer := &http.Server{
@@ -152,6 +152,8 @@ func CORSHandler(h http.Handler) http.Handler {
 func WsConnHandler(h http.Handler, fn func(conn *websocket.Conn) error) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == WsConnPath {
+			// todo
+			logger.Debug("new ws conn coming: %v", r.URL.Path)
 			var upgrader = websocket.Upgrader{
 				CheckOrigin: wsHandshakeValidator([]string{"*"}),
 			}

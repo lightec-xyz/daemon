@@ -140,10 +140,19 @@ func NewNode(cfg Config) (*Node, error) {
 }
 
 func (node *Node) Init() error {
-	err := node.local.Init()
-	if err != nil {
-		logger.Error("local init error:%v", err)
-		return err
+	if node.local != nil {
+		err := node.local.Init()
+		if err != nil {
+			logger.Error("local init error:%v", err)
+			return err
+		}
+	}
+	if node.server != nil {
+		err := node.server.init()
+		if err != nil {
+			logger.Error("server init error:%v", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -152,8 +161,8 @@ func (node *Node) Start() error {
 	if node.mode == common.Client {
 		go dnode.DoTimerTask("generator", 30*time.Second, node.local.polling, node.exit)
 		go dnode.DoTimerTask("checkState", 30*time.Second, node.local.CheckState, node.exit)
-	} else if node.mode == common.Cluster {
-		go node.server.Run()
+	} else if node.mode == common.Cluster || node.mode == common.Custom {
+		node.server.Run()
 	}
 	logger.Info("proof worker node start now ....")
 	signal.Notify(node.exit, syscall.SIGTERM, syscall.SIGQUIT)

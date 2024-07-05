@@ -39,6 +39,11 @@ func NewServer(url string, mode common.Mode, handler interface{}) (*Server, erro
 	}
 }
 
+func (s *Server) init() error {
+
+	return nil
+}
+
 func (s *Server) Run() {
 	if s.customServer != nil {
 		err := s.customServer.Run()
@@ -47,10 +52,7 @@ func (s *Server) Run() {
 		}
 	}
 	if s.rpcServer != nil {
-		err := s.rpcServer.Run()
-		if err != nil {
-			logger.Error("rpc server run error:%v", err)
-		}
+		go s.rpcServer.Run()
 	}
 }
 

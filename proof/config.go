@@ -35,7 +35,7 @@ func (c *Config) Check() error {
 	if c.Mode == "" {
 		c.Mode = common.Client
 	}
-	if c.Mode == common.Client {
+	if c.Mode == common.Client || c.Mode == common.Custom {
 		if c.Url == "" {
 			return fmt.Errorf("url is empty")
 		}
@@ -57,7 +57,7 @@ func (c *Config) Info() string {
 		c.RpcBind, c.RpcPort, c.MaxNums, c.Network, c.DataDir)
 }
 
-func NewClientModeConfig() Config {
+func NewTestClientModeConfig() Config {
 	return Config{
 		Url:     "http://127.0.0.1:9970",
 		MaxNums: 1,
@@ -67,12 +67,22 @@ func NewClientModeConfig() Config {
 	}
 }
 
-func NewClusterModeConfig() Config {
+func NewTestClusterModeConfig() Config {
 	return Config{
 		RpcBind: "0.0.0.0",
 		RpcPort: "30001",
 		MaxNums: 1,
 		Mode:    common.Cluster,
+		Network: "local",
+		DataDir: "/Users/red/lworkspace/lightec/daemon/proof/test",
+	}
+}
+
+func NewTestCustomModeConfig() Config {
+	return Config{
+		Url:     "ws://127.0.0.1:8970/ws",
+		MaxNums: 1,
+		Mode:    common.Custom,
 		Network: "local",
 		DataDir: "/Users/red/lworkspace/lightec/daemon/proof/test",
 	}

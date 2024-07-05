@@ -36,15 +36,7 @@ func NewService(h interface{}) *Service {
 	}
 }
 
-func (h *Service) Call(name string, args ...interface{}) (interface{}, error) {
-	var argsByte []byte
-	var err error
-	if len(args) != 0 {
-		argsByte, err = json.Marshal(args)
-		if err != nil {
-			return nil, err
-		}
-	}
+func (h *Service) Call(name string, argsByte []byte) (interface{}, error) {
 	call, ok := h.GetCall(name)
 	if !ok {
 		return nil, fmt.Errorf("no such method: %s", name)
@@ -81,14 +73,14 @@ type call struct {
 	argTypes []reflect.Type // input argument types
 }
 
-func (c *call) call(obj []byte) (interface{}, error) {
+func (c *call) call(param []byte) (interface{}, error) {
 	// todo
 	var fullArgs []reflect.Value
 	if c.rcvr.IsValid() {
 		fullArgs = append(fullArgs, c.rcvr)
 	}
-	if len(obj) != 0 {
-		args, err := parseJsonToArgs(obj, c.argTypes)
+	if len(param) != 0 {
+		args, err := parseJsonToArgs(param, c.argTypes)
 		if err != nil {
 			return nil, err
 		}
