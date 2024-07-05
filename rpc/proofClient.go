@@ -171,7 +171,13 @@ func (p *ProofClient) customCall(result interface{}, method string, args ...inte
 	if vi.Kind() != reflect.Ptr {
 		return fmt.Errorf("result must be pointer")
 	}
-	response, err := p.conn.Call(method, args...)
+	timeout, err := getTimeout(method)
+	if err != nil {
+		return err
+	}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+	response, err := p.conn.Call(ctx, method, args...)
 	if err != nil {
 		return err
 	}
@@ -222,16 +228,7 @@ func NewCustomWsProofClient(conn *ws.Conn) (*ProofClient, error) {
 	}, nil
 }
 
-func NewCustomWsProofClientByUrl(url string, fn ws.Fn) (*ProofClient, error) {
-	conn, err := ws.NewClientConn(url, fn, nil, true)
-	if err != nil {
-		return nil, err
-	}
+func getTimeout(method string) (time.Duration, error) {
 	// todo
-	conn.Run()
-	return &ProofClient{
-		conn:    conn,
-		timeout: 60 * time.Second,
-		custom:  true,
-	}, nil
+	return 90 * time.Minute, nil
 }

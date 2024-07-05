@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-const (
-	ModeClient = "client"
-	ModeServer = "server"
-)
-
 type Fn func(req Message) (Message, error)
 
 // todo
@@ -26,8 +21,6 @@ type Conn struct {
 	fn        Fn
 	close     func()
 	waitReply bool
-	timeout   time.Duration
-	mode      string
 	lock      sync.Mutex
 	closing   bool
 }
@@ -38,10 +31,9 @@ func NewClientConn(endpoint string, fn Fn, close func(), waitReply bool) (*Conn,
 	if err != nil {
 		return nil, err
 	}
-	timeout := 60 * time.Second
 	conn.SetPingHandler(nil)
 	conn.SetPongHandler(func(appData string) error {
-		err := conn.SetReadDeadline(time.Now().Add(timeout))
+		err := conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return err
 	})
 	return &Conn{
@@ -49,19 +41,16 @@ func NewClientConn(endpoint string, fn Fn, close func(), waitReply bool) (*Conn,
 		writeByte: make(chan []byte, 10),
 		exit:      make(chan struct{}, 1),
 		notify:    new(sync.Map),
-		timeout:   timeout,
 		fn:        fn,
 		close:     close,
 		waitReply: waitReply,
-		mode:      ModeClient,
 	}, nil
 }
 
 func NewConn(conn *websocket.Conn, fn Fn, close func(), waitReply bool) *Conn {
-	timeout := 60 * time.Second
 	conn.SetPingHandler(nil)
 	conn.SetPongHandler(func(appData string) error {
-		err := conn.SetReadDeadline(time.Now().Add(timeout))
+		err := conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return err
 	})
 	return &Conn{
@@ -69,11 +58,9 @@ func NewConn(conn *websocket.Conn, fn Fn, close func(), waitReply bool) *Conn {
 		writeByte: make(chan []byte, 10),
 		exit:      make(chan struct{}, 1),
 		notify:    new(sync.Map),
-		timeout:   timeout,
 		fn:        fn,
 		close:     close,
 		waitReply: waitReply,
-		mode:      ModeServer,
 	}
 }
 
@@ -85,7 +72,7 @@ func (w *Conn) Run() {
 }
 
 func (w *Conn) heart() {
-	ticker := time.NewTicker(w.timeout / 2)
+	ticker := time.NewTicker(60 * time.Second)
 	for {
 		select {
 		case <-w.exit:
@@ -117,7 +104,7 @@ func (w *Conn) read() {
 			}
 			switch messageType {
 			case websocket.TextMessage:
-				fmt.Printf("read: %v \n", string(data))
+				//fmt.Printf("read: %v \n", string(data))
 				var req Message
 				err := json.Unmarshal(data, &req)
 				if err != nil {
@@ -168,7 +155,7 @@ func (w *Conn) Write(req Message) error {
 	return nil
 }
 
-func (w *Conn) Call(method string, args ...interface{}) ([]byte, error) {
+func (w *Conn) Call(ctx context.Context, method string, args ...interface{}) ([]byte, error) {
 	if !w.waitReply {
 		return nil, fmt.Errorf("need set waitReploy to true")
 	}
@@ -181,9 +168,6 @@ func (w *Conn) Call(method string, args ...interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancelFunc := context.WithTimeout(context.Background(), w.timeout)
-	defer cancelFunc()
-
 	resp := make(chan []byte, 1)
 	w.notify.Store(req.Id, resp)
 	w.writeByte <- bytes
@@ -220,7 +204,6 @@ func (w *Conn) Close() error {
 	close(w.exit)
 	err := w.conn.Close()
 	if err != nil {
-
 	}
 	if w.close != nil {
 		w.close()

@@ -111,6 +111,7 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("new local worker error:%v", err)
 		return nil, err
 	}
+	memoryStore := store.NewMemoryStore()
 	if cfg.Mode == common.Client {
 		local, err := NewLocal(cfg.Url, worker, zkProofTypes, storeDb, fileStorage)
 		if err != nil {
@@ -122,9 +123,21 @@ func NewNode(cfg Config) (*Node, error) {
 			mode:  cfg.Mode,
 			exit:  make(chan os.Signal, 1),
 		}, nil
-	} else if cfg.Mode == common.Cluster || cfg.Mode == common.Custom {
-		handler := NewHandler(storeDb, store.NewMemoryStore(), worker)
+	} else if cfg.Mode == common.Custom {
+		handler := NewHandler(storeDb, memoryStore, worker)
 		server, err := NewServer(cfg.Url, cfg.Mode, handler)
+		if err != nil {
+			logger.Error("new server error:%v", err)
+			return nil, err
+		}
+		return &Node{
+			server: server,
+			mode:   cfg.Mode,
+			exit:   make(chan os.Signal, 1),
+		}, nil
+	} else if cfg.Mode == common.Cluster {
+		handler := NewHandler(storeDb, memoryStore, worker)
+		server, err := NewServer(fmt.Sprintf("%v:%v", cfg.RpcBind, cfg.RpcPort), cfg.Mode, handler)
 		if err != nil {
 			logger.Error("new server error:%v", err)
 			return nil, err

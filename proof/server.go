@@ -40,7 +40,6 @@ func NewServer(url string, mode common.Mode, handler interface{}) (*Server, erro
 }
 
 func (s *Server) init() error {
-
 	return nil
 }
 

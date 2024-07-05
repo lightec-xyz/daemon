@@ -22,6 +22,14 @@ func NewSchedule(workers []rpc.IWorker) *Schedule {
 	}
 }
 
+func (m *Schedule) Close() error {
+	for _, worker := range m.Workers {
+		if worker != nil {
+			_ = worker.Close()
+		}
+	}
+	return nil
+}
 func (m *Schedule) AddWorker(endpoint string, nums int) error {
 	var client rpc.IProof
 	var err error
