@@ -39,9 +39,9 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := client.NewClient(cfg.Url, cfg.BtcUser, cfg.BtcPwd)
+	btcClient, err := client.NewClient(cfg.Url, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
-		logger.Error("new client error: %v", err)
+		logger.Error("new btcClient error: %v", err)
 		return nil, err
 	}
 	proofPath := fmt.Sprintf("%v/proof", cfg.DataDir)
@@ -52,7 +52,7 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 	}
 	return &BtcSetup{
 		cfg:       cfg,
-		client:    client,
+		client:    btcClient,
 		exit:      make(chan os.Signal, 1),
 		fileStore: fileStorage,
 	}, nil
