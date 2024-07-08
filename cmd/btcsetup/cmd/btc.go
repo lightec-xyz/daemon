@@ -14,13 +14,13 @@ import (
 	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
 	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
-	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
 	"os"
 )
 
 const (
-	upDistance   = 1008
-	baseDistance = 56
+	upDistance     = 6 * middleDistance
+	middleDistance = 6 * baseDistance
+	baseDistance   = 56
 )
 
 type BtcSetup struct {
@@ -99,48 +99,26 @@ func (bs *BtcSetup) Setup() error {
 
 func (bs *BtcSetup) Prove() error {
 	endBlockHeight := bs.cfg.EndHeight
-	startIndex := endBlockHeight - 3*upDistance
-	if startIndex < 0 {
-		return fmt.Errorf("end height is too small: %v", bs.cfg.EndHeight)
-	}
-	for index := startIndex; index <= endBlockHeight; index = index + upDistance {
-		baseProof, err := bs.baseProve(index)
-		if err != nil {
-			logger.Error("baseLevel prove error: %v %v", index, err)
-			return err
-		}
-		middleProof, err := bs.middleProve(index, baseProof)
-		if err != nil {
-			logger.Error("middle prove error: %v %v", index, err)
-			return err
-		}
-		logger.Info("start up prove: %v~%v", index, index+upDistance)
-		upProof, err := bs.uplevelProve(index, middleProof)
-		if err != nil {
-			logger.Error("upLever prove error: %v %v", index, err)
-			return err
-		}
-		err = bs.fileStore.StoreUp(genKey("up", index, index+upDistance), upProof.Proof, upProof.Wit)
-		if err != nil {
-			logger.Error("store upLevel proof error %v %v", index, err)
-			return err
-		}
-		logger.Info("upLevel prove proof complete: %v", index)
+	_, err := bs.uplevelProve(endBlockHeight)
+	if err != nil {
+		logger.Error("uplevel prove error: %v", err)
+		return err
 	}
 	return nil
 
 }
 
-func (bs *BtcSetup) baseProve(height int64) (*circuits.WitnessFile, error) {
+func (bs *BtcSetup) baseProve(endHeight int64) (*circuits.WitnessFile, error) {
 	var proofs []native_plonk.Proof
 	var witnesses []witness.Witness
-	startIndex := height - 6*baseDistance
-	if startIndex < 0 {
-		return nil, fmt.Errorf("height less than 0")
+	start := endHeight - 6*baseDistance
+	if start < 0 {
+		return nil, fmt.Errorf("endHeight less than 0")
 	}
-	for index := startIndex; index <= height; index = index + baseDistance {
-		logger.Info("start baseLevel prove: %v~%v", index, index+baseDistance)
-		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(index))
+	for index := start; index <= endHeight; index = index + baseDistance {
+		eHeight := index + baseDistance
+		logger.Info("start baseLevel prove: %v~%v", index, eHeight)
+		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(eHeight))
 		if err != nil {
 			logger.Error("get baseLevel proof data error: %v %v", index, err)
 			return nil, err
@@ -150,7 +128,7 @@ func (bs *BtcSetup) baseProve(height int64) (*circuits.WitnessFile, error) {
 			logger.Error("baseLevel prove error: %v %v", index, err)
 			return nil, err
 		}
-		err = bs.fileStore.StoreBase(genKey("base", index, index+baseDistance), baseProof.Proof, baseProof.Wit)
+		err = bs.fileStore.StoreBase(genKey("base", index, eHeight), baseProof.Proof, baseProof.Wit)
 		if err != nil {
 			logger.Error("store base level proof error %v %v", index, err)
 			return nil, err
@@ -164,18 +142,24 @@ func (bs *BtcSetup) baseProve(height int64) (*circuits.WitnessFile, error) {
 	}, nil
 }
 
-func (bs *BtcSetup) middleProve(height int64, baseProof *circuits.WitnessFile) (*circuits.WitnessFile, error) {
-	startIndex := height - 6*baseDistance
-	if startIndex < 0 {
-		return nil, fmt.Errorf("middle height less than 0")
+func (bs *BtcSetup) middleProve(endHeight int64) (*circuits.WitnessFile, error) {
+	start := endHeight - 6*middleDistance
+	if start < 0 {
+		return nil, fmt.Errorf("middle endHeight less than 0")
 	}
 	var proofs []native_plonk.Proof
 	var witnesses []witness.Witness
-	for index := startIndex; index <= height; index++ {
-		logger.Info("start middle prove: %v~%v", index, index+baseDistance)
-		middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, uint32(index))
+	for index := start; index <= endHeight; index = index + middleDistance {
+		eHeight := index + middleDistance
+		logger.Info("start middle prove: %v~%v", index, eHeight)
+		middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, uint32(eHeight))
 		if err != nil {
 			logger.Error("get middle data error: %v %v", index, err)
+			return nil, err
+		}
+		baseProof, err := bs.baseProve(eHeight)
+		if err != nil {
+			logger.Error("base prove error: %v %v", index, err)
 			return nil, err
 		}
 		middleProof, err := midlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, middleData, baseProof)
@@ -183,7 +167,7 @@ func (bs *BtcSetup) middleProve(height int64, baseProof *circuits.WitnessFile) (
 			logger.Error("middLevel prove error: %v %v", index, err)
 			return nil, err
 		}
-		err = bs.fileStore.StoreMiddle(genKey("middle", index, index+baseDistance), middleProof.Proof, middleProof.Wit)
+		err = bs.fileStore.StoreMiddle(genKey("middle", index, eHeight), middleProof.Proof, middleProof.Wit)
 		if err != nil {
 			logger.Error("store middle level proof error %v %v", index, err)
 			return nil, err
@@ -197,18 +181,35 @@ func (bs *BtcSetup) middleProve(height int64, baseProof *circuits.WitnessFile) (
 	}, nil
 }
 
-func (bs *BtcSetup) uplevelProve(height int64, middleProof *circuits.WitnessFile) (*reLightCommon.Proof, error) {
-	upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, uint32(height))
-	if err != nil {
-		logger.Error("get upLevel data : %v %v", height, err)
-		return nil, err
+func (bs *BtcSetup) uplevelProve(endHeight int64) (*circuits.WitnessFile, error) {
+	start := endHeight - 3*upDistance // todo
+	if start < 0 {
+		return nil, fmt.Errorf("up height less than 0")
 	}
-	upProof, err := upperlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, upData, middleProof)
-	if err != nil {
-		logger.Error("upLevel prove error: %v %v", height, err)
-		return nil, err
+	for index := start; index <= endHeight; index = index + upDistance {
+		eHeight := index + upDistance
+		upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, uint32(endHeight))
+		if err != nil {
+			logger.Error("get upLevel data : %v %v", endHeight, err)
+			return nil, err
+		}
+		middleProof, err := bs.middleProve(eHeight)
+		if err != nil {
+			logger.Error("middle prove error: %v %v", index, err)
+			return nil, err
+		}
+		upProof, err := upperlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, upData, middleProof)
+		if err != nil {
+			logger.Error("upLevel prove error: %v %v", endHeight, err)
+			return nil, err
+		}
+		err = bs.fileStore.StoreUp(genKey("up", index, endHeight), upProof.Proof, upProof.Wit)
+		if err != nil {
+			logger.Error("store upLevel proof error %v %v", index, err)
+			return nil, err
+		}
 	}
-	return upProof, nil
+	return nil, nil
 }
 
 type RunConfig struct {
