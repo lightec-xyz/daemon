@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+const (
+	client = "client"
+	server = "server"
+)
+
 type Fn func(req Message) (Message, error)
 
 // todo
@@ -23,10 +28,12 @@ type Conn struct {
 	waitReply bool
 	lock      sync.Mutex
 	closing   bool
+	autoConn  bool
+	mode      string
 }
 
 func NewClientConn(endpoint string, fn Fn, close func(), waitReply bool) (*Conn, error) {
-	//url := url.URL{Scheme: "ws", Host: "localhost:8970", Path: "/ws"}
+	//url := url.Url{Scheme: "ws", Host: "localhost:8970", Path: "/ws"}
 	conn, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -44,6 +51,7 @@ func NewClientConn(endpoint string, fn Fn, close func(), waitReply bool) (*Conn,
 		fn:        fn,
 		close:     close,
 		waitReply: waitReply,
+		mode:      client,
 	}, nil
 }
 
@@ -61,6 +69,7 @@ func NewConn(conn *websocket.Conn, fn Fn, close func(), waitReply bool) *Conn {
 		fn:        fn,
 		close:     close,
 		waitReply: waitReply,
+		mode:      server,
 	}
 }
 
@@ -191,7 +200,6 @@ func (w *Conn) Call(ctx context.Context, method string, args ...interface{}) ([]
 		}
 		return nil, fmt.Errorf("ws execute timeout")
 	}
-
 }
 
 func (w *Conn) Close() error {

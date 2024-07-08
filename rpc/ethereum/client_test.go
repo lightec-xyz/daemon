@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
+	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"log"
 	"math/big"
 	"testing"
