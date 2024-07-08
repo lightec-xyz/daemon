@@ -63,7 +63,7 @@ func (fs *FileStorage) StoreBase(key string, proof native_plonk.Proof, wit witne
 }
 
 func (fs *FileStorage) StoreMiddle(key string, proof native_plonk.Proof, wit witness.Witness) error {
-	storeProof, err := newStoreProof(string(baseTable), key, proof, wit)
+	storeProof, err := newStoreProof(string(middleTable), key, proof, wit)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (fs *FileStorage) StoreMiddle(key string, proof native_plonk.Proof, wit wit
 }
 
 func (fs *FileStorage) StoreUp(key string, proof native_plonk.Proof, wit witness.Witness) error {
-	storeProof, err := newStoreProof(string(baseTable), key, proof, wit)
+	storeProof, err := newStoreProof(string(upTable), key, proof, wit)
 	if err != nil {
 		return err
 	}

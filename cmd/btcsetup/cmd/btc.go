@@ -135,6 +135,7 @@ func (bs *BtcSetup) baseProve(endHeight int64) (*circuits.WitnessFile, error) {
 		}
 		proofs = append(proofs, baseProof.Proof)
 		witnesses = append(witnesses, baseProof.Wit)
+		logger.Info("complete baseLevel prove: %v~%v", index, eHeight)
 	}
 	return &circuits.WitnessFile{
 		Proofs:    proofs,
@@ -174,6 +175,7 @@ func (bs *BtcSetup) middleProve(endHeight int64) (*circuits.WitnessFile, error) 
 		}
 		proofs = append(proofs, middleProof.Proof)
 		witnesses = append(witnesses, middleProof.Wit)
+		logger.Info("complete middle level proof: %v~%v", index, eHeight)
 	}
 	return &circuits.WitnessFile{
 		Proofs:    proofs,
@@ -188,6 +190,7 @@ func (bs *BtcSetup) uplevelProve(endHeight int64) (*circuits.WitnessFile, error)
 	}
 	for index := start; index <= endHeight; index = index + upDistance {
 		eHeight := index + upDistance
+		logger.Info("start upLevel prove: %v~%v", index, eHeight)
 		upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, uint32(endHeight))
 		if err != nil {
 			logger.Error("get upLevel data : %v %v", endHeight, err)
@@ -208,6 +211,7 @@ func (bs *BtcSetup) uplevelProve(endHeight int64) (*circuits.WitnessFile, error)
 			logger.Error("store upLevel proof error %v %v", index, err)
 			return nil, err
 		}
+		logger.Info("complete upLevel prove: %v~%v", index, eHeight)
 	}
 	return nil, nil
 }
