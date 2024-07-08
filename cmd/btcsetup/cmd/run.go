@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
-	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
-	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
 	"github.com/spf13/cobra"
 )
 
@@ -29,35 +26,10 @@ var runCmd = &cobra.Command{
 			fmt.Printf("run btcsetup error: %v \n", err)
 			return
 		}
-
 	},
 }
 
 func init() {
 	runCmd.Flags().StringVar(&config, "config", "config.json", "config file")
 	rootCmd.AddCommand(runCmd)
-}
-
-func newBaseSetup(datadir, srsdir string) error {
-	err := baselevel.Setup(datadir, srsdir)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func newMiddleSetup(datadir, srsdir string) error {
-	err := midlevel.Setup(datadir, srsdir)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func newUplevelSetup(datadir, srsdir string) error {
-	err := upperlevel.Setup(datadir, srsdir)
-	if err != nil {
-		return err
-	}
-	return nil
 }

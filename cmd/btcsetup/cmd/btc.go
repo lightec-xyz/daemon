@@ -14,7 +14,6 @@ import (
 	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
 	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/node"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
 	"os"
 )
@@ -28,7 +27,7 @@ type BtcSetup struct {
 	cfg       *RunConfig
 	client    *client.Client
 	exit      chan os.Signal
-	fileStore *node.FileStorage
+	fileStore *FileStorage
 }
 
 func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
@@ -45,14 +44,28 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 		logger.Error("new client error: %v", err)
 		return nil, err
 	}
+	proofPath := fmt.Sprintf("%v/proof", cfg.DataDir)
+	fileStorage, err := NewFileStorage(proofPath)
+	if err != nil {
+		logger.Error("new file storage error: %v %v", proofPath, err)
+		return nil, err
+	}
 	return &BtcSetup{
-		cfg:    cfg,
-		client: client,
-		exit:   make(chan os.Signal, 1),
+		cfg:       cfg,
+		client:    client,
+		exit:      make(chan os.Signal, 1),
+		fileStore: fileStorage,
 	}, nil
 }
 
 func (bs *BtcSetup) Run() error {
+	if bs.cfg.Setup {
+		err := bs.Setup()
+		if err != nil {
+			logger.Error("bs setup error: %v", err)
+			return err
+		}
+	}
 	err := bs.Prove()
 	if err != nil {
 		logger.Error("bs prove error: %v", err)
@@ -68,17 +81,17 @@ func (bs *BtcSetup) Close() error {
 func (bs *BtcSetup) Setup() error {
 	err := baselevel.Setup(bs.cfg.DataDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup baselevel error: %v", err)
+		logger.Error("setup baseLevel error: %v", err)
 		return err
 	}
 	err = midlevel.Setup(bs.cfg.DataDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup midlevel error: %v", err)
+		logger.Error("setup middleLevel error: %v", err)
 		return err
 	}
 	err = upperlevel.Setup(bs.cfg.DataDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup upperlevel error: %v", err)
+		logger.Error("setup upLevel error: %v", err)
 		return err
 	}
 	return nil
@@ -101,9 +114,14 @@ func (bs *BtcSetup) Prove() error {
 			logger.Error("middle prove error: %v %v", index, err)
 			return err
 		}
-		_, err = bs.uplevelProve(index, middleProof)
+		upProof, err := bs.uplevelProve(index, middleProof)
 		if err != nil {
 			logger.Error("upLever prove error: %v %v", index, err)
+			return err
+		}
+		err = bs.fileStore.StoreUp(genKey("up", index, index+upDistance), upProof.Proof, upProof.Wit)
+		if err != nil {
+			logger.Error("store upLevel proof error %v %v", index, err)
 			return err
 		}
 		logger.Info("upLevel prove proof complete: %v", index)
@@ -128,6 +146,11 @@ func (bs *BtcSetup) baseProve(height int64) (*circuits.WitnessFile, error) {
 		baseProof, err := baselevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, baseData)
 		if err != nil {
 			logger.Error("baseLevel prove error: %v %v", index, err)
+			return nil, err
+		}
+		err = bs.fileStore.StoreBase(genKey("base", index, index+baseDistance), baseProof.Proof, baseProof.Wit)
+		if err != nil {
+			logger.Error("store base level proof error %v %v", index, err)
 			return nil, err
 		}
 		proofs = append(proofs, baseProof.Proof)
@@ -155,6 +178,11 @@ func (bs *BtcSetup) middleProve(height int64, baseProof *circuits.WitnessFile) (
 		middleProof, err := midlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, middleData, baseProof)
 		if err != nil {
 			logger.Error("middLevel prove error: %v %v", index, err)
+			return nil, err
+		}
+		err = bs.fileStore.StoreMiddle(genKey("middle", index, index+baseDistance), middleProof.Proof, middleProof.Wit)
+		if err != nil {
+			logger.Error("store middle level proof error %v %v", index, err)
 			return nil, err
 		}
 		proofs = append(proofs, middleProof.Proof)
