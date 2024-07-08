@@ -79,17 +79,17 @@ func (bs *BtcSetup) Close() error {
 }
 
 func (bs *BtcSetup) Setup() error {
-	err := baselevel.Setup(bs.cfg.DataDir, bs.cfg.SrsDir)
+	err := baselevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
 		logger.Error("setup baseLevel error: %v", err)
 		return err
 	}
-	err = midlevel.Setup(bs.cfg.DataDir, bs.cfg.SrsDir)
+	err = midlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
 		logger.Error("setup middleLevel error: %v", err)
 		return err
 	}
-	err = upperlevel.Setup(bs.cfg.DataDir, bs.cfg.SrsDir)
+	err = upperlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
 		logger.Error("setup upLevel error: %v", err)
 		return err
@@ -114,6 +114,7 @@ func (bs *BtcSetup) Prove() error {
 			logger.Error("middle prove error: %v %v", index, err)
 			return err
 		}
+		logger.Info("start up prove: %v~%v", index, index+upDistance)
 		upProof, err := bs.uplevelProve(index, middleProof)
 		if err != nil {
 			logger.Error("upLever prove error: %v %v", index, err)
@@ -138,6 +139,7 @@ func (bs *BtcSetup) baseProve(height int64) (*circuits.WitnessFile, error) {
 		return nil, fmt.Errorf("height less than 0")
 	}
 	for index := startIndex; index <= height; index = index + baseDistance {
+		logger.Info("start baseLevel prove: %v~%v", index, index+baseDistance)
 		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(index))
 		if err != nil {
 			logger.Error("get baseLevel proof data error: %v %v", index, err)
@@ -170,6 +172,7 @@ func (bs *BtcSetup) middleProve(height int64, baseProof *circuits.WitnessFile) (
 	var proofs []native_plonk.Proof
 	var witnesses []witness.Witness
 	for index := startIndex; index <= height; index++ {
+		logger.Info("start middle prove: %v~%v", index, index+baseDistance)
 		middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, uint32(index))
 		if err != nil {
 			logger.Error("get middle data error: %v %v", index, err)
