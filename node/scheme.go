@@ -18,6 +18,8 @@ const (
 	TxFinalizeSlotPrefix   = "tfs_"
 	PendingReqPrefix       = "pr_"
 	PendingProofRespPrefix = "prp_"
+	NoncePrefix            = "n_"
+	UnConfirmTxPrefix      = "un_"
 )
 
 const (
@@ -62,6 +64,20 @@ type DbUnSubmitTx struct {
 	Proof     string
 	Timestamp int64
 }
+
+type DbUnConfirmTx struct {
+	Hash    string
+	ProofId string
+	Network string
+}
+
+type TxStatus int
+
+const (
+	UnSend TxStatus = iota
+	Send
+	Confirmed
+)
 
 type TxType int
 
@@ -160,5 +176,15 @@ func DbTxFinalizeSlotId(slot uint64, hash string) string {
 
 func DbPendingRequestId(id string) string {
 	key := fmt.Sprintf("%s%s", PendingReqPrefix, id)
+	return key
+}
+
+func DbAddrNonceId(network, addr string) string {
+	key := fmt.Sprintf("%s%s_%s", NoncePrefix, network, addr)
+	return key
+}
+
+func DbUnConfirmTxId(txId string) string {
+	key := fmt.Sprintf("%s%s", UnConfirmTxPrefix, txId)
 	return key
 }

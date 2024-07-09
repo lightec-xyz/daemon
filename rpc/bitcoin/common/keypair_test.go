@@ -44,7 +44,7 @@ func TestMultiAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("regtest MultiSig Address: %v\n", address)
+	t.Logf("regtest MultiSig EthAddress: %v\n", address)
 
 	addrScript, err := GenPayToAddrScript(address, RegTest)
 	if err != nil {
@@ -56,7 +56,7 @@ func TestMultiAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("testnet MultiSig Address: %v\n", address)
+	t.Logf("testnet MultiSig EthAddress: %v\n", address)
 
 	addrScript, err = GenPayToAddrScript(address, TestNet)
 	if err != nil {

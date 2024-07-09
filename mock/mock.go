@@ -81,7 +81,7 @@ func (m *Mock) DepositBtc(value int64) error {
 	})
 	//btcTxOuts = append(btcTxOuts, btctx.TxOut{
 	//	Amount:  outpuValue,
-	//	Address: m.cfg.BtcDepositAddr,
+	//	EthAddress: m.cfg.BtcDepositAddr,
 	//})
 
 	transaction, err := btctx.CreateDepositTransaction(secretBytes, ethAddrBytes, btcTxIn, btcTxOuts, m.cfg.Network)

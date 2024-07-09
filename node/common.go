@@ -17,6 +17,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
+	"github.com/lightec-xyz/daemon/store"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"math/big"
 	"os"
@@ -205,6 +206,26 @@ func GetBtcWrapData(filestore *FileStorage, client *bitcoin.Client, start, end u
 		NbBlocks:  nRequired,
 	}
 	return data, nil
+}
+
+func GetRealEthNonce(client *ethereum.Client, store store.IStore, addr string) (uint64, error) {
+	chainNonce, err := client.GetNonce(addr)
+	if err != nil {
+		logger.Error("get nonce error: %v %v", addr, err)
+		return 0, err
+	}
+	dbNonce, exists, err := ReadNonce(store, "eth", addr)
+	if err != nil {
+		logger.Error("read nonce error: %v %v", addr, err)
+		return 0, err
+	}
+	if !exists {
+		return chainNonce, nil
+	}
+	if chainNonce < dbNonce {
+		return dbNonce + 1, nil
+	}
+	return chainNonce, nil
 }
 
 // todo refactor

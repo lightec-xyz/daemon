@@ -573,3 +573,56 @@ func ReadZkParamVerify(store store.IStore) (bool, error) {
 func WriteZkParamVerify(store store.IStore, verify bool) error {
 	return store.PutObj(zkVerifyKey, verify)
 }
+
+func WriteNonce(store store.IStore, network, addr string, nonce uint64) error {
+	return store.PutObj(DbAddrNonceId(network, addr), nonce)
+
+}
+
+func ReadNonce(store store.IStore, network, addr string) (uint64, bool, error) {
+	id := DbAddrNonceId(network, addr)
+	exists, err := store.HasObj(id)
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
+	var nonce uint64
+	err = store.GetObj(id, &nonce)
+	if err != nil {
+		return 0, false, err
+	}
+	return nonce, true, nil
+}
+
+func WriteUnConfirmTx(store store.IStore, network, hash, proofId string) error {
+	return store.PutObj(DbUnConfirmTxId(hash), &DbUnConfirmTx{
+		Network: network,
+		Hash:    hash,
+		ProofId: proofId,
+	})
+}
+
+func DeleteUnConfirmTx(store store.IStore, hash string) error {
+	return store.DeleteObj(DbUnConfirmTxId(hash))
+}
+
+func ReadAllUnConfirmTx(store store.IStore) ([]*DbUnConfirmTx, error) {
+	var txes []*DbUnConfirmTx
+	iterator := store.Iterator([]byte(DbUnConfirmTxId("")), nil)
+	defer iterator.Release()
+	for iterator.Next() {
+		var tx DbUnConfirmTx
+		err := codec.Unmarshal(iterator.Value(), &tx)
+		if err != nil {
+			logger.Error("unmarshal tx error:%v", err)
+			return nil, err
+		}
+		txes = append(txes, &tx)
+	}
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+	return txes, nil
+}

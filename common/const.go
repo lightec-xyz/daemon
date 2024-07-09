@@ -28,6 +28,24 @@ const (
 	Ethereum
 )
 
+type Network string
+
+const (
+	ETH   Network = "eth"
+	Oasis Network = "oasis"
+)
+
+func (n Network) String() string {
+	switch n {
+	case ETH:
+		return "eth"
+	case Oasis:
+		return "oasis"
+	default:
+		return "unknown"
+	}
+}
+
 type ProofStatus int
 
 const (

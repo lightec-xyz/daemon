@@ -227,7 +227,7 @@ func Test_GetMultiSigScriptRelatedsFromOasis(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Printf("MultiSig Script: %v\n", hexutil.Encode(multiSigScript))
-	fmt.Printf("Wallet Address: %v\n", walletAddr.EncodeAddress())
+	fmt.Printf("Wallet EthAddress: %v\n", walletAddr.EncodeAddress())
 	fmt.Printf("Lock Script: %v\n", hexutil.Encode(lockScript))
 }
 

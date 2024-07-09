@@ -292,43 +292,45 @@ func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		}
 	case common.VerifyTxType:
 		logger.Info("start update utxo change: %v", resp.TxHash)
-		err := updateContractUtxoChange(b.ethClient, b.submitTxEthAddr, b.keyStore.GetPrivateKey(), []string{resp.TxHash}, resp.Proof)
+		hash, err := b.txManager.UpdateUtxoChange(resp.TxHash, hex.EncodeToString(resp.Proof))
 		if err != nil {
-			logger.Error("update utxo error: %v %v", resp.TxHash, err)
+			logger.Error("update utxo fail: %v %v,save to db", resp.TxHash, err)
 			b.txManager.AddTask(resp)
 			return err
 		}
+		logger.Debug("success update utxo: txId:%v hash:%v", resp.TxHash, hash)
+
 	default:
 	}
 	return nil
 }
 
-func updateContractUtxoChange(ethClient *ethereum.Client, address, privateKey string, txIds []string, proof []byte) error {
-	// todo
-	nonce, err := ethClient.GetNonce(address)
-	if err != nil {
-		logger.Error("get  nonce error:%v", err)
-		return err
-	}
+func updateContractUtxoChange(ethClient *ethereum.Client, privateKey string, nonce uint64, txIds []string, proof []byte) (string, error) {
+	//// todo
+	//nonce, err := ethClient.GetNonce(address)
+	//if err != nil {
+	//	logger.Error("get  nonce error:%v", err)
+	//	return "", err
+	//}
 	chainId, err := ethClient.GetChainId()
 	if err != nil {
 		logger.Error("get chain id error:%v", err)
-		return err
+		return "", err
 	}
 	gasPrice, err := ethClient.GetGasPrice()
 	if err != nil {
 		logger.Error("get gas price error:%v", err)
-		return err
+		return "", err
 	}
 	gasLimit := uint64(500000)
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(2))
 	txHash, err := ethClient.UpdateUtxoChange(privateKey, txIds, nonce, gasLimit, chainId, gasPrice, proof)
 	if err != nil {
 		logger.Error("update utxo change error:%v", err)
-		return err
+		return "", err
 	}
 	logger.Info("success send update utxo change  hash:%v", txHash)
-	return nil
+	return txHash, nil
 }
 
 func (b *BitcoinAgent) isRedeemTx(tx types.Tx, height uint64, blockHash string) (*Transaction, bool) {

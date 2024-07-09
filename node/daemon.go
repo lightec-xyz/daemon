@@ -58,7 +58,7 @@ type Daemon struct {
 	nodeConfig  Config
 	exitSignal  chan os.Signal
 	manager     *WrapperManger
-	taskManager *TxManager // todo
+	txManager   *TxManager // todo
 	enableLocal bool
 	debug       bool
 }
@@ -248,7 +248,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		nodeConfig:  cfg,
 		enableLocal: cfg.EnableLocalWorker,
 		exitSignal:  exitSignal,
-		taskManager: taskManager,
+		txManager:   taskManager,
 		fetch:       nil, // todo
 		debug:       common.GetEnvDebugMode(),
 		manager:     NewWrapperManger(msgManager, proofRequest, 2*time.Minute),
@@ -261,6 +261,13 @@ func (d *Daemon) Init() error {
 	if err != nil {
 		logger.Error("manager init error %v", err)
 		return err
+	}
+	if d.txManager != nil {
+		err = d.txManager.init()
+		if err != nil {
+			logger.Error("txManager init error %v", err)
+			return err
+		}
 	}
 	if d.fetch != nil {
 		err = d.fetch.Init()
@@ -292,7 +299,7 @@ func (d *Daemon) Run() error {
 	}
 
 	if !d.debug {
-		go DoTimerTask("txManager-check", 30*time.Second, d.taskManager.Check, d.exitSignal) // todo
+		go DoTimerTask("txManager-check", 30*time.Second, d.txManager.Check, d.exitSignal) // todo
 	}
 
 	// proof request manager
