@@ -192,19 +192,18 @@ func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 		err := e.DeleteRedeemCacheTx(resp)
 		if err != nil {
 			logger.Error("delete redeem cache tx error:%v %v", resp.TxHash, err)
-
 		}
 		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
 			logger.Error("update Proof error:%v %v", resp.TxHash, err)
-
 		}
-		_, err = RedeemBtcTx(e.btcClient, e.ethClient, e.oasisClient, resp.TxHash, resp.Proof)
+		btcHash, err := e.txManager.RedeemZkbtc(resp.TxHash, hex.EncodeToString(resp.Proof))
 		if err != nil {
-			logger.Error("redeem btc tx error:%v %v", resp.TxHash, err)
+			logger.Error("redeem btc error:%v %v,save to db", resp.TxHash, err)
 			e.txManager.AddTask(resp)
 			return err
 		}
+		logger.Debug("success redeem btc ethHash: %v,btcHash: %v", resp.TxHash, btcHash)
 	default:
 	}
 	return nil

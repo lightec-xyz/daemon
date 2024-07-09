@@ -1,10 +1,14 @@
 package node
 
 import (
+	"context"
 	"encoding/hex"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
@@ -71,10 +75,12 @@ func (t *TxManager) Check() error {
 			}
 			logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
 		case common.RedeemTxType:
-			err := t.RedeemZkbtc(tx.Hash, tx.Proof)
+			txHash, err := t.RedeemZkbtc(tx.Hash, tx.Proof)
 			if err != nil {
 				logger.Error("update utxo error: %v %v", tx.ProofType.String(), tx.Hash)
+				continue
 			}
+			logger.Debug("success redeem btc ethHash: %v,btcHash: %v", tx.Hash, txHash)
 		default:
 			logger.Warn("never should happen: %v %v", tx.ProofType.String(), tx.Hash)
 		}
@@ -102,23 +108,90 @@ func (t *TxManager) getEthAddrNonce(addr string) (uint64, error) {
 	return chainNonce, nil
 }
 
-func (t *TxManager) RedeemZkbtc(hash, proof string) error {
+func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
+	if common.GetEnvDebugMode() {
+		return "", nil
+	}
 	proofBytes, err := hex.DecodeString(proof)
 	if err != nil {
 		logger.Error("decode proof error: %v %v", hash, err)
-		return err
+		return "", err
 	}
-	_, err = RedeemBtcTx(t.btcClient, t.ethClient, t.oasisClient, hash, proofBytes)
+	ethTxHash := ethcommon.HexToHash(hash)
+	ethTx, _, err := t.ethClient.TransactionByHash(context.Background(), ethTxHash)
 	if err != nil {
-		logger.Error("mint zk btc error: %v", err)
-		return err
+		logger.Error("get eth tx error:%v", err)
+		return "", err
 	}
+	receipt, err := t.ethClient.TransactionReceipt(context.Background(), ethTxHash)
+	if err != nil {
+		logger.Error("get eth tx receipt error:%v", err)
+		return "", err
+	}
+
+	btcRawTx, _, err := ethrpc.DecodeRedeemLog(receipt.Logs[3].Data)
+	if err != nil {
+		logger.Error("decode redeem log error:%v", err)
+		return "", err
+	}
+	logger.Info("btcRawTx: %v\n", hexutil.Encode(btcRawTx))
+	rawTx, rawReceipt := ethrpc.GetRawTxAndReceipt(ethTx, receipt)
+	logger.Info("rawTx: %v\n", hexutil.Encode(rawTx))
+	logger.Info("rawReceipt: %v\n", hexutil.Encode(rawReceipt))
+
+	sigs, err := t.oasisClient.SignBtcTx(rawTx, rawReceipt, proofBytes)
+	if err != nil {
+		logger.Error("sign btc tx error:%v", err)
+		return "", nil
+	}
+	transaction := btctx.NewMultiTransactionBuilder()
+	err = transaction.Deserialize(btcRawTx)
+	if err != nil {
+		logger.Error("deserialize btc tx error:%v", err)
+		return "", err
+	}
+	multiSigScript, err := t.ethClient.GetMultiSigScript()
+	if err != nil {
+		logger.Error("get multi sig script error:%v", err)
+		return "", err
+	}
+	nTotal, nRequred := 3, 2
+	transaction.AddMultiScript(multiSigScript, nRequred, nTotal)
+	err = transaction.MergeSignature(sigs[:nRequred])
+	if err != nil {
+		logger.Error("merge signature error:%v", err)
+		return "", err
+	}
+	btxTx, err := transaction.Serialize()
+	if err != nil {
+		logger.Error("serialize btc tx error:%v", err)
+		return "", err
+	}
+	btcTxHash := transaction.TxHash()
+	_, err = t.btcClient.GetTransaction(btcTxHash) // todo
+	if err == nil {
+		logger.Warn("btc tx already exist: %v", btcTxHash)
+		return "", nil
+	}
+	txHex := hex.EncodeToString(btxTx)
+	logger.Info("btc Tx: %v\n", txHex)
+	txHash, err := t.btcClient.Sendrawtransaction(txHex)
+	if err != nil {
+		logger.Error("send btc tx error:%v %v", btcTxHash, err)
+		// todo  just test
+		_, err = bitcoin.BroadcastTx(txHex)
+		if err != nil {
+			logger.Error("broadcast btc tx error %v:%v", btcTxHash, err)
+			return "", err
+		}
+	}
+	logger.Info("send redeem btc tx: %v", btcTxHash)
 	err = DeleteUnSubmitTx(t.store, hash)
 	if err != nil {
-		logger.Error("delete unsubmit tx error: %v %v", hash, err)
-		return err
+		logger.Error("delete unSubmit tx error: %v %v", hash, err)
+		return "", err
 	}
-	return nil
+	return txHash, err
 }
 
 func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
