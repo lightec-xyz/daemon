@@ -42,6 +42,8 @@ const (
 	TestnetEthZkBridgeAddress = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
 	TestnetEthZkBtcAddress    = "0xbf3041e37be70a58920a6fd776662b50323021c9"
 
+	TestEthUtxoManagerAddress = "0x9d2aaea60dee441981edf44300c26f1946411548"
+
 	TestnetBtcScanTime = 1 * time.Minute
 	TestnetEthScanTime = 30 * time.Second
 
@@ -52,7 +54,8 @@ const (
 
 	// utxo manager
 	TestLogDepositAddr = "0x9d2aaea60dee441981edf44300c26f1946411548"
-	TestLogRedeemAddr  = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
+
+	TestLogRedeemAddr = "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"
 
 	TestTopicDepositAddr = "0xbfb6a0aa850eff6109c854ffb48321dcf37f02d6c7a44c46987a5ddf3419fc07"
 	TestTopicRedeemAddr  = "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"
@@ -77,7 +80,7 @@ const (
 
 	LocalEthZkBridgeAddress = "0xb2631368c8c8151875ea67cb5faf8f1377ec02a0"
 	LocalEthZkBtcAddress    = "0xbf3041e37be70a58920a6fd776662b50323021c9"
-
+	LocalEthUtxoManager     = "0x9d2aaea60dee441981edf44300c26f1946411548"
 	// utxo manager contract
 	LocalLogDepositAddr = "0xe8965848879eb831e3c8f47d2256eff883d9a0d9"
 	LocalLogRedeemAddr  = "0xb2631368c8c8151875ea67cb5faf8f1377ec02a0"

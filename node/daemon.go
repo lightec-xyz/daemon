@@ -100,7 +100,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new node btcClient error:%v", err)
 		return nil, err
 	}
-	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
+	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr, cfg.UtxoManagerAddr)
 	if err != nil {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err

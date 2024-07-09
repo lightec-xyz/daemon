@@ -74,6 +74,7 @@ type Config struct {
 	GenesisSyncPeriod uint64           `json:"genesisPeriod"`
 	ZkBridgeAddr      string           `json:"zkBridgeAddr"`
 	ZkBtcAddr         string           `json:"zkBtcAddr"`
+	UtxoManagerAddr   string           `json:"utxoManagerAddr"`
 	EthAddrFilter     EthAddrFilter    `json:"ethAddrFilter"`
 	EthScanTime       time.Duration    `json:"ethScanTime"`
 	BtcScanTime       time.Duration    `json:"btcScanTime"`
@@ -118,6 +119,7 @@ func getLocalConfig(runCnfg RunConfig) (Config, error) {
 		ZkBtcAddr:         LocalEthZkBtcAddress,
 		BtcScanTime:       LocalBtcScanTime,
 		EthScanTime:       LocalEthScanTime,
+		UtxoManagerAddr:   LocalEthUtxoManager,
 		EthAddrFilter:     NewEthAddrFilter(LocalLogDepositAddr, LocalLogRedeemAddr, LocalTopicDepositAddr, LocalTopicRedeemAddr),
 	}, nil
 }
@@ -145,6 +147,7 @@ func getTestnetConfig(runCnfg RunConfig) (Config, error) {
 		MultiAddressInfo:  multiAddressInfo,
 		ZkBridgeAddr:      TestnetEthZkBridgeAddress,
 		ZkBtcAddr:         TestnetEthZkBtcAddress,
+		UtxoManagerAddr:   TestEthUtxoManagerAddress,
 		BtcScanTime:       TestnetBtcScanTime,
 		EthScanTime:       TestnetEthScanTime,
 		EthAddrFilter:     NewEthAddrFilter(TestLogDepositAddr, TestLogRedeemAddr, TestTopicDepositAddr, TestTopicRedeemAddr),

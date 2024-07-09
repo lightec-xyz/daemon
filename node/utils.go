@@ -12,6 +12,14 @@ import (
 	"time"
 )
 
+func TxIdIsEmpty(txId [32]byte) bool {
+	for _, b := range txId {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
+}
 func UUID() string {
 	newV7, err := uuid.NewV7()
 	if err != nil {

@@ -1,11 +1,9 @@
 package node
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
-func TestFloatToBig(t *testing.T) {
-	result := fmt.Sprintf("%0.8f", 0.123456789)
-	t.Log(result)
+func TestTxIdIsEmpty(t *testing.T) {
+	txId := [32]byte{}
+	res := TxIdIsEmpty(txId)
+	t.Log(res)
 }

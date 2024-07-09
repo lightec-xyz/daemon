@@ -50,7 +50,7 @@ func (t *TxManager) init() error {
 }
 
 func (t *TxManager) AddTask(resp *common.ZkProofResponse) {
-	logger.Info("txManager manager add retry task: %v", resp.Id())
+	logger.Info("txManager add retry task: %v", resp.Id())
 	unSubmitTx := NewDbUnSubmitTx(resp.TxHash, hex.EncodeToString(resp.Proof), resp.ZkProofType)
 	err := WriteUnSubmitTx(t.store, []DbUnSubmitTx{unSubmitTx})
 	if err != nil {

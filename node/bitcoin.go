@@ -227,6 +227,7 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 			}
 			if proofed {
 				redeemTx.Proofed = true
+				logger.Debug("btc redeem tx proofed: %v", tx.Txid)
 			} else {
 				proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
 				if err != nil {
@@ -256,6 +257,7 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 			}
 			if proofed {
 				depositTx.Proofed = true
+				logger.Debug("btc deposit tx proofed: %v", tx.Txid)
 			} else {
 				//proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
 				//if err != nil {
@@ -276,8 +278,27 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 }
 
 func (b *BitcoinAgent) CheckChainProof(proofType common.ZkProofType, txHash string) (bool, error) {
-	// todo
-	return false, nil
+	switch proofType {
+	case common.VerifyTxType:
+		utxo, err := b.ethClient.GetUtxo(txHash)
+		if err != nil {
+			logger.Error("check utxo error: %v %v", txHash, err)
+			return false, err
+		}
+		return utxo.IsChangeConfirmed, nil
+	case common.DepositTxType:
+		utxo, err := b.ethClient.GetUtxo(txHash)
+		if err != nil {
+			logger.Error("check tx error: %v %v", txHash, err)
+			return false, err
+		}
+		if TxIdIsEmpty(utxo.Txid) {
+			return false, nil
+		}
+		return true, nil
+	default:
+		return false, fmt.Errorf("unsupported proof type: %v", proofType)
+	}
 }
 
 func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {

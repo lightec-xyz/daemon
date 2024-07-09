@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/logger"
 	"math/big"
 	"strings"
@@ -25,27 +24,24 @@ type Client struct {
 	*ethclient.Client
 	zkBridgeCall *zkbridge.Zkbridge
 	zkBtcCall    *zkbridge.Zkbtc
-	verifyCall   *zkbridge.Verify
+	utxoCall     *zkbridge.Utxo
 	timeout      time.Duration
 }
 
-func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error) {
+func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr, utxoManager string) (*Client, error) {
 	client, err := ethclient.Dial(endpoint)
 	if err != nil {
 		return nil, err
 	}
-
 	zkBridgeCall, err := zkbridge.NewZkbridge(ethcommon.HexToAddress(zkBridgeAddr), client)
 	if err != nil {
 		return nil, err
 	}
-
 	zkBtcCall, err := zkbridge.NewZkbtc(ethcommon.HexToAddress(zkBtcAddr), client)
 	if err != nil {
 		return nil, err
 	}
-	// todo
-	verifyCall, err := zkbridge.NewVerify(ethcommon.HexToAddress("0x2c11C48Df8C44f90971ee3A8Fa6779CfbDA5321E"), client)
+	utxo, err := zkbridge.NewUtxo(ethcommon.HexToAddress(utxoManager), client)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +49,24 @@ func NewClient(endpoint string, zkBridgeAddr, zkBtcAddr string) (*Client, error)
 		Client:       client,
 		zkBridgeCall: zkBridgeCall,
 		zkBtcCall:    zkBtcCall,
-		verifyCall:   verifyCall,
+		utxoCall:     utxo,
 		timeout:      15 * time.Second,
 	}, nil
+}
+
+func (e *Client) GetUtxo(hash string) (zkbridge.UTXOManagerUTXO, error) {
+	txId := [32]byte{}
+	hexBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		return zkbridge.UTXOManagerUTXO{}, err
+	}
+	copy(txId[:], hexBytes)
+	result, err := e.utxoCall.UtxoOf(nil, txId)
+	if err != nil {
+		return zkbridge.UTXOManagerUTXO{}, err
+	}
+	return result, nil
+
 }
 
 func (e *Client) ChainFork(height uint64) (bool, error) {
@@ -103,24 +114,6 @@ func (e *Client) GetTxSender(txHash, blockHash string, index uint) (string, erro
 		return "", err
 	}
 	return sender.Hex(), nil
-
-}
-
-func (c *Client) Verify(proof, wit string) (bool, error) {
-	bytes, err := hex.DecodeString(proof)
-	if err != nil {
-		return false, err
-	}
-	// todo
-	bigInts, err := circuits.HexWitnessToBigInts(wit)
-	if err != nil {
-		return false, err
-	}
-	verify, err := c.verifyCall.Verify(nil, bytes, bigInts)
-	if err != nil {
-		return false, err
-	}
-	return verify, nil
 
 }
 

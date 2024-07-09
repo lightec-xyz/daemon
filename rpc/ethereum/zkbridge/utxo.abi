@@ -1,0 +1,714 @@
+[
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ChangeIsNotExisted",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ChangeIsUpdated",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "totalAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        }
+      ],
+      "name": "InsufficientTotalAmount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        }
+      ],
+      "name": "InvalidAmount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "UTXOIsExisted",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "limit",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint8",
+          "name": "utxoCount",
+          "type": "uint8"
+        }
+      ],
+      "name": "UtxoExceedLimit",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        }
+      ],
+      "name": "UTXOAdd",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "UTXOAddBatchSucess",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        }
+      ],
+      "name": "UTXOUpdate",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_new",
+          "type": "address"
+        }
+      ],
+      "name": "addOperator",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "isOperator",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_new",
+          "type": "address"
+        }
+      ],
+      "name": "removeOperator",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalAvailableAmount",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "utxos",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bool",
+          "name": "isChangeConfirmed",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "utxoOf",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "txid",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "index",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "amount",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "isChangeConfirmed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct UTXOManager.UTXO",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getUtxosAvailableKeys",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        }
+      ],
+      "name": "addUTXO",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
+        }
+      ],
+      "name": "addChange",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "updateChange",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "targetAmount",
+          "type": "uint64"
+        }
+      ],
+      "name": "spentUTXOs",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "txid",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "index",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "amount",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "isChangeConfirmed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct UTXOManager.UTXO[]",
+          "name": "foundUTXOs",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "uint64",
+          "name": "totalAmount",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "targetAmount",
+          "type": "uint64"
+        }
+      ],
+      "name": "findUTXOs",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "txid",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "index",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "amount",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "isChangeConfirmed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct UTXOManager.UTXO[]",
+          "name": "findedUTXOs",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "uint64",
+          "name": "totalAmount",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "txid",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "index",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "amount",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "isChangeConfirmed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct UTXOManager.UTXO[]",
+          "name": "inputs",
+          "type": "tuple[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint64",
+              "name": "value",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes",
+              "name": "pkScript",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct BtcTxLib.TxOut[]",
+          "name": "outputs",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "createUnsignedTx",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes4",
+              "name": "version",
+              "type": "bytes4"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "hash",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "index",
+                  "type": "uint32"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "script",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "bytes[]",
+                  "name": "witness",
+                  "type": "bytes[]"
+                },
+                {
+                  "internalType": "bytes4",
+                  "name": "sequence",
+                  "type": "bytes4"
+                }
+              ],
+              "internalType": "struct BtcTxLib.TxIn[]",
+              "name": "txIns",
+              "type": "tuple[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint64",
+                  "name": "value",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "pkScript",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct BtcTxLib.TxOut[]",
+              "name": "txOuts",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "bytes4",
+              "name": "lockTime",
+              "type": "bytes4"
+            }
+          ],
+          "internalType": "struct BtcTxLib.MsgTx",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes4",
+              "name": "version",
+              "type": "bytes4"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "hash",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "index",
+                  "type": "uint32"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "script",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "bytes[]",
+                  "name": "witness",
+                  "type": "bytes[]"
+                },
+                {
+                  "internalType": "bytes4",
+                  "name": "sequence",
+                  "type": "bytes4"
+                }
+              ],
+              "internalType": "struct BtcTxLib.TxIn[]",
+              "name": "txIns",
+              "type": "tuple[]"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint64",
+                  "name": "value",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "pkScript",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct BtcTxLib.TxOut[]",
+              "name": "txOuts",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "bytes4",
+              "name": "lockTime",
+              "type": "bytes4"
+            }
+          ],
+          "internalType": "struct BtcTxLib.MsgTx",
+          "name": "msgTx",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "multiSigScript",
+          "type": "bytes"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "txid",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "index",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint64",
+              "name": "amount",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bool",
+              "name": "isChangeConfirmed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct UTXOManager.UTXO[]",
+          "name": "inputs",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "calcSigHashs",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ]
