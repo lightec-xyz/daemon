@@ -354,14 +354,12 @@ func (e *EthereumAgent) parseBlock(height int64) ([]*Transaction, []*Transaction
 }
 
 func (e *EthereumAgent) CheckRedeemTx(btxTxId string) (bool, error) {
-	// todo
-	return false, nil
-	//submitted, err := e.btcClient.CheckTx(btxTxId)
-	//if err != nil {
-	//	logger.Error("check btc tx error:%v", err)
-	//	return false, err
-	//}
-	//return submitted, nil
+	exists, err := e.btcClient.CheckTx(btxTxId)
+	if err != nil {
+		logger.Error("check btc txId error: %v", btxTxId)
+		return false, err
+	}
+	return exists, nil
 }
 
 func (e *EthereumAgent) isDepositTx(log types.Log) (*Transaction, bool, error) {

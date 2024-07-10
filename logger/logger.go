@@ -24,7 +24,11 @@ func Warn(msg string, ctx ...interface{}) {
 }
 
 func Error(msg string, ctx ...interface{}) {
-	logger.Error(fmt.Sprintf(msg, ctx...))
+	errorMsg := fmt.Sprintf(msg, ctx...)
+	logger.Error(errorMsg)
+	if logger.discordHook != nil {
+		logger.discordHook.Send(errorMsg)
+	}
 }
 func Fatal(msg string, ctx ...interface{}) {
 	logger.Fatal(fmt.Sprintf(msg, ctx...))
@@ -50,19 +54,25 @@ func Close() error {
 }
 
 type LogCfg struct {
-	LogDir   string
-	IsStdout bool
-	File     bool
+	LogDir         string
+	IsStdout       bool
+	File           bool
+	discordHookUrl string
 }
 
 type Logger struct {
 	cfg            *LogCfg
 	rotatingLogger *RotatingLogger
 	*zap.Logger
+	discordHook *Discord
 }
 
 func (l *Logger) Close() error {
 	_ = l.Sync()
+	if l.discordHook != nil {
+		_, _ = l.discordHook.Call(newDisMsg("discord web hook exit now ...."))
+		_ = l.discordHook.Close()
+	}
 	if l.rotatingLogger != nil {
 		_ = l.rotatingLogger.Exit()
 	}
@@ -98,13 +108,27 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 	if rotatingLogger != nil {
 		go rotatingLogger.rotate() // todo
 	}
-	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	l := &Logger{
-		Logger:         logger,
-		rotatingLogger: rotatingLogger,
-		cfg:            cfg,
+	lg := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	if cfg.discordHookUrl != "" {
+		discord := NewDiscord(cfg.discordHookUrl)
+		_, err := discord.Call(newDisMsg("discord web hook running ...."))
+		if err != nil {
+			return nil, err
+		}
+		return &Logger{
+			Logger:         lg,
+			rotatingLogger: rotatingLogger,
+			cfg:            cfg,
+			discordHook:    discord,
+		}, nil
+	} else {
+		return &Logger{
+			Logger:         lg,
+			rotatingLogger: rotatingLogger,
+			cfg:            cfg,
+		}, err
 	}
-	return l, nil
+
 }
 func newRotatingLogger(fileName string) *lumberjack.Logger {
 	return &lumberjack.Logger{
