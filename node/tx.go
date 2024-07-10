@@ -1,7 +1,9 @@
 package node
 
 import (
+	"context"
 	"encoding/hex"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
@@ -92,15 +94,22 @@ func (t *TxManager) Check() error {
 }
 
 func (t *TxManager) RedeemZkbtc(hash, proof string) error {
-	proofBytes, err := hex.DecodeString(proof)
+	tx, _, err := t.ethClient.TransactionByHash(context.TODO(), ethCommon.HexToHash(hash))
 	if err != nil {
-		logger.Error("decode proof error: %v %v", hash, err)
+		logger.Error("get eth tx error:%v %v", hash, err)
 		return err
 	}
-	_, err = RedeemBtcTx(t.btcClient, t.ethClient, t.oasisClient, hash, proofBytes)
-	if err != nil {
-		logger.Error("mint zk btc error: %v", err)
-		return err
+	if tx.Type() == 2 {
+		proofBytes, err := hex.DecodeString(proof)
+		if err != nil {
+			logger.Error("decode proof error: %v %v", hash, err)
+			return err
+		}
+		_, err = RedeemBtcTx(t.btcClient, t.ethClient, t.oasisClient, hash, proofBytes)
+		if err != nil {
+			logger.Error("mint zk btc error: %v", err)
+			return err
+		}
 	}
 	err = DeleteUnSubmitTx(t.store, hash)
 	if err != nil {
