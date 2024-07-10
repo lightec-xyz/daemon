@@ -24,10 +24,9 @@ func Warn(msg string, ctx ...interface{}) {
 }
 
 func Error(msg string, ctx ...interface{}) {
-	errorMsg := fmt.Sprintf(msg, ctx...)
-	logger.Error(errorMsg)
+	logger.Error(fmt.Sprintf(msg, ctx...))
 	if logger.discordHook != nil {
-		logger.discordHook.Send(errorMsg)
+		logger.discordHook.Send(fmt.Sprintf(msg, ctx...))
 	}
 }
 func Fatal(msg string, ctx ...interface{}) {
