@@ -22,8 +22,9 @@ type Node struct {
 
 func NewNode(cfg Config) (*Node, error) {
 	err := logger.InitLogger(&logger.LogCfg{
-		File:     true,
-		IsStdout: true,
+		File:           true,
+		IsStdout:       true,
+		DiscordHookUrl: cfg.DiscordHookUrl,
 	})
 	if err != nil {
 		return nil, err

@@ -19,6 +19,7 @@ type RunConfig struct {
 	EthUrl                string `json:"ethUrl"`
 	BeaconUrl             string `json:"beaconUrl"`
 	OasisUrl              string `json:"oasisUrl"`
+	DiscordHookUrl        string `json:"discordHookUrl"`
 	EthPrivateKey         string `json:"ethPrivateKey"`
 	EnableLocalWorker     bool   `json:"enableLocalWorker"`
 	DisableRecursiveAgent bool   `json:"disableRecursiveAgent"`

@@ -7,15 +7,15 @@ import (
 )
 
 type Config struct {
-	RpcBind string `json:"rpcbind"`
-	RpcPort string `json:"rpcport"`
-
-	Url       string      `json:"url"`
-	MaxNums   int         `json:"maxNums"`
-	Network   string      `json:"network"`
-	DataDir   string      `json:"datadir"`
-	Mode      common.Mode `json:"mode"` // rpcServer | client
-	ProofType []string    `json:"proofType"`
+	RpcBind        string      `json:"rpcbind"`
+	RpcPort        string      `json:"rpcport"`
+	DiscordHookUrl string      `json:"discordHookUrl"`
+	Url            string      `json:"url"`
+	MaxNums        int         `json:"maxNums"`
+	Network        string      `json:"network"`
+	DataDir        string      `json:"datadir"`
+	Mode           common.Mode `json:"mode"` // rpcServer | client
+	ProofType      []string    `json:"proofType"`
 }
 
 func (c *Config) Check() error {

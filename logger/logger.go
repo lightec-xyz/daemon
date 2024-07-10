@@ -56,7 +56,7 @@ type LogCfg struct {
 	LogDir         string
 	IsStdout       bool
 	File           bool
-	discordHookUrl string
+	DiscordHookUrl string
 }
 
 type Logger struct {
@@ -108,8 +108,8 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 		go rotatingLogger.rotate() // todo
 	}
 	lg := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	if cfg.discordHookUrl != "" {
-		discord := NewDiscord(cfg.discordHookUrl)
+	if cfg.DiscordHookUrl != "" {
+		discord := NewDiscord(cfg.DiscordHookUrl)
 		_, err := discord.Call(newDisMsg("discord web hook running ...."))
 		if err != nil {
 			return nil, err
