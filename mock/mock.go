@@ -9,13 +9,12 @@ import (
 	"time"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	btcrpc "github.com/lightec-xyz/daemon/rpc/bitcoin"
+	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
-	btctx "github.com/lightec-xyz/daemon/transaction/bitcoin"
 )
 
 type Mock struct {
@@ -118,8 +117,7 @@ func (m *Mock) DepositBtcToEth(txId, receiverAddr string, index uint32, amount *
 	}
 	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(3))
 	gasLimit := uint64(500000)
-	ethTxHash, err := m.ethClient.Deposit(m.cfg.EthPrivateKey, txId, receiverAddr, index, nonce, gasLimit, chainID, gasPrice,
-		amount, common.ZkProof([]byte("test proof")))
+	ethTxHash, err := m.ethClient.Deposit("", nonce, gasLimit, chainID, gasPrice, nil, nil)
 	if err != nil {
 		logger.Error(" deposit eth error:%v", err)
 		return err
@@ -129,8 +127,6 @@ func (m *Mock) DepositBtcToEth(txId, receiverAddr string, index uint32, amount *
 }
 
 func (m *Mock) RedeemTx(amount int64) error {
-	redeemAmount := big.NewInt(amount)
-	minerFee := big.NewInt(300)
 	fromAddr := m.cfg.EthAddr
 	//balance, err := m.ethClient.GetZkBtcBalance(fromAddr)
 	//if err != nil {
@@ -171,7 +167,7 @@ func (m *Mock) RedeemTx(amount int64) error {
 		logger.Error("get nonce error:%v", err)
 		return err
 	}
-	txhash, err := m.ethClient.Redeem(m.cfg.EthPrivateKey, uint64(gasLimit), chainID, big.NewInt(int64(nonce)), gasPrice, redeemAmount, minerFee, redeemLockScript)
+	txhash, err := m.ethClient.Redeem(m.cfg.EthPrivateKey, uint64(gasLimit), chainID, big.NewInt(int64(nonce)), gasPrice, 0, 0, redeemLockScript)
 	if err != nil {
 		logger.Error("redeem error:%v", err)
 		return err
@@ -242,61 +238,6 @@ func (m *Mock) MergeBtcTx() error {
 	}
 	logger.Info("success send btc tx hash:%v", txHash)
 	return nil
-}
-
-func NewMock(network string) (*Mock, error) {
-	cfg, err := NewConfig(network)
-	if err != nil {
-		return nil, err
-	}
-	btcClient, err := btcrpc.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcNetwork)
-	if err != nil {
-		return nil, err
-	}
-	ethClient, err := ethrpc.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.ZkBtcAddr)
-	if err != nil {
-		return nil, err
-	}
-	mock := Mock{
-		cfg:       cfg,
-		btcClient: btcClient,
-		ethClient: ethClient,
-	}
-	return &mock, nil
-}
-
-func NewConfig(network string) (Config, error) {
-	var cfg Config
-	if network == "testnet" {
-		cfg = NewTestnetConfig()
-	} else {
-		cfg = NewDevConfig()
-	}
-	return cfg, nil
-}
-
-func NewDevConfig() Config {
-	config := node.LocalDevDaemonConfig()
-	return Config{
-		NodeConfig:     config,
-		Network:        btctx.RegTest,
-		BtcPrivateKey:  "3c5579d538347d56ed5ef6d56e7e36ae453dcbd6ff6586783f82c17c8190d71601",
-		BtcDepositAddr: "bcrt1q6lawf77u30mvs6sgcuthchgxdqm4f6n3kvx4z5",
-		EthPrivateKey:  "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		EthAddr:        "771815eFD58e8D6e66773DB0bc002899c00d5b0c",
-	}
-}
-
-func NewTestnetConfig() Config {
-	config := node.TestnetDaemonConfig()
-	return Config{
-		NodeConfig:     config,
-		Network:        btctx.TestNet,
-		BtcPrivateKey:  "3c5579d538347d56ed5ef6d56e7e36ae453dcbd6ff6586783f82c17c8190d71601",
-		BtcDepositAddr: "tb1q6lawf77u30mvs6sgcuthchgxdqm4f6n359lc4a",
-		EthPrivateKey:  "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
-		EthAddr:        "771815eFD58e8D6e66773DB0bc002899c00d5b0c",
-	}
 }
 
 type Config struct {

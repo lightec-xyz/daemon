@@ -11,7 +11,7 @@ var err error
 var mock *Mock
 
 func init() {
-	logger.InitLogger()
+	logger.InitLogger(nil)
 	//mock, err = NewMock("testnet")
 	//if err != nil {
 	//	panic(err)
