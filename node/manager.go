@@ -275,13 +275,13 @@ func (m *manager) DistributeRequest() error {
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
 		worker.AddReqNum()
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
+			defer worker.DelReqNum()
 			logger.Debug("worker %v start generate Proof type: %v", worker.Id(), req.Id())
 			err := m.fileStore.StoreRequest(req)
 			if err != nil {
 				logger.Error("store Proof error:%v %v %v", req.ReqType.String(), req.Index, err)
 				return
 			}
-			defer worker.DelReqNum()
 			count := 0
 			for {
 				if count >= 1 {
