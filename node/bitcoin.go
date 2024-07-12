@@ -33,6 +33,7 @@ type BitcoinAgent struct {
 	initHeight      int64
 	txManager       *TxManager
 	debug           bool
+	force           bool
 }
 
 func (b *BitcoinAgent) FetchDataResponse(resp *FetchResponse) error {
@@ -64,21 +65,29 @@ func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore stor
 
 func (b *BitcoinAgent) Init() error {
 	logger.Info("bitcoin agent init now")
-	height, exists, err := ReadBitcoinHeight(b.store)
-	if err != nil {
-		logger.Error("get btc current height error:%v", err)
-		return err
-	}
-	if !exists || height < b.initHeight {
-		logger.Debug("init btc current height: %v", b.initHeight)
+	if b.force {
 		err := WriteBitcoinHeight(b.store, b.initHeight)
 		if err != nil {
-			logger.Error("put init btc current height error:%v", err)
+			logger.Error("write btc height error: %v %v", b.initHeight, err)
 			return err
+		}
+	} else {
+		height, exists, err := ReadBitcoinHeight(b.store)
+		if err != nil {
+			logger.Error("get btc current height error:%v", err)
+			return err
+		}
+		if !exists || height < b.initHeight {
+			logger.Debug("init btc current height: %v", b.initHeight)
+			err := WriteBitcoinHeight(b.store, b.initHeight)
+			if err != nil {
+				logger.Error("put init btc current height error:%v", err)
+				return err
+			}
 		}
 	}
 	// test rpc
-	_, err = b.btcClient.GetBlockCount()
+	_, err := b.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error(" bitcoin json rpc get block count error:%v", err)
 		return err

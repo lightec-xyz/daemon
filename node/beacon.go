@@ -28,6 +28,7 @@ type BeaconAgent struct {
 	genesisPeriod  uint64
 	genesisSlot    uint64
 	stateCache     *CacheState
+	force          bool
 }
 
 func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *apiclient.Client, zkProofReq chan []*common.ZkProofRequest,
@@ -48,6 +49,27 @@ func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *
 
 func (b *BeaconAgent) Init() error {
 	logger.Info("beacon agent init")
+	if b.force {
+		err := WriteLatestBeaconSlot(b.store, b.genesisSlot)
+		if err != nil {
+			logger.Error("write latest slot error: %v", err)
+			return err
+		}
+	} else {
+		slot, exists, err := ReadLatestBeaconSlot(b.store)
+		if err != nil {
+			logger.Error("read latest slot error: %v", err)
+			return err
+		}
+		if !exists || slot < b.genesisSlot {
+			err := WriteLatestBeaconSlot(b.store, b.genesisSlot)
+			if err != nil {
+				logger.Error("write latest slot error: %v", err)
+				return err
+			}
+		}
+	}
+
 	latestPeriod, exists, err := b.fileStore.GetPeriod()
 	if err != nil {
 		logger.Error("check latest Index error: %v", err)
@@ -71,18 +93,6 @@ func (b *BeaconAgent) Init() error {
 		err := b.fileStore.StoreFinalizedSlot(b.genesisSlot)
 		if err != nil {
 			logger.Error("store latest Slot error: %v", err)
-			return err
-		}
-	}
-	slot, exists, err := ReadLatestBeaconSlot(b.store)
-	if err != nil {
-		logger.Error("read latest slot error: %v", err)
-		return err
-	}
-	if !exists || slot < b.genesisSlot {
-		err := WriteLatestBeaconSlot(b.store, b.genesisSlot)
-		if err != nil {
-			logger.Error("write latest slot error: %v", err)
 			return err
 		}
 	}

@@ -48,6 +48,7 @@ type EthereumAgent struct {
 	lock             sync.Mutex
 	genesisSlot      uint64
 	debug            bool
+	force            bool
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
@@ -77,22 +78,29 @@ func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, st
 
 func (e *EthereumAgent) Init() error {
 	logger.Info("init ethereum agent")
-	height, exists, err := ReadEthereumHeight(e.store)
-	if err != nil {
-		logger.Error("get eth current height error:%v", err)
-		return err
-	}
-	if !exists || height < e.initHeight {
-		logger.Debug("init eth current height: %v", e.initHeight)
+	if e.force {
 		err := WriteEthereumHeight(e.store, e.initHeight)
 		if err != nil {
-			logger.Error("put eth current height error:%v", err)
+			logger.Error("write eth height error: %v %v", e.initHeight, err)
 			return err
 		}
+	} else {
+		height, exists, err := ReadEthereumHeight(e.store)
+		if err != nil {
+			logger.Error("get eth current height error:%v", err)
+			return err
+		}
+		if !exists || height < e.initHeight {
+			logger.Debug("init eth current height: %v", e.initHeight)
+			err := WriteEthereumHeight(e.store, e.initHeight)
+			if err != nil {
+				logger.Error("put eth current height error:%v", err)
+				return err
+			}
+		}
 	}
-
 	// test rpc
-	_, err = e.ethClient.GetChainId()
+	_, err := e.ethClient.GetChainId()
 	if err != nil {
 		logger.Error("ethClient json rpc error:%v", err)
 		return err

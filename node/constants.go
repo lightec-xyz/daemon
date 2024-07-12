@@ -91,16 +91,13 @@ const (
 
 // *********************Other**************************************
 
-const RpcRegisterName = "zkbtc"
-
-const BitcoinNetwork = "bitcoin"
-const EthereumNetwork = "ethereum"
-
-const BitcoinAgentName = "bitcoinAgent"
-const EthereumAgentName = "ethereumAgent"
-const BeaconAgentName = "beaconAgent"
-
 const (
-	GeneratorVersion = "1.0.0"
-	NodeVersion      = "1.0.0"
+	GeneratorVersion  = "1.0.0"
+	NodeVersion       = "1.0.0"
+	RpcRegisterName   = "zkbtc"
+	BitcoinNetwork    = "bitcoin"
+	EthereumNetwork   = "ethereum"
+	BitcoinAgentName  = "bitcoinAgent"
+	EthereumAgentName = "ethereumAgent"
+	BeaconAgentName   = "beaconAgent"
 )
