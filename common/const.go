@@ -46,6 +46,27 @@ func (n Network) String() string {
 	}
 }
 
+type TaskStatusFlag int
+
+const (
+	Start TaskStatusFlag = iota + 1
+	Prove
+	End
+)
+
+func (ts TaskStatusFlag) String() string {
+	switch ts {
+	case Start:
+		return "start"
+	case Prove:
+		return "prove"
+	case End:
+		return "end"
+	default:
+		return "unknown"
+	}
+}
+
 type ProofStatus int
 
 const (
@@ -170,18 +191,6 @@ func (zkpt *ZkProofType) Weight() ProofWeight {
 	default:
 		return WeightDefault
 	}
-}
-
-var DefaultProofTypes = []ZkProofType{
-	DepositTxType,
-	RedeemTxType,
-	VerifyTxType,
-	SyncComGenesisType,
-	SyncComUnitType,
-	SyncComRecursiveType,
-	BeaconHeaderFinalityType,
-	BeaconHeaderType,
-	TxInEth2, // todo
 }
 
 func ToZkProofType(str string) (ZkProofType, error) {

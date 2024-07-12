@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"time"
 )
 
 const (
@@ -20,6 +21,7 @@ const (
 	PendingProofRespPrefix = "prp_"
 	NoncePrefix            = "n_"
 	UnConfirmTxPrefix      = "un_"
+	TaskTimePrefix         = "tt_"
 )
 
 const (
@@ -69,6 +71,13 @@ type DbUnConfirmTx struct {
 	Hash    string
 	ProofId string
 	Network string
+}
+
+type DbTask struct {
+	Id        string
+	ProofType common.ZkProofType
+	StartTime time.Time
+	EndTime   time.Time
 }
 
 type TxStatus int
@@ -186,5 +195,12 @@ func DbAddrNonceId(network, addr string) string {
 
 func DbUnConfirmTxId(txId string) string {
 	key := fmt.Sprintf("%s%s", UnConfirmTxPrefix, txId)
+	return key
+}
+
+// proof task time
+
+func DbTaskTimeId(flag common.TaskStatusFlag, id string) string {
+	key := fmt.Sprintf("%s%s_%s", TaskTimePrefix, id, flag.String())
 	return key
 }

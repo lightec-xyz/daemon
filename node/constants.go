@@ -102,4 +102,5 @@ const BeaconAgentName = "beaconAgent"
 
 const (
 	GeneratorVersion = "1.0.0"
+	NodeVersion      = "1.0.0"
 )

@@ -5,6 +5,7 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
@@ -625,4 +626,24 @@ func ReadAllUnConfirmTx(store store.IStore) ([]*DbUnConfirmTx, error) {
 		return nil, err
 	}
 	return txes, nil
+}
+
+func WriteTaskTime(store store.IStore, flag common.TaskStatusFlag, id string, t time.Time) error {
+	return store.PutObj(DbTaskTimeId(flag, id), t)
+}
+
+func ReadTaskTime(store store.IStore, flag common.TaskStatusFlag, id string) (time.Time, bool, error) {
+	exists, err := store.HasObj(DbTaskTimeId(flag, id))
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	if !exists {
+		return time.Time{}, false, nil
+	}
+	var t time.Time
+	err = store.GetObj(DbTaskTimeId(flag, id), &t)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	return t, true, nil
 }
