@@ -1,5 +1,11 @@
 # Generator
 
+## Docker
+tips: you must download the zk parameter file before running the docker container
+    
+    docker run -it -v <host machine zk parameter dir>:/opt/ZkParameterDir  --name generator redli123/zkbtcgenerator:0.0.1
+
+
 ## Build
 ```sh
 makdir <projectDir>
