@@ -2,7 +2,7 @@ package circuits
 
 import (
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/common"
@@ -21,13 +21,13 @@ type ICircuit interface {
 	BeaconHeaderProve(header proverType.BeaconHeaderChain) (*common.Proof, error)
 	RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot, currentSCSSZRoot string,
 		txVar, receiptVar []string) (*common.Proof, error)
-	DepositProve(data *btcproverUtils.GrandRollupProofData) (*common.Proof, error)
+	DepositProve(data *grUtil.GrandRollupProofData) (*common.Proof, error)
 	GenesisProve(firstProof, secondProof, firstWitness, secondWitness string,
 		genesisId, firstId, secondId []byte) (*common.Proof, error)
 	UnitProve(period uint64, update *utils.SyncCommitteeUpdate) (*common.Proof, *common.Proof, error)
 	RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness string,
 		beginId, relayId, endId []byte) (*common.Proof, error)
-	UpdateChangeProve(data *btcproverUtils.GrandRollupProofData) (*common.Proof, error)
+	UpdateChangeProve(data *grUtil.GrandRollupProofData) (*common.Proof, error)
 	BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
 	BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
 	BtcWrapProve(flag, proof, witness, beginHash, endHash string, nbBlocks uint64) (*common.Proof, error)

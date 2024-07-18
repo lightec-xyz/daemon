@@ -5,9 +5,9 @@ import (
 	"fmt"
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	"github.com/consensys/gnark/backend/witness"
-	"github.com/lightec-xyz/btc_provers/circuits"
 	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
 	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
+	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	"github.com/lightec-xyz/btc_provers/utils/client"
@@ -108,7 +108,7 @@ func (bs *BtcSetup) Prove() error {
 
 }
 
-func (bs *BtcSetup) baseProve(endHeight int64) (*circuits.WitnessFile, error) {
+func (bs *BtcSetup) baseProve(endHeight int64) (*btcprovertypes.WitnessFile, error) {
 	var proofs []native_plonk.Proof
 	var witnesses []witness.Witness
 	start := endHeight - 6*baseDistance
@@ -137,13 +137,13 @@ func (bs *BtcSetup) baseProve(endHeight int64) (*circuits.WitnessFile, error) {
 		witnesses = append(witnesses, baseProof.Wit)
 		logger.Info("complete baseLevel prove: %v~%v", index, eHeight)
 	}
-	return &circuits.WitnessFile{
+	return &btcprovertypes.WitnessFile{
 		Proofs:    proofs,
 		Witnesses: witnesses,
 	}, nil
 }
 
-func (bs *BtcSetup) middleProve(endHeight int64) (*circuits.WitnessFile, error) {
+func (bs *BtcSetup) middleProve(endHeight int64) (*btcprovertypes.WitnessFile, error) {
 	start := endHeight - 6*middleDistance
 	if start < 0 {
 		return nil, fmt.Errorf("middle endHeight less than 0")
@@ -177,13 +177,13 @@ func (bs *BtcSetup) middleProve(endHeight int64) (*circuits.WitnessFile, error) 
 		witnesses = append(witnesses, middleProof.Wit)
 		logger.Info("complete middle level proof: %v~%v", index, eHeight)
 	}
-	return &circuits.WitnessFile{
+	return &btcprovertypes.WitnessFile{
 		Proofs:    proofs,
 		Witnesses: witnesses,
 	}, nil
 }
 
-func (bs *BtcSetup) uplevelProve(endHeight int64) (*circuits.WitnessFile, error) {
+func (bs *BtcSetup) uplevelProve(endHeight int64) (*btcprovertypes.WitnessFile, error) {
 	start := endHeight - 3*upDistance // todo
 	if start < 0 {
 		return nil, fmt.Errorf("up height less than 0")
