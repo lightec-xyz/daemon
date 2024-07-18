@@ -79,16 +79,19 @@ func (bs *BtcSetup) Close() error {
 }
 
 func (bs *BtcSetup) Setup() error {
+	logger.Debug("start base setup ...")
 	err := baselevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
 		logger.Error("setup baseLevel error: %v", err)
 		return err
 	}
+	logger.Debug("start midlevel setup ...")
 	err = midlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
 		logger.Error("setup middleLevel error: %v", err)
 		return err
 	}
+	logger.Debug("start up setup ...")
 	err = upperlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
 		logger.Error("setup upLevel error: %v", err)
@@ -248,6 +251,7 @@ func readRunConfig(path string) (*RunConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("config data: %v\n", string(data))
 	var runConfig RunConfig
 	err = json.Unmarshal(data, &runConfig)
 	if err != nil {
