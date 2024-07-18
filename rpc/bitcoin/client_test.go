@@ -236,7 +236,7 @@ func TestMultiTransactionSignFromOasis(t *testing.T) {
 	ethTxHash := common.HexToHash("0x1d540c2298d2e0b5de5b28cc0ad3eb3dbab56c0d554b8e8d3a3c7e140b098553")
 
 	zkBridgeAddr, zkBtcAddr := "0x19d376e6a10aad92e787288464d4c738de97d135", "0xbf3041e37be70a58920a6fd776662b50323021c9"
-	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr)
+	ec, err := ethrpc.NewClient("https://1rpc.io/holesky", zkBridgeAddr, zkBtcAddr, "")
 	require.NoError(t, err)
 
 	ethTx, _, err := ec.TransactionByHash(context.Background(), ethTxHash)

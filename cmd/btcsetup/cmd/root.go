@@ -34,11 +34,11 @@ func check() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&datadir, "datadir", "", "data directory")
-	rootCmd.PersistentFlags().StringVar(&srsdir, "srsdir", "", "srs directory")
-	err := check()
-	if err != nil {
-		fmt.Printf("error: %v \n", err)
-		os.Exit(1)
-	}
+	//rootCmd.PersistentFlags().StringVar(&datadir, "datadir", "", "data directory")
+	//rootCmd.PersistentFlags().StringVar(&srsdir, "srsdir", "", "srs directory")
+	//err := check()
+	//if err != nil {
+	//	fmt.Printf("error: %v \n", err)
+	//	os.Exit(1)
+	//}
 }
