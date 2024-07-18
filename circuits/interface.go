@@ -2,7 +2,10 @@ package circuits
 
 import (
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
+	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
+	btcmiddle "github.com/lightec-xyz/btc_provers/utils/midlevel"
+	btcupper "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/common"
@@ -31,4 +34,7 @@ type ICircuit interface {
 	BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
 	BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
 	BtcWrapProve(flag, proof, witness, beginHash, endHash string, nbBlocks uint64) (*common.Proof, error)
+	BtcBaseProve(req *btcbase.BaseLevelProofData) (*common.Proof, error)
+	BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList *btcprovertypes.WitnessFile) (*common.Proof, error)
+	BtcUpperProve(req *btcupper.UpperLevelProofData, proofList *btcprovertypes.WitnessFile) (*common.Proof, error)
 }
