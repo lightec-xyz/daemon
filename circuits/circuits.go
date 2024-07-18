@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark/frontend"
-	"github.com/lightec-xyz/btc_provers/circuits/constant"
+	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
 	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/bulk"
 	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/packed"
 	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/wrap"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	"github.com/lightec-xyz/chainark"
 	"github.com/lightec-xyz/daemon/common"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
@@ -105,9 +105,9 @@ func (c *Circuit) BtcWrapProve(flag, hexProof, hexWitness, beginHash, endHash st
 	}
 	var vkPath string
 	if flag == BtcBulk {
-		vkPath = filepath.Join(c.Cfg.SetupDir, constant.BlockHeaderBulkOuterVkFile)
+		vkPath = filepath.Join(c.Cfg.SetupDir, btcprovercom.BlockHeaderBulkOuterVkFile)
 	} else if flag == BtcPacked {
-		vkPath = filepath.Join(c.Cfg.SetupDir, constant.BlockHeaderPackedVkFile)
+		vkPath = filepath.Join(c.Cfg.SetupDir, btcprovercom.BlockHeaderPackedVkFile)
 	} else {
 		return nil, fmt.Errorf("unknown flag")
 	}
@@ -288,7 +288,7 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*reLightComm
 		Wit:   proof.Wit,
 	}, err
 }
-func (c *Circuit) DepositProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
+func (c *Circuit) DepositProve(data *grUtil.GrandRollupProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit DepositProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
@@ -428,7 +428,7 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	return proof, err
 }
 
-func (c *Circuit) UpdateChangeProve(data *btcproverUtils.GrandRollupProofData) (*reLightCommon.Proof, error) {
+func (c *Circuit) UpdateChangeProve(data *grUtil.GrandRollupProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit UpdateChangeProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
@@ -588,7 +588,7 @@ func HashToLinkageId(hash string) (chainark.LinkageID, error) {
 	if err != nil {
 		return chainark.LinkageID{}, err
 	}
-	linkageID := chainark.LinkageIDFromBytes(beginHashBytes, constant.IdBitsPerVar)
+	linkageID := chainark.LinkageIDFromBytes(beginHashBytes, btcprovercom.IdBitsPerVar)
 	return linkageID, nil
 
 }

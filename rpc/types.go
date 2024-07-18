@@ -2,7 +2,7 @@ package rpc
 
 import (
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
@@ -118,7 +118,7 @@ type BlockHeaderFinalityResponse struct {
 type DepositRequest struct {
 	TxHash    string
 	BlockHash string
-	Data      *btcproverUtils.GrandRollupProofData
+	Data      *grUtil.GrandRollupProofData
 }
 
 type DepositResponse struct {
@@ -147,7 +147,7 @@ type RedeemResponse struct {
 type VerifyRequest struct {
 	TxHash    string
 	BlockHash string
-	Data      *btcproverUtils.GrandRollupProofData
+	Data      *grUtil.GrandRollupProofData
 }
 
 type VerifyResponse struct {

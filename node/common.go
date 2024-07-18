@@ -6,7 +6,7 @@ import (
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/lightec-xyz/btc_provers/circuits/constant"
+	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
@@ -176,7 +176,7 @@ func GetBtcWrapData(filestore *FileStorage, client *bitcoin.Client, start, end u
 	var proof *StoreProof
 	var ok bool
 	var flag string
-	if nRequired <= constant.MaxNbBlockPerBulk { // todo
+	if nRequired <= btcprovercom.MaxNbBlockPerBulk { // todo
 		proof, ok, err = filestore.GetBtcBulkProof(start, end)
 		if err != nil {
 			logger.Error("get btc bulk proof error: %v", err)

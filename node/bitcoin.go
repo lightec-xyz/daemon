@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -238,7 +238,7 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 				redeemTx.Proofed = true
 				logger.Debug("btc redeem tx proofed: %v", tx.Txid)
 			} else {
-				proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
+				proofData, err := grUtil.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
 				if err != nil {
 					logger.Error("get verify proof data error: %v %v", tx.Txid, err)
 					return nil, nil, nil, err
@@ -622,7 +622,7 @@ func (b *BitcoinAgent) getDepositData(txHash string) (interface{}, bool, error) 
 		logger.Error("get deposit tx error: %v %v", txHash, err)
 		return nil, false, err
 	}
-	proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, txHash, tx.Blockhash)
+	proofData, err := grUtil.GetDefaultGrandRollupProofData(b.btcProverClient, txHash, tx.Blockhash)
 	if err != nil {
 		logger.Error("get deposit proof data error: %v %v", txHash, err)
 		return nil, false, err
@@ -641,7 +641,7 @@ func (b *BitcoinAgent) getVerifyData(txHash string) (interface{}, bool, error) {
 		logger.Error("get verify tx error: %v %v", txHash, err)
 		return nil, false, err
 	}
-	proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, txHash, tx.Blockhash)
+	proofData, err := grUtil.GetDefaultGrandRollupProofData(b.btcProverClient, txHash, tx.Blockhash)
 	if err != nil {
 		logger.Error("get verify proof data error: %v %v", txHash, err)
 		return nil, false, err

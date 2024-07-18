@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/ws"
@@ -70,7 +70,7 @@ func TestServer(t *testing.T) {
 				result, err := client.GenVerifyProof(rpc.VerifyRequest{
 					TxHash:    "testhash",
 					BlockHash: "blockHash",
-					Data: &btcproverUtils.GrandRollupProofData{
+					Data: &grUtil.GrandRollupProofData{
 						GenesisHash: &chainhash.Hash{},
 					}})
 				if err != nil {
