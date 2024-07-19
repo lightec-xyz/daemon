@@ -121,7 +121,7 @@ func (bs *BtcSetup) baseProve(endHeight int64) (*btcprovertypes.WitnessFile, err
 	for index := start - 1; index < endHeight; index = index + baseDistance {
 		eHeight := index + baseDistance
 		logger.Info("start baseLevel prove: %v~%v", index, eHeight)
-		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(eHeight))
+		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(eHeight-1))
 		if err != nil {
 			logger.Error("get baseLevel proof data error: %v %v", index, err)
 			return nil, err
@@ -161,7 +161,7 @@ func (bs *BtcSetup) middleProve(endHeight int64) (*btcprovertypes.WitnessFile, e
 			logger.Error("base prove error: %v %v", index, err)
 			return nil, err
 		}
-		middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, uint32(eHeight))
+		middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, uint32(eHeight-1))
 		if err != nil {
 			logger.Error("get middle data error: %v %v", index, err)
 			return nil, err
@@ -200,7 +200,7 @@ func (bs *BtcSetup) uplevelProve(endHeight int64) (*btcprovertypes.WitnessFile, 
 			logger.Error("middle prove error: %v %v", index, err)
 			return nil, err
 		}
-		upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, uint32(eHeight))
+		upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, uint32(eHeight-1))
 		if err != nil {
 			logger.Error("get upLevel data : %v %v", endHeight, err)
 			return nil, err
