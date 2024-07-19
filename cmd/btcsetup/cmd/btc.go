@@ -122,7 +122,7 @@ func (bs *BtcSetup) baseProve(endHeight int64) (*btcprovertypes.WitnessFile, err
 		eHeight := index + baseDistance
 		logger.Info("start baseLevel prove: %v~%v", index, eHeight)
 		// todo  eHeight - 1 ?
-		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(eHeight))
+		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(eHeight-1))
 		if err != nil {
 			logger.Error("get baseLevel proof data error: %v %v", index, err)
 			return nil, err
