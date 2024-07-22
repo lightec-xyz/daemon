@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/proof"
+	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -25,6 +26,20 @@ var runCmd = &cobra.Command{
 			fmt.Printf("unmarshal config error: %v %v \n", cfgFile, err)
 			return
 		}
+
+		client, err := rpc.NewNodeClient("https://testnet.zkbtc.money/api")
+		if err != nil {
+			fmt.Printf("new client error: %v %v \n", cfgFile, err)
+			return
+		}
+		info, err := client.ProofInfo([]string{"0x4438c9e843b35e549173658a1409c4577ad78dae5b2cda70008cb31a541c4458"})
+		if err != nil {
+			fmt.Printf("proof info error: %v %v \n", cfgFile, err)
+			return
+		}
+		fmt.Printf("proof info: %v \n", info)
+		return
+
 		node, err := proof.NewNode(config)
 		if err != nil {
 			fmt.Printf("new node error: %v %v \n", cfgFile, err)
