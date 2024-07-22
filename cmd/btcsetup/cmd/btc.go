@@ -118,7 +118,7 @@ func (bs *BtcSetup) baseProve(endHeight int64) (*btcprovertypes.WitnessFile, err
 	if start < 0 {
 		return nil, fmt.Errorf("endHeight less than 0")
 	}
-	for index := start; index <= endHeight; index = index + baseDistance {
+	for index := start; index+baseDistance <= endHeight; index = index + baseDistance {
 		eHeight := index + baseDistance
 		logger.Info("start baseLevel prove: %v~%v", index, eHeight)
 		// todo  eHeight - 1 ?
@@ -154,7 +154,7 @@ func (bs *BtcSetup) middleProve(endHeight int64) (*btcprovertypes.WitnessFile, e
 	}
 	var proofs []native_plonk.Proof
 	var witnesses []witness.Witness
-	for index := start; index <= endHeight; index = index + middleDistance {
+	for index := start; index+middleDistance <= endHeight; index = index + middleDistance {
 		eHeight := index + middleDistance
 		logger.Info("start middle prove: %v~%v", index, eHeight)
 		baseProof, err := bs.baseProve(eHeight)
@@ -192,7 +192,7 @@ func (bs *BtcSetup) uplevelProve(endHeight int64) (*btcprovertypes.WitnessFile, 
 	if start < 0 {
 		return nil, fmt.Errorf("up height less than 0")
 	}
-	for index := start; index <= endHeight; index = index + upDistance {
+	for index := start; index+middleDistance <= endHeight; index = index + upDistance {
 		eHeight := index + upDistance
 		logger.Info("start upLevel prove: %v~%v", index, eHeight)
 
@@ -233,6 +233,10 @@ type RunConfig struct {
 }
 
 func (rc *RunConfig) check() error {
+	if rc.EndHeight%2016 != 0 {
+		return fmt.Errorf("endHeight must be multiple of 2016")
+	}
+
 	if rc.Url == "" {
 		return fmt.Errorf("url is empty")
 	}
