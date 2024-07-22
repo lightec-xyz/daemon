@@ -82,7 +82,7 @@ func TestNodeClient_Transactions(t *testing.T) {
 }
 
 func TestNodeClient_ProofInfo(t *testing.T) {
-	proofInfo, err := nodeClient.ProofInfo([]string{"0x6deff065bbaf2c9e9c12faf1d841d1f0b96502a20e6e5a864cc398cf6d54d6e4"})
+	proofInfo, err := nodeClient.ProofInfo([]string{"0x4438c9e843b35e549173658a1409c4577ad78dae5b2cda70008cb31a541c4458"})
 	if err != nil {
 		t.Fatal(err)
 	}
