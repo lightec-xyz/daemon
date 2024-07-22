@@ -192,7 +192,7 @@ func (bs *BtcSetup) uplevelProve(endHeight int64) (*btcprovertypes.WitnessFile, 
 	if start < 0 {
 		return nil, fmt.Errorf("up height less than 0")
 	}
-	for index := start; index+middleDistance <= endHeight; index = index + upDistance {
+	for index := start; index+upDistance <= endHeight; index = index + upDistance {
 		eHeight := index + upDistance
 		logger.Info("start upLevel prove: %v~%v", index, eHeight)
 
