@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
@@ -14,7 +16,6 @@ import (
 	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
 	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
-	"os"
 )
 
 const (
@@ -24,10 +25,11 @@ const (
 )
 
 type BtcSetup struct {
-	cfg       *RunConfig
-	client    *client.Client
-	exit      chan os.Signal
-	fileStore *FileStorage
+	cfg              *RunConfig
+	client           *client.Client
+	startBlockheight int64
+	exit             chan os.Signal
+	fileStore        *FileStorage
 }
 
 func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
@@ -35,26 +37,41 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = cfg.check()
 	if err != nil {
 		return nil, err
 	}
+
 	btcClient, err := client.NewClient(cfg.Url, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btcClient error: %v", err)
 		return nil, err
 	}
+
 	proofPath := fmt.Sprintf("%v/proof", cfg.DataDir)
 	fileStorage, err := NewFileStorage(proofPath)
 	if err != nil {
 		logger.Error("new file storage error: %v %v", proofPath, err)
 		return nil, err
 	}
+
+	startBlockheight := int64(0)
+	if !cfg.IsFromGenesis {
+		lastestBh, err := btcClient.GetBlockCount()
+		if err != nil {
+			logger.Error("get block height error: %v", err)
+			return nil, err
+		}
+		startBlockheight = (lastestBh/upDistance - 3) * upDistance
+	}
+
 	return &BtcSetup{
-		cfg:       cfg,
-		client:    btcClient,
-		exit:      make(chan os.Signal, 1),
-		fileStore: fileStorage,
+		cfg:              cfg,
+		client:           btcClient,
+		exit:             make(chan os.Signal, 1),
+		fileStore:        fileStorage,
+		startBlockheight: startBlockheight,
 	}, nil
 }
 
@@ -97,10 +114,22 @@ func (bs *BtcSetup) Setup() error {
 		logger.Error("setup upLevel error: %v", err)
 		return err
 	}
+	// todo recursiv
 	return nil
 }
 
 func (bs *BtcSetup) Prove() error {
+	for i := 0; i < 3; i++ {
+		
+		3*6*6 baseProve startBlockheight+56*(j+1)-1
+		3*6 middleProve startBlockheight+56*6*(k+1)-1
+		3  uplevelProve startBlockheight+56*6*6*(l+1)-1
+	}
+
+	for i := 0; i < 2; i++ {
+		// todo recursiv prove
+	}
+
 	endBlockHeight := bs.cfg.EndHeight
 	_, err := bs.uplevelProve(endBlockHeight)
 	if err != nil {
@@ -110,6 +139,9 @@ func (bs *BtcSetup) Prove() error {
 	return nil
 
 }
+
+
+
 
 func (bs *BtcSetup) baseProve(endHeight int64) (*btcprovertypes.WitnessFile, error) {
 	var proofs []native_plonk.Proof
@@ -222,14 +254,14 @@ func (bs *BtcSetup) uplevelProve(endHeight int64) (*btcprovertypes.WitnessFile, 
 }
 
 type RunConfig struct {
-	DataDir   string `json:"datadir"`
-	SetupDir  string `json:"setupdir"`
-	SrsDir    string `json:"srsdir"`
-	Setup     bool   `json:"setup"`
-	EndHeight int64  `json:"endHeight"`
-	Url       string `json:"url"`
-	BtcUser   string `json:"btcUser"`
-	BtcPwd    string `json:"btcPwd"`
+	DataDir       string `json:"datadir"`
+	SetupDir      string `json:"setupdir"`
+	SrsDir        string `json:"srsdir"`
+	Setup         bool   `json:"setup"`
+	IsFromGenesis bool   `json:"isFromGenesis"`
+	Url           string `json:"url"`
+	BtcUser       string `json:"btcUser"`
+	BtcPwd        string `json:"btcPwd"`
 }
 
 func (rc *RunConfig) check() error {
