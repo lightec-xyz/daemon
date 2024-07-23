@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/proof"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/spf13/cobra"
@@ -38,6 +39,8 @@ var runCmd = &cobra.Command{
 			return
 		}
 		fmt.Printf("proof info: %v \n", info)
+		zkProofTypes := common.GetEnvZkProofTypes()
+		fmt.Printf("zk proof types: %v \n", zkProofTypes)
 		return
 
 		node, err := proof.NewNode(config)

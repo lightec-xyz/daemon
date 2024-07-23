@@ -188,3 +188,8 @@ func GetEnvDebugMode() bool {
 	}
 	return false
 }
+
+func GetEnvZkProofTypes() string {
+	zkProofTypes := os.Getenv(ZkProofTypes)
+	return zkProofTypes
+}

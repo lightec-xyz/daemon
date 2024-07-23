@@ -1,8 +1,10 @@
 package proof
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
 	"os"
 )
 
@@ -50,6 +52,21 @@ func (c *Config) Check() error {
 		return fmt.Errorf("unknown model:%v", c.Mode)
 	}
 	return nil
+}
+
+func (c *Config) GetZkProofTypes() ([]common.ZkProofType, error) {
+	if len(c.ProofType) != 0 {
+		logger.Debug("proof types:%v", c.ProofType)
+		return toZkProofType(c.ProofType)
+	}
+	zkProofTypes := common.GetEnvZkProofTypes()
+	var zkEnvProofTypes []string
+	err := json.Unmarshal([]byte(zkProofTypes), &zkEnvProofTypes)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debug("proof types:%v", zkEnvProofTypes)
+	return toZkProofType(zkEnvProofTypes)
 }
 
 func (c *Config) Info() string {

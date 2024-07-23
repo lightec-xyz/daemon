@@ -37,7 +37,7 @@ func NewNode(cfg Config) (*Node, error) {
 	dbPath := fmt.Sprintf("%s/%s", cfg.DataDir, cfg.Network)
 	logger.Info("dbPath:%s", dbPath)
 	logger.Info("mode:%v", cfg.Mode)
-	zkProofTypes, err := toZkProofType(cfg.ProofType)
+	zkProofTypes, err := cfg.GetZkProofTypes()
 	if err != nil {
 		logger.Error("convert proof type error:%v", err)
 		return nil, err

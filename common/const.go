@@ -5,13 +5,14 @@ import "fmt"
 // env
 
 const (
-	BeaconHeaderSlot = 32
-	SlotPerPeriod    = 8192
+	ZkDebugEnv     = "ZkDebug"
+	ZkParameterDir = "ZkParameterDir"
+	ZkProofTypes   = "ZkProofTypes"
 )
 
 const (
-	ZkDebugEnv     = "ZkDebug"
-	ZkParameterDir = "ZkParameterDir"
+	BeaconHeaderSlot = 32
+	SlotPerPeriod    = 8192
 )
 
 type TxType = int
