@@ -3,10 +3,14 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	native_plonk "github.com/consensys/gnark/backend/plonk"
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
+	"github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/recursiveduper"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
@@ -14,20 +18,14 @@ import (
 	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
 	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
-	"os"
-)
-
-const (
-	upDistance     = 6 * middleDistance
-	middleDistance = 6 * baseDistance
-	baseDistance   = 56
 )
 
 type BtcSetup struct {
-	cfg       *RunConfig
-	client    *client.Client
-	exit      chan os.Signal
-	fileStore *FileStorage
+	cfg              *RunConfig
+	client           *client.Client
+	exit             chan os.Signal
+	fileStore        *FileStorage
+	startBlockheight int64
 }
 
 func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
@@ -35,26 +33,41 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = cfg.check()
 	if err != nil {
 		return nil, err
 	}
+
 	btcClient, err := client.NewClient(cfg.Url, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btcClient error: %v", err)
 		return nil, err
 	}
+
 	proofPath := fmt.Sprintf("%v/proof", cfg.DataDir)
 	fileStorage, err := NewFileStorage(proofPath)
 	if err != nil {
 		logger.Error("new file storage error: %v %v", proofPath, err)
 		return nil, err
 	}
+
+	startBlockheight := int64(0)
+	if !cfg.IsFromGenesis {
+		lastestBh, err := btcClient.GetBlockCount()
+		if err != nil {
+			logger.Error("get block height error: %v", err)
+			return nil, err
+		}
+		startBlockheight = (lastestBh/common.CapacityDifficultyBlock - 3) * common.CapacityDifficultyBlock
+	}
+
 	return &BtcSetup{
-		cfg:       cfg,
-		client:    btcClient,
-		exit:      make(chan os.Signal, 1),
-		fileStore: fileStorage,
+		cfg:              cfg,
+		client:           btcClient,
+		exit:             make(chan os.Signal, 1),
+		fileStore:        fileStorage,
+		startBlockheight: startBlockheight,
 	}, nil
 }
 
@@ -79,24 +92,35 @@ func (bs *BtcSetup) Close() error {
 }
 
 func (bs *BtcSetup) Setup() error {
-	logger.Debug("start base setup ...")
+	logger.Debug("start baselevel setup ...")
+
 	err := baselevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup baseLevel error: %v", err)
+		logger.Error("setup baselevel error: %v", err)
 		return err
 	}
+
 	logger.Debug("start midlevel setup ...")
 	err = midlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup middleLevel error: %v", err)
+		logger.Error("setup midlevel error: %v", err)
 		return err
 	}
-	logger.Debug("start up setup ...")
+
+	logger.Debug("start upperlevel setup ...")
 	err = upperlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup upLevel error: %v", err)
+		logger.Error("setup upperlevel error: %v", err)
 		return err
 	}
+
+	logger.Debug("start recursiveduper setup ...")
+	err = recursiveduper.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	if err != nil {
+		logger.Error("setup recursiveduper error: %v", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -222,21 +246,17 @@ func (bs *BtcSetup) uplevelProve(endHeight int64) (*btcprovertypes.WitnessFile, 
 }
 
 type RunConfig struct {
-	DataDir   string `json:"datadir"`
-	SetupDir  string `json:"setupdir"`
-	SrsDir    string `json:"srsdir"`
-	Setup     bool   `json:"setup"`
-	EndHeight int64  `json:"endHeight"`
-	Url       string `json:"url"`
-	BtcUser   string `json:"btcUser"`
-	BtcPwd    string `json:"btcPwd"`
+	DataDir       string `json:"datadir"`
+	SetupDir      string `json:"setupdir"`
+	SrsDir        string `json:"srsdir"`
+	Setup         bool   `json:"setup"`
+	IsFromGenesis bool   `json:"isFromGenesis"`
+	Url           string `json:"url"`
+	BtcUser       string `json:"btcUser"`
+	BtcPwd        string `json:"btcPwd"`
 }
 
 func (rc *RunConfig) check() error {
-	if rc.EndHeight%2016 != 0 {
-		return fmt.Errorf("endHeight must be multiple of 2016")
-	}
-
 	if rc.Url == "" {
 		return fmt.Errorf("url is empty")
 	}
