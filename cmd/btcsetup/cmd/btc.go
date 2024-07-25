@@ -38,7 +38,7 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 		return nil, err
 	}
 
-	btcClient, err := client.NewClient(cfg.Url, cfg.BtcUser, cfg.BtcPwd)
+	btcClient, err := client.NewClient(cfg.BtcHost, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btcClient error: %v", err)
 		return nil, err
@@ -60,6 +60,7 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 		}
 		startBlockheight = (uint32(lastestBh)/common.CapacityDifficultyBlock - 3) * common.CapacityDifficultyBlock
 	}
+	logger.Info("start block height: %v", startBlockheight)
 
 	return &BtcSetup{
 		cfg:              cfg,
@@ -185,7 +186,6 @@ func (bs *BtcSetup) Prove() error {
 	}
 
 	logger.Info("complete recursiveduper prove: %v~%v", beginHeight, endHeight2)
-
 	return nil
 
 }
@@ -303,14 +303,14 @@ type RunConfig struct {
 	SrsDir        string `json:"srsdir"`
 	Setup         bool   `json:"setup"`
 	IsFromGenesis bool   `json:"isFromGenesis"`
-	Url           string `json:"url"`
+	BtcHost       string `json:"btcHost"`
 	BtcUser       string `json:"btcUser"`
 	BtcPwd        string `json:"btcPwd"`
 }
 
 func (rc *RunConfig) check() error {
-	if rc.Url == "" {
-		return fmt.Errorf("url is empty")
+	if rc.BtcHost == "" {
+		return fmt.Errorf("host is empty")
 	}
 	if rc.DataDir == "" {
 		return fmt.Errorf("dataDir can not be empty")

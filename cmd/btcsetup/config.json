@@ -1,10 +1,10 @@
 {
-  "datadir": "",
-  "setupdir": "",
-  "srsdir": "",
+  "datadir": "/opt/testnet/prove/",
+  "setupdir": "/opt/testnet/setup/",
+  "srsdir": "/opt/testnet/srs/",
   "setup": true,
   "isFromGenesis": false,
-  "url": "http://18.116.118.39:18332",
+  "btcHost": "18.116.118.39:18332",
   "btcUser": "lightec",
   "btcPwd": "Abcd1234"
 }
