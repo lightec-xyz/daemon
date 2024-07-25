@@ -5,19 +5,17 @@ import (
 	"fmt"
 	"os"
 
-	native_plonk "github.com/consensys/gnark/backend/plonk"
-	"github.com/consensys/gnark/backend/witness"
 	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
 	"github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
 	"github.com/lightec-xyz/btc_provers/circuits/recursiveduper"
-	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	"github.com/lightec-xyz/btc_provers/utils/client"
 	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
 	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
+	reLight_common "github.com/lightec-xyz/reLight/circuits/common"
 )
 
 type BtcSetup struct {
@@ -25,7 +23,7 @@ type BtcSetup struct {
 	client           *client.Client
 	exit             chan os.Signal
 	fileStore        *FileStorage
-	startBlockheight int64
+	startBlockheight uint32
 }
 
 func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
@@ -52,7 +50,7 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 		return nil, err
 	}
 
-	startBlockheight := int64(0)
+	startBlockheight := uint32(0)
 	if !cfg.IsFromGenesis {
 		lastestBh, err := btcClient.GetBlockCount()
 		if err != nil {
@@ -135,114 +133,111 @@ func (bs *BtcSetup) Prove() error {
 
 }
 
-func (bs *BtcSetup) baseProve(endHeight int64) (*btcprovertypes.WitnessFile, error) {
-	var proofs []native_plonk.Proof
-	var witnesses []witness.Witness
-	start := endHeight - 6*baseDistance
-	if start < 0 {
-		return nil, fmt.Errorf("endHeight less than 0")
+func (bs *BtcSetup) baseProve(beginHeight uint32) (*reLight_common.Proof, error) {
+	endHeight := beginHeight + common.CapacityBaseLevel - 1
+	logger.Info("start baseLevel prove: %v~%v", beginHeight, endHeight)
+
+	baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, endHeight)
+	if err != nil {
+		logger.Error("get baseLevel proof data error: %v %v", beginHeight, err)
+		return nil, err
 	}
-	for index := start; index+baseDistance <= endHeight; index = index + baseDistance {
-		eHeight := index + baseDistance
-		logger.Info("start baseLevel prove: %v~%v", index, eHeight)
-		// todo  eHeight - 1 ?
-		baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, uint32(eHeight))
-		if err != nil {
-			logger.Error("get baseLevel proof data error: %v %v", index, err)
-			return nil, err
-		}
-		baseProof, err := baselevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, baseData)
-		if err != nil {
-			logger.Error("baseLevel prove error: %v %v", index, err)
-			return nil, err
-		}
-		err = bs.fileStore.StoreBase(genKey("base", index, eHeight), baseProof.Proof, baseProof.Wit)
-		if err != nil {
-			logger.Error("store base level proof error %v %v", index, err)
-			return nil, err
-		}
-		proofs = append(proofs, baseProof.Proof)
-		witnesses = append(witnesses, baseProof.Wit)
-		logger.Info("complete baseLevel prove: %v~%v", index, eHeight)
+
+	baseProof, err := baselevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, baseData)
+	if err != nil {
+		logger.Error("baseLevel prove error: %v %v", beginHeight, err)
+		return nil, err
 	}
-	return &btcprovertypes.WitnessFile{
-		Proofs:    proofs,
-		Witnesses: witnesses,
-	}, nil
+
+	err = bs.fileStore.StoreBase(genKey(string(baseTable), beginHeight, endHeight), baseProof)
+	if err != nil {
+		logger.Error("store base level proof error %v %v", beginHeight, err)
+		return nil, err
+	}
+
+	logger.Info("complete baseLevel prove: %v~%v", beginHeight, endHeight)
+	return baseProof, nil
 }
 
-func (bs *BtcSetup) middleProve(endHeight int64) (*btcprovertypes.WitnessFile, error) {
-	start := endHeight - 6*middleDistance
-	if start < 0 {
-		return nil, fmt.Errorf("middle endHeight less than 0")
+func (bs *BtcSetup) middleProve(beginHeight uint32) (*reLight_common.Proof, error) {
+	baseProofs := make([]reLight_common.Proof, common.CapacityMidLevel)
+
+	for i := uint32(0); i < common.CapacityMidLevel; i++ {
+		baseBeginHeight := beginHeight + i*common.CapacityBaseLevel
+
+		baseProof, err := bs.baseProve(baseBeginHeight)
+		if err != nil {
+			logger.Error("base prove error: %v %v", baseBeginHeight, err)
+			return nil, err
+		}
+
+		baseProofs[i] = *baseProof
 	}
-	var proofs []native_plonk.Proof
-	var witnesses []witness.Witness
-	for index := start; index+middleDistance <= endHeight; index = index + middleDistance {
-		eHeight := index + middleDistance
-		logger.Info("start middle prove: %v~%v", index, eHeight)
-		baseProof, err := bs.baseProve(eHeight)
-		if err != nil {
-			logger.Error("base prove error: %v %v", index, err)
-			return nil, err
-		}
-		middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, uint32(eHeight-1))
-		if err != nil {
-			logger.Error("get middle data error: %v %v", index, err)
-			return nil, err
-		}
-		middleProof, err := midlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, middleData, baseProof)
-		if err != nil {
-			logger.Error("middLevel prove error: %v %v", index, err)
-			return nil, err
-		}
-		err = bs.fileStore.StoreMiddle(genKey("middle", index, eHeight), middleProof.Proof, middleProof.Wit)
-		if err != nil {
-			logger.Error("store middle level proof error %v %v", index, err)
-			return nil, err
-		}
-		proofs = append(proofs, middleProof.Proof)
-		witnesses = append(witnesses, middleProof.Wit)
-		logger.Info("complete middle level proof: %v~%v", index, eHeight)
+
+	endHeight := beginHeight + common.CapacitySuperBatch - 1
+	logger.Info("start middle prove: %v~%v", beginHeight, endHeight)
+
+	middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, endHeight)
+	if err != nil {
+		logger.Error("get middle data error: %v %v", beginHeight, err)
+		return nil, err
 	}
-	return &btcprovertypes.WitnessFile{
-		Proofs:    proofs,
-		Witnesses: witnesses,
-	}, nil
+
+	middleProof, err := midlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, middleData, baseProofs)
+	if err != nil {
+		logger.Error("middLevel prove error: %v %v", beginHeight, err)
+		return nil, err
+	}
+
+	err = bs.fileStore.StoreMiddle(genKey(string(middleTable), beginHeight, endHeight), middleProof)
+	if err != nil {
+		logger.Error("store middle level proof error %v %v", beginHeight, err)
+		return nil, err
+	}
+
+	logger.Info("complete middle level proof: %v~%v", beginHeight, endHeight)
+	return middleProof, nil
+
 }
 
-func (bs *BtcSetup) uplevelProve(endHeight int64) (*btcprovertypes.WitnessFile, error) {
-	start := endHeight - 3*upDistance // todo
-	if start < 0 {
-		return nil, fmt.Errorf("up height less than 0")
-	}
-	for index := start; index+upDistance <= endHeight; index = index + upDistance {
-		eHeight := index + upDistance
-		logger.Info("start upLevel prove: %v~%v", index, eHeight)
+func (bs *BtcSetup) uplevelProve(beginHeight uint32) (*reLight_common.Proof, error) {
+	midProofs := make([]reLight_common.Proof, common.CapacityUpperLevel)
 
-		middleProof, err := bs.middleProve(eHeight)
+	for i := uint32(0); i < common.CapacityUpperLevel; i++ {
+		midBeginHeight := beginHeight + i*common.CapacitySuperBatch
+
+		midProof, err := bs.middleProve(midBeginHeight)
 		if err != nil {
-			logger.Error("middle prove error: %v %v", index, err)
+			logger.Error("base prove error: %v %v", midBeginHeight, err)
 			return nil, err
 		}
-		upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, uint32(eHeight-1))
-		if err != nil {
-			logger.Error("get upLevel data : %v %v", endHeight, err)
-			return nil, err
-		}
-		upProof, err := upperlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, upData, middleProof)
-		if err != nil {
-			logger.Error("upLevel prove error: %v %v", endHeight, err)
-			return nil, err
-		}
-		err = bs.fileStore.StoreUp(genKey("up", index, endHeight), upProof.Proof, upProof.Wit)
-		if err != nil {
-			logger.Error("store upLevel proof error %v %v", index, err)
-			return nil, err
-		}
-		logger.Info("complete upLevel prove: %v~%v", index, eHeight)
+
+		midProofs[i] = *midProof
 	}
-	return nil, nil
+
+	endHeight := beginHeight + common.CapacityDifficultyBlock - 1
+	logger.Info("start upLevel prove: %v~%v", beginHeight, endHeight)
+
+	upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, endHeight)
+	if err != nil {
+		logger.Error("get upLevel data : %v %v", beginHeight, err)
+		return nil, err
+	}
+
+	upProof, err := upperlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, upData, midProofs)
+	if err != nil {
+		logger.Error("upLevel prove error: %v %v", beginHeight, err)
+		return nil, err
+	}
+
+	err = bs.fileStore.StoreUp(genKey(string(upTable), beginHeight, endHeight), upProof)
+	if err != nil {
+		logger.Error("store upLevel proof error %v %v", beginHeight, err)
+		return nil, err
+	}
+
+	logger.Info("complete upLevel prove: %v~%v", beginHeight, endHeight)
+	return upProof, nil
 }
 
 type RunConfig struct {
