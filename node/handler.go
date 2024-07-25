@@ -23,6 +23,16 @@ type Handler struct {
 	manager   IManager
 }
 
+func (h *Handler) ProofTask(id string) (*rpc.ProofTaskInfo, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) PendingTask() ([]*rpc.ProofTaskInfo, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 	if addr == "" || txType == "" {
 		return nil, fmt.Errorf("addr or txType is empty")

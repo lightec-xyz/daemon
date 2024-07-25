@@ -16,6 +16,24 @@ type NodeClient struct {
 	timeout time.Duration
 }
 
+func (c *NodeClient) ProofTask(id string) (*ProofTaskInfo, error) {
+	var result ProofTaskInfo
+	err := c.call(&result, "zkbtc_proofTask")
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (c *NodeClient) PendingTask() ([]*ProofTaskInfo, error) {
+	var result []*ProofTaskInfo
+	err := c.call(&result, "zkbtc_pendingTask")
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (c *NodeClient) TxesByAddr(addr, txType string) ([]*Transaction, error) {
 	var result []*Transaction
 	err := c.call(&result, "zkbtc_txesByAddr", addr, txType)

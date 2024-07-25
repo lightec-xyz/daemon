@@ -14,6 +14,8 @@ type INode interface {
 	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
 	SubmitProof(req *common.SubmitProof) (string, error)
 	TxesByAddr(addr, txType string) ([]*Transaction, error)
+	ProofTask(id string) (*ProofTaskInfo, error)
+	PendingTask() ([]*ProofTaskInfo, error)
 	Stop() error
 }
 

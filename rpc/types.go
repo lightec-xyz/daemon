@@ -9,12 +9,8 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
-type ProofTaskRequest struct {
-	ProofType []common.ZkProofType
-}
-
-type ProfTaskResponse struct {
-	ProofType common.ZkProofType
+type ProofTaskInfo struct {
+	Hash string
 }
 
 type Transaction struct {

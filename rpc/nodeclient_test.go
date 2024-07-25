@@ -17,6 +17,22 @@ func init() {
 	}
 }
 
+func TestNodeClient_ProofTask(t *testing.T) {
+	task, err := nodeClient.ProofTask("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(task)
+}
+
+func TestNodeClient_PendingTask(t *testing.T) {
+	task, err := nodeClient.PendingTask()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(task)
+}
+
 func TestNodeClient_TxesByAddr(t *testing.T) {
 	txes, err := nodeClient.TxesByAddr("", "")
 	if err != nil {
