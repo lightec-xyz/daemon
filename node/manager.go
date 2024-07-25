@@ -640,6 +640,66 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 	return nil
 }
 
+// todo
+
+func (m *manager) CheckStateV1() error {
+	return nil
+
+}
+
+func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end uint64, hash string) (interface{}, bool, error) {
+	switch reqType {
+	case common.SyncComGenesisType:
+		data, ok, err := GetSyncComGenesisData(m.fileStore)
+		if err != nil {
+			logger.Error("get SyncComGenesisData error:%v", err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.SyncComUnitType:
+		data, ok, err := GetSyncComUnitData(m.fileStore, index)
+		if err != nil {
+			logger.Error("get SyncComUnitData error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.SyncComRecursiveType:
+		if m.genesisPeriod == index+2 {
+			data, ok, err := GetRecursiveGenesisData(m.fileStore, index)
+			if err != nil {
+				logger.Error("get SyncComRecursiveGenesisData error:%v %v", index, err)
+				return nil, false, err
+			}
+			return data, ok, nil
+		} else {
+			data, ok, err := GetRecursiveData(m.fileStore, index)
+			if err != nil {
+				logger.Error("get SyncComRecursiveData error:%v %v", index, err)
+				return nil, false, err
+			}
+			return data, ok, nil
+		}
+
+	case common.SyncComFinalityType:
+		data, ok, err := GetSyncComFinalityData(m.fileStore, index)
+		if err != nil {
+			logger.Error("get SyncComFinalityData error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.RedeemTxType:
+		data, ok, err := GetRedeemRequestData(m.fileStore, m.genesisPeriod, index, hash, m.beaconClient, m.ethClient.Client)
+		if err != nil {
+			logger.Error("get redeem request data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	default:
+		logger.Error(" prepare request Data never should happen : %v %v", index, reqType)
+		return nil, false, fmt.Errorf("never should happen : %v %v", index, reqType)
+	}
+}
+
 func NewProofResp(reqType common.ZkProofType, index, end uint64, txHash string, proof common.ZkProof, witness []byte) *common.ZkProofResponse {
 	return &common.ZkProofResponse{
 		RespId:      common.NewProofId(reqType, index, end, txHash),

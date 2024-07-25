@@ -142,7 +142,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 
 }
 
-func GetGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, error) {
+func GetSyncComGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, error) {
 	genesisPeriod := fileStore.GetGenesisPeriod()
 	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
 	if err != nil {
@@ -225,6 +225,18 @@ func GetSyncCommitRootId(fileStore *FileStorage, period uint64) ([]byte, bool, e
 		return nil, false, err
 	}
 	return syncCommitRoot, true, nil
+}
+
+func GetSyncComUnitData(fileStore *FileStorage, period uint64) (*rpc.SyncCommUnitsRequest, bool, error) {
+	update, ok, err := GetSyncCommitUpdate(fileStore, period)
+	if err != nil {
+		logger.Error("get %v Index update error: %v", period, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	panic(update)
 }
 
 func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.SyncCommitteeUpdate, bool, error) {
