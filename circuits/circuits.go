@@ -2,6 +2,9 @@ package circuits
 
 import (
 	"fmt"
+	"path/filepath"
+
+	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
 	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/bulk"
@@ -10,11 +13,9 @@ import (
 	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
+	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	btcmiddle "github.com/lightec-xyz/btc_provers/utils/midlevel"
-
-	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
-	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	btcupper "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -29,7 +30,6 @@ import (
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
 	"github.com/lightec-xyz/reLight/circuits/utils"
-	"path/filepath"
 )
 
 var _ ICircuit = (*Circuit)(nil)
@@ -53,7 +53,7 @@ func (c *Circuit) BtcBaseProve(req *btcbase.BaseLevelProofData) (*reLightCommon.
 	return baseProof, nil
 }
 
-func (c *Circuit) BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList *btcprovertypes.WitnessFile) (*reLightCommon.Proof, error) {
+func (c *Circuit) BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList []reLightCommon.Proof) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit btcMiddle prove....")
 	if c.debug {
 		logger.Warn("current zk circuit btcMiddle prove is debug,skip prove")
@@ -67,7 +67,7 @@ func (c *Circuit) BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList *bt
 	return middleProof, nil
 }
 
-func (c *Circuit) BtcUpperProve(req *btcupper.UpperLevelProofData, proofList *btcprovertypes.WitnessFile) (*reLightCommon.Proof, error) {
+func (c *Circuit) BtcUpperProve(req *btcupper.UpperLevelProofData, proofList []reLightCommon.Proof) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit btcUpper prove....")
 	if c.debug {
 		logger.Warn("current zk circuit btcUpper prove is debug,skip prove")

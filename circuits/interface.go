@@ -35,6 +35,6 @@ type ICircuit interface {
 	BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*common.Proof, error)
 	BtcWrapProve(flag, proof, witness, beginHash, endHash string, nbBlocks uint64) (*common.Proof, error)
 	BtcBaseProve(req *btcbase.BaseLevelProofData) (*common.Proof, error)
-	BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList *btcprovertypes.WitnessFile) (*common.Proof, error)
-	BtcUpperProve(req *btcupper.UpperLevelProofData, proofList *btcprovertypes.WitnessFile) (*common.Proof, error)
+	BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList []common.Proof) (*common.Proof, error)
+	BtcUpperProve(req *btcupper.UpperLevelProofData, proofList []common.Proof) (*common.Proof, error)
 }
