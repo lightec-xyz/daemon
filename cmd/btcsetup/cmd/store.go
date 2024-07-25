@@ -3,12 +3,12 @@ package cmd
 import (
 	"encoding/hex"
 	"fmt"
-	native_plonk "github.com/consensys/gnark/backend/plonk"
-	"github.com/consensys/gnark/backend/witness"
+	"sync"
+
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
-	"sync"
+	reLight_common "github.com/lightec-xyz/reLight/circuits/common"
 )
 
 type StoreProof struct {
@@ -20,12 +20,13 @@ type StoreProof struct {
 type Table string
 
 const (
-	baseTable   Table = "base"
-	middleTable Table = "middle"
-	upTable     Table = "up"
+	baseTable      Table = "base"
+	middleTable    Table = "middle"
+	upTable        Table = "up"
+	recursiveTable Table = "recursive"
 )
 
-var InitStoreTables = []Table{baseTable, middleTable, upTable}
+var InitStoreTables = []Table{baseTable, middleTable, upTable, recursiveTable}
 
 type FileStorage struct {
 	RootPath     string
@@ -54,28 +55,36 @@ func NewFileStorage(rootPath string, tables ...Table) (*FileStorage, error) {
 	}, nil
 }
 
-func (fs *FileStorage) StoreBase(key string, proof native_plonk.Proof, wit witness.Witness) error {
-	storeProof, err := newStoreProof(string(baseTable), key, proof, wit)
+func (fs *FileStorage) StoreBase(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(baseTable), key, proof)
 	if err != nil {
 		return err
 	}
 	return fs.Store(baseTable, key, storeProof)
 }
 
-func (fs *FileStorage) StoreMiddle(key string, proof native_plonk.Proof, wit witness.Witness) error {
-	storeProof, err := newStoreProof(string(middleTable), key, proof, wit)
+func (fs *FileStorage) StoreMiddle(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(middleTable), key, proof)
 	if err != nil {
 		return err
 	}
 	return fs.Store(middleTable, key, storeProof)
 }
 
-func (fs *FileStorage) StoreUp(key string, proof native_plonk.Proof, wit witness.Witness) error {
-	storeProof, err := newStoreProof(string(upTable), key, proof, wit)
+func (fs *FileStorage) StoreUp(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(upTable), key, proof)
 	if err != nil {
 		return err
 	}
 	return fs.Store(upTable, key, storeProof)
+}
+
+func (fs *FileStorage) StoreRecursive(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(recursiveTable), key, proof)
+	if err != nil {
+		return err
+	}
+	return fs.Store(recursiveTable, key, storeProof)
 }
 
 func (fs *FileStorage) GetFileStore(table Table) (*store.FileStore, bool) {
@@ -146,13 +155,13 @@ func genKey(prefix string, args ...interface{}) string {
 	}
 	return name
 }
-func newStoreProof(proofType, id string, proof native_plonk.Proof, wit witness.Witness) (*StoreProof, error) {
-	proofBytes, err := circuits.ProofToBytes(proof)
+func newStoreProof(proofType, id string, proof *reLight_common.Proof) (*StoreProof, error) {
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
 	if err != nil {
 		logger.Error("proof to bytes error: %v", err)
 		return nil, err
 	}
-	witnessBytes, err := circuits.WitnessToBytes(wit)
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
 	if err != nil {
 		return nil, err
 	}

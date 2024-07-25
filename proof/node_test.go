@@ -2,14 +2,15 @@ package proof
 
 import (
 	"encoding/json"
+	"testing"
+	"time"
+
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	btcproverUtils "github.com/lightec-xyz/btc_provers/utils"
+	grandrollupUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/ws"
-	"testing"
-	"time"
 )
 
 func init() {
@@ -142,7 +143,7 @@ func TestRpcHandler(t *testing.T) {
 	request := rpc.VerifyRequest{
 		TxHash:    "testhash",
 		BlockHash: "blockHash",
-		Data: &btcproverUtils.GrandRollupProofData{
+		Data: &grandrollupUtil.GrandRollupProofData{
 			GenesisHash: &chainhash.Hash{},
 		}}
 	param, err := json.Marshal([]interface{}{request})
