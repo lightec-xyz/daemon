@@ -124,19 +124,19 @@ func (bs *BtcSetup) Setup() error {
 }
 
 func (bs *BtcSetup) Prove() error {
-	upProofs := make([]reLight_common.Proof, 3)
+	duperProofs := make([]reLight_common.Proof, 3)
 	beginHeight := bs.startBlockheight
 
 	for i := uint32(0); i < 3; i++ {
-		upBeginHeight := beginHeight + i*common.CapacityDifficultyBlock
+		duperBeginHeight := beginHeight + i*common.CapacityDifficultyBlock
 
-		upProof, err := bs.uplevelProve(upBeginHeight)
+		duperProof, err := bs.DuperProve(duperBeginHeight)
 		if err != nil {
-			logger.Error("upperlevel prove error: %v %v", upBeginHeight, err)
+			logger.Error("DuperProve(begin Height: %v) error: %v", duperBeginHeight, err)
 			return err
 		}
 
-		upProofs[i] = *upProof
+		duperProofs[i] = *duperProof
 	}
 
 	endHeight1 := beginHeight + common.CapacityDifficultyBlock*2 - 1
@@ -148,7 +148,7 @@ func (bs *BtcSetup) Prove() error {
 		return err
 	}
 
-	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, bs.cfg.DataDir, upProofs[:2], proofData1)
+	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, bs.cfg.DataDir, duperProofs[:2], proofData1)
 	if err != nil {
 		logger.Error("genesis recursiveduper prove error: %v %v", endHeight1, err)
 		return err
@@ -172,7 +172,7 @@ func (bs *BtcSetup) Prove() error {
 	}
 
 	recursiveProof, err := recursiveduper.ProveRecursive(
-		bs.cfg.SetupDir, bs.cfg.DataDir, recursiveduper.GenesisProof, genesisProof, &upProofs[2], proofData2)
+		bs.cfg.SetupDir, bs.cfg.DataDir, recursiveduper.GenesisProof, genesisProof, &duperProofs[2], proofData2)
 	if err != nil {
 		logger.Error("recursiveduper prove error: %v %v", endHeight2, err)
 		return err
@@ -190,25 +190,25 @@ func (bs *BtcSetup) Prove() error {
 
 }
 
-func (bs *BtcSetup) baseProve(beginHeight uint32) (*reLight_common.Proof, error) {
+func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error) {
 	endHeight := beginHeight + common.CapacityBaseLevel - 1
 	logger.Info("start baseLevel prove: %v~%v", beginHeight, endHeight)
 
 	baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, endHeight)
 	if err != nil {
-		logger.Error("get baseLevel proof data error: %v %v", beginHeight, err)
+		logger.Error("get baseLevel proof data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
 	baseProof, err := baselevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, baseData)
 	if err != nil {
-		logger.Error("baseLevel prove error: %v %v", beginHeight, err)
+		logger.Error("baseLevel prove error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
 	err = bs.fileStore.StoreBase(genKey(string(baseTable), beginHeight, endHeight), baseProof)
 	if err != nil {
-		logger.Error("store baseLevel proof error %v %v", beginHeight, err)
+		logger.Error("store baseLevel proof error %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
@@ -216,19 +216,19 @@ func (bs *BtcSetup) baseProve(beginHeight uint32) (*reLight_common.Proof, error)
 	return baseProof, nil
 }
 
-func (bs *BtcSetup) middleProve(beginHeight uint32) (*reLight_common.Proof, error) {
-	baseProofs := make([]reLight_common.Proof, common.CapacityMidLevel)
+func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error) {
+	batchProofs := make([]reLight_common.Proof, common.CapacityMidLevel)
 
 	for i := uint32(0); i < common.CapacityMidLevel; i++ {
-		baseBeginHeight := beginHeight + i*common.CapacityBaseLevel
+		batchedBeginHeight := beginHeight + i*common.CapacityBaseLevel
 
-		baseProof, err := bs.baseProve(baseBeginHeight)
+		batchProof, err := bs.BatchProve(batchedBeginHeight)
 		if err != nil {
-			logger.Error("baseLevel prove error: %v %v", baseBeginHeight, err)
+			logger.Error("BatchProve(begin Height: %v) error: %v", batchedBeginHeight, err)
 			return nil, err
 		}
 
-		baseProofs[i] = *baseProof
+		batchProofs[i] = *batchProof
 	}
 
 	endHeight := beginHeight + common.CapacitySuperBatch - 1
@@ -236,19 +236,19 @@ func (bs *BtcSetup) middleProve(beginHeight uint32) (*reLight_common.Proof, erro
 
 	middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, endHeight)
 	if err != nil {
-		logger.Error("get middLevel data error: %v %v", beginHeight, err)
+		logger.Error("get middLevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
-	middleProof, err := midlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, middleData, baseProofs)
+	middleProof, err := midlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, middleData, batchProofs)
 	if err != nil {
-		logger.Error("middLevel prove error: %v %v", beginHeight, err)
+		logger.Error("middLevel prove error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
 	err = bs.fileStore.StoreMiddle(genKey(string(middleTable), beginHeight, endHeight), middleProof)
 	if err != nil {
-		logger.Error("store middLevel level proof error %v %v", beginHeight, err)
+		logger.Error("store middLevel level proof error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
@@ -257,19 +257,19 @@ func (bs *BtcSetup) middleProve(beginHeight uint32) (*reLight_common.Proof, erro
 
 }
 
-func (bs *BtcSetup) uplevelProve(beginHeight uint32) (*reLight_common.Proof, error) {
-	midProofs := make([]reLight_common.Proof, common.CapacityUpperLevel)
+func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error) {
+	superProofs := make([]reLight_common.Proof, common.CapacityUpperLevel)
 
 	for i := uint32(0); i < common.CapacityUpperLevel; i++ {
-		midBeginHeight := beginHeight + i*common.CapacitySuperBatch
+		superBeginHeight := beginHeight + i*common.CapacitySuperBatch
 
-		midProof, err := bs.middleProve(midBeginHeight)
+		superProof, err := bs.SuperProve(superBeginHeight)
 		if err != nil {
-			logger.Error("middLevel prove error: %v %v", midBeginHeight, err)
+			logger.Error("SuperProve(begin Height: %v) error: %v", superBeginHeight, err)
 			return nil, err
 		}
 
-		midProofs[i] = *midProof
+		superProofs[i] = *superProof
 	}
 
 	endHeight := beginHeight + common.CapacityDifficultyBlock - 1
@@ -277,19 +277,19 @@ func (bs *BtcSetup) uplevelProve(beginHeight uint32) (*reLight_common.Proof, err
 
 	upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, endHeight)
 	if err != nil {
-		logger.Error("get upperlevel data : %v %v", beginHeight, err)
+		logger.Error("get upperlevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
-	upProof, err := upperlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, upData, midProofs)
+	upProof, err := upperlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, upData, superProofs)
 	if err != nil {
-		logger.Error("upperlevel prove error: %v %v", beginHeight, err)
+		logger.Error("upperlevel prove error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
 	err = bs.fileStore.StoreUp(genKey(string(upTable), beginHeight, endHeight), upProof)
 	if err != nil {
-		logger.Error("store upperlevel proof error %v %v", beginHeight, err)
+		logger.Error("store upperlevel proof error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
