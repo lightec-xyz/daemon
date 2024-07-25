@@ -149,7 +149,7 @@ func (bs *BtcSetup) Prove() error {
 		return err
 	}
 
-	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, bs.cfg.DataDir, duperProofs[:2], proofData1)
+	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, duperProofs[:2], proofData1)
 	if err != nil {
 		logger.Error("genesis recursiveduper prove error: %v %v", endHeight1, err)
 		return err
@@ -173,7 +173,7 @@ func (bs *BtcSetup) Prove() error {
 	}
 
 	recursiveProof, err := recursiveduper.ProveRecursive(
-		bs.cfg.SetupDir, bs.cfg.DataDir, recursiveduper.GenesisProof, genesisProof, &duperProofs[2], proofData2)
+		bs.cfg.SetupDir, recursiveduper.GenesisProof, genesisProof, &duperProofs[2], proofData2)
 	if err != nil {
 		logger.Error("recursiveduper prove error: %v %v", endHeight2, err)
 		return err
@@ -200,7 +200,7 @@ func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	baseProof, err := baselevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, baseData)
+	baseProof, err := baselevel.Prove(bs.cfg.SetupDir, baseData)
 	if err != nil {
 		logger.Error("baseLevel prove error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -240,7 +240,7 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	middleProof, err := midlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, middleData, batchProofs)
+	middleProof, err := midlevel.Prove(bs.cfg.SetupDir, middleData, batchProofs)
 	if err != nil {
 		logger.Error("middLevel prove error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -281,7 +281,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	upProof, err := upperlevel.Prove(bs.cfg.SetupDir, bs.cfg.DataDir, upData, superProofs)
+	upProof, err := upperlevel.Prove(bs.cfg.SetupDir, upData, superProofs)
 	if err != nil {
 		logger.Error("upperlevel prove error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err

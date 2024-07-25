@@ -1,5 +1,5 @@
 {
-  "datadir": "/opt/testnet/prove/",
+  "datadir": "/opt/testnet/",
   "setupdir": "/opt/testnet/setup/",
   "srsdir": "/opt/testnet/srs/",
   "setup": true,
