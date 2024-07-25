@@ -20,12 +20,13 @@ type StoreProof struct {
 type Table string
 
 const (
-	baseTable   Table = "base"
-	middleTable Table = "middle"
-	upTable     Table = "up"
+	baseTable      Table = "base"
+	middleTable    Table = "middle"
+	upTable        Table = "up"
+	recursiveTable Table = "recursive"
 )
 
-var InitStoreTables = []Table{baseTable, middleTable, upTable}
+var InitStoreTables = []Table{baseTable, middleTable, upTable, recursiveTable}
 
 type FileStorage struct {
 	RootPath     string
@@ -76,6 +77,14 @@ func (fs *FileStorage) StoreUp(key string, proof *reLight_common.Proof) error {
 		return err
 	}
 	return fs.Store(upTable, key, storeProof)
+}
+
+func (fs *FileStorage) StoreRecursive(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(recursiveTable), key, proof)
+	if err != nil {
+		return err
+	}
+	return fs.Store(recursiveTable, key, storeProof)
 }
 
 func (fs *FileStorage) GetFileStore(table Table) (*store.FileStore, bool) {
