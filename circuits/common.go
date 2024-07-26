@@ -14,11 +14,32 @@ import (
 	"github.com/lightec-xyz/chainark"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/utils"
+
 	"math/big"
 	"time"
 )
+
+func HexToProofs(proofs []rpc.Proof) ([]reLightCommon.Proof, error) {
+	var list []reLightCommon.Proof
+	for _, item := range proofs {
+		proof, err := HexToProof(item.Proof)
+		if err != nil {
+			return nil, err
+		}
+		wit, err := HexToWitness(item.Witness)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, reLightCommon.Proof{
+			Proof: proof,
+			Wit:   wit,
+		})
+	}
+	return list, nil
+}
 
 func SyncCommitRoot(update *utils.SyncCommitteeUpdate) ([]byte, error) {
 	ok, err := common.VerifyLightClientUpdate(update)

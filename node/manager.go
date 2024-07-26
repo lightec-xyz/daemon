@@ -755,6 +755,29 @@ func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end u
 			return nil, false, err
 		}
 		return data, true, nil
+	case common.BtcBaseType:
+		data, ok, err := GetBtcBaseData(m.btcproverClient, index)
+		if err != nil {
+			logger.Error("get btc base data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BtcMiddleType:
+		data, ok, err := GetBtcMiddleData(m.fileStore, m.btcproverClient, index)
+		if err != nil {
+			logger.Error("get btc middle data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BtcUpperType:
+		data, ok, err := GetBtcUpperData(m.fileStore, m.btcproverClient, index)
+		if err != nil {
+			logger.Error("get btc upper data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
 
 	default:
 		logger.Error(" prepare request Data never should happen : %v %v", index, reqType)

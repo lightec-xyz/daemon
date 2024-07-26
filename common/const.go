@@ -33,6 +33,7 @@ type Network string
 
 const (
 	ETH   Network = "eth"
+	ICP   Network = "icp"
 	Oasis Network = "oasis"
 )
 
@@ -42,6 +43,8 @@ func (n Network) String() string {
 		return "eth"
 	case Oasis:
 		return "oasis"
+	case ICP:
+		return "icp"
 	default:
 		return "unknown"
 	}
@@ -139,6 +142,9 @@ const (
 	BtcBulkType
 	BtcPackedType
 	BtcWrapType
+	BtcBaseType
+	BtcMiddleType
+	BtcUpperType
 )
 
 func (zkpt *ZkProofType) String() string {
@@ -169,6 +175,12 @@ func (zkpt *ZkProofType) String() string {
 		return "BtcWrapType"
 	case BtcBulkType:
 		return "BtcBulkType"
+	case BtcBaseType:
+		return "BtcBaseType"
+	case BtcMiddleType:
+		return "BtcMiddleType"
+	case BtcUpperType:
+		return "BtcUpperType"
 	default:
 		return "unKnown"
 	}
@@ -222,6 +234,12 @@ func ToZkProofType(str string) (ZkProofType, error) {
 		return BtcPackedType, nil
 	case "BtcWrapType":
 		return BtcWrapType, nil
+	case "BtcBaseType":
+		return BtcBaseType, nil
+	case "BtcMiddleType":
+		return BtcMiddleType, nil
+	case "BtcUpperType":
+		return BtcUpperType, nil
 	default:
 		return 0, fmt.Errorf("uKnown zk proof type %v", str)
 	}

@@ -20,6 +20,33 @@ type ProofClient struct {
 	custom  bool
 }
 
+func (p *ProofClient) BtcBaseProve(req *BtcBaseRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcBaseProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (p *ProofClient) BtcMiddleProve(req *BtcMiddleRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcMiddleProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (p *ProofClient) BtcUpProve(req *BtcUpperRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcUpProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 func (p *ProofClient) SupportProofType() []common.ZkProofType {
 	var result []common.ZkProofType
 	err := p.call(&result, "zkbtc_supportProofType")

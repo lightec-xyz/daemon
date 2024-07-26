@@ -15,6 +15,33 @@ type Handler struct {
 	worker      rpc.IWorker
 }
 
+func (h *Handler) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcBaseProve(req)
+	if err != nil {
+		logger.Error("btc base prove error:%v", err)
+		return nil, err
+	}
+	return response, nil
+}
+
+func (h *Handler) BtcMiddleProve(req *rpc.BtcMiddleRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcMiddleProve(req)
+	if err != nil {
+		logger.Error("btc middle prove error:%v", err)
+		return nil, err
+	}
+	return response, nil
+}
+
+func (h *Handler) BtcUpProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcUpProve(req)
+	if err != nil {
+		logger.Error("btc up prove error:%v", err)
+		return nil, err
+	}
+	return response, nil
+}
+
 func (h *Handler) SupportProofType() []common.ZkProofType {
 	return nil
 }

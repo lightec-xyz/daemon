@@ -32,9 +32,12 @@ type IProof interface {
 	BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error)
 	BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error)
 
-	BtcBulkProve(data *BtcBulkRequest) (*BtcBulkResponse, error)
-	BtcPackedRequest(data *BtcPackedRequest) (*BtcPackResponse, error)
-	BtcWrapProve(data *BtcWrapRequest) (*BtcWrapResponse, error)
+	BtcBulkProve(req *BtcBulkRequest) (*BtcBulkResponse, error)
+	BtcPackedRequest(req *BtcPackedRequest) (*BtcPackResponse, error)
+	BtcWrapProve(req *BtcWrapRequest) (*BtcWrapResponse, error)
+	BtcBaseProve(req *BtcBaseRequest) (*ProofResponse, error)
+	BtcMiddleProve(req *BtcMiddleRequest) (*ProofResponse, error)
+	BtcUpProve(req *BtcUpperRequest) (*ProofResponse, error)
 	ProofInfo(proofId string) (ProofInfo, error)
 	SupportProofType() []common.ZkProofType
 	Close() error

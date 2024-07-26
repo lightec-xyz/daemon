@@ -26,13 +26,71 @@ type LocalWorker struct {
 	wid         string
 }
 
-func (w *LocalWorker) SupportProofType() []common.ZkProofType {
-	return nil
+func (w *LocalWorker) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
+	proof, err := w.circuit.BtcBaseProve(req.Data)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
 }
 
-func (w *LocalWorker) Close() error {
-	// todo
-	return nil
+func (w *LocalWorker) BtcMiddleProve(req *rpc.BtcMiddleRequest) (*rpc.ProofResponse, error) {
+	proofs, err := circuits.HexToProofs(req.Proofs)
+	if err != nil {
+		logger.Error("btc middlehex to proofs error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcMiddleProve(req.Data, proofs)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+}
+
+func (w *LocalWorker) BtcUpProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
+	proofs, err := circuits.HexToProofs(req.Proofs)
+	if err != nil {
+		logger.Error("btc middle hex to proofs error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcUpperProve(req.Data, proofs)
+	if err != nil {
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
 }
 
 func (w *LocalWorker) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkResponse, error) {
@@ -92,6 +150,14 @@ func (w *LocalWorker) BtcWrapProve(req *rpc.BtcWrapRequest) (*rpc.BtcWrapRespons
 		Witness: witnessBytes,
 	}, nil
 
+}
+func (w *LocalWorker) SupportProofType() []common.ZkProofType {
+	return nil
+}
+
+func (w *LocalWorker) Close() error {
+	// todo
+	return nil
 }
 
 func NewLocalWorker(setupDir, dataDir string, maxNums int) (rpc.IWorker, error) {
@@ -428,6 +494,18 @@ type Worker struct {
 	currentNums int
 	lock        sync.Mutex
 	wid         string
+}
+
+func (w *Worker) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcBaseProve(req)
+}
+
+func (w *Worker) BtcMiddleProve(req *rpc.BtcMiddleRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcMiddleProve(req)
+}
+
+func (w *Worker) BtcUpProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcUpProve(req)
 }
 
 func (w *Worker) SupportProofType() []common.ZkProofType {

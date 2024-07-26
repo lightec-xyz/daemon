@@ -4,8 +4,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/ethclient"
+	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
+	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
+	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -21,6 +24,42 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
 )
+
+func GetBtcBaseData(proverClient *btcproverClient.Client, endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
+	data, err := baselevelUtil.GetBaseLevelProofData(proverClient, uint32(endHeight))
+	if err != nil {
+		logger.Error("get base level proof data error: %v %v", endHeight, err)
+		return nil, false, err
+	}
+	baseRequest := rpc.BtcBaseRequest{
+		Data: data,
+	}
+	return &baseRequest, true, nil
+}
+
+func GetBtcMiddleData(fileStore *FileStorage, proverClient *btcproverClient.Client, endHeight uint64) (*rpc.BtcMiddleRequest, bool, error) {
+	data, err := midlevelUtil.GetMidLevelProofData(proverClient, uint32(endHeight))
+	if err != nil {
+		logger.Error("get base level proof data error: %v %v", endHeight, err)
+		return nil, false, err
+	}
+	baseRequest := rpc.BtcMiddleRequest{
+		Data: data,
+	}
+	return &baseRequest, true, nil
+}
+
+func GetBtcUpperData(fileStore *FileStorage, proverClient *btcproverClient.Client, endHeight uint64) (*rpc.BtcUpperRequest, bool, error) {
+	data, err := upperlevelUtil.GetUpperLevelProofData(proverClient, uint32(endHeight))
+	if err != nil {
+		logger.Error("get base level proof data error: %v %v", endHeight, err)
+		return nil, false, err
+	}
+	baseRequest := rpc.BtcUpperRequest{
+		Data: data,
+	}
+	return &baseRequest, true, nil
+}
 
 func GetVerifyData(btcClient *btcrpc.Client, proverClient *btcproverClient.Client, txHash string) (interface{}, bool, error) {
 	tx, err := btcClient.GetTransaction(txHash)

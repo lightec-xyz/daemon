@@ -2,7 +2,10 @@ package rpc
 
 import (
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
+	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
+	btcmiddle "github.com/lightec-xyz/btc_provers/utils/midlevel"
+	btcupper "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
@@ -44,6 +47,30 @@ type NodeInfo struct {
 }
 
 //------
+
+type ProofResponse struct {
+	Proof   []byte
+	Witness []byte
+}
+
+type Proof struct {
+	Proof   string // hex
+	Witness string
+}
+
+type BtcBaseRequest struct {
+	Data *btcbase.BaseLevelProofData
+}
+
+type BtcMiddleRequest struct {
+	Data   *btcmiddle.MidLevelProofData
+	Proofs []Proof
+}
+
+type BtcUpperRequest struct {
+	Data   *btcupper.UpperLevelProofData
+	Proofs []Proof
+}
 
 type BtcBulkRequest struct {
 	Data *btcprovertypes.BlockHeaderChain
@@ -223,13 +250,4 @@ type ProofInfo struct {
 	TxId      string `json:"txId"`
 	Proof     string `json:"proof"`
 	Status    int    `json:"status"`
-}
-
-type CheckReqStatus struct {
-	Status int
-}
-
-type IDepositRequest struct {
-	DepositRequest
-	CheckReqStatus
 }
