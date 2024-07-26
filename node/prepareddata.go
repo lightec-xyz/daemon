@@ -9,12 +9,67 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
+	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
 )
+
+func GetTxInEth2Data(ethClient *ethrpc.Client, apiClient *apiclient.Client, txHash string, getSlotByNumber func(uint64) (uint64, error)) (*rpc.TxInEth2ProveRequest, bool, error) {
+	txData, err := ethblock.GenerateTxInEth2Proof(ethClient.Client, apiClient, getSlotByNumber, txHash)
+	if err != nil {
+		logger.Error("get tx data error: %v", err)
+		return nil, false, err
+	}
+	return &rpc.TxInEth2ProveRequest{
+		TxHash: txHash,
+		TxData: txData,
+	}, true, nil
+}
+
+func GetBlockHeaderRequestData(fileStore *FileStorage, beaconClient *beacon.Client, index uint64) (*rpc.BlockHeaderRequest, bool, error) {
+	// todo
+	finalizedSlot, ok, err := fileStore.GetNearTxSlotFinalizedSlot(index)
+	if err != nil {
+		logger.Error("get finalized slot error: %v", err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+
+	logger.Debug("get beaconHeader %v ~ %v", index, finalizedSlot)
+	beaconBlockHeaders, err := beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	if len(beaconBlockHeaders) == 0 {
+		return nil, false, fmt.Errorf("never should happen %v", index)
+	}
+	beginSlot, beginRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[0])
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	endSlot, endRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[len(beaconBlockHeaders)-1])
+	if err != nil {
+		logger.Error("get beacon block headers error: %v", err)
+		return nil, false, err
+	}
+	return &rpc.BlockHeaderRequest{
+		Index:     index,
+		BeginSlot: beginSlot,
+		EndSlot:   endSlot,
+		BeginRoot: hex.EncodeToString(beginRoot),
+		EndRoot:   hex.EncodeToString(endRoot),
+		Headers:   beaconBlockHeaders[1:],
+	}, true, nil
+}
 
 func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool, error) {
 	//todo

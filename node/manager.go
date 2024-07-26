@@ -9,6 +9,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"sync"
 	"time"
 )
@@ -21,6 +22,7 @@ type manager struct {
 	btcClient      *bitcoin.Client
 	ethClient      *ethereum.Client
 	beaconClient   *beacon.Client
+	apiClient      *apiclient.Client
 	store          store.IStore
 	memory         store.IStore
 	genesisPeriod  uint64
@@ -647,6 +649,8 @@ func (m *manager) CheckStateV1() error {
 
 }
 
+// todo
+
 func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end uint64, hash string) (interface{}, bool, error) {
 	switch reqType {
 	case common.SyncComGenesisType:
@@ -679,11 +683,25 @@ func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end u
 			}
 			return data, ok, nil
 		}
-
-	case common.SyncComFinalityType:
-		data, ok, err := GetSyncComFinalityData(m.fileStore, index)
+	case common.TxInEth2:
+		data, ok, err := GetTxInEth2Data(m.ethClient, m.apiClient, hash, m.getSlotByNumber)
 		if err != nil {
-			logger.Error("get SyncComFinalityData error:%v %v", index, err)
+			logger.Error("get tx in eth2 data error: %v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, err
+	case common.BeaconHeaderType:
+		data, ok, err := GetBlockHeaderRequestData(m.fileStore, m.beaconClient, index)
+		if err != nil {
+			logger.Error("get block header request data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BeaconHeaderFinalityType:
+		data, ok, err := GetBhfUpdateData(m.fileStore, index, m.genesisPeriod)
+		if err != nil {
+			logger.Error("get bhf update data error: %v %v", index, err)
 			return nil, false, err
 		}
 		return data, ok, nil
@@ -700,6 +718,16 @@ func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end u
 	}
 }
 
+func (e *manager) getSlotByNumber(number uint64) (uint64, error) {
+	slot, ok, err := ReadBeaconSlot(e.store, number)
+	if err != nil {
+		return 0, err
+	}
+	if !ok {
+		return 0, fmt.Errorf("no find %v slot", number)
+	}
+	return slot, nil
+}
 func NewProofResp(reqType common.ZkProofType, index, end uint64, txHash string, proof common.ZkProof, witness []byte) *common.ZkProofResponse {
 	return &common.ZkProofResponse{
 		RespId:      common.NewProofId(reqType, index, end, txHash),
