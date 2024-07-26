@@ -4,11 +4,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/ethclient"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	btcrpc "github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
@@ -18,6 +21,44 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
 )
+
+func GetVerifyData(btcClient *btcrpc.Client, proverClient *btcproverClient.Client, txHash string) (interface{}, bool, error) {
+	tx, err := btcClient.GetTransaction(txHash)
+	if err != nil {
+		logger.Error("get verify tx error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	proofData, err := grUtil.GetDefaultGrandRollupProofData(proverClient, txHash, tx.Blockhash)
+	if err != nil {
+		logger.Error("get verify proof data error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	verifyRequest := rpc.VerifyRequest{
+		TxHash:    txHash,
+		BlockHash: tx.Blockhash,
+		Data:      proofData,
+	}
+	return verifyRequest, true, nil
+}
+
+func GetDepositData(btcClient *btcrpc.Client, apiClient *btcproverClient.Client, txHash string) (*rpc.DepositRequest, bool, error) {
+	tx, err := btcClient.GetTransaction(txHash)
+	if err != nil {
+		logger.Error("get deposit tx error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	proofData, err := grUtil.GetDefaultGrandRollupProofData(apiClient, txHash, tx.Blockhash)
+	if err != nil {
+		logger.Error("get deposit proof data error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	depositRequest := rpc.DepositRequest{
+		TxHash:    txHash,
+		BlockHash: tx.Blockhash,
+		Data:      proofData,
+	}
+	return &depositRequest, true, nil
+}
 
 func GetTxInEth2Data(ethClient *ethrpc.Client, apiClient *apiclient.Client, txHash string, getSlotByNumber func(uint64) (uint64, error)) (*rpc.TxInEth2ProveRequest, bool, error) {
 	txData, err := ethblock.GenerateTxInEth2Proof(ethClient.Client, apiClient, getSlotByNumber, txHash)

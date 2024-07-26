@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -15,22 +16,23 @@ import (
 )
 
 type manager struct {
-	proofQueue     *ArrayQueue
-	pendingQueue   *PendingQueue
-	schedule       *Schedule
-	fileStore      *FileStorage
-	btcClient      *bitcoin.Client
-	ethClient      *ethereum.Client
-	beaconClient   *beacon.Client
-	apiClient      *apiclient.Client
-	store          store.IStore
-	memory         store.IStore
-	genesisPeriod  uint64
-	state          *CacheState
-	btcProofResp   chan *common.ZkProofResponse
-	ethProofResp   chan *common.ZkProofResponse
-	syncCommitResp chan *common.ZkProofResponse
-	lock           sync.Mutex
+	proofQueue      *ArrayQueue
+	pendingQueue    *PendingQueue
+	schedule        *Schedule
+	fileStore       *FileStorage
+	btcClient       *bitcoin.Client
+	ethClient       *ethereum.Client
+	beaconClient    *beacon.Client
+	apiClient       *apiclient.Client
+	btcproverClient *btcproverClient.Client
+	store           store.IStore
+	memory          store.IStore
+	genesisPeriod   uint64
+	state           *CacheState
+	btcProofResp    chan *common.ZkProofResponse
+	ethProofResp    chan *common.ZkProofResponse
+	syncCommitResp  chan *common.ZkProofResponse
+	lock            sync.Mutex
 }
 
 func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
@@ -712,6 +714,48 @@ func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end u
 			return nil, false, err
 		}
 		return data, ok, nil
+
+	case common.DepositTxType:
+		data, ok, err := GetDepositData(m.btcClient, m.btcproverClient, hash)
+		if err != nil {
+			logger.Error("get deposit data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.VerifyTxType:
+		data, ok, err := GetVerifyData(m.btcClient, m.btcproverClient, hash)
+		if err != nil {
+			logger.Error("get verify data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.BtcBulkType:
+		data, err := GetBtcMidBlockHeader(m.btcClient, index, end)
+		if err != nil {
+			logger.Error("get mid block header error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return rpc.BtcBulkRequest{
+			Data: data,
+		}, true, nil
+	case common.BtcPackedType:
+		data, err := GetBtcMidBlockHeader(m.btcClient, index, end)
+		if err != nil {
+			logger.Error("get mid block header error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return rpc.BtcPackedRequest{
+			Data: data,
+		}, true, nil
+	case common.BtcWrapType:
+		data, err := GetBtcWrapData(m.fileStore, m.btcClient, index, end)
+		if err != nil {
+			logger.Error("get btc wrap data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, true, nil
+
 	default:
 		logger.Error(" prepare request Data never should happen : %v %v", index, reqType)
 		return nil, false, fmt.Errorf("never should happen : %v %v", index, reqType)
