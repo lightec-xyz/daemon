@@ -48,6 +48,14 @@ type NodeInfo struct {
 
 //------
 
+type BtcGenesisRequest struct {
+	data interface{}
+}
+
+type BtcRecursiveRequest struct {
+	data interface{}
+}
+
 type ProofResponse struct {
 	Proof   []byte
 	Witness []byte
@@ -146,7 +154,7 @@ type DepositRequest struct {
 
 type DepositResponse struct {
 	TxHash  string
-	Proof   common.ZkProof
+	Proof   []byte
 	Witness []byte
 }
 
@@ -196,7 +204,7 @@ type SyncCommGenesisResponse struct {
 	Version   string             `json:"version"`
 	Period    uint64             `json:"period"`
 	ProofType common.ZkProofType `json:"proofType"`
-	Proof     common.ZkProof
+	Proof     []byte
 	Witness   []byte
 }
 
@@ -217,7 +225,7 @@ type SyncCommUnitsResponse struct {
 	Version      string             `json:"version"`
 	Period       uint64             `json:"period"`
 	ProofType    common.ZkProofType `json:"proofType"`
-	Proof        common.ZkProof     `json:"proof"`
+	Proof        []byte             `json:"proof"`
 	Witness      []byte             `json:"witness"`
 	OuterProof   []byte             `json:"outerProof"`
 	OuterWitness []byte             `json:"outerWitness"`
@@ -241,7 +249,7 @@ type SyncCommRecursiveResponse struct {
 	Version   string             `json:"version"`
 	Period    uint64             `json:"period"`
 	ProofType common.ZkProofType `json:"proofType"`
-	Proof     common.ZkProof
+	Proof     []byte
 	Witness   []byte
 }
 

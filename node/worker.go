@@ -26,6 +26,16 @@ type LocalWorker struct {
 	wid         string
 }
 
+func (w *LocalWorker) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *LocalWorker) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (w *LocalWorker) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
 	proof, err := w.circuit.BtcBaseProve(req.Data)
 	if err != nil {
@@ -494,6 +504,16 @@ type Worker struct {
 	currentNums int
 	lock        sync.Mutex
 	wid         string
+}
+
+func (w *Worker) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w *Worker) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (w *Worker) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {

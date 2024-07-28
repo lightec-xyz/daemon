@@ -15,6 +15,16 @@ type Handler struct {
 	worker      rpc.IWorker
 }
 
+func (h *Handler) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *Handler) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h *Handler) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
 	response, err := h.worker.BtcBaseProve(req)
 	if err != nil {

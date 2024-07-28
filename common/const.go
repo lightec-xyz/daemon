@@ -145,6 +145,8 @@ const (
 	BtcBaseType
 	BtcMiddleType
 	BtcUpperType
+	BtcGenesisType
+	BtcRecursiveType
 )
 
 func (zkpt *ZkProofType) String() string {
@@ -181,6 +183,10 @@ func (zkpt *ZkProofType) String() string {
 		return "BtcMiddleType"
 	case BtcUpperType:
 		return "BtcUpperType"
+	case BtcGenesisType:
+		return "BtcGenesisType"
+	case BtcRecursiveType:
+		return "BtcRecursiveType"
 	default:
 		return "unKnown"
 	}
@@ -240,6 +246,10 @@ func ToZkProofType(str string) (ZkProofType, error) {
 		return BtcMiddleType, nil
 	case "BtcUpperType":
 		return BtcUpperType, nil
+	case "BtcGenesisType":
+		return BtcGenesisType, nil
+	case "BtcRecursiveType":
+		return BtcRecursiveType, nil
 	default:
 		return 0, fmt.Errorf("uKnown zk proof type %v", str)
 	}

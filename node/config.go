@@ -8,25 +8,23 @@ import (
 )
 
 type RunConfig struct {
-	Datadir               string `json:"datadir"`
-	Rpcbind               string `json:"rpcbind"`
-	Rpcport               string `json:"rpcport"`
-	WsPort                string `json:"wsport"`
-	Network               string `json:"network"`
-	BtcUser               string `json:"btcUser"`
-	BtcPwd                string `json:"btcPwd"`
-	BtcUrl                string `json:"btcUrl"`
-	EthUrl                string `json:"ethUrl"`
-	BeaconUrl             string `json:"beaconUrl"`
-	OasisUrl              string `json:"oasisUrl"`
-	DiscordHookUrl        string `json:"discordHookUrl"`
-	EthPrivateKey         string `json:"ethPrivateKey"`
-	EnableLocalWorker     bool   `json:"enableLocalWorker"`
-	DisableRecursiveAgent bool   `json:"disableRecursiveAgent"`
-	DisableTxAgent        bool   `json:"disableTxAgent"`
-	BtcInitHeight         int64  `json:"btcInitHeight"`
-	EthInitHeight         int64  `json:"ethInitHeight"`
-	BeaconInitSlot        uint64 `json:"beaconInitSlot"`
+	Datadir           string `json:"datadir"`
+	Rpcbind           string `json:"rpcbind"`
+	Rpcport           string `json:"rpcport"`
+	WsPort            string `json:"wsport"`
+	Network           string `json:"network"`
+	BtcUser           string `json:"btcUser"`
+	BtcPwd            string `json:"btcPwd"`
+	BtcUrl            string `json:"btcUrl"`
+	EthUrl            string `json:"ethUrl"`
+	BeaconUrl         string `json:"beaconUrl"`
+	OasisUrl          string `json:"oasisUrl"`
+	DiscordHookUrl    string `json:"discordHookUrl"`
+	EthPrivateKey     string `json:"ethPrivateKey"`
+	EnableLocalWorker bool   `json:"enableLocalWorker"`
+	BtcInitHeight     int64  `json:"btcInitHeight"`
+	EthInitHeight     int64  `json:"ethInitHeight"`
+	BeaconInitSlot    uint64 `json:"beaconInitSlot"`
 }
 
 func (rc *RunConfig) Check() error {

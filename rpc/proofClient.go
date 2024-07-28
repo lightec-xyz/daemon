@@ -20,6 +20,16 @@ type ProofClient struct {
 	custom  bool
 }
 
+func (p *ProofClient) BtcGenesis(req *BtcGenesisRequest) (*ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *ProofClient) BtcRecursiveProve(req *BtcRecursiveRequest) (*ProofResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (p *ProofClient) BtcBaseProve(req *BtcBaseRequest) (*ProofResponse, error) {
 	var result ProofResponse
 	err := p.call(&result, "zkbtc_btcBaseProve", req)

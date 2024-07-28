@@ -25,8 +25,6 @@ type SubmitProof struct {
 	Version  string
 }
 
-type ZkProof []byte
-
 type ZkProofRequest struct {
 	ZkId       string // todo
 	ReqType    ZkProofType
@@ -67,7 +65,7 @@ type ZkProofResponse struct {
 	RespId      string
 	ZkProofType ZkProofType
 	Status      ProofStatus
-	Proof       ZkProof
+	Proof       []byte
 	Witness     []byte
 	Index       uint64
 	End         uint64

@@ -13,7 +13,7 @@ import (
 type StoreProof struct {
 	ProofType common.ZkProofType `json:"type"`
 	Hash      string             `json:"hash"`
-	Period    uint64             `json:"Index"`
+	Index     uint64             `json:"Index"`
 	Proof     string             `json:"proof"`
 	Witness   string             `json:"witness"`
 }
@@ -45,11 +45,16 @@ const (
 	BtcBulkTable      Table = "btcBulk"
 	BtcPackedTable    Table = "btcPack"
 	BtcWrapTable      Table = "btcWrap"
+	BtcBaseTable      Table = "btcBase"
+	BtcMiddleTable    Table = "btcMiddle"
+	BtcUpperTable     Table = "btcUpper"
+	BtcGenesisTable   Table = "btcGenesis"
+	BtcRecursiveTable Table = "btcRecursive"
 )
 
 var InitStoreTables = []Table{PeriodTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
 	FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable,
-	BtcBulkTable, BtcPackedTable, BtcWrapTable}
+	BtcBulkTable, BtcPackedTable, BtcWrapTable, BtcBaseTable, BtcMiddleTable, BtcUpperTable, BtcGenesisTable, BtcRecursiveTable}
 
 type FileStorage struct {
 	RootPath      string
@@ -432,9 +437,98 @@ func (fs *FileStorage) GetBtcWrapProof(index uint64) (*StoreProof, bool, error) 
 	return &storeProof, exist, nil
 }
 
+func (fs *FileStorage) StoreBtcBaseProof(proof, witness []byte, index uint64) error {
+	return fs.Store(BtcBaseTable, parseKey(index), newStoreProof(common.BtcBaseType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcBaseProof(index uint64) (bool, error) {
+	return fs.Check(BtcBaseTable, parseKey(index))
+}
+func (fs *FileStorage) GetBtcBaseProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcBaseTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc base proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcMiddleProof(index uint64, proof, witness []byte) error {
+	return fs.Store(BtcMiddleTable, parseKey(index), newStoreProof(common.BtcMiddleType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcMiddleProof(index uint64) (bool, error) {
+	return fs.Check(BtcMiddleTable, parseKey(index))
+}
+
+func (fs *FileStorage) GetBtcMiddleProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcMiddleTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc middle proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcUpperProof(index uint64, proof, witness []byte) error {
+	return fs.Store(BtcUpperTable, parseKey(index), newStoreProof(common.BtcUpperType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcUpperProof(index uint64) (bool, error) {
+	return fs.Check(BtcUpperTable, parseKey(index))
+}
+
+func (fs *FileStorage) GetBtcUpperProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcUpperTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc upper proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcGenesisProof(index uint64, proof, witness []byte) error {
+	return fs.Store(BtcGenesisTable, parseKey(index), newStoreProof(common.BtcGenesisType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcGenesisProof(index uint64) (bool, error) {
+	return fs.Check(BtcGenesisTable, parseKey(index))
+}
+
+func (fs *FileStorage) GetBtcGenesisProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcGenesisTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc genesis proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcRecursiveProof(index uint64, proof, witness []byte) error {
+	return fs.Store(BtcRecursiveTable, parseKey(index), newStoreProof(common.BtcRecursiveType, index, "", proof, witness))
+}
+
+func (fs *FileStorage) CheckBtcRecursiveProof(index uint64) (bool, error) {
+	return fs.Check(BtcRecursiveTable, parseKey(index))
+}
+
+func (fs *FileStorage) GetBtcRecursiveProof(index uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcRecursiveTable, parseKey(index), &storeProof)
+	if err != nil {
+		logger.Error("get btc recursive proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
 func newStoreProof(proofType common.ZkProofType, period uint64, txHash string, proof, witness []byte) *StoreProof {
 	return &StoreProof{
-		Period:    period,
+		Index:     period,
 		ProofType: proofType,
 		Hash:      txHash,
 		Proof:     hex.EncodeToString(proof),   // todo
@@ -620,4 +714,12 @@ func parseKey(keys ...interface{}) string {
 	}
 	return key
 
+}
+
+func genKey(prefix Table, args ...interface{}) string {
+	name := fmt.Sprintf("%v", prefix)
+	for _, arg := range args {
+		name = name + fmt.Sprintf("_%v", arg)
+	}
+	return name
 }
