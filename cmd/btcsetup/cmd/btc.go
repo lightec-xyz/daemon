@@ -161,6 +161,7 @@ func (bs *BtcSetup) Prove() error {
 		return err
 	}
 
+	recursiveduper.SaveProof(bs.cfg.DataDir, genesisProof, endHeight1, beginHeight)
 	logger.Info("complete genesis recursiveduper prove: %v~%v", beginHeight, endHeight1)
 
 	endHeight2 := endHeight1 + common.CapacityDifficultyBlock
@@ -185,6 +186,7 @@ func (bs *BtcSetup) Prove() error {
 		return err
 	}
 
+	recursiveduper.SaveProof(bs.cfg.DataDir, recursiveProof, endHeight2, beginHeight)
 	logger.Info("complete recursiveduper prove: %v~%v", beginHeight, endHeight2)
 	return nil
 
@@ -212,6 +214,7 @@ func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
+	baselevel.SaveProof(bs.cfg.DataDir, baseProof, endHeight)
 	logger.Info("complete baseLevel prove: %v~%v", beginHeight, endHeight)
 	return baseProof, nil
 }
@@ -252,6 +255,7 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
+	midlevel.SaveProof(bs.cfg.DataDir, middleProof, endHeight)
 	logger.Info("complete middLevel level proof: %v~%v", beginHeight, endHeight)
 	return middleProof, nil
 
@@ -293,6 +297,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
+	upperlevel.SaveProof(bs.cfg.DataDir, upProof, endHeight)
 	logger.Info("complete upperlevel prove: %v~%v", beginHeight, endHeight)
 	return upProof, nil
 }
