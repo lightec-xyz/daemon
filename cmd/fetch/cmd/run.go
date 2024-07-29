@@ -62,7 +62,7 @@ func NewFetch(url, datadir string, genesisSlot uint64) (*Fetch, error) {
 		logger.Error("new beacon client error: %v", err)
 		return nil, err
 	}
-	tables := []node.Table{node.GenesisTable, node.PeriodTable,
+	tables := []node.Table{node.GenesisTable, node.IndexTable,
 		node.FinalityTable, node.UpdateTable}
 	fileStorage, err := node.NewFileStorage(datadir, genesisSlot, tables...)
 	if err != nil {

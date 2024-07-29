@@ -13,7 +13,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"math/big"
 	"strings"
 )
 
@@ -333,34 +332,6 @@ func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	default:
 	}
 	return nil
-}
-
-func updateContractUtxoChange(ethClient *ethereum.Client, privateKey string, nonce uint64, txIds []string, proof []byte) (string, error) {
-	//// todo
-	//nonce, err := ethClient.GetNonce(address)
-	//if err != nil {
-	//	logger.Error("get  nonce error:%v", err)
-	//	return "", err
-	//}
-	chainId, err := ethClient.GetChainId()
-	if err != nil {
-		logger.Error("get chain id error:%v", err)
-		return "", err
-	}
-	gasPrice, err := ethClient.GetGasPrice()
-	if err != nil {
-		logger.Error("get gas price error:%v", err)
-		return "", err
-	}
-	gasLimit := uint64(500000)
-	gasPrice = big.NewInt(0).Mul(gasPrice, big.NewInt(2))
-	txHash, err := ethClient.UpdateUtxoChange(privateKey, txIds, nonce, gasLimit, chainId, gasPrice, proof)
-	if err != nil {
-		logger.Error("update utxo change error:%v", err)
-		return "", err
-	}
-	logger.Info("success send update utxo change  hash:%v", txHash)
-	return txHash, nil
 }
 
 func (b *BitcoinAgent) isRedeemTx(tx types.Tx, height uint64, blockHash string) (*Transaction, bool) {

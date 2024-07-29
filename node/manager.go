@@ -647,7 +647,6 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 // todo
 
 func (m *manager) CheckStateV1() error {
-	return nil
 
 }
 

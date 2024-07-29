@@ -24,12 +24,13 @@ const (
 	LatestSlotKey   = "latestFinalitySlot"
 	GenesisRawData  = "genesisRaw"
 	GenesisProofKey = "genesisProof"
+	BtcGenesisKey   = "btcGenesis"
 )
 
 type Table string
 
 const (
-	PeriodTable       Table = "index"
+	IndexTable        Table = "index"
 	GenesisTable      Table = "genesis"
 	UpdateTable       Table = "update"
 	OuterTable        Table = "outer"
@@ -53,16 +54,17 @@ const (
 	BtcRecursiveTable Table = "btcRecursive"
 )
 
-var InitStoreTables = []Table{PeriodTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
+var InitStoreTables = []Table{IndexTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
 	FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable,
 	BtcBulkTable, BtcPackedTable, BtcWrapTable, BtcBaseTable, BtcMiddleTable, BtcUpperTable, BtcGenesisTable, BtcRecursiveTable}
 
 type FileStorage struct {
-	RootPath      string
-	FileStoreMap  map[Table]*store.FileStore
-	lock          sync.Mutex
-	genesisSlot   uint64
-	genesisPeriod uint64
+	RootPath         string
+	FileStoreMap     map[Table]*store.FileStore
+	lock             sync.Mutex
+	genesisSlot      uint64
+	genesisPeriod    uint64
+	btcGenesisHeight uint64
 }
 
 func NewFileStorage(rootPath string, genesisSlot uint64, tables ...Table) (*FileStorage, error) {
@@ -162,12 +164,12 @@ func (fs *FileStorage) StoreRequest(req *common.ZkProofRequest) error {
 }
 
 func (fs *FileStorage) StorePeriod(period uint64) error {
-	return fs.Store(PeriodTable, LatestPeriodKey, period)
+	return fs.Store(IndexTable, LatestPeriodKey, period)
 }
 
 func (fs *FileStorage) GetPeriod() (uint64, bool, error) {
 	var period uint64
-	exists, err := fs.Get(PeriodTable, LatestPeriodKey, &period)
+	exists, err := fs.Get(IndexTable, LatestPeriodKey, &period)
 	if err != nil {
 		logger.Error("get Index error:%v", err)
 		return 0, false, err
@@ -176,12 +178,12 @@ func (fs *FileStorage) GetPeriod() (uint64, bool, error) {
 }
 
 func (fs *FileStorage) StoreFinalizedSlot(slot uint64) error {
-	return fs.Store(PeriodTable, LatestSlotKey, slot)
+	return fs.Store(IndexTable, LatestSlotKey, slot)
 }
 
 func (fs *FileStorage) GetFinalizedSlot() (uint64, bool, error) {
 	var slot uint64
-	exists, err := fs.Get(PeriodTable, LatestSlotKey, &slot)
+	exists, err := fs.Get(IndexTable, LatestSlotKey, &slot)
 	if err != nil {
 		logger.Error("get slot error:%v", err)
 		return 0, false, err
@@ -574,6 +576,26 @@ func newStoreProofV1(proofType common.ZkProofType, id string, proof, witness []b
 	}
 }
 
+func (fs *FileStorage) NeedBtcRecursiveIndex(height uint64) ([]uint64, error) {
+	fileStore, ok := fs.GetFileStore(BtcRecursiveTable)
+	if !ok {
+		return nil, fmt.Errorf("get file store error %v", BtcRecursiveTable)
+	}
+	indexes, err := fileStore.AllIndexes()
+	if err != nil {
+		logger.Error("get update indexes error:%v", err)
+		return nil, err
+	}
+	var tmpIndexes []uint64
+	// todo
+	for index := fs.btcGenesisHeight + 2016*2; index <= height; index = index + 2016 {
+		if _, ok := indexes[index]; !ok {
+			tmpIndexes = append(tmpIndexes, index)
+		}
+	}
+	return tmpIndexes, nil
+}
+
 func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, error) {
 	finalizedStore, ok := fs.GetFileStore(FinalityTable)
 	if !ok {
@@ -635,7 +657,6 @@ func (fs *FileStorage) NeedUpdateIndexes() ([]uint64, error) {
 		}
 	}
 	return needUpdateIndex, nil
-
 }
 
 func (fs *FileStorage) NeedGenUnitProofIndexes() ([]uint64, error) {
