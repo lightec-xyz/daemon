@@ -8,6 +8,7 @@ import (
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
+	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
 	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
@@ -24,6 +25,31 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"strconv"
 )
+
+func GetBtcGenesisData(filestore *FileStorage, proverClient *btcproverClient.Client, start, end uint64) (*rpc.BtcGenesisRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(proverClient, uint32(start), uint32(end))
+	if err != nil {
+		logger.Error("get base level proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	genesisRequest := rpc.BtcGenesisRequest{
+		Data:   data,
+		Proofs: nil,
+	}
+	return &genesisRequest, true, nil
+}
+
+func GetBtcRecursiveData(filestore *FileStorage, proverClient *btcproverClient.Client, start, end uint64) (*rpc.BtcRecursiveRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(proverClient, uint32(start), uint32(end))
+	if err != nil {
+		logger.Error("get base level proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	genesisRequest := rpc.BtcRecursiveRequest{
+		Data: data,
+	}
+	return &genesisRequest, true, nil
+}
 
 func GetBtcBaseData(proverClient *btcproverClient.Client, endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
 	data, err := baselevelUtil.GetBaseLevelProofData(proverClient, uint32(endHeight))

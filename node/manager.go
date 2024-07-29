@@ -779,6 +779,21 @@ func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end u
 		}
 		return data, ok, nil
 
+	case common.BtcGenesisType:
+		data, ok, err := GetBtcGenesisData(m.fileStore, m.btcproverClient, index, end)
+		if err != nil {
+			logger.Error("get btc genesis data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BtcRecursiveType:
+		data, ok, err := GetBtcRecursiveData(m.fileStore, m.btcproverClient, index, end)
+		if err != nil {
+			logger.Error("get btc recursive data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
 	default:
 		logger.Error(" prepare request Data never should happen : %v %v", index, reqType)
 		return nil, false, fmt.Errorf("never should happen : %v %v", index, reqType)
@@ -795,7 +810,7 @@ func (e *manager) getSlotByNumber(number uint64) (uint64, error) {
 	}
 	return slot, nil
 }
-func NewProofResp(reqType common.ZkProofType, index, end uint64, txHash string, proof common.ZkProof, witness []byte) *common.ZkProofResponse {
+func NewProofResp(reqType common.ZkProofType, index, end uint64, txHash string, proof, witness []byte) *common.ZkProofResponse {
 	return &common.ZkProofResponse{
 		RespId:      common.NewProofId(reqType, index, end, txHash),
 		ZkProofType: reqType,

@@ -5,6 +5,7 @@ import (
 	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	btcmiddle "github.com/lightec-xyz/btc_provers/utils/midlevel"
+	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
 	btcupper "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
@@ -49,11 +50,14 @@ type NodeInfo struct {
 //------
 
 type BtcGenesisRequest struct {
-	data interface{}
+	Data   *recursiveUtil.RecursiveProofData
+	Proofs []Proof
 }
 
 type BtcRecursiveRequest struct {
-	data interface{}
+	Data   *recursiveUtil.RecursiveProofData
+	First  Proof
+	Second Proof
 }
 
 type ProofResponse struct {
