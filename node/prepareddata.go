@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/ethclient"
+	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
@@ -68,6 +69,24 @@ func GetBtcMiddleData(fileStore *FileStorage, proverClient *btcproverClient.Clie
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
+	}
+	var proofs []rpc.Proof
+	for index := endHeight - 336; index <= endHeight; index = index + btcprovercom.CapacityBaseLevel {
+		baseProof, ok, err := fileStore.GetBtcBaseProof(index)
+		if err != nil {
+			logger.Error("get base level proof data error: %v %v", index, err)
+			return nil, false, err
+		}
+		if ok {
+			proofs = append(proofs, rpc.Proof{
+				Proof:   baseProof.Proof,
+				Witness: baseProof.Witness,
+			})
+		}
+	}
+	if len(proofs) != btcprovercom.CapacityMidLevel {
+		logger.Error("get mid level proof:baseProof length: %v", len(proofs))
+		return nil, false, fmt.Errorf("get mid level proof data error: %v %v", endHeight, err)
 	}
 	baseRequest := rpc.BtcMiddleRequest{
 		Data: data,
