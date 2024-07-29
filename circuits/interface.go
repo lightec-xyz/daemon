@@ -5,6 +5,7 @@ import (
 	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
 	btcmiddle "github.com/lightec-xyz/btc_provers/utils/midlevel"
+	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
 	btcupper "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
@@ -37,4 +38,6 @@ type ICircuit interface {
 	BtcBaseProve(req *btcbase.BaseLevelProofData) (*common.Proof, error)
 	BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList []common.Proof) (*common.Proof, error)
 	BtcUpperProve(req *btcupper.UpperLevelProofData, proofList []common.Proof) (*common.Proof, error)
+	BtcGenesisProve(data *recursiveUtil.RecursiveProofData, proofs []common.Proof) (*common.Proof, error)
+	BtcRecursiveProve(data *recursiveUtil.RecursiveProofData, first, second *common.Proof) (*common.Proof, error)
 }

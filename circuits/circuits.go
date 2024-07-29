@@ -2,6 +2,8 @@ package circuits
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/btc_provers/circuits/recursiveduper"
+	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
 	"path/filepath"
 
 	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
@@ -37,6 +39,34 @@ var _ ICircuit = (*Circuit)(nil)
 type Circuit struct {
 	Cfg   *CircuitConfig
 	debug bool
+}
+
+func (c *Circuit) BtcGenesisProve(data *recursiveUtil.RecursiveProofData, proofs []reLightCommon.Proof) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit BtcGenesisProve....")
+	if c.debug {
+		logger.Warn("current zk circuit BtcGenesisProve prove is debug,skip prove")
+		return debugProof()
+	}
+	genesisProof, err := recursiveduper.ProveGenesis(c.Cfg.SetupDir, proofs, data)
+	if err != nil {
+		logger.Error("genesis BtcGenesisProve prove error: %v", err)
+		return nil, err
+	}
+	return genesisProof, nil
+}
+
+func (c *Circuit) BtcRecursiveProve(data *recursiveUtil.RecursiveProofData, first, second *reLightCommon.Proof) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit BtcRecursiveProve....")
+	if c.debug {
+		logger.Warn("current zk circuit BtcRecursiveProve prove is debug,skip prove")
+		return debugProof()
+	}
+	genesisProof, err := recursiveduper.ProveRecursive(c.Cfg.SetupDir, recursiveduper.GenesisProof, first, second, data)
+	if err != nil {
+		logger.Error("genesis BtcRecursiveProve prove error: %v", err)
+		return nil, err
+	}
+	return genesisProof, nil
 }
 
 func (c *Circuit) BtcBaseProve(req *btcbase.BaseLevelProofData) (*reLightCommon.Proof, error) {
