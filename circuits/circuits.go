@@ -42,9 +42,9 @@ type Circuit struct {
 }
 
 func (c *Circuit) BtcGenesisProve(data *recursiveUtil.RecursiveProofData, proofs []reLightCommon.Proof) (*reLightCommon.Proof, error) {
-	logger.Debug("current zk circuit BtcGenesisProve....")
+	logger.Debug("current zk circuit btcGenesisProve....")
 	if c.debug {
-		logger.Warn("current zk circuit BtcGenesisProve prove is debug,skip prove")
+		logger.Warn("current zk circuit btcGenesisProve prove is debug,skip prove")
 		return debugProof()
 	}
 	genesisProof, err := recursiveduper.ProveGenesis(c.Cfg.SetupDir, proofs, data)
