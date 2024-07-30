@@ -157,6 +157,26 @@ func (fs *FileStore) RootPath() string {
 	return fs.Path
 }
 
+func (fs *FileStore) Indexes(fn func(path string) (uint64, error)) (map[uint64]string, error) {
+	if fn == nil {
+		return nil, fmt.Errorf("fn is nil")
+	}
+	files, err := fs.AllFiles()
+	if err != nil {
+		logger.Error("all files error:%v", err)
+		return nil, err
+	}
+	indexes := make(map[uint64]string)
+	for fileName, _ := range files {
+		i, err := fn(fileName)
+		if err != nil {
+			return nil, err
+		}
+		indexes[i] = fileName
+	}
+	return indexes, nil
+}
+
 func (fs *FileStore) AllIndexes() (map[uint64]string, error) {
 	files, err := fs.AllFiles()
 	if err != nil {

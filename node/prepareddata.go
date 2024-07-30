@@ -3,7 +3,6 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/ethclient"
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
@@ -27,8 +26,18 @@ import (
 	"strconv"
 )
 
-func GetBtcGenesisData(filestore *FileStorage, proverClient *btcproverClient.Client, start, end uint64) (*rpc.BtcGenesisRequest, bool, error) {
-	data, err := recursiveduperUtil.GetRecursiveProofData(proverClient, uint32(start), uint32(end))
+type PreparedData struct {
+	filestore     *FileStorage
+	proverClient  *btcproverClient.Client
+	btcClient     *btcrpc.Client
+	ethClient     *ethrpc.Client
+	apiClient     *apiclient.Client
+	beaconClient  *beacon.Client
+	genesisPeriod uint64
+}
+
+func (p *PreparedData) GetBtcGenesisData(start, end uint64) (*rpc.BtcGenesisRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(start), uint32(end))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", 0, err)
 		return nil, false, err
@@ -40,8 +49,8 @@ func GetBtcGenesisData(filestore *FileStorage, proverClient *btcproverClient.Cli
 	return &genesisRequest, true, nil
 }
 
-func GetBtcRecursiveData(filestore *FileStorage, proverClient *btcproverClient.Client, start, end uint64) (*rpc.BtcRecursiveRequest, bool, error) {
-	data, err := recursiveduperUtil.GetRecursiveProofData(proverClient, uint32(start), uint32(end))
+func (p *PreparedData) GetBtcRecursiveData(start, end uint64) (*rpc.BtcRecursiveRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(start), uint32(end))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", 0, err)
 		return nil, false, err
@@ -52,8 +61,8 @@ func GetBtcRecursiveData(filestore *FileStorage, proverClient *btcproverClient.C
 	return &genesisRequest, true, nil
 }
 
-func GetBtcBaseData(proverClient *btcproverClient.Client, endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
-	data, err := baselevelUtil.GetBaseLevelProofData(proverClient, uint32(endHeight))
+func (p *PreparedData) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
+	data, err := baselevelUtil.GetBaseLevelProofData(p.proverClient, uint32(endHeight))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
@@ -64,15 +73,15 @@ func GetBtcBaseData(proverClient *btcproverClient.Client, endHeight uint64) (*rp
 	return &baseRequest, true, nil
 }
 
-func GetBtcMiddleData(fileStore *FileStorage, proverClient *btcproverClient.Client, endHeight uint64) (*rpc.BtcMiddleRequest, bool, error) {
-	data, err := midlevelUtil.GetMidLevelProofData(proverClient, uint32(endHeight))
+func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest, bool, error) {
+	data, err := midlevelUtil.GetMidLevelProofData(p.proverClient, uint32(endHeight))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
 	}
 	var proofs []rpc.Proof
 	for index := endHeight - 336; index <= endHeight; index = index + btcprovercom.CapacityBaseLevel {
-		baseProof, ok, err := fileStore.GetBtcBaseProof(index)
+		baseProof, ok, err := p.filestore.GetBtcBaseProof(index)
 		if err != nil {
 			logger.Error("get base level proof data error: %v %v", index, err)
 			return nil, false, err
@@ -94,8 +103,8 @@ func GetBtcMiddleData(fileStore *FileStorage, proverClient *btcproverClient.Clie
 	return &baseRequest, true, nil
 }
 
-func GetBtcUpperData(fileStore *FileStorage, proverClient *btcproverClient.Client, endHeight uint64) (*rpc.BtcUpperRequest, bool, error) {
-	data, err := upperlevelUtil.GetUpperLevelProofData(proverClient, uint32(endHeight))
+func (p *PreparedData) GetBtcUpperData(endHeight uint64) (*rpc.BtcUpperRequest, bool, error) {
+	data, err := upperlevelUtil.GetUpperLevelProofData(p.proverClient, uint32(endHeight))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
@@ -106,13 +115,13 @@ func GetBtcUpperData(fileStore *FileStorage, proverClient *btcproverClient.Clien
 	return &baseRequest, true, nil
 }
 
-func GetVerifyData(btcClient *btcrpc.Client, proverClient *btcproverClient.Client, txHash string) (interface{}, bool, error) {
-	tx, err := btcClient.GetTransaction(txHash)
+func (p *PreparedData) GetVerifyData(txHash string) (interface{}, bool, error) {
+	tx, err := p.btcClient.GetTransaction(txHash)
 	if err != nil {
 		logger.Error("get verify tx error: %v %v", txHash, err)
 		return nil, false, err
 	}
-	proofData, err := grUtil.GetDefaultGrandRollupProofData(proverClient, txHash, tx.Blockhash)
+	proofData, err := grUtil.GetDefaultGrandRollupProofData(p.proverClient, txHash, tx.Blockhash)
 	if err != nil {
 		logger.Error("get verify proof data error: %v %v", txHash, err)
 		return nil, false, err
@@ -125,13 +134,13 @@ func GetVerifyData(btcClient *btcrpc.Client, proverClient *btcproverClient.Clien
 	return verifyRequest, true, nil
 }
 
-func GetDepositData(btcClient *btcrpc.Client, apiClient *btcproverClient.Client, txHash string) (*rpc.DepositRequest, bool, error) {
-	tx, err := btcClient.GetTransaction(txHash)
+func (p *PreparedData) GetDepositData(txHash string) (*rpc.DepositRequest, bool, error) {
+	tx, err := p.btcClient.GetTransaction(txHash)
 	if err != nil {
 		logger.Error("get deposit tx error: %v %v", txHash, err)
 		return nil, false, err
 	}
-	proofData, err := grUtil.GetDefaultGrandRollupProofData(apiClient, txHash, tx.Blockhash)
+	proofData, err := grUtil.GetDefaultGrandRollupProofData(p.proverClient, txHash, tx.Blockhash)
 	if err != nil {
 		logger.Error("get deposit proof data error: %v %v", txHash, err)
 		return nil, false, err
@@ -144,8 +153,8 @@ func GetDepositData(btcClient *btcrpc.Client, apiClient *btcproverClient.Client,
 	return &depositRequest, true, nil
 }
 
-func GetTxInEth2Data(ethClient *ethrpc.Client, apiClient *apiclient.Client, txHash string, getSlotByNumber func(uint64) (uint64, error)) (*rpc.TxInEth2ProveRequest, bool, error) {
-	txData, err := ethblock.GenerateTxInEth2Proof(ethClient.Client, apiClient, getSlotByNumber, txHash)
+func (p *PreparedData) GetTxInEth2Data(txHash string, getSlotByNumber func(uint64) (uint64, error)) (*rpc.TxInEth2ProveRequest, bool, error) {
+	txData, err := ethblock.GenerateTxInEth2Proof(p.ethClient.Client, p.apiClient, getSlotByNumber, txHash)
 	if err != nil {
 		logger.Error("get tx data error: %v", err)
 		return nil, false, err
@@ -156,9 +165,9 @@ func GetTxInEth2Data(ethClient *ethrpc.Client, apiClient *apiclient.Client, txHa
 	}, true, nil
 }
 
-func GetBlockHeaderRequestData(fileStore *FileStorage, beaconClient *beacon.Client, index uint64) (*rpc.BlockHeaderRequest, bool, error) {
+func (p *PreparedData) GetBlockHeaderRequestData(index uint64) (*rpc.BlockHeaderRequest, bool, error) {
 	// todo
-	finalizedSlot, ok, err := fileStore.GetNearTxSlotFinalizedSlot(index)
+	finalizedSlot, ok, err := p.filestore.GetNearTxSlotFinalizedSlot(index)
 	if err != nil {
 		logger.Error("get finalized slot error: %v", err)
 		return nil, false, err
@@ -168,7 +177,7 @@ func GetBlockHeaderRequestData(fileStore *FileStorage, beaconClient *beacon.Clie
 	}
 
 	logger.Debug("get beaconHeader %v ~ %v", index, finalizedSlot)
-	beaconBlockHeaders, err := beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
+	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
@@ -196,10 +205,10 @@ func GetBlockHeaderRequestData(fileStore *FileStorage, beaconClient *beacon.Clie
 	}, true, nil
 }
 
-func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool, error) {
+func (p *PreparedData) GetRecursiveData(period uint64) (interface{}, bool, error) {
 	//todo
-	genesisPeriod := fileStore.GetGenesisPeriod()
-	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+	genesisPeriod := p.filestore.GetGenesisPeriod()
+	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -208,7 +217,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 		logger.Warn("get %v Index genesis commitId no find", genesisPeriod)
 		return nil, false, nil
 	}
-	relayId, ok, err := GetSyncCommitRootId(fileStore, period)
+	relayId, ok, err := p.GetSyncCommitRootId(period)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -218,7 +227,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 		return nil, false, nil
 	}
 	endPeriod := period + 1
-	endId, ok, err := GetSyncCommitRootId(fileStore, endPeriod)
+	endId, ok, err := p.GetSyncCommitRootId(endPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -227,7 +236,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 		logger.Warn("get %v Index end commitId no find", endPeriod)
 		return nil, false, nil
 	}
-	secondProof, exists, err := fileStore.GetUnitProof(period)
+	secondProof, exists, err := p.filestore.GetUnitProof(period)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -238,7 +247,7 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 	}
 
 	prePeriod := period - 1
-	firstProof, exists, err := fileStore.GetRecursiveProof(prePeriod)
+	firstProof, exists, err := p.filestore.GetRecursiveProof(prePeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -259,9 +268,9 @@ func GetRecursiveData(fileStore *FileStorage, period uint64) (interface{}, bool,
 	}, true, nil
 }
 
-func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}, bool, error) {
-	genesisPeriod := fileStore.GetGenesisPeriod()
-	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+func (p *PreparedData) GetRecursiveGenesisData(period uint64) (interface{}, bool, error) {
+	genesisPeriod := p.filestore.GetGenesisPeriod()
+	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -271,7 +280,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		return nil, false, nil
 	}
 	relayPeriod := period
-	relayId, ok, err := GetSyncCommitRootId(fileStore, relayPeriod)
+	relayId, ok, err := p.GetSyncCommitRootId(relayPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -281,7 +290,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		return nil, false, nil
 	}
 	endPeriod := relayPeriod + 1
-	endId, ok, err := GetSyncCommitRootId(fileStore, endPeriod)
+	endId, ok, err := p.GetSyncCommitRootId(endPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -291,7 +300,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		return nil, false, nil
 	}
 
-	fistProof, firstExists, err := fileStore.GetGenesisProof()
+	fistProof, firstExists, err := p.filestore.GetGenesisProof()
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -300,7 +309,7 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 		logger.Warn("no find genesis proof ,start new proof request")
 		return nil, false, nil
 	}
-	secondProof, secondExists, err := fileStore.GetUnitProof(relayPeriod)
+	secondProof, secondExists, err := p.filestore.GetUnitProof(relayPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -322,9 +331,9 @@ func GetRecursiveGenesisData(fileStore *FileStorage, period uint64) (interface{}
 
 }
 
-func GetSyncComGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest, bool, error) {
-	genesisPeriod := fileStore.GetGenesisPeriod()
-	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+func (p *PreparedData) GetSyncComGenesisData() (*rpc.SyncCommGenesisRequest, bool, error) {
+	genesisPeriod := p.filestore.GetGenesisPeriod()
+	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -335,7 +344,7 @@ func GetSyncComGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest,
 	}
 
 	nextPeriod := genesisPeriod + 1
-	firstId, ok, err := GetSyncCommitRootId(fileStore, nextPeriod)
+	firstId, ok, err := p.GetSyncCommitRootId(nextPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -345,7 +354,7 @@ func GetSyncComGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest,
 		return nil, false, nil
 	}
 	secondPeriod := nextPeriod + 1
-	secondId, ok, err := GetSyncCommitRootId(fileStore, secondPeriod)
+	secondId, ok, err := p.GetSyncCommitRootId(secondPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -355,7 +364,7 @@ func GetSyncComGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest,
 		return nil, false, nil
 	}
 
-	firstProof, exists, err := fileStore.GetUnitProof(genesisPeriod)
+	firstProof, exists, err := p.filestore.GetUnitProof(genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -366,7 +375,7 @@ func GetSyncComGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest,
 	}
 	logger.Info("get genesis first proof: %v", genesisPeriod)
 
-	secondProof, exists, err := fileStore.GetUnitProof(nextPeriod)
+	secondProof, exists, err := p.filestore.GetUnitProof(nextPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -390,8 +399,8 @@ func GetSyncComGenesisData(fileStore *FileStorage) (*rpc.SyncCommGenesisRequest,
 
 }
 
-func GetSyncCommitRootId(fileStore *FileStorage, period uint64) ([]byte, bool, error) {
-	update, ok, err := GetSyncCommitUpdate(fileStore, period)
+func (p *PreparedData) GetSyncCommitRootId(period uint64) ([]byte, bool, error) {
+	update, ok, err := p.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("get %v Index update error: %v", period, err)
 		return nil, false, err
@@ -407,8 +416,8 @@ func GetSyncCommitRootId(fileStore *FileStorage, period uint64) ([]byte, bool, e
 	return syncCommitRoot, true, nil
 }
 
-func GetSyncComUnitData(fileStore *FileStorage, period uint64) (*rpc.SyncCommUnitsRequest, bool, error) {
-	update, ok, err := GetSyncCommitUpdate(fileStore, period)
+func (p *PreparedData) GetSyncComUnitData(period uint64) (*rpc.SyncCommUnitsRequest, bool, error) {
+	update, ok, err := p.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("get %v Index update error: %v", period, err)
 		return nil, false, err
@@ -419,9 +428,9 @@ func GetSyncComUnitData(fileStore *FileStorage, period uint64) (*rpc.SyncCommUni
 	panic(update)
 }
 
-func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.SyncCommitteeUpdate, bool, error) {
+func (p *PreparedData) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeUpdate, bool, error) {
 	var currentPeriodUpdate structs.LightClientUpdateWithVersion
-	exists, err := fileStore.GetUpdate(period, &currentPeriodUpdate)
+	exists, err := p.filestore.GetUpdate(period, &currentPeriodUpdate)
 	if err != nil {
 		logger.Error("get %v index update error: %v", period, err)
 		return nil, false, err
@@ -437,9 +446,9 @@ func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.SyncComm
 		return nil, false, err
 	}
 	update.Version = currentPeriodUpdate.Version
-	if fileStore.GetGenesisPeriod() == period {
+	if p.filestore.GetGenesisPeriod() == period {
 		var genesisData structs.LightClientBootstrapResponse
-		genesisExists, err := fileStore.GetBootstrap(&genesisData)
+		genesisExists, err := p.filestore.GetBootstrap(&genesisData)
 		if err != nil {
 			logger.Error("get genesis update error: %v %v", period, err)
 			return nil, false, err
@@ -457,12 +466,12 @@ func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.SyncComm
 		update.CurrentSyncCommittee = &genesisCommittee
 	} else {
 		prePeriod := period - 1
-		if prePeriod < fileStore.GetGenesisPeriod() {
+		if prePeriod < p.filestore.GetGenesisPeriod() {
 			logger.Error("should never happen: %v", prePeriod)
 			return nil, false, nil
 		}
 		var preUpdateData structs.LightClientUpdateWithVersion
-		preUpdateExists, err := fileStore.GetUpdate(prePeriod, &preUpdateData)
+		preUpdateExists, err := p.filestore.GetUpdate(prePeriod, &preUpdateData)
 		if err != nil {
 			logger.Error("get %v index update error: %v", prePeriod, err)
 			return nil, false, err
@@ -483,10 +492,10 @@ func GetSyncCommitUpdate(fileStore *FileStorage, period uint64) (*utils.SyncComm
 
 }
 
-func GetBhfUpdateData(fileStore *FileStorage, finalizedSlot, genesisPeriod uint64) (*rpc.BlockHeaderFinalityRequest, bool, error) {
+func (p *PreparedData) GetBhfUpdateData(finalizedSlot, genesisPeriod uint64) (*rpc.BlockHeaderFinalityRequest, bool, error) {
 	logger.Debug("get bhf update data: %v", finalizedSlot)
 	var currentFinalityUpdate structs.LightClientUpdateWithVersion
-	exists, err := fileStore.GetFinalityUpdate(finalizedSlot, &currentFinalityUpdate)
+	exists, err := p.filestore.GetFinalityUpdate(finalizedSlot, &currentFinalityUpdate)
 	if err != nil {
 		logger.Error("get finality update error: %v %v", finalizedSlot, err)
 		return nil, false, err
@@ -496,7 +505,7 @@ func GetBhfUpdateData(fileStore *FileStorage, finalizedSlot, genesisPeriod uint6
 		return nil, false, nil
 	}
 
-	genesisId, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, false, err
@@ -512,7 +521,7 @@ func GetBhfUpdateData(fileStore *FileStorage, finalizedSlot, genesisPeriod uint6
 	}
 	// todo
 	period := (attestedSlot / 8192) - 1
-	recursiveProof, ok, err := fileStore.GetRecursiveProof(period)
+	recursiveProof, ok, err := p.filestore.GetRecursiveProof(period)
 	if err != nil {
 		logger.Error("get recursive proof error: %v %v", period, err)
 		return nil, false, err
@@ -523,7 +532,7 @@ func GetBhfUpdateData(fileStore *FileStorage, finalizedSlot, genesisPeriod uint6
 	}
 	outerPeriod := period + 1
 	logger.Debug("get bhf update data finalizedSlot: %v,recPeriod: %v,outPeriod %v", finalizedSlot, period, outerPeriod)
-	outerProof, ok, err := fileStore.GetOuterProof(outerPeriod)
+	outerProof, ok, err := p.filestore.GetOuterProof(outerPeriod)
 	if err != nil {
 		logger.Error("get outer proof error: %v %v", outerPeriod, err)
 		return nil, false, err
@@ -541,7 +550,7 @@ func GetBhfUpdateData(fileStore *FileStorage, finalizedSlot, genesisPeriod uint6
 	}
 	finalUpdate.Version = currentFinalityUpdate.Version
 
-	currentSyncCommitUpdate, ok, err := GetSyncCommitUpdate(fileStore, outerPeriod)
+	currentSyncCommitUpdate, ok, err := p.GetSyncCommitUpdate(outerPeriod)
 	if err != nil {
 		logger.Error("get sync committee update error: %v %v", outerPeriod, err)
 		return nil, false, err
@@ -569,9 +578,8 @@ func GetBhfUpdateData(fileStore *FileStorage, finalizedSlot, genesisPeriod uint6
 	return &request, true, nil
 }
 
-func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, txHash string,
-	beaconClient *beacon.Client, ethClient *ethclient.Client) (*rpc.RedeemRequest, bool, error) {
-	txProof, ok, err := fileStore.GetTxProof(txHash)
+func (p *PreparedData) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash string) (*rpc.RedeemRequest, bool, error) {
+	txProof, ok, err := p.filestore.GetTxProof(txHash)
 	if err != nil {
 		logger.Error("get tx proof error: %v", err)
 		return nil, false, err
@@ -580,7 +588,7 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		logger.Debug("proof request data not prepared: %v", txHash)
 		return nil, false, nil
 	}
-	blockHeaderProof, ok, err := fileStore.GetBeaconHeaderProof(txSlot)
+	blockHeaderProof, ok, err := p.filestore.GetBeaconHeaderProof(txSlot)
 	if err != nil {
 		logger.Error("get block header proof error: %v", err)
 		return nil, false, err
@@ -589,7 +597,7 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		logger.Debug("proof request data not prepared: %v", txSlot)
 		return nil, false, nil
 	}
-	finalizedSlot, ok, err := fileStore.GetNearTxSlotFinalizedSlot(txSlot)
+	finalizedSlot, ok, err := p.filestore.GetNearTxSlotFinalizedSlot(txSlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
 		return nil, false, err
@@ -598,7 +606,7 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		logger.Debug("proof request data not prepared: %v", txSlot)
 		return nil, false, nil
 	}
-	bhfProof, ok, err := fileStore.GetBhfProof(finalizedSlot)
+	bhfProof, ok, err := p.filestore.GetBhfProof(finalizedSlot)
 	if err != nil {
 		logger.Error("get bhf update proof error: %v", err)
 		return nil, false, err
@@ -607,7 +615,7 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		logger.Warn("no find bhf update %v", finalizedSlot)
 		return nil, false, nil
 	}
-	genesisRoot, ok, err := GetSyncCommitRootId(fileStore, genesisPeriod)
+	genesisRoot, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
 		logger.Error("get genesis root error: %v", err)
 		return nil, false, err
@@ -618,7 +626,7 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 	}
 
 	var finalityUpdate *structs.LightClientUpdateWithVersion
-	ok, err = fileStore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
+	ok, err = p.filestore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
 	if err != nil {
 		logger.Error("get finality update error: %v", err)
 		return nil, false, err
@@ -634,18 +642,18 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 		return nil, false, err
 	}
 	period := attestedSlot / common.SlotPerPeriod
-	currentRoot, ok, err := GetSyncCommitRootId(fileStore, period)
+	currentRoot, ok, err := p.GetSyncCommitRootId(period)
 	if err != nil {
 		logger.Error("get current root error: %v", err)
 		return nil, false, err
 	}
-	beginID, endId, err := GetBeaconHeaderId(beaconClient, txSlot, finalizedSlot)
+	beginID, endId, err := p.GetBeaconHeaderId(txSlot, finalizedSlot)
 	if err != nil {
 		logger.Error("get begin and end id error: %v", err)
 		return nil, false, err
 	}
 	// todo need cache
-	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(ethClient, txHash)
+	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(p.ethClient.Client, txHash)
 	if err != nil {
 		logger.Error("get tx and receipt error: %v", err)
 		return nil, false, err
@@ -680,8 +688,8 @@ func GetRedeemRequestData(fileStore *FileStorage, genesisPeriod, txSlot uint64, 
 
 }
 
-func GetBeaconHeaderId(beaconClient *beacon.Client, start, end uint64) ([]byte, []byte, error) {
-	beaconBlockHeaders, err := beaconClient.RetrieveBeaconHeaders(start, end)
+func (p *PreparedData) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, error) {
+	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(start, end)
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, nil, err

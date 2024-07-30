@@ -32,6 +32,7 @@ type manager struct {
 	btcProofResp    chan *common.ZkProofResponse
 	ethProofResp    chan *common.ZkProofResponse
 	syncCommitResp  chan *common.ZkProofResponse
+	preparedData    *PreparedData
 	lock            sync.Mutex
 }
 
@@ -233,7 +234,7 @@ func (m *manager) GetRedeemRequest(txHash string) (*common.ZkProofRequest, bool,
 	if !ok {
 		return nil, false, nil
 	}
-	data, ok, err := GetRedeemRequestData(m.fileStore, m.genesisPeriod, txSlot, txHash, m.beaconClient, m.ethClient.Client)
+	data, ok, err := m.preparedData.GetRedeemRequestData(m.genesisPeriod, txSlot, txHash)
 	if err != nil {
 		logger.Error("get redeem request data error: %v %v", txHash, err)
 		return nil, false, err
@@ -650,154 +651,31 @@ func (m *manager) CheckStateV1() error {
 
 }
 
-// todo
-
-func (m *manager) perpProofPreparedData(reqType common.ZkProofType, index, end uint64, hash string) (interface{}, bool, error) {
-	switch reqType {
-	case common.SyncComGenesisType:
-		data, ok, err := GetSyncComGenesisData(m.fileStore)
-		if err != nil {
-			logger.Error("get SyncComGenesisData error:%v", err)
-			return nil, false, err
-		}
-		return data, ok, nil
-	case common.SyncComUnitType:
-		data, ok, err := GetSyncComUnitData(m.fileStore, index)
-		if err != nil {
-			logger.Error("get SyncComUnitData error:%v %v", index, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-	case common.SyncComRecursiveType:
-		if m.genesisPeriod == index+2 {
-			data, ok, err := GetRecursiveGenesisData(m.fileStore, index)
-			if err != nil {
-				logger.Error("get SyncComRecursiveGenesisData error:%v %v", index, err)
-				return nil, false, err
-			}
-			return data, ok, nil
-		} else {
-			data, ok, err := GetRecursiveData(m.fileStore, index)
-			if err != nil {
-				logger.Error("get SyncComRecursiveData error:%v %v", index, err)
-				return nil, false, err
-			}
-			return data, ok, nil
-		}
-	case common.TxInEth2:
-		data, ok, err := GetTxInEth2Data(m.ethClient, m.apiClient, hash, m.getSlotByNumber)
-		if err != nil {
-			logger.Error("get tx in eth2 data error: %v %v", index, err)
-			return nil, false, err
-		}
-		return data, ok, err
-	case common.BeaconHeaderType:
-		data, ok, err := GetBlockHeaderRequestData(m.fileStore, m.beaconClient, index)
-		if err != nil {
-			logger.Error("get block header request data error:%v %v", index, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-
-	case common.BeaconHeaderFinalityType:
-		data, ok, err := GetBhfUpdateData(m.fileStore, index, m.genesisPeriod)
-		if err != nil {
-			logger.Error("get bhf update data error: %v %v", index, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-	case common.RedeemTxType:
-		data, ok, err := GetRedeemRequestData(m.fileStore, m.genesisPeriod, index, hash, m.beaconClient, m.ethClient.Client)
-		if err != nil {
-			logger.Error("get redeem request data error:%v %v", index, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-
-	case common.DepositTxType:
-		data, ok, err := GetDepositData(m.btcClient, m.btcproverClient, hash)
-		if err != nil {
-			logger.Error("get deposit data error:%v %v", index, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-
-	case common.VerifyTxType:
-		data, ok, err := GetVerifyData(m.btcClient, m.btcproverClient, hash)
-		if err != nil {
-			logger.Error("get verify data error:%v %v", index, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-	case common.BtcBulkType:
-		data, err := GetBtcMidBlockHeader(m.btcClient, index, end)
-		if err != nil {
-			logger.Error("get mid block header error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return rpc.BtcBulkRequest{
-			Data: data,
-		}, true, nil
-	case common.BtcPackedType:
-		data, err := GetBtcMidBlockHeader(m.btcClient, index, end)
-		if err != nil {
-			logger.Error("get mid block header error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return rpc.BtcPackedRequest{
-			Data: data,
-		}, true, nil
-	case common.BtcWrapType:
-		data, err := GetBtcWrapData(m.fileStore, m.btcClient, index, end)
-		if err != nil {
-			logger.Error("get btc wrap data error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return data, true, nil
-	case common.BtcBaseType:
-		data, ok, err := GetBtcBaseData(m.btcproverClient, index)
-		if err != nil {
-			logger.Error("get btc base data error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-
-	case common.BtcMiddleType:
-		data, ok, err := GetBtcMiddleData(m.fileStore, m.btcproverClient, index)
-		if err != nil {
-			logger.Error("get btc middle data error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-
-	case common.BtcUpperType:
-		data, ok, err := GetBtcUpperData(m.fileStore, m.btcproverClient, index)
-		if err != nil {
-			logger.Error("get btc upper data error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-
-	case common.BtcGenesisType:
-		data, ok, err := GetBtcGenesisData(m.fileStore, m.btcproverClient, index, end)
-		if err != nil {
-			logger.Error("get btc genesis data error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-
-	case common.BtcRecursiveType:
-		data, ok, err := GetBtcRecursiveData(m.fileStore, m.btcproverClient, index, end)
-		if err != nil {
-			logger.Error("get btc recursive data error:%v %v %v", index, end, err)
-			return nil, false, err
-		}
-		return data, ok, nil
-	default:
-		logger.Error(" prepare request Data never should happen : %v %v", index, reqType)
-		return nil, false, fmt.Errorf("never should happen : %v %v", index, reqType)
+func (m *manager) CheckBtcState() error {
+	exists, err := m.fileStore.CheckBtcGenesisProof()
+	if err != nil {
+		logger.Error("check btc genesis proof error:%v", err)
+		return err
 	}
+	if !exists {
+		err := m.tryProofRequest(common.BtcGenesisType, 0, 0, "")
+		if err != nil {
+			logger.Error("try btc genesis proof error:%v", err)
+			return err
+		}
+	}
+	indexes, err := m.fileStore.NeedBtcRecursiveIndex(0)
+	if err != nil {
+		logger.Error("check btc recursive proof error:%v", err)
+		return err
+	}
+	for _, index := range indexes {
+
+	}
+
 }
+
+// todo
 
 func (e *manager) getSlotByNumber(number uint64) (uint64, error) {
 	slot, ok, err := ReadBeaconSlot(e.store, number)

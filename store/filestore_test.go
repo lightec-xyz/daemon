@@ -1,6 +1,8 @@
 package store
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -56,5 +58,23 @@ func TestNewFileStore(t *testing.T) {
 }
 
 func TestDemo(t *testing.T) {
-
+	fileStore, err := NewFileStore("test/", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexes, err := fileStore.Indexes(func(path string) (uint64, error) {
+		split := strings.Split(path, "_")
+		if len(split) == 3 {
+			i, err := strconv.Atoi(split[1])
+			if err != nil {
+				return 0, err
+			}
+			return uint64(i), nil
+		}
+		return 0, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(indexes)
 }

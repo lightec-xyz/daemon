@@ -49,6 +49,7 @@ type EthereumAgent struct {
 	genesisSlot      uint64
 	debug            bool
 	force            bool
+	prepareData      *PreparedData
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
@@ -809,14 +810,14 @@ func (e *EthereumAgent) getRequestProofData(zkType common.ZkProofType, index uin
 	case common.BeaconHeaderType:
 		return e.getBlockHeaderRequestData(index)
 	case common.RedeemTxType:
-		data, ok, err := GetRedeemRequestData(e.fileStore, e.genesisPeriod, index, txHash, e.beaconClient, e.ethClient.Client)
+		data, ok, err := e.prepareData.GetRedeemRequestData(e.genesisPeriod, index, txHash)
 		if err != nil {
 			logger.Error("get redeem request data error: %v %v", index, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BeaconHeaderFinalityType:
-		data, ok, err := GetBhfUpdateData(e.fileStore, index, e.genesisPeriod)
+		data, ok, err := e.prepareData.GetBhfUpdateData(index, e.genesisPeriod)
 		if err != nil {
 			logger.Error("get bhf update data error: %v %v", index, err)
 			return nil, false, err

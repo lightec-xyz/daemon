@@ -24,26 +24,6 @@ import (
 	"time"
 )
 
-func BeaconBlockHeaderToSlotAndRoot(header *structs.BeaconBlockHeader) (uint64, []byte, error) {
-	consensus, err := header.ToConsensus()
-	if err != nil {
-		logger.Error("to consensus error: %v", err)
-		return 0, nil, err
-	}
-	root, err := consensus.HashTreeRoot()
-	if err != nil {
-		logger.Error("hash tree root error: %v", err)
-		return 0, nil, err
-	}
-	slotBig, ok := big.NewInt(0).SetString(header.Slot, 10)
-	if !ok {
-		logger.Error("parse slot error: %v", header.Slot)
-		return 0, nil, fmt.Errorf("parse slot error: %v", header.Slot)
-	}
-	return slotBig.Uint64(), root[0:], nil
-
-}
-
 func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index, end uint64, txHash string) (bool, error) {
 	switch zkType {
 	case common.SyncComGenesisType:
@@ -72,6 +52,16 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index, end ui
 		return fileStore.CheckBtcPackedProof(index)
 	case common.BtcWrapType:
 		return fileStore.CheckBtcWrapProof(index)
+	case common.BtcBaseType:
+		return fileStore.CheckBtcBaseProof(index)
+	case common.BtcMiddleType:
+		return fileStore.CheckBtcMiddleProof(index)
+	case common.BtcUpperType:
+		return fileStore.CheckBtcUpperProof(index)
+	case common.BtcGenesisType:
+		return fileStore.CheckBtcGenesisProof()
+	case common.BtcRecursiveType:
+		return fileStore.CheckBtcRecursiveProof(index)
 	default:
 		return false, fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
@@ -105,9 +95,187 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 		return fileStore.StoreBtcPackedProof(index, proof, witness)
 	case common.BtcWrapType:
 		return fileStore.StoreBtcWrapProof(index, proof, witness)
+	case common.BtcBaseType:
+		return fileStore.StoreBtcBaseProof(proof, witness, index)
+	case common.BtcMiddleType:
+		return fileStore.StoreBtcMiddleProof(proof, witness, index)
+	case common.BtcUpperType:
+		return fileStore.StoreBtcUpperProof(proof, witness, index)
+	case common.BtcGenesisType:
+		return fileStore.StoreBtcGenesisProof(proof, witness)
+	case common.BtcRecursiveType:
+		return fileStore.StoreBtcRecursiveProof(proof, witness, index)
 	default:
 		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
+}
+
+func GenRequest(p *PreparedData, reqType common.ZkProofType, index, end uint64, hash string) (interface{}, bool, error) {
+	switch reqType {
+	case common.SyncComGenesisType:
+		data, ok, err := p.GetSyncComGenesisData()
+		if err != nil {
+			logger.Error("get SyncComGenesisData error:%v", err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.SyncComUnitType:
+		data, ok, err := p.GetSyncComUnitData(index)
+		if err != nil {
+			logger.Error("get SyncComUnitData error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.SyncComRecursiveType:
+		if p.genesisPeriod == index+2 {
+			data, ok, err := p.GetRecursiveGenesisData(index)
+			if err != nil {
+				logger.Error("get SyncComRecursiveGenesisData error:%v %v", index, err)
+				return nil, false, err
+			}
+			return data, ok, nil
+		} else {
+			data, ok, err := p.GetRecursiveData(index)
+			if err != nil {
+				logger.Error("get SyncComRecursiveData error:%v %v", index, err)
+				return nil, false, err
+			}
+			return data, ok, nil
+		}
+	case common.TxInEth2:
+		data, ok, err := p.GetTxInEth2Data()
+		if err != nil {
+			logger.Error("get tx in eth2 data error: %v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, err
+	case common.BeaconHeaderType:
+		data, ok, err := p.GetBlockHeaderRequestData(index)
+		if err != nil {
+			logger.Error("get block header request data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BeaconHeaderFinalityType:
+		data, ok, err := p.GetBhfUpdateData(index)
+		if err != nil {
+			logger.Error("get bhf update data error: %v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.RedeemTxType:
+		data, ok, err := p.GetRedeemRequestData(index, hash)
+		if err != nil {
+			logger.Error("get redeem request data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.DepositTxType:
+		data, ok, err := p.GetDepositData(hash)
+		if err != nil {
+			logger.Error("get deposit data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.VerifyTxType:
+		data, ok, err := p.GetVerifyData(hash)
+		if err != nil {
+			logger.Error("get verify data error:%v %v", index, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	case common.BtcBulkType:
+		data, err := p.GetBtcMidBlockHeader(index, end)
+		if err != nil {
+			logger.Error("get mid block header error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return rpc.BtcBulkRequest{
+			Data: data,
+		}, true, nil
+	case common.BtcPackedType:
+		data, err := p.GetBtcMidBlockHeader(index, end)
+		if err != nil {
+			logger.Error("get mid block header error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return rpc.BtcPackedRequest{
+			Data: data,
+		}, true, nil
+	case common.BtcWrapType:
+		data, err := p.GetBtcWrapData(index, end)
+		if err != nil {
+			logger.Error("get btc wrap data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, true, nil
+	case common.BtcBaseType:
+		data, ok, err := p.GetBtcBaseData(index)
+		if err != nil {
+			logger.Error("get btc base data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BtcMiddleType:
+		data, ok, err := p.GetBtcMiddleData(index)
+		if err != nil {
+			logger.Error("get btc middle data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BtcUpperType:
+		data, ok, err := p.GetBtcUpperData(index)
+		if err != nil {
+			logger.Error("get btc upper data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BtcGenesisType:
+		data, ok, err := p.GetBtcGenesisData(index, end)
+		if err != nil {
+			logger.Error("get btc genesis data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+
+	case common.BtcRecursiveType:
+		data, ok, err := p.GetBtcRecursiveData(index, end)
+		if err != nil {
+			logger.Error("get btc recursive data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
+	default:
+		logger.Error(" prepare request Data never should happen : %v %v", index, reqType)
+		return nil, false, fmt.Errorf("never should happen : %v %v", index, reqType)
+	}
+
+}
+
+func BeaconBlockHeaderToSlotAndRoot(header *structs.BeaconBlockHeader) (uint64, []byte, error) {
+	consensus, err := header.ToConsensus()
+	if err != nil {
+		logger.Error("to consensus error: %v", err)
+		return 0, nil, err
+	}
+	root, err := consensus.HashTreeRoot()
+	if err != nil {
+		logger.Error("hash tree root error: %v", err)
+		return 0, nil, err
+	}
+	slotBig, ok := big.NewInt(0).SetString(header.Slot, 10)
+	if !ok {
+		logger.Error("parse slot error: %v", header.Slot)
+		return 0, nil, fmt.Errorf("parse slot error: %v", header.Slot)
+	}
+	return slotBig.Uint64(), root[0:], nil
+
 }
 
 func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*btcprovertypes.BlockHeaderChain, error) {

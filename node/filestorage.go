@@ -7,6 +7,8 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -581,7 +583,7 @@ func (fs *FileStorage) NeedBtcRecursiveIndex(height uint64) ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcRecursiveTable)
 	}
-	indexes, err := fileStore.AllIndexes()
+	indexes, err := fileStore.Indexes(getIndex)
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
@@ -781,4 +783,16 @@ func genKey(prefix Table, args ...interface{}) string {
 		name = name + fmt.Sprintf("_%v", arg)
 	}
 	return name
+}
+
+func getIndex(fileName string) (uint64, error) {
+	keys := strings.Split(fileName, "_")
+	if len(keys) != 3 {
+		return 0, fmt.Errorf("invalid file name %v", fileName)
+	}
+	index, err := strconv.ParseUint(keys[2], 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return index, nil
 }
