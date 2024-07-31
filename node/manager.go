@@ -459,6 +459,31 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 // todo
 
 func (m *manager) CheckBtcState() error {
+	blockCount, err := m.btcClient.GetBlockCount()
+	if err != nil {
+		logger.Error("get block count error:%v", err)
+		return err
+	}
+	btcUpIndexes, err := m.fileStore.NeedBtcUpIndex(uint64(blockCount))
+	if err != nil {
+		logger.Error("get need btc up index error:%v", err)
+		return err
+	}
+	for _, index := range btcUpIndexes {
+		end := index + btccircom.CapacityDifficultyBlock
+		next, err := m.checkBtcUpper(index, end)
+		if err != nil {
+			logger.Error("check btc update error:%v", err)
+			return err
+		}
+		if !next {
+			err := m.tryProofRequest(common.BtcUpperType, index, end, "")
+			if err != nil {
+				logger.Error("try btc upper proof error:%v", err)
+				return err
+			}
+		}
+	}
 	exists, err := CheckProof(m.fileStore, common.BtcGenesisType, 0, 0, "")
 	if err != nil {
 		return err
@@ -470,109 +495,70 @@ func (m *manager) CheckBtcState() error {
 			return err
 		}
 	}
-
-	return nil
-}
-
-func (m *manager) checkBtcRecursiveProof() error {
-	blockCount, err := m.btcClient.GetBlockCount()
-	if err != nil {
-		logger.Error("get block count error:%v", err)
-		return err
-	}
-	indexes, err := m.fileStore.NeedBtcRecursiveIndex(uint64(blockCount))
+	btcRecursiveIndexes, err := m.fileStore.NeedBtcRecursiveIndex(uint64(blockCount))
 	if err != nil {
 		logger.Error("get need btc recursive index error:%v", err)
 		return err
 	}
-	for _, index := range indexes {
-		// todo
-		exists, err := CheckProof(m.fileStore, common.BtcRecursiveType, index, index+2016, "")
+	for _, index := range btcRecursiveIndexes {
+		end := index + btccircom.CapacityDifficultyBlock
+		err = m.tryProofRequest(common.BtcRecursiveType, index, end, "")
 		if err != nil {
-			logger.Error("check btc update error:%v", err)
+			logger.Error("try btc recursive proof error:%v %v %v", index, end, err)
 			return err
 		}
-		if !exists {
-			ok, err := m.checkBtcUpper(index, index+btccircom.CapacityDifficultyBlock)
-			if err != nil {
-				logger.Error("check btc update error:%v", err)
-				return err
-			}
-			if !ok {
-				return nil
-			}
-			err = m.tryProofRequest(common.BtcRecursiveType, index, index+2016, "")
-			if err != nil {
-				logger.Error("try btc recursive proof error:%v", err)
-				return err
-			}
-		}
+		continue
 	}
 	return nil
 }
 
 func (m *manager) checkBtcUpper(start, end uint64) (bool, error) {
-	exists, err := CheckProof(m.fileStore, common.BtcUpperType, start, end, "")
-	if err != nil {
-		logger.Error("check btc update error:%v", err)
-		return false, err
-	}
-	if !exists {
-		for index := start; index < end; index = index + btccircom.CapacitySuperBatch {
-			ok, err := m.checkBtcMiddle(index, index+btccircom.CapacityBaseLevel)
+	next := true
+	for index := start; index < end; index = end {
+		middleEnd := index + btccircom.CapacitySuperBatch
+		exists, err := CheckProof(m.fileStore, common.BtcMiddleType, index, middleEnd, "")
+		if err != nil {
+			logger.Error("check btc update error:%v", err)
+			return false, err
+		}
+		if !exists {
+			next = false
+			ok, err := m.checkBtcMiddle(index, middleEnd)
 			if err != nil {
 				logger.Error("check btc update error:%v", err)
 				return false, err
 			}
-			if !ok {
-				return false, nil
+			if ok {
+				err := m.tryProofRequest(common.BtcMiddleType, index, middleEnd, "")
+				if err != nil {
+					logger.Error("try btc middle proof error:%v", err)
+					return false, err
+				}
 			}
-
 		}
-		return false, nil
 	}
-	return true, nil
+	return next, nil
 }
 
 func (m *manager) checkBtcMiddle(start, end uint64) (bool, error) {
-	exists, err := CheckProof(m.fileStore, common.BtcMiddleType, start, end, "")
-	if err != nil {
-		logger.Error("check btc update error:%v", err)
-		return false, err
-	}
-	if !exists {
-		for index := start; index < end; index = index + btccircom.CapacitySuperBatch {
-			ok, err := m.checkBtcBase(index, index+btccircom.CapacityBaseLevel)
-			if err != nil {
-				logger.Error("check btc update error:%v", err)
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-		return false, nil
-
-	}
-	return true, nil
-
-}
-
-func (m *manager) checkBtcBase(start, end uint64) (bool, error) {
-	exists, err := CheckProof(m.fileStore, common.BtcBaseType, start, end, "")
-	if err != nil {
-		logger.Error("check btc update error:%v", err)
-		return false, err
-	}
-	if !exists {
-		err := m.tryProofRequest(common.BtcBaseType, start, end, "")
+	next := true
+	for index := start; index < end; index = index + btccircom.CapacityBaseLevel {
+		baseEndIndex := index + btccircom.CapacityBaseLevel
+		exists, err := CheckProof(m.fileStore, common.BtcBaseType, start, baseEndIndex, "")
 		if err != nil {
-			logger.Error("try btc base proof error:%v_%v %v", start, end, err)
+			logger.Error("check btc update error:%v", err)
 			return false, err
 		}
-		return false, nil
+		if !exists {
+			next = false
+			err := m.tryProofRequest(common.BtcBaseType, start, baseEndIndex, "")
+			if err != nil {
+				logger.Error("try btc base proof error:%v_%v %v", start, baseEndIndex, err)
+				return false, err
+			}
+		}
 	}
-	return true, nil
+	return next, nil
 
 }
 

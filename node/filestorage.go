@@ -578,6 +578,27 @@ func newStoreProofV1(proofType common.ZkProofType, id string, proof, witness []b
 	}
 }
 
+func (fs *FileStorage) NeedBtcUpIndex(height uint64) ([]uint64, error) {
+	fileStore, ok := fs.GetFileStore(BtcUpperTable)
+	if !ok {
+		return nil, fmt.Errorf("get file store error %v", BtcUpperTable)
+	}
+	indexes, err := fileStore.Indexes(getIndex)
+	if err != nil {
+		logger.Error("get update indexes error:%v", err)
+		return nil, err
+	}
+	var tmpIndexes []uint64
+	// todo
+	for index := fs.btcGenesisHeight + 2016*2; index <= height; index = index + 2016 {
+		if _, ok := indexes[index]; !ok {
+			tmpIndexes = append(tmpIndexes, index)
+		}
+	}
+	return tmpIndexes, nil
+
+}
+
 func (fs *FileStorage) NeedBtcRecursiveIndex(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcRecursiveTable)
 	if !ok {
