@@ -149,7 +149,7 @@ func (bs *BtcSetup) Prove() error {
 		return err
 	}
 
-	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, duperProofs[:2], proofData1)
+	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, &duperProofs[0], &duperProofs[1], proofData1)
 	if err != nil {
 		logger.Error("genesis recursiveduper prove error: %v %v", endHeight1, err)
 		return err
@@ -174,7 +174,7 @@ func (bs *BtcSetup) Prove() error {
 	}
 
 	recursiveProof, err := recursiveduper.ProveRecursive(
-		bs.cfg.SetupDir, recursiveduper.GenesisProof, genesisProof, &duperProofs[2], proofData2)
+		bs.cfg.SetupDir, genesisProof, &duperProofs[2], proofData2)
 	if err != nil {
 		logger.Error("recursiveduper prove error: %v %v", endHeight2, err)
 		return err
