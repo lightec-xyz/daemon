@@ -790,6 +790,10 @@ func getIndex(fileName string) (uint64, error) {
 	if len(keys) != 3 {
 		return 0, fmt.Errorf("invalid file name %v", fileName)
 	}
+	/*
+		todo: base_101_100
+		index 101
+	*/
 	index, err := strconv.ParseUint(keys[2], 10, 64)
 	if err != nil {
 		return 0, err

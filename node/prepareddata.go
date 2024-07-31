@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
+	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
@@ -17,6 +18,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	btcrpc "github.com/lightec-xyz/daemon/rpc/bitcoin"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/store"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
@@ -28,6 +30,7 @@ import (
 
 type PreparedData struct {
 	filestore     *FileStorage
+	store         store.IStore
 	proverClient  *btcproverClient.Client
 	btcClient     *btcrpc.Client
 	ethClient     *ethrpc.Client
@@ -268,6 +271,17 @@ func (p *PreparedData) GetRecursiveData(period uint64) (interface{}, bool, error
 	}, true, nil
 }
 
+func (p *PreparedData) getSlotByNumber(number uint64) (uint64, error) {
+	slot, ok, err := ReadBeaconSlot(p.store, number)
+	if err != nil {
+		return 0, err
+	}
+	if !ok {
+		return 0, fmt.Errorf("no find %v slot", number)
+	}
+	return slot, nil
+}
+
 func (p *PreparedData) GetRecursiveGenesisData(period uint64) (interface{}, bool, error) {
 	genesisPeriod := p.filestore.GetGenesisPeriod()
 	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
@@ -426,6 +440,103 @@ func (p *PreparedData) GetSyncComUnitData(period uint64) (*rpc.SyncCommUnitsRequ
 		return nil, false, nil
 	}
 	panic(update)
+}
+
+func (p *PreparedData) GetReverseHash(height uint64) (string, error) {
+	hash, err := p.btcClient.GetBlockHash(int64(height))
+	if err != nil {
+		logger.Error("get block header error: %v %v", height, err)
+		return "", err
+	}
+	reverseHash, err := common.ReverseHex(hash)
+	if err != nil {
+		logger.Error("reverse hex error: %v", err)
+		return "", err
+	}
+	return reverseHash, nil
+}
+func (p *PreparedData) GetBtcMidBlockHeader(start, end uint64) (*btcprovertypes.BlockHeaderChain, error) {
+	startHash, err := p.GetReverseHash(start)
+	if err != nil {
+		logger.Error("get block header error: %v %v", start, err)
+		return nil, err
+	}
+
+	endHash, err := p.GetReverseHash(end)
+	if err != nil {
+		logger.Error("get block header error: %v %v", end, err)
+		return nil, err
+	}
+	var middleHeaders []string
+	for index := start + 1; index <= end; index++ {
+		header, err := p.btcClient.GetHexBlockHeader(int64(index))
+		if err != nil {
+			logger.Error("get block header error: %v %v", index, err)
+			return nil, err
+		}
+		middleHeaders = append(middleHeaders, header)
+	}
+	data := &btcprovertypes.BlockHeaderChain{
+		BeginHeight:        start,
+		BeginHash:          startHash,
+		EndHeight:          end,
+		EndHash:            endHash,
+		MiddleBlockHeaders: middleHeaders,
+	}
+	err = data.Verify()
+	if err != nil {
+		logger.Error("verify block header error: %v", err)
+		return nil, err
+	}
+	return data, nil
+
+}
+
+func (p *PreparedData) GetBtcWrapData(start, end uint64) (*rpc.BtcWrapRequest, error) {
+	startHash, err := p.GetReverseHash(start)
+	if err != nil {
+		logger.Error("get block header error: %v %v", start, err)
+		return nil, err
+	}
+	endHash, err := p.GetReverseHash(end)
+	if err != nil {
+		logger.Error("get block header error: %v %v", end, err)
+		return nil, err
+	}
+	nRequired := end - start
+	var proof *StoreProof
+	var ok bool
+	var flag string
+	if nRequired <= btcprovercom.MaxNbBlockPerBulk { // todo
+		proof, ok, err = p.filestore.GetBtcBulkProof(start, end)
+		if err != nil {
+			logger.Error("get btc bulk proof error: %v", err)
+			return nil, err
+		}
+		if !ok {
+			return nil, err
+		}
+		flag = circuits.BtcBulk
+	} else {
+		proof, ok, err = p.filestore.GetBtcPackedProof(start)
+		if err != nil {
+			logger.Error("get btc bulk proof error: %v", err)
+			return nil, err
+		}
+		if !ok {
+			return nil, err
+		}
+		flag = circuits.BtcPacked
+	}
+	data := &rpc.BtcWrapRequest{
+		Flag:      flag,
+		Proof:     proof.Proof,
+		Witness:   proof.Witness,
+		BeginHash: startHash,
+		EndHash:   endHash,
+		NbBlocks:  nRequired,
+	}
+	return data, nil
 }
 
 func (p *PreparedData) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeUpdate, bool, error) {

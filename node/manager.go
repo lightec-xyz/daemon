@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	btccircom "github.com/lightec-xyz/btc_provers/circuits/common"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -334,196 +335,6 @@ func (m *manager) CacheRequest(request *common.ZkProofRequest) {
 	m.pendingQueue.Delete(request.Id())
 }
 
-func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*common.ZkProofResponse, error) {
-	//defer worker.DelReqNum()
-	var result []*common.ZkProofResponse
-	switch request.ReqType {
-	case common.DepositTxType:
-		var depositRpcRequest rpc.DepositRequest
-		err := common.ParseObj(request.Data, &depositRpcRequest)
-		if err != nil {
-			logger.Error("parse deposit Proof param error: %v", request.TxHash)
-			return nil, fmt.Errorf("not deposit Proof param %v", request.TxHash)
-		}
-		proofResponse, err := worker.GenDepositProof(depositRpcRequest)
-		if err != nil {
-			logger.Error("gen deposit Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, proofResponse.Proof, proofResponse.Witness)
-		result = append(result, zkbProofResponse)
-	case common.VerifyTxType:
-		var verifyRpcRequest rpc.VerifyRequest
-		err := common.ParseObj(request.Data, &verifyRpcRequest)
-		if err != nil {
-			logger.Error("parse verify Proof param error: %v", request.TxHash)
-			return nil, fmt.Errorf("not verify Proof param %v", request.TxHash)
-		}
-		proofResponse, err := worker.GenVerifyProof(verifyRpcRequest)
-		if err != nil {
-			logger.Error("gen verify Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, proofResponse.Proof, proofResponse.Wit)
-		result = append(result, zkbProofResponse)
-	case common.TxInEth2:
-		// todo
-		var txInEth2Req rpc.TxInEth2ProveRequest
-		err := common.ParseObj(request.Data, &txInEth2Req)
-		if err != nil {
-			logger.Error("parse txInEth2 Proof param error:%v", err)
-			return nil, fmt.Errorf("not txInEth2 Proof param")
-		}
-		proofResponse, err := worker.TxInEth2Prove(&txInEth2Req)
-		if err != nil {
-			logger.Error("gen redeem Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, proofResponse.Proof, proofResponse.Witness)
-		result = append(result, zkbProofResponse)
-	case common.RedeemTxType:
-		// todo
-		var redeemRpcRequest rpc.RedeemRequest
-		err := common.ParseObj(request.Data, &redeemRpcRequest)
-		if err != nil {
-			logger.Error("parse redeem Proof param error:%v", request.Id())
-			return nil, fmt.Errorf("not redeem Proof param")
-		}
-		proofResponse, err := worker.GenRedeemProof(&redeemRpcRequest)
-		if err != nil {
-			logger.Error("gen redeem Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, proofResponse.Proof, proofResponse.Witness)
-		result = append(result, zkbProofResponse)
-	case common.SyncComGenesisType:
-		var genesisRpcRequest rpc.SyncCommGenesisRequest
-		err := common.ParseObj(request.Data, &genesisRpcRequest)
-		if err != nil {
-			return nil, fmt.Errorf("not genesis Proof param")
-		}
-		proofResponse, err := worker.GenSyncCommGenesisProof(genesisRpcRequest)
-		if err != nil {
-			logger.Error("gen sync comm genesis Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, proofResponse.Proof, proofResponse.Witness)
-		result = append(result, zkbProofResponse)
-
-	case common.SyncComUnitType:
-		var commUnitsRequest rpc.SyncCommUnitsRequest
-		err := common.ParseObj(request.Data, &commUnitsRequest)
-		if err != nil {
-			return nil, fmt.Errorf("not sync comm unit Proof param")
-		}
-		proofResponse, err := worker.GenSyncCommitUnitProof(commUnitsRequest)
-		if err != nil {
-			logger.Error("gen sync comm unit Proof error:%v", err)
-			return nil, err
-		}
-		// todo
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, proofResponse.Proof, proofResponse.Witness)
-		outerProof := NewProofResp(common.UnitOuter, request.Index, request.End, request.TxHash, proofResponse.OuterProof, proofResponse.OuterWitness)
-		result = append(result, zkbProofResponse)
-		result = append(result, outerProof)
-	case common.SyncComRecursiveType:
-		var recursiveRequest rpc.SyncCommRecursiveRequest
-		err := common.ParseObj(request.Data, &recursiveRequest)
-		if err != nil {
-			return nil, fmt.Errorf("not sync comm recursive Proof param")
-		}
-		proofResponse, err := worker.GenSyncCommRecursiveProof(recursiveRequest)
-		if err != nil {
-			logger.Error("gen sync comm recursive Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, proofResponse.Proof, proofResponse.Witness)
-		result = append(result, zkbProofResponse)
-
-	case common.BeaconHeaderType:
-		// todo
-		var blockHeaderRequest rpc.BlockHeaderRequest
-		err := common.ParseObj(request.Data, &blockHeaderRequest)
-		if err != nil {
-			logger.Error("not block header Proof param")
-			return nil, fmt.Errorf("not block header Proof param")
-		}
-		response, err := worker.BlockHeaderProve(&blockHeaderRequest)
-		if err != nil {
-			logger.Error("gen block header Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
-		result = append(result, zkbProofResponse)
-	case common.BeaconHeaderFinalityType:
-		// todo
-		var finalityRequest rpc.BlockHeaderFinalityRequest
-		err := common.ParseObj(request.Data, &finalityRequest)
-		if err != nil {
-			return nil, fmt.Errorf("not block header finality Proof param")
-		}
-		response, err := worker.BlockHeaderFinalityProve(&finalityRequest)
-		if err != nil {
-			logger.Error("gen block header finality Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
-		result = append(result, zkbProofResponse)
-
-	case common.BtcPackedType:
-		var packedRequest rpc.BtcPackedRequest
-		err := common.ParseObj(request.Data, &packedRequest)
-		if err != nil {
-			return nil, fmt.Errorf("parse btcPackedRequest error:%v", err)
-		}
-		response, err := worker.BtcPackedRequest(&packedRequest)
-		if err != nil {
-			logger.Error("gen btcPacked Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
-		result = append(result, zkbProofResponse)
-	case common.BtcBulkType:
-		var bulkRequest rpc.BtcBulkRequest
-		err := common.ParseObj(request.Data, &bulkRequest)
-		if err != nil {
-			return nil, fmt.Errorf("parse btcBulkRequest error:%v", err)
-		}
-		response, err := worker.BtcBulkProve(&bulkRequest)
-		if err != nil {
-			logger.Error("gen btcBulk Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
-		result = append(result, zkbProofResponse)
-
-	case common.BtcWrapType:
-		var wrapRequest rpc.BtcWrapRequest
-		err := common.ParseObj(request.Data, &wrapRequest)
-		if err != nil {
-			return nil, fmt.Errorf("parse btcWrapRequest error:%v", err)
-		}
-		response, err := worker.BtcWrapProve(&wrapRequest)
-		if err != nil {
-			logger.Error("gen btcWrap Proof error:%v", err)
-			return nil, err
-		}
-		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
-		result = append(result, zkbProofResponse)
-
-	default:
-		logger.Error("never should happen Proof type:%v", request.ReqType)
-		return nil, fmt.Errorf("never should happen Proof type:%v", request.ReqType)
-
-	}
-
-	for _, item := range result {
-		logger.Info("send zkProof:%v", item.Id())
-	}
-	return result, nil
-
-}
-
 func (m *manager) getChanResponse(reqType common.ZkProofType) (chan *common.ZkProofResponse, error) {
 	switch reqType {
 	case common.DepositTxType, common.VerifyTxType, common.BtcBulkType, common.BtcPackedType, common.BtcWrapType:
@@ -647,14 +458,9 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 
 // todo
 
-func (m *manager) CheckStateV1() error {
-
-}
-
 func (m *manager) CheckBtcState() error {
-	exists, err := m.fileStore.CheckBtcGenesisProof()
+	exists, err := CheckProof(m.fileStore, common.BtcGenesisType, 0, 0, "")
 	if err != nil {
-		logger.Error("check btc genesis proof error:%v", err)
 		return err
 	}
 	if !exists {
@@ -664,37 +470,152 @@ func (m *manager) CheckBtcState() error {
 			return err
 		}
 	}
-	indexes, err := m.fileStore.NeedBtcRecursiveIndex(0)
+
+	return nil
+}
+
+func (m *manager) checkBtcRecursiveProof() error {
+	blockCount, err := m.btcClient.GetBlockCount()
 	if err != nil {
-		logger.Error("check btc recursive proof error:%v", err)
+		logger.Error("get block count error:%v", err)
+		return err
+	}
+	indexes, err := m.fileStore.NeedBtcRecursiveIndex(uint64(blockCount))
+	if err != nil {
+		logger.Error("get need btc recursive index error:%v", err)
 		return err
 	}
 	for _, index := range indexes {
+		// todo
+		exists, err := CheckProof(m.fileStore, common.BtcRecursiveType, index, index+2016, "")
+		if err != nil {
+			logger.Error("check btc update error:%v", err)
+			return err
+		}
+		if !exists {
+			ok, err := m.checkBtcUpper(index, index+btccircom.CapacityDifficultyBlock)
+			if err != nil {
+				logger.Error("check btc update error:%v", err)
+				return err
+			}
+			if !ok {
+				return nil
+			}
+			err = m.tryProofRequest(common.BtcRecursiveType, index, index+2016, "")
+			if err != nil {
+				logger.Error("try btc recursive proof error:%v", err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (m *manager) checkBtcUpper(start, end uint64) (bool, error) {
+	exists, err := CheckProof(m.fileStore, common.BtcUpperType, start, end, "")
+	if err != nil {
+		logger.Error("check btc update error:%v", err)
+		return false, err
+	}
+	if !exists {
+		for index := start; index < end; index = index + btccircom.CapacitySuperBatch {
+			ok, err := m.checkBtcMiddle(index, index+btccircom.CapacityBaseLevel)
+			if err != nil {
+				logger.Error("check btc update error:%v", err)
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func (m *manager) checkBtcMiddle(start, end uint64) (bool, error) {
+	exists, err := CheckProof(m.fileStore, common.BtcMiddleType, start, end, "")
+	if err != nil {
+		logger.Error("check btc update error:%v", err)
+		return false, err
+	}
+	if !exists {
+		for index := start; index < end; index = index + btccircom.CapacitySuperBatch {
+			ok, err := m.checkBtcBase(index, index+btccircom.CapacityBaseLevel)
+			if err != nil {
+				logger.Error("check btc update error:%v", err)
+				return false, err
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+		return false, nil
 
 	}
+	return true, nil
 
+}
+
+func (m *manager) checkBtcBase(start, end uint64) (bool, error) {
+	exists, err := CheckProof(m.fileStore, common.BtcBaseType, start, end, "")
+	if err != nil {
+		logger.Error("check btc update error:%v", err)
+		return false, err
+	}
+	if !exists {
+		err := m.tryProofRequest(common.BtcBaseType, start, end, "")
+		if err != nil {
+			logger.Error("try btc base proof error:%v_%v %v", start, end, err)
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+
+}
+
+func (m *manager) tryProofRequest(reqType common.ZkProofType, fIndex, sIndex uint64, hash string) error {
+	proofId := common.NewProofId(reqType, fIndex, sIndex, hash)
+	exists := m.state.Check(proofId)
+	if exists {
+		logger.Debug("proof request exists: %v", proofId)
+		return nil
+	}
+	exists, err := CheckProof(m.fileStore, reqType, fIndex, sIndex, hash)
+	if err != nil {
+		logger.Error("check proof error:%v %v", proofId, err)
+		return err
+	}
+	if exists {
+		return nil
+	}
+	data, ok, err := GenRequestData(m.preparedData, reqType, fIndex, sIndex, hash)
+	if err != nil {
+		logger.Error("get request data error:%v %v", proofId, err)
+		return err
+	}
+	if !ok {
+		return nil
+	}
+	zkProofRequest := common.NewZkProofRequest(reqType, data, fIndex, sIndex, hash)
+	// todo
+	m.state.Store(proofId, nil)
+	m.proofQueue.Push(zkProofRequest)
+	logger.Info("success add request:%v", proofId)
+	return nil
 }
 
 // todo
-
-func (e *manager) getSlotByNumber(number uint64) (uint64, error) {
-	slot, ok, err := ReadBeaconSlot(e.store, number)
-	if err != nil {
-		return 0, err
-	}
-	if !ok {
-		return 0, fmt.Errorf("no find %v slot", number)
-	}
-	return slot, nil
-}
-func NewProofResp(reqType common.ZkProofType, index, end uint64, txHash string, proof, witness []byte) *common.ZkProofResponse {
+func NewProofResp(reqType common.ZkProofType, index, end uint64, hash string, proof, witness []byte) *common.ZkProofResponse {
 	return &common.ZkProofResponse{
-		RespId:      common.NewProofId(reqType, index, end, txHash),
+		RespId:      common.NewProofId(reqType, index, end, hash),
 		ZkProofType: reqType,
 		Index:       index,
 		End:         end,
 		Proof:       proof,
-		TxHash:      txHash,
+		TxHash:      hash,
 		Witness:     witness,
 		Status:      common.ProofSuccess,
 	}
