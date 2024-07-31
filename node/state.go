@@ -2,16 +2,14 @@ package node
 
 import (
 	"context"
+	"fmt"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	btccircom "github.com/lightec-xyz/btc_provers/circuits/common"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 )
 
 type IState interface {
@@ -21,17 +19,15 @@ type IState interface {
 }
 
 type State struct {
-	proofQueue      *ArrayQueue
-	fileStore       *FileStorage
-	btcClient       *bitcoin.Client
-	ethClient       *ethereum.Client
-	beaconClient    *beacon.Client
-	apiClient       *apiclient.Client
-	btcproverClient *btcproverClient.Client
-	store           store.IStore
-	state           *CacheState
-	preparedData    *PreparedData
-	genesisPeriod   uint64
+	proofQueue    *ArrayQueue
+	fileStore     *FileStorage
+	btcClient     *bitcoin.Client
+	ethClient     *ethereum.Client
+	store         store.IStore
+	state         *CacheState
+	preparedData  *PreparedData
+	genesisPeriod uint64
+	genesisSlot   uint64
 }
 
 func (s *State) CheckBtcState() error {
@@ -296,6 +292,61 @@ func (s *State) tryProofRequest(reqType common.ZkProofType, fIndex, sIndex uint6
 	s.proofQueue.Push(zkProofRequest)
 	logger.Info("success add request:%v", proofId)
 	return nil
+}
+
+func (s *State) CheckReq(reqType common.ZkProofType, index uint64, hash string) (bool, error) {
+	switch reqType {
+	case common.SyncComGenesisType:
+		return index == s.genesisPeriod+1, nil
+	case common.SyncComUnitType:
+		return index >= s.genesisPeriod, nil
+	case common.SyncComRecursiveType:
+		return index >= s.genesisPeriod+2, nil
+	case common.BeaconHeaderFinalityType:
+		return index >= s.genesisSlot, nil
+	case common.TxInEth2:
+		finalizedSlot, ok, err := s.fileStore.GetFinalizedSlot()
+		if err != nil {
+			logger.Error("get latest slot error: %v", err)
+			return false, err
+		}
+		if !ok {
+			logger.Warn("no find latest slot")
+			return false, nil
+		}
+		receipt, err := s.ethClient.TransactionReceipt(context.Background(), ethCommon.HexToHash(hash))
+		if err != nil {
+			logger.Error("get tx receipt error: %v", err)
+			return false, err
+		}
+		txSlot, ok, err := ReadBeaconSlot(s.store, receipt.BlockNumber.Uint64())
+		if err != nil {
+			logger.Error("get beacon slot error: %v %v", receipt.BlockNumber, err)
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+		if txSlot <= finalizedSlot {
+			return true, nil
+		}
+		logger.Warn("%v tx slot %v less than finalized slot %v", hash, txSlot, finalizedSlot)
+		return false, nil
+	case common.BeaconHeaderType:
+		_, ok, err := s.fileStore.GetNearTxSlotFinalizedSlot(index)
+		if err != nil {
+			logger.Error("get latest slot error: %v", err)
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+		return true, nil
+	case common.RedeemTxType:
+		return true, nil
+	default:
+		return false, fmt.Errorf("check request status never should happen: %v %v", index, reqType)
+	}
 }
 
 func (s *State) CheckEthState() error {
