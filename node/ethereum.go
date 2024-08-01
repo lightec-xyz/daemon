@@ -512,7 +512,7 @@ func (e *EthereumAgent) CheckState() error {
 }
 
 func (e *EthereumAgent) checkPendingProofRequest(data *FetchResponse) error {
-	//logger.Debug("ethereum check state ...")
+	//logger.Debug("ethereum check cache ...")
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	if data != nil {

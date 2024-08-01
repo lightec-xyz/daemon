@@ -57,7 +57,7 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconCli
 }
 
 func (m *manager) Init() error {
-	logger.Debug("manger load db state now ...")
+	logger.Debug("manger load db cache now ...")
 	allPendingRequests, err := ReadAllPendingRequests(m.store)
 	if err != nil {
 		logger.Error("read all pending requests error: %v", err)
@@ -412,7 +412,7 @@ func (m *manager) GetSlotByHash(hash string) (uint64, bool, error) {
 }
 
 func (m *manager) Close() error {
-	logger.Debug("manager start  cache state now ...")
+	logger.Debug("manager start  cache cache now ...")
 	m.pendingQueue.Iterator(func(value *common.ZkProofRequest) error {
 		logger.Debug("write pending request to db :%v", value.Id())
 		err := WritePendingRequest(m.store, value.Id(), value)

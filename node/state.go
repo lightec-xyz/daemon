@@ -24,7 +24,7 @@ type State struct {
 	btcClient     *bitcoin.Client
 	ethClient     *ethereum.Client
 	store         store.IStore
-	state         *CacheState
+	cache         *CacheState
 	preparedData  *PreparedData
 	genesisPeriod uint64
 	genesisSlot   uint64
@@ -265,7 +265,7 @@ func (s *State) checkBtcMiddle(start, end uint64) (bool, error) {
 
 func (s *State) tryProofRequest(reqType common.ZkProofType, fIndex, sIndex uint64, hash string) error {
 	proofId := common.NewProofId(reqType, fIndex, sIndex, hash)
-	exists := s.state.Check(proofId)
+	exists := s.cache.Check(proofId)
 	if exists {
 		logger.Debug("proof request exists: %v", proofId)
 		return nil
@@ -288,7 +288,7 @@ func (s *State) tryProofRequest(reqType common.ZkProofType, fIndex, sIndex uint6
 	}
 	zkProofRequest := common.NewZkProofRequest(reqType, data, fIndex, sIndex, hash)
 	// todo
-	s.state.Store(proofId, nil)
+	s.cache.Store(proofId, nil)
 	s.proofQueue.Push(zkProofRequest)
 	logger.Info("success add request:%v", proofId)
 	return nil
@@ -475,7 +475,7 @@ func (s *State) GetSlotByHash(hash string) (uint64, bool, error) {
 
 func (s *State) updateRedeemProofStatus(txHash string, index uint64, status common.ProofStatus) error {
 	id := common.NewProofId(common.RedeemTxType, index, 0, txHash)
-	if !s.state.Check(id) {
+	if !s.cache.Check(id) {
 		err := UpdateProof(s.store, txHash, "", common.RedeemTxType, status)
 		if err != nil {
 			logger.Error("update proof status error: %v %v", txHash, err)
@@ -538,4 +538,19 @@ func (s *State) CheckBeaconState() error {
 	}
 	return nil
 
+}
+
+func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cache *CacheState, preparedData *PreparedData,
+	genesisPeriod uint64, genesisSlot uint64, btcClient *bitcoin.Client, ethClient *ethereum.Client) (*State, error) {
+	return &State{
+		proofQueue:    queue,
+		fileStore:     filestore,
+		store:         store,
+		cache:         cache,
+		preparedData:  preparedData,
+		genesisPeriod: genesisPeriod,
+		genesisSlot:   genesisSlot,
+		btcClient:     btcClient,
+		ethClient:     ethClient,
+	}, nil
 }

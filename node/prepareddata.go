@@ -820,3 +820,17 @@ func (p *PreparedData) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, err
 	}
 	return beginRoot, endRoot, nil
 }
+
+func NewPreparedData(filestore *FileStorage, store store.IStore, genesisPeriod uint64, proverClient *btcproverClient.Client, btcClient *btcrpc.Client,
+	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client) (*PreparedData, error) {
+	return &PreparedData{
+		filestore:     filestore,
+		store:         store,
+		proverClient:  proverClient,
+		btcClient:     btcClient,
+		ethClient:     ethClient,
+		apiClient:     apiClient,
+		beaconClient:  beaconClient,
+		genesisPeriod: genesisPeriod,
+	}, nil
+}

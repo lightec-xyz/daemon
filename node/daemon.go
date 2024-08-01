@@ -313,13 +313,14 @@ func (d *Daemon) Run() error {
 	for _, agent := range d.agents {
 		proofReplyName := fmt.Sprintf("%s-proofResponse", agent.node.Name())
 		go doProofResponseTask(proofReplyName, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
-		fetchName := fmt.Sprintf("%s-fetchResponse", agent.node.Name())
-		go doFetchRespTask(fetchName, agent.fetchResp, agent.node.FetchDataResponse, d.exitSignal)
-
 		scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
 		go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
-		checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
-		go DoTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
+
+		//fetchName := fmt.Sprintf("%s-fetchResponse", agent.node.Name())
+		//go doFetchRespTask(fetchName, agent.fetchResp, agent.node.FetchDataResponse, d.exitSignal)
+		//checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
+		//go DoTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
+		
 	}
 
 	signal.Notify(d.exitSignal, syscall.SIGTERM, syscall.SIGQUIT)
