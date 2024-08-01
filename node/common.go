@@ -447,6 +447,18 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 	return result, nil
 
 }
+func NewProofResp(reqType common.ZkProofType, index, end uint64, hash string, proof, witness []byte) *common.ZkProofResponse {
+	return &common.ZkProofResponse{
+		RespId:      common.NewProofId(reqType, index, end, hash),
+		ZkProofType: reqType,
+		Index:       index,
+		End:         end,
+		Proof:       proof,
+		TxHash:      hash,
+		Witness:     witness,
+		Status:      common.ProofSuccess,
+	}
+}
 
 func BeaconBlockHeaderToSlotAndRoot(header *structs.BeaconBlockHeader) (uint64, []byte, error) {
 	consensus, err := header.ToConsensus()

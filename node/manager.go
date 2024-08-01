@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	btccircom "github.com/lightec-xyz/btc_provers/circuits/common"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -454,101 +453,4 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 	default:
 	}
 	return nil
-}
-
-// todo
-
-func (m *manager) checkBtcUpper(start, end uint64) (bool, error) {
-	next := true
-	for index := start; index < end; index = end {
-		middleEnd := index + btccircom.CapacitySuperBatch
-		exists, err := CheckProof(m.fileStore, common.BtcMiddleType, index, middleEnd, "")
-		if err != nil {
-			logger.Error("check btc update error:%v", err)
-			return false, err
-		}
-		if !exists {
-			next = false
-			ok, err := m.checkBtcMiddle(index, middleEnd)
-			if err != nil {
-				logger.Error("check btc update error:%v", err)
-				return false, err
-			}
-			if ok {
-				err := m.tryProofRequest(common.BtcMiddleType, index, middleEnd, "")
-				if err != nil {
-					logger.Error("try btc middle proof error:%v", err)
-					return false, err
-				}
-			}
-		}
-	}
-	return next, nil
-}
-
-func (m *manager) checkBtcMiddle(start, end uint64) (bool, error) {
-	next := true
-	for index := start; index < end; index = index + btccircom.CapacityBaseLevel {
-		baseEndIndex := index + btccircom.CapacityBaseLevel
-		exists, err := CheckProof(m.fileStore, common.BtcBaseType, start, baseEndIndex, "")
-		if err != nil {
-			logger.Error("check btc update error:%v", err)
-			return false, err
-		}
-		if !exists {
-			next = false
-			err := m.tryProofRequest(common.BtcBaseType, start, baseEndIndex, "")
-			if err != nil {
-				logger.Error("try btc base proof error:%v_%v %v", start, baseEndIndex, err)
-				return false, err
-			}
-		}
-	}
-	return next, nil
-
-}
-
-func (m *manager) tryProofRequest(reqType common.ZkProofType, fIndex, sIndex uint64, hash string) error {
-	proofId := common.NewProofId(reqType, fIndex, sIndex, hash)
-	exists := m.state.Check(proofId)
-	if exists {
-		logger.Debug("proof request exists: %v", proofId)
-		return nil
-	}
-	exists, err := CheckProof(m.fileStore, reqType, fIndex, sIndex, hash)
-	if err != nil {
-		logger.Error("check proof error:%v %v", proofId, err)
-		return err
-	}
-	if exists {
-		return nil
-	}
-	data, ok, err := GenRequestData(m.preparedData, reqType, fIndex, sIndex, hash)
-	if err != nil {
-		logger.Error("get request data error:%v %v", proofId, err)
-		return err
-	}
-	if !ok {
-		return nil
-	}
-	zkProofRequest := common.NewZkProofRequest(reqType, data, fIndex, sIndex, hash)
-	// todo
-	m.state.Store(proofId, nil)
-	m.proofQueue.Push(zkProofRequest)
-	logger.Info("success add request:%v", proofId)
-	return nil
-}
-
-// todo
-func NewProofResp(reqType common.ZkProofType, index, end uint64, hash string, proof, witness []byte) *common.ZkProofResponse {
-	return &common.ZkProofResponse{
-		RespId:      common.NewProofId(reqType, index, end, hash),
-		ZkProofType: reqType,
-		Index:       index,
-		End:         end,
-		Proof:       proof,
-		TxHash:      hash,
-		Witness:     witness,
-		Status:      common.ProofSuccess,
-	}
 }
