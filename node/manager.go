@@ -96,7 +96,7 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 		return nil, false, nil
 	}
 	m.proofQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
-		logger.Debug("queryQueueReq: %v", value.Id())
+		//logger.Debug("queryQueueReq: %v", value.Id())
 		return nil
 	})
 
@@ -156,7 +156,9 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 			logger.Error("get chan response error:%v", err)
 			return err
 		}
-		chanResponse <- response
+		if chanResponse != nil {
+			chanResponse <- response
+		}
 		proofId := response.Id()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
@@ -249,6 +251,7 @@ func (m *manager) GetRedeemRequest(txHash string) (*common.ZkProofRequest, bool,
 
 // todo
 func (m *manager) DistributeRequest() error {
+	logger.Debug("start distribute request now")
 	request, ok, err := m.GetProofRequest(nil)
 	if err != nil {
 		logger.Error("get Proof request error:%v", err)
@@ -304,8 +307,10 @@ func (m *manager) DistributeRequest() error {
 				}
 				for _, item := range zkProofResponse {
 					logger.Debug("complete generate Proof type: %v", item.Id())
-					chaResp <- item
-					logger.Debug("chan send -- %v", item.Id())
+					if chaResp != nil {
+						chaResp <- item
+						logger.Debug("chan send -- %v", item.Id())
+					}
 				}
 				m.pendingQueue.Delete(req.Id())
 				return
@@ -344,8 +349,8 @@ func (m *manager) getChanResponse(reqType common.ZkProofType) (chan *common.ZkPr
 	case common.SyncComGenesisType, common.SyncComUnitType, common.UnitOuter, common.SyncComRecursiveType:
 		return m.syncCommitResp, nil
 	default:
-		logger.Error("never should happen Proof type:%v", reqType.String())
-		return nil, fmt.Errorf("never should happen Proof type:%v", reqType.String())
+		//logger.Error("never should happen Proof type:%v", reqType.String())
+		return nil, nil
 	}
 }
 
@@ -355,6 +360,14 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 }
 
 func (m *manager) CheckState() error {
+	// todo
+	logger.Info("start check proof state now")
+	err := m.CheckProofState()
+	if err != nil {
+		logger.Error("check proof state error:%v", err)
+		return err
+	}
+	logger.Info("complete check proof state now ")
 	logger.Debug("check pending request now")
 	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
 		timout, err := m.checkRequestTimeout(request)

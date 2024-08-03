@@ -3,6 +3,7 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"os"
 	"time"
 )
@@ -20,10 +21,11 @@ type RunConfig struct {
 	BeaconUrl         string `json:"beaconUrl"`
 	OasisUrl          string `json:"oasisUrl"`
 	DiscordHookUrl    string `json:"discordHookUrl"`
-	EthPrivateKey     string `json:"ethPrivateKey"`
+	EthPrivateKey     string `json:"ethPrivateKey"` // submit eth tx
 	EnableLocalWorker bool   `json:"enableLocalWorker"`
 	BtcInitHeight     int64  `json:"btcInitHeight"`
 	EthInitHeight     int64  `json:"ethInitHeight"`
+	BtcGenesisHeight  int64  `json:"btcGenesisHeight"`
 	BeaconInitSlot    uint64 `json:"beaconInitSlot"`
 }
 
@@ -77,6 +79,7 @@ type Config struct {
 	EthAddrFilter     EthAddrFilter    `json:"ethAddrFilter"`
 	EthScanTime       time.Duration    `json:"ethScanTime"`
 	BtcScanTime       time.Duration    `json:"btcScanTime"`
+	Debug             bool
 }
 
 func NewConfig(cfg RunConfig) (Config, error) {
@@ -120,6 +123,7 @@ func getLocalConfig(runCnfg RunConfig) (Config, error) {
 		EthScanTime:       LocalEthScanTime,
 		UtxoManagerAddr:   LocalEthUtxoManager,
 		EthAddrFilter:     NewEthAddrFilter(LocalLogDepositAddr, LocalLogRedeemAddr, LocalTopicDepositAddr, LocalTopicRedeemAddr),
+		Debug:             common.GetEnvDebugMode(),
 	}, nil
 }
 
@@ -150,6 +154,7 @@ func getTestnetConfig(runCnfg RunConfig) (Config, error) {
 		BtcScanTime:       TestnetBtcScanTime,
 		EthScanTime:       TestnetEthScanTime,
 		EthAddrFilter:     NewEthAddrFilter(TestLogDepositAddr, TestLogRedeemAddr, TestTopicDepositAddr, TestTopicRedeemAddr),
+		Debug:             common.GetEnvDebugMode(),
 	}, nil
 }
 

@@ -26,7 +26,6 @@ type BitcoinAgent struct {
 	cache           *Cache
 	proofRequest    chan<- []*common.ZkProofRequest
 	operatorAddr    string
-	submitTxEthAddr string
 	keyStore        *KeyStore
 	minDepositValue float64
 	initHeight      int64
@@ -40,7 +39,7 @@ func (b *BitcoinAgent) FetchDataResponse(resp *FetchResponse) error {
 	return nil
 }
 
-func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore store.IStore, fileStore *FileStorage, btcClient *bitcoin.Client,
+func NewBitcoinAgent(cfg Config, store, memoryStore store.IStore, fileStore *FileStorage, btcClient *bitcoin.Client,
 	ethClient *ethereum.Client, btcProverClient *btcproverClient.Client, requests chan []*common.ZkProofRequest, keyStore *KeyStore,
 	task *TxManager, state *Cache) (IAgent, error) {
 	return &BitcoinAgent{
@@ -53,7 +52,6 @@ func NewBitcoinAgent(cfg Config, submitTxEthAddr string, store, memoryStore stor
 		minDepositValue: 0, // todo
 		btcProverClient: btcProverClient,
 		keyStore:        keyStore,
-		submitTxEthAddr: submitTxEthAddr,
 		fileStore:       fileStore,
 		initHeight:      cfg.BtcInitHeight,
 		txManager:       task,

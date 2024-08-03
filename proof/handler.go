@@ -43,8 +43,8 @@ func (h *Handler) BtcMiddleProve(req *rpc.BtcMiddleRequest) (*rpc.ProofResponse,
 	return response, nil
 }
 
-func (h *Handler) BtcUpProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
-	response, err := h.worker.BtcUpProve(req)
+func (h *Handler) BtcUpperProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcUpperProve(req)
 	if err != nil {
 		logger.Error("btc up prove error:%v", err)
 		return nil, err

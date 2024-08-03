@@ -3,6 +3,7 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	btcproverCommon "github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
@@ -69,7 +70,7 @@ type FileStorage struct {
 	btcGenesisHeight uint64
 }
 
-func NewFileStorage(rootPath string, genesisSlot uint64, tables ...Table) (*FileStorage, error) {
+func NewFileStorage(rootPath string, genesisSlot, btcGenesisHeight uint64, tables ...Table) (*FileStorage, error) {
 	fileStoreMap := make(map[Table]*store.FileStore)
 	path := fmt.Sprintf("%s/proofData", rootPath) // todo
 	logger.Info("fileStorage path: %v", path)
@@ -85,10 +86,11 @@ func NewFileStorage(rootPath string, genesisSlot uint64, tables ...Table) (*File
 		fileStoreMap[key] = fileStore
 	}
 	return &FileStorage{
-		RootPath:      path,
-		FileStoreMap:  fileStoreMap,
-		genesisSlot:   genesisSlot,
-		genesisPeriod: genesisSlot / 8192,
+		RootPath:         path,
+		FileStoreMap:     fileStoreMap,
+		genesisSlot:      genesisSlot,
+		genesisPeriod:    genesisSlot / common.SlotPerPeriod,
+		btcGenesisHeight: btcGenesisHeight,
 	}, nil
 }
 
@@ -578,7 +580,7 @@ func newStoreProofV1(proofType common.ZkProofType, id string, proof, witness []b
 	}
 }
 
-func (fs *FileStorage) NeedBtcUpIndex(height uint64) ([]uint64, error) {
+func (fs *FileStorage) NeedBtcUpStartIndexes(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcUpperTable)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcUpperTable)
@@ -589,8 +591,7 @@ func (fs *FileStorage) NeedBtcUpIndex(height uint64) ([]uint64, error) {
 		return nil, err
 	}
 	var tmpIndexes []uint64
-	// todo
-	for index := fs.btcGenesisHeight + 2016*2; index <= height; index = index + 2016 {
+	for index := fs.btcGenesisHeight; index <= height; index = index + btcproverCommon.CapacityDifficultyBlock {
 		if _, ok := indexes[index]; !ok {
 			tmpIndexes = append(tmpIndexes, index)
 		}

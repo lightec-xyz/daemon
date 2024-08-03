@@ -25,7 +25,7 @@ func TestState(t *testing.T) {
 func initState() (*State, error) {
 	genesisSlot := uint64(0)
 	genesisPeriod := genesisSlot / 8192
-	fileStorage, err := NewFileStorage("/Users/red/lworkspace/lightec/daemon/daemon/node/test/testnet", genesisSlot)
+	fileStorage, err := NewFileStorage("/Users/red/lworkspace/lightec/daemon/daemon/node/test/testnet", genesisSlot, 0)
 	if err != nil {
 		panic(err)
 	}

@@ -8,6 +8,7 @@ const (
 	ZkDebugEnv     = "ZkDebug"
 	ZkParameterDir = "ZkParameterDir"
 	ZkProofTypes   = "ZkProofTypes"
+	DbNameSpace    = "zkbtc"
 )
 
 const (

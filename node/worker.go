@@ -27,13 +27,64 @@ type LocalWorker struct {
 }
 
 func (w *LocalWorker) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	proofs, err := circuits.HexToProofs(req.Proofs)
+	if err != nil {
+		logger.Error("btc genesis hex to proofs error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcGenesisProve(req.Data, proofs)
+	if err != nil {
+		logger.Error("btc genesis prove error: %v", err)
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("btc genesis proof to bytes error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("btc genesis witness to bytes error: %v", err)
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+
 }
 
 func (w *LocalWorker) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	firstProof, err := circuits.HexToProof(req.First)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	secondProof, err := circuits.HexToProof(req.Second)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcRecursiveProve(req.Data, &firstProof, &secondProof)
+	if err != nil {
+		logger.Error("btc recursive prove error: %v", err)
+		return nil, err
+	}
+	proofBytes, err := circuits.ProofToBytes(proof.Proof)
+	if err != nil {
+		logger.Error("btc recursive proof to bytes error: %v", err)
+		return nil, err
+	}
+	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
+	if err != nil {
+		logger.Error("btc recursive witness to bytes error: %v", err)
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+
 }
 
 func (w *LocalWorker) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
@@ -79,7 +130,7 @@ func (w *LocalWorker) BtcMiddleProve(req *rpc.BtcMiddleRequest) (*rpc.ProofRespo
 	}, nil
 }
 
-func (w *LocalWorker) BtcUpProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
+func (w *LocalWorker) BtcUpperProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
 	proofs, err := circuits.HexToProofs(req.Proofs)
 	if err != nil {
 		logger.Error("btc middle hex to proofs error: %v", err)
@@ -524,8 +575,8 @@ func (w *Worker) BtcMiddleProve(req *rpc.BtcMiddleRequest) (*rpc.ProofResponse, 
 	return w.client.BtcMiddleProve(req)
 }
 
-func (w *Worker) BtcUpProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
-	return w.client.BtcUpProve(req)
+func (w *Worker) BtcUpperProve(req *rpc.BtcUpperRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcUpperProve(req)
 }
 
 func (w *Worker) SupportProofType() []common.ZkProofType {

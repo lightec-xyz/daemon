@@ -36,12 +36,12 @@ func (s *State) CheckBtcState() error {
 		logger.Error("get block count error:%v", err)
 		return err
 	}
-	btcUpIndexes, err := s.fileStore.NeedBtcUpIndex(uint64(blockCount))
+	btcUpperStartIndexes, err := s.fileStore.NeedBtcUpStartIndexes(uint64(blockCount))
 	if err != nil {
 		logger.Error("get need btc up index error:%v", err)
 		return err
 	}
-	for _, index := range btcUpIndexes {
+	for _, index := range btcUpperStartIndexes {
 		end := index + btccircom.CapacityDifficultyBlock
 		next, err := s.checkBtcUpper(index, end)
 		if err != nil {
@@ -215,7 +215,7 @@ func (s *State) CheckTxConfirms(hash string, amount uint64) (bool, int, error) {
 }
 func (s *State) checkBtcUpper(start, end uint64) (bool, error) {
 	next := true
-	for index := start; index < end; index = end {
+	for index := start; index < end; index = index + btccircom.CapacitySuperBatch {
 		middleEnd := index + btccircom.CapacitySuperBatch
 		exists, err := CheckProof(s.fileStore, common.BtcMiddleType, index, middleEnd, "")
 		if err != nil {

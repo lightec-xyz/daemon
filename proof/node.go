@@ -42,7 +42,7 @@ func NewNode(cfg Config) (*Node, error) {
 		logger.Error("convert proof type error:%v", err)
 		return nil, err
 	}
-	fileStorage, err := dnode.NewFileStorage(cfg.DataDir, 0)
+	fileStorage, err := dnode.NewFileStorage(cfg.DataDir, 0, 0)
 	if err != nil {
 		logger.Error("new fileStorage error:%v", err)
 		return nil, err

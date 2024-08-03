@@ -64,7 +64,7 @@ func NewFetch(url, datadir string, genesisSlot uint64) (*Fetch, error) {
 	}
 	tables := []node.Table{node.GenesisTable, node.IndexTable,
 		node.FinalityTable, node.UpdateTable}
-	fileStorage, err := node.NewFileStorage(datadir, genesisSlot, tables...)
+	fileStorage, err := node.NewFileStorage(datadir, genesisSlot, 0, tables...)
 	if err != nil {
 		logger.Error("new fileStorage error: %v", err)
 		return nil, err

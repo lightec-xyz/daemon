@@ -48,7 +48,7 @@ func (p *ProofClient) BtcMiddleProve(req *BtcMiddleRequest) (*ProofResponse, err
 	return &result, nil
 }
 
-func (p *ProofClient) BtcUpProve(req *BtcUpperRequest) (*ProofResponse, error) {
+func (p *ProofClient) BtcUpperProve(req *BtcUpperRequest) (*ProofResponse, error) {
 	var result ProofResponse
 	err := p.call(&result, "zkbtc_btcUpProve", req)
 	if err != nil {

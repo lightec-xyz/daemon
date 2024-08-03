@@ -150,7 +150,7 @@ func (c *Circuit) BtcWrapProve(flag, hexProof, hexWitness, beginHash, endHash st
 		logger.Warn("current zk circuit BtcWrapProve prove is debug,skip prove")
 		return debugProof()
 	}
-	proof, err := HexToProof(hexProof)
+	proof, err := HexToPlonkProof(hexProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
@@ -198,7 +198,7 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Warn("current zk circuit redeemProve prove is debug,skip prove")
 		return debugProof()
 	}
-	txInEth2Proof, err := HexToProof(txProof)
+	txInEth2Proof, err := HexToPlonkProof(txProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
@@ -209,7 +209,7 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		return nil, err
 	}
 
-	blockHeaderProof, err := HexToProof(bhProof)
+	blockHeaderProof, err := HexToPlonkProof(bhProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
@@ -219,7 +219,7 @@ func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, 
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	blockHeaderFinalityProof, err := HexToProof(bhfProof)
+	blockHeaderFinalityProof, err := HexToPlonkProof(bhfProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
@@ -289,7 +289,7 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 		logger.Warn("current zk circuit BeaconHeaderFinalityUpdateProve prove is debug,skip prove")
 		return debugProof()
 	}
-	scRecursiveProof, err := HexToProof(recursiveProof)
+	scRecursiveProof, err := HexToPlonkProof(recursiveProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
@@ -299,7 +299,7 @@ func (c *Circuit) BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recur
 		logger.Error("parse witness error:%v", err)
 		return nil, err
 	}
-	scOuterProof, err := HexToProof(outerProof)
+	scOuterProof, err := HexToPlonkProof(outerProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
@@ -418,12 +418,12 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 	if !(choice == "genesis" || choice == "recursive") { // todo
 		return nil, fmt.Errorf("invalid choice: %s", choice)
 	}
-	firstPr, err := HexToProof(firstProof)
+	firstPr, err := HexToPlonkProof(firstProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	secondPr, err := HexToProof(secondProof)
+	secondPr, err := HexToPlonkProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
@@ -460,12 +460,12 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 		logger.Warn("current zk circuit genesis prove is debug mode,skip prove")
 		return debugProof()
 	}
-	firstPf, err := HexToProof(firstProof)
+	firstPf, err := HexToPlonkProof(firstProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err
 	}
-	secondPf, err := HexToProof(secondProof)
+	secondPf, err := HexToPlonkProof(secondProof)
 	if err != nil {
 		logger.Error("parse proof error:%v", err)
 		return nil, err

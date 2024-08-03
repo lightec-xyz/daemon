@@ -435,6 +435,75 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
 		result = append(result, zkbProofResponse)
 
+	case common.BtcUpperType:
+		var upperRequest rpc.BtcUpperRequest
+		err := common.ParseObj(request.Data, &upperRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcUpperRequest error:%v", err)
+		}
+		response, err := worker.BtcUpperProve(&upperRequest)
+		if err != nil {
+			logger.Error("gen btcUpper Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+	case common.BtcMiddleType:
+		var middleRequest rpc.BtcMiddleRequest
+		err := common.ParseObj(request.Data, &middleRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcMiddleRequest error:%v", err)
+		}
+		response, err := worker.BtcMiddleProve(&middleRequest)
+		if err != nil {
+			logger.Error("gen btcMiddle Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+
+	case common.BtcBaseType:
+		var baseRequest rpc.BtcBaseRequest
+		err := common.ParseObj(request.Data, &baseRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcBaseRequest error:%v", err)
+		}
+		response, err := worker.BtcBaseProve(&baseRequest)
+		if err != nil {
+			logger.Error("gen btcBase Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+
+	case common.BtcGenesisType:
+		var genesisRequest rpc.BtcGenesisRequest
+		err := common.ParseObj(request.Data, &genesisRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcGenesisRequest error:%v", err)
+		}
+		response, err := worker.BtcGenesis(&genesisRequest)
+		if err != nil {
+			logger.Error("gen btcGenesis Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+
+	case common.BtcRecursiveType:
+		var recursiveRequest rpc.BtcRecursiveRequest
+		err := common.ParseObj(request.Data, &recursiveRequest)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcRecursiveRequest error:%v", err)
+		}
+		response, err := worker.BtcRecursiveProve(&recursiveRequest)
+		if err != nil {
+			logger.Error("gen btcRecursive Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewProofResp(request.ReqType, request.Index, request.End, request.TxHash, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
+
 	default:
 		logger.Error("never should happen Proof type:%v", request.ReqType)
 		return nil, fmt.Errorf("never should happen Proof type:%v", request.ReqType)

@@ -25,7 +25,7 @@ import (
 func HexToProofs(proofs []rpc.Proof) ([]reLightCommon.Proof, error) {
 	var list []reLightCommon.Proof
 	for _, item := range proofs {
-		proof, err := HexToProof(item.Proof)
+		proof, err := HexToPlonkProof(item.Proof)
 		if err != nil {
 			return nil, err
 		}
@@ -39,6 +39,21 @@ func HexToProofs(proofs []rpc.Proof) ([]reLightCommon.Proof, error) {
 		})
 	}
 	return list, nil
+}
+
+func HexToProof(hex rpc.Proof) (reLightCommon.Proof, error) {
+	proof, err := HexToPlonkProof(hex.Proof)
+	if err != nil {
+		return reLightCommon.Proof{}, err
+	}
+	wit, err := HexToWitness(hex.Witness)
+	if err != nil {
+		return reLightCommon.Proof{}, err
+	}
+	return reLightCommon.Proof{
+		Proof: proof,
+		Wit:   wit,
+	}, nil
 }
 
 func SyncCommitRoot(update *utils.SyncCommitteeUpdate) ([]byte, error) {
@@ -182,7 +197,7 @@ func ParseProof(proof []byte) (native_plonk.Proof, error) {
 	return &bn254Proof, nil
 }
 
-func HexToProof(proof string) (native_plonk.Proof, error) {
+func HexToPlonkProof(proof string) (native_plonk.Proof, error) {
 	proofBytes, err := HexToBytes(proof)
 	if err != nil {
 		return nil, err

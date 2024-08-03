@@ -51,16 +51,16 @@ type IFetch interface {
 }
 
 type Daemon struct {
-	agents      []*WrapperAgent
-	fetch       IFetch
-	rpcServer   *rpc.Server
-	wsServer    *rpc.Server
-	nodeConfig  Config
-	exitSignal  chan os.Signal
-	manager     *WrapperManger
-	txManager   *TxManager // todo
-	enableLocal bool
-	debug       bool
+	agents            []*WrapperAgent
+	fetch             IFetch
+	rpcServer         *rpc.Server
+	wsServer          *rpc.Server
+	nodeConfig        Config
+	exitSignal        chan os.Signal
+	manager           *WrapperManger
+	txManager         *TxManager // todo
+	enableLocalWorker bool
+	debug             bool
 }
 
 func NewDaemon(cfg Config) (*Daemon, error) {
@@ -72,30 +72,21 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	var submitTxEthAddr string
-	if cfg.EthPrivateKey != "" {
-		submitTxEthAddr, err = privateKeyToEthAddr(cfg.EthPrivateKey)
-		if err != nil {
-			logger.Error("privateKeyToEthAddr error:%v", err)
-			return nil, err
-		}
-		logger.Info("ethereum submit address:%v", submitTxEthAddr)
-	}
-	logger.Info("beacon genesis Index: %v, slot:%v", cfg.GenesisSyncPeriod, cfg.BeaconInitSlot)
+	logger.Info("current DebugMode :%v", cfg.Debug)
 
+	// todo need to refactor
+	logger.Info("beacon genesis Index: %v, slot:%v", cfg.GenesisSyncPeriod, cfg.BeaconInitSlot)
 	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
 	}
-	// todo
 	url := strings.Replace(cfg.BtcUrl, "http://", "", 1)
 	btcProverClient, err := btcproverClient.NewClient(url, cfg.BtcUser, cfg.BtcPwd)
 	if err != nil {
 		logger.Error("new btc btcProverClient error:%v", err)
 		return nil, err
 	}
-
 	beaconClient, err := beacon.NewClient(cfg.BeaconUrl)
 	if err != nil {
 		logger.Error("new node btcClient error:%v", err)
@@ -114,15 +105,32 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new eth btcClient error:%v", err)
 		return nil, err
 	}
+	params.UseHoleskyNetworkConfig()
+	params.OverrideBeaconConfig(params.HoleskyConfig())
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	// todo
+	if cfg.Debug {
+		count, err := btcClient.GetBlockCount()
+		if err != nil {
+			logger.Error("get btc block count error:%v", err)
+			return nil, err
+		}
+		cfg.BtcGenesisHeight = (count/2016 - 4) * 2016
+	}
+	logger.Debug("beaconPeriod: %v,ethInitHeight: %v,btcGenesisHeight: %v,btcInitHeight: %v", cfg.BeaconInitSlot,
+		cfg.EthInitHeight, cfg.BtcGenesisHeight, cfg.BtcInitHeight)
 
 	dbPath := fmt.Sprintf("%s/%s", cfg.Datadir, cfg.Network)
 	logger.Info("levelDbPath: %s", dbPath)
-	storeDb, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
+	storeDb, err := store.NewStore(dbPath, 0, 0, common.DbNameSpace, false)
 	if err != nil {
 		logger.Error("new store error:%v,dbPath:%s", err, dbPath)
 		return nil, err
 	}
-	// todo
 	memoryStore := store.NewMemoryStore()
 	proofRequest := make(chan []*common.ZkProofRequest, 10)
 	btcProofResp := make(chan *common.ZkProofResponse, 10)
@@ -133,20 +141,9 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	beaconFetchDataResp := make(chan *FetchResponse, 10)
 	btcFetchDataResp := make(chan *FetchResponse, 10)
 
-	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot)
+	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
 	if err != nil {
 		logger.Error("new fileStorage error: %v", err)
-		return nil, err
-	}
-	// todo find a better way
-	params.UseHoleskyNetworkConfig()
-	params.OverrideBeaconConfig(params.HoleskyConfig())
-
-	//tokenOpt := client.WithAuthenticationToken("3ac3d8d70361a628192b6fd7cd71b88a0b17638d")
-	//beaClient, err := apiclient.NewClient("https://young-morning-meadow.ethereum-holesky.quiknode.pro", tokenOpt)
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
-	if err != nil {
-		logger.Error(err.Error())
 		return nil, err
 	}
 	keyStore, err := NewKeyStore(cfg.EthPrivateKey)
@@ -154,6 +151,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
+	logger.Debug("ethereum submit address: %v", keyStore.address)
 	taskManager, err := NewTxManager(storeDb, keyStore, ethClient, btcClient, oasisClient)
 	if err != nil {
 		logger.Error(err.Error())
@@ -171,9 +169,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 	}
-
-	if true {
-		btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
+	if false {
+		btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
 			proofRequest, keyStore, taskManager, cache)
 		if err != nil {
 			logger.Error(err.Error())
@@ -182,7 +179,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
 	}
-
 	if false {
 		ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
 			beaconClient, oasisClient, proofRequest, taskManager, cache)
@@ -192,14 +188,11 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		agents = append(agents, NewWrapperAgent(ethAgent, cfg.EthScanTime, 1*time.Minute, ethProofResp, ethFetchDataResp))
 	}
-
-	debugMode := common.GetEnvDebugMode()
-	logger.Info("current DebugMode :%v", debugMode)
 	workers := make([]rpc.IWorker, 0)
 	if cfg.EnableLocalWorker {
 		logger.Info("local worker enabled")
 		zkParamDir := common.GetEnvZkParameterDir() // todo
-		if !debugMode {
+		if !cfg.Debug {
 			if zkParamDir == "" {
 				logger.Error("zkParamDir is empty,please config  ZkParameterDir env")
 				return nil, fmt.Errorf("zkParamDir is empty,please config  ZkParameterDir env")
@@ -215,30 +208,23 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	} else {
 		logger.Warn("no local worker to generate proof")
 	}
-	schedule := NewSchedule(workers)
-
-	proverClient, err := btcproverClient.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
-	if err != nil {
-		logger.Error("new proverClient error:%v", err)
-		return nil, err
-	}
-
-	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisSyncPeriod, proverClient, btcClient, ethClient, beaClient, beaconClient)
+	scheduler := NewSchedule(workers)
+	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisSyncPeriod, btcProverClient, btcClient, ethClient, beaClient, beaconClient)
 	if err != nil {
 		logger.Error("new PreparedData error: %v", err)
 		return nil, err
 	}
 
 	msgManager, err := NewManager(btcClient, ethClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
-		storeDb, memoryStore, schedule, fileStore, cfg.GenesisSyncPeriod, cache)
+		storeDb, memoryStore, scheduler, fileStore, cfg.GenesisSyncPeriod, cache)
 	if err != nil {
 		logger.Error("new msgManager error: %v", err)
 		return nil, err
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, schedule, fileStore, exitSignal)
-	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, schedule.AddWsWorker)
+	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, scheduler, fileStore, exitSignal)
+	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, scheduler.AddWsWorker)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -256,16 +242,16 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	//	return nil, err
 	//}
 	daemon := &Daemon{
-		agents:      agents,
-		rpcServer:   server,
-		wsServer:    wsServer,
-		nodeConfig:  cfg,
-		enableLocal: cfg.EnableLocalWorker,
-		exitSignal:  exitSignal,
-		txManager:   taskManager,
-		fetch:       nil, // todo
-		debug:       common.GetEnvDebugMode(),
-		manager:     NewWrapperManger(msgManager, proofRequest, 2*time.Minute),
+		agents:            agents,
+		rpcServer:         server,
+		wsServer:          wsServer,
+		nodeConfig:        cfg,
+		enableLocalWorker: cfg.EnableLocalWorker,
+		exitSignal:        exitSignal,
+		txManager:         taskManager,
+		fetch:             nil, // todo
+		debug:             common.GetEnvDebugMode(),
+		manager:           NewWrapperManger(msgManager, proofRequest, 30*time.Second),
 	}
 	return daemon, nil
 }
@@ -318,7 +304,7 @@ func (d *Daemon) Run() error {
 
 	// proof request manager
 	go doProofRequestTask("manager-proofRequest", d.manager.proofRequest, d.manager.manager.ReceiveRequest, d.exitSignal)
-	if d.enableLocal {
+	if d.enableLocalWorker {
 		go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
 	}
 	go DoTimerTask("manager-checkState", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)

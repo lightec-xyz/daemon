@@ -37,7 +37,7 @@ type IProof interface {
 	BtcWrapProve(req *BtcWrapRequest) (*BtcWrapResponse, error)
 	BtcBaseProve(req *BtcBaseRequest) (*ProofResponse, error)
 	BtcMiddleProve(req *BtcMiddleRequest) (*ProofResponse, error)
-	BtcUpProve(req *BtcUpperRequest) (*ProofResponse, error)
+	BtcUpperProve(req *BtcUpperRequest) (*ProofResponse, error)
 	BtcGenesis(req *BtcGenesisRequest) (*ProofResponse, error)
 	BtcRecursiveProve(req *BtcRecursiveRequest) (*ProofResponse, error)
 	ProofInfo(proofId string) (ProofInfo, error)
