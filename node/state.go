@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	ethCommon "github.com/ethereum/go-ethereum/common"
-	btccircom "github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
@@ -31,27 +30,28 @@ type State struct {
 }
 
 func (s *State) CheckBtcState() error {
+	logger.Debug("start check btc state ....")
 	blockCount, err := s.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error("get block count error:%v", err)
 		return err
 	}
 	// todo
-	blockCount = 2868768 + 2016
+	blockCount = 2871700 + 8
 	btcUpperStartIndexes, err := s.fileStore.NeedBtcUpStartIndexes(uint64(blockCount))
 	if err != nil {
 		logger.Error("get need btc up index error:%v", err)
 		return err
 	}
 	for _, index := range btcUpperStartIndexes {
-		end := index + btccircom.CapacityDifficultyBlock
+		end := index + common.BtcUpperDistance
 		logger.Debug("start check btc upper: %v %v", index, end)
 		ok, err := s.checkBtcUpper(index, end)
 		if err != nil {
 			logger.Error("check btc update error:%v", err)
 			return err
 		}
-		if !ok {
+		if ok {
 			err := s.tryProofRequest(common.BtcUpperType, index, end, "")
 			if err != nil {
 				logger.Error("try btc upper proof error:%v", err)
@@ -59,6 +59,7 @@ func (s *State) CheckBtcState() error {
 			}
 		}
 	}
+	return nil
 	exists, err := CheckProof(s.fileStore, common.BtcGenesisType, 0, 0, "")
 	if err != nil {
 		return err
@@ -76,7 +77,7 @@ func (s *State) CheckBtcState() error {
 		return err
 	}
 	for _, index := range btcRecursiveIndexes {
-		end := index + btccircom.CapacityDifficultyBlock
+		end := index + common.BtcUpperDistance
 		err = s.tryProofRequest(common.BtcRecursiveType, index, end, "")
 		if err != nil {
 			logger.Error("try btc recursive proof error:%v %v %v", index, end, err)
@@ -218,10 +219,10 @@ func (s *State) CheckTxConfirms(hash string, amount uint64) (bool, int, error) {
 }
 func (s *State) checkBtcUpper(start, end uint64) (bool, error) {
 	next := true
-	for index := start; index < end; index = index + btccircom.CapacitySuperBatch {
+	for index := start; index < end; index = index + common.BtcMiddleDistance {
 		startIndex := index
-		endIndex := index + btccircom.CapacitySuperBatch
-		logger.Debug("start check btc upper: %v %v", startIndex, endIndex)
+		endIndex := index + common.BtcMiddleDistance
+		logger.Debug("start check btc middle: %v %v", startIndex, endIndex)
 		exists, err := CheckProof(s.fileStore, common.BtcMiddleType, startIndex, endIndex, "")
 		if err != nil {
 			logger.Error("check btc update error:%v", err)
@@ -249,10 +250,10 @@ func (s *State) checkBtcUpper(start, end uint64) (bool, error) {
 
 func (s *State) checkBtcMiddle(start, end uint64) (bool, error) {
 	next := true
-	for index := start; index < end; index = index + btccircom.CapacityBaseLevel {
+	for index := start; index < end; index = index + common.BtcBaseDistance {
 		logger.Debug("start check btc middle: %v %v", start, end)
 		startIndex := index
-		endIndex := index + btccircom.CapacityBaseLevel
+		endIndex := index + common.BtcBaseDistance
 		exists, err := CheckProof(s.fileStore, common.BtcBaseType, startIndex, endIndex, "")
 		if err != nil {
 			logger.Error("check btc update error:%v", err)

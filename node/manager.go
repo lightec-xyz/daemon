@@ -253,21 +253,22 @@ func (m *manager) GetRedeemRequest(txHash string) (*common.ZkProofRequest, bool,
 func (m *manager) DistributeRequest() error {
 	logger.Debug("start distribute request now")
 	request, ok, err := m.GetProofRequest(nil)
+	waitTime := 3 * time.Second
 	if err != nil {
 		logger.Error("get Proof request error:%v", err)
-		time.Sleep(10 * time.Second)
+		time.Sleep(waitTime)
 		return err
 	}
 	if !ok {
 		//logger.Warn("current queue is empty")
-		time.Sleep(10 * time.Second)
+		time.Sleep(waitTime)
 		return nil
 	}
 	proofSubmitted, err := m.CheckProofStatus(request)
 	if err != nil {
 		logger.Error("check Proof error:%v", err)
 		m.CacheRequest(request)
-		time.Sleep(10 * time.Second)
+		time.Sleep(waitTime)
 		return err
 	}
 	if proofSubmitted {
@@ -278,7 +279,7 @@ func (m *manager) DistributeRequest() error {
 	if err != nil {
 		logger.Error("get chan response error:%v", err)
 		m.CacheRequest(request)
-		time.Sleep(10 * time.Second)
+		time.Sleep(waitTime)
 		return err
 	}
 	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
@@ -326,16 +327,16 @@ func (m *manager) DistributeRequest() error {
 	if err != nil {
 		logger.Error("find best worker error:%v", err)
 		m.CacheRequest(request)
-		time.Sleep(10 * time.Second)
+		time.Sleep(waitTime)
 		return err
 	}
 	if !find {
 		logger.Warn(" no find best worker to gen Proof: %v", request.Id())
 		m.CacheRequest(request)
-		time.Sleep(10 * time.Second)
+		time.Sleep(waitTime)
 		return nil
 	}
-	time.Sleep(10 * time.Second)
+	time.Sleep(waitTime)
 	return nil
 }
 
@@ -480,6 +481,7 @@ func (m *manager) CheckProofState() error {
 		logger.Error("check btc state error:%v", err)
 		return err
 	}
+	return nil
 	err = m.state.CheckEthState()
 	if err != nil {
 		logger.Error("check eth state error:%v", err)

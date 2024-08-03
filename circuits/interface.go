@@ -38,6 +38,6 @@ type ICircuit interface {
 	BtcBaseProve(req *btcbase.BaseLevelProofData) (*common.Proof, error)
 	BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList []common.Proof) (*common.Proof, error)
 	BtcUpperProve(req *btcupper.UpperLevelProofData, proofList []common.Proof) (*common.Proof, error)
-	BtcGenesisProve(data *recursiveUtil.RecursiveProofData, proofs []common.Proof) (*common.Proof, error)
+	BtcGenesisProve(data *recursiveUtil.RecursiveProofData, first, second *common.Proof) (*common.Proof, error)
 	BtcRecursiveProve(data *recursiveUtil.RecursiveProofData, first, second *common.Proof) (*common.Proof, error)
 }

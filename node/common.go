@@ -213,7 +213,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		}
 		return data, true, nil
 	case common.BtcBaseType:
-		data, ok, err := p.GetBtcBaseData(end - 1)
+		data, ok, err := p.GetBtcBaseData(end)
 		if err != nil {
 			logger.Error("get btc base data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -221,7 +221,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		return data, ok, nil
 
 	case common.BtcMiddleType:
-		data, ok, err := p.GetBtcMiddleData(end - 1)
+		data, ok, err := p.GetBtcMiddleData(end)
 		if err != nil {
 			logger.Error("get btc middle data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -229,7 +229,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		return data, ok, nil
 
 	case common.BtcUpperType:
-		data, ok, err := p.GetBtcUpperData(end - 1)
+		data, ok, err := p.GetBtcUpperData(end)
 		if err != nil {
 			logger.Error("get btc upper data error:%v %v %v", index, end, err)
 			return nil, false, err

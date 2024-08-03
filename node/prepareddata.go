@@ -46,8 +46,7 @@ func (p *PreparedData) GetBtcGenesisData(genesisHeight, end uint64) (*rpc.BtcGen
 		return nil, false, err
 	}
 	genesisRequest := rpc.BtcGenesisRequest{
-		Data:   data,
-		Proofs: nil,
+		Data: data,
 	}
 	return &genesisRequest, true, nil
 }
@@ -65,7 +64,7 @@ func (p *PreparedData) GetBtcRecursiveData(genesisHeight, end uint64) (*rpc.BtcR
 }
 
 func (p *PreparedData) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
-	data, err := baselevelUtil.GetBaseLevelProofData(p.proverClient, uint32(endHeight))
+	data, err := baselevelUtil.GetBaseLevelProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
@@ -77,16 +76,18 @@ func (p *PreparedData) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bo
 }
 
 func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest, bool, error) {
-	data, err := midlevelUtil.GetMidLevelProofData(p.proverClient, uint32(endHeight))
+	data, err := midlevelUtil.GetMidLevelProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
 	}
 	var proofs []rpc.Proof
-	for index := endHeight - 336; index <= endHeight; index = index + btcprovercom.CapacityBaseLevel {
-		baseProof, ok, err := p.filestore.GetBtcBaseProof(index)
+	for index := endHeight - common.BtcMiddleDistance; index < endHeight; index = index + common.BtcBaseDistance {
+		startIndex := index
+		endIndex := index + common.BtcBaseDistance
+		baseProof, ok, err := p.filestore.GetBtcBaseProof(startIndex, endIndex)
 		if err != nil {
-			logger.Error("get base level proof data error: %v %v", index, err)
+			logger.Error("get base level proof data error: %v~%v %v", startIndex, endIndex, err)
 			return nil, false, err
 		}
 		if ok {
@@ -96,18 +97,20 @@ func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest
 			})
 		}
 	}
-	if len(proofs) != btcprovercom.CapacityMidLevel {
-		logger.Error("get mid level proof:baseProof length: %v", len(proofs))
-		return nil, false, fmt.Errorf("get mid level proof data error: %v %v", endHeight, err)
+	// todo
+	if len(proofs) != 2 {
+		logger.Error("get base level proof data error: %v %v", endHeight, err)
+		return nil, false, fmt.Errorf("get base level proof data error: %v", endHeight)
 	}
 	baseRequest := rpc.BtcMiddleRequest{
-		Data: data,
+		Data:   data,
+		Proofs: proofs,
 	}
 	return &baseRequest, true, nil
 }
 
 func (p *PreparedData) GetBtcUpperData(endHeight uint64) (*rpc.BtcUpperRequest, bool, error) {
-	data, err := upperlevelUtil.GetUpperLevelProofData(p.proverClient, uint32(endHeight))
+	data, err := upperlevelUtil.GetUpperLevelProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err

@@ -41,13 +41,13 @@ type Circuit struct {
 	debug bool
 }
 
-func (c *Circuit) BtcGenesisProve(data *recursiveUtil.RecursiveProofData, proofs []reLightCommon.Proof) (*reLightCommon.Proof, error) {
+func (c *Circuit) BtcGenesisProve(data *recursiveUtil.RecursiveProofData, first, second *reLightCommon.Proof) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit btcGenesisProve....")
 	if c.debug {
 		logger.Warn("current zk circuit btcGenesisProve prove is debug,skip prove")
 		return debugProof()
 	}
-	genesisProof, err := recursiveduper.ProveGenesis(c.Cfg.SetupDir, proofs, data)
+	genesisProof, err := recursiveduper.ProveGenesis(c.Cfg.SetupDir, first, second, data)
 	if err != nil {
 		logger.Error("genesis BtcGenesisProve prove error: %v", err)
 		return nil, err
@@ -61,7 +61,7 @@ func (c *Circuit) BtcRecursiveProve(data *recursiveUtil.RecursiveProofData, firs
 		logger.Warn("current zk circuit BtcRecursiveProve prove is debug,skip prove")
 		return debugProof()
 	}
-	genesisProof, err := recursiveduper.ProveRecursive(c.Cfg.SetupDir, recursiveduper.GenesisProof, first, second, data)
+	genesisProof, err := recursiveduper.ProveRecursive(c.Cfg.SetupDir, first, second, data)
 	if err != nil {
 		logger.Error("genesis BtcRecursiveProve prove error: %v", err)
 		return nil, err

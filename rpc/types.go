@@ -51,7 +51,8 @@ type NodeInfo struct {
 
 type BtcGenesisRequest struct {
 	Data   *recursiveUtil.RecursiveProofData
-	Proofs []Proof
+	First  Proof
+	Second Proof
 }
 
 type BtcRecursiveRequest struct {

@@ -1,6 +1,8 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // env
 
@@ -9,6 +11,15 @@ const (
 	ZkParameterDir = "ZkParameterDir"
 	ZkProofTypes   = "ZkProofTypes"
 	DbNameSpace    = "zkbtc"
+)
+
+const (
+	//BtcBaseDistance   = btcproverCommon.CapacityBaseLevel
+	//BtcMiddleDistance = btcproverCommon.CapacityMidLevel * btcproverCommon.CapacityBaseLevel
+	//BtcUpperDistance  = btcproverCommon.CapacityDifficultyBlock
+	BtcBaseDistance   = 2
+	BtcMiddleDistance = 2 * BtcBaseDistance
+	BtcUpperDistance  = 2 * BtcMiddleDistance
 )
 
 const (

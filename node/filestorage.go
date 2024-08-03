@@ -3,7 +3,6 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
-	btcproverCommon "github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
@@ -592,7 +591,7 @@ func (fs *FileStorage) NeedBtcUpStartIndexes(height uint64) ([]uint64, error) {
 		return nil, err
 	}
 	var tmpIndexes []uint64
-	for index := fs.btcGenesisHeight; index <= height; index = index + btcproverCommon.CapacityDifficultyBlock {
+	for index := fs.btcGenesisHeight; index < height; index = index + common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
 			tmpIndexes = append(tmpIndexes, index)
 		}

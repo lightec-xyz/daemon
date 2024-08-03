@@ -120,7 +120,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 			return nil, err
 		}
 		cfg.BtcGenesisHeight = (count/2016 - 1) * 2016
-		cfg.BtcGenesisHeight = 2868768
+		cfg.BtcGenesisHeight = 2871700
 		fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
 		if err != nil {
 			logger.Error("new fileStorage error: %v", err)
@@ -264,7 +264,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		txManager:         taskManager,
 		fetch:             nil, // todo
 		debug:             common.GetEnvDebugMode(),
-		manager:           NewWrapperManger(msgManager, proofRequest, 15*time.Second),
+		manager:           NewWrapperManger(msgManager, proofRequest, 3*time.Second),
 	}
 	return daemon, nil
 }

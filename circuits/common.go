@@ -19,7 +19,6 @@ import (
 	"github.com/lightec-xyz/reLight/circuits/utils"
 
 	"math/big"
-	"time"
 )
 
 func HexToProofs(proofs []rpc.Proof) ([]reLightCommon.Proof, error) {
@@ -41,16 +40,16 @@ func HexToProofs(proofs []rpc.Proof) ([]reLightCommon.Proof, error) {
 	return list, nil
 }
 
-func HexToProof(hex rpc.Proof) (reLightCommon.Proof, error) {
+func HexToProof(hex rpc.Proof) (*reLightCommon.Proof, error) {
 	proof, err := HexToPlonkProof(hex.Proof)
 	if err != nil {
-		return reLightCommon.Proof{}, err
+		return nil, err
 	}
 	wit, err := HexToWitness(hex.Witness)
 	if err != nil {
-		return reLightCommon.Proof{}, err
+		return nil, err
 	}
-	return reLightCommon.Proof{
+	return &reLightCommon.Proof{
 		Proof: proof,
 		Wit:   wit,
 	}, nil
@@ -91,7 +90,7 @@ type CircuitConfig struct {
 
 func debugProof() (*reLightCommon.Proof, error) {
 	// todo just test for debug
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 	field := ecc.BN254.ScalarField()
 	w, err := witness.New(field)
 	if err != nil {
