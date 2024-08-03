@@ -2,44 +2,45 @@ package node
 
 import (
 	"fmt"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
-	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"sync"
 	"time"
 )
 
 type manager struct {
-	proofQueue      *ArrayQueue
-	pendingQueue    *PendingQueue
-	schedule        *Schedule
-	fileStore       *FileStorage
-	btcClient       *bitcoin.Client
-	ethClient       *ethereum.Client
-	beaconClient    *beacon.Client
-	apiClient       *apiclient.Client
-	btcproverClient *btcproverClient.Client
-	store           store.IStore
-	memory          store.IStore
-	genesisPeriod   uint64
-	state           *CacheState
-	btcProofResp    chan *common.ZkProofResponse
-	ethProofResp    chan *common.ZkProofResponse
-	syncCommitResp  chan *common.ZkProofResponse
-	preparedData    *PreparedData
-	lock            sync.Mutex
+	proofQueue     *ArrayQueue
+	pendingQueue   *PendingQueue
+	schedule       *Schedule
+	fileStore      *FileStorage
+	btcClient      *bitcoin.Client
+	ethClient      *ethereum.Client
+	store          store.IStore
+	memory         store.IStore
+	genesisPeriod  uint64
+	cache          *Cache
+	btcProofResp   chan *common.ZkProofResponse
+	ethProofResp   chan *common.ZkProofResponse
+	syncCommitResp chan *common.ZkProofResponse
+	preparedData   *PreparedData
+	lock           sync.Mutex
+	state          *State
 }
 
-func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
-	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, genesisPeriod uint64, state *CacheState) (IManager, error) {
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *PreparedData, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
+	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, genesisPeriod uint64, cache *Cache) (IManager, error) {
+	queue := NewArrayQueue()
+	state, err := NewState(queue, fileStore, store, cache, prep, genesisPeriod, genesisPeriod, btcClient, ethClient)
+	if err != nil {
+		logger.Error("new state error:%v", err)
+		return nil, err
+	}
 	return &manager{
-		proofQueue:     NewArrayQueue(),
+		proofQueue:     queue,
 		pendingQueue:   NewPendingQueue(),
 		schedule:       schedule,
 		store:          store,
@@ -50,8 +51,8 @@ func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconCli
 		syncCommitResp: syncCommitteeProofResp,
 		btcClient:      btcClient,
 		ethClient:      ethClient,
-		beaconClient:   beaconClient,
 		genesisPeriod:  genesisPeriod,
+		cache:          cache,
 		state:          state,
 	}, nil
 }
@@ -66,7 +67,7 @@ func (m *manager) Init() error {
 	for _, request := range allPendingRequests {
 		logger.Info("load pending request:%v", request.Id())
 		m.pendingQueue.Push(request.Id(), request)
-		m.state.Store(request.Id(), nil)
+		m.cache.Store(request.Id(), nil)
 		err = DeletePendingRequest(m.store, request.Id())
 		if err != nil {
 			logger.Error("delete pending request error:%v", err)
@@ -439,9 +440,9 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 			return nil
 		}
 		for _, req := range requests {
-			if !m.state.Check(req.Id()) {
+			if !m.cache.Check(req.Id()) {
 				logger.Debug("add redeem request:%v to queue", req.Id())
-				m.state.Store(req.Id(), nil)
+				m.cache.Store(req.Id(), nil)
 				m.proofQueue.Push(req)
 				err := m.UpdateProofStatus(req, common.ProofQueued)
 				if err != nil {
@@ -451,6 +452,25 @@ func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
 		}
 		return nil
 	default:
+	}
+	return nil
+}
+
+func (m *manager) CheckProofState() error {
+	err := m.state.CheckBtcState()
+	if err != nil {
+		logger.Error("check btc state error:%v", err)
+		return err
+	}
+	err = m.state.CheckEthState()
+	if err != nil {
+		logger.Error("check eth state error:%v", err)
+		return err
+	}
+	err = m.state.CheckBeaconState()
+	if err != nil {
+		logger.Error("check beacon state error:%v", err)
+		return err
 	}
 	return nil
 }

@@ -35,7 +35,7 @@ type EthereumAgent struct {
 	beaconClient     *beacon.Client
 	store            store.IStore
 	memoryStore      store.IStore
-	stateCache       *CacheState
+	stateCache       *Cache
 	fileStore        *FileStorage
 	taskManager      *TxManager
 	proofRequest     chan []*common.ZkProofRequest
@@ -54,7 +54,7 @@ type EthereumAgent struct {
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,
 	btcClient *bitcoin.Client, ethClient *ethrpc.Client, beaconClient *beacon.Client, oasisClient *oasis.Client,
-	proofRequest chan []*common.ZkProofRequest, task *TxManager, state *CacheState) (IAgent, error) {
+	proofRequest chan []*common.ZkProofRequest, task *TxManager, state *Cache) (IAgent, error) {
 	return &EthereumAgent{
 		apiClient:        beaClient, // todo
 		btcClient:        btcClient,

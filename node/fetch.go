@@ -21,7 +21,7 @@ type Fetch struct {
 	fileStore     *FileStorage
 	lock          sync.Mutex
 	maxReqs       *atomic.Int64
-	state         *CacheState
+	state         *Cache
 	ethFetchResp  chan *FetchResponse
 }
 

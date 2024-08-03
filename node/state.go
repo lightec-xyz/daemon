@@ -24,7 +24,7 @@ type State struct {
 	btcClient     *bitcoin.Client
 	ethClient     *ethereum.Client
 	store         store.IStore
-	cache         *CacheState
+	cache         *Cache
 	preparedData  *PreparedData
 	genesisPeriod uint64
 	genesisSlot   uint64
@@ -540,7 +540,7 @@ func (s *State) CheckBeaconState() error {
 
 }
 
-func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cache *CacheState, preparedData *PreparedData,
+func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cache *Cache, preparedData *PreparedData,
 	genesisPeriod uint64, genesisSlot uint64, btcClient *bitcoin.Client, ethClient *ethereum.Client) (*State, error) {
 	return &State{
 		proofQueue:    queue,

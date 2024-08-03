@@ -4,25 +4,25 @@ import (
 	"sync"
 )
 
-type CacheState struct {
+type Cache struct {
 	requests *sync.Map
 }
 
-func NewCacheState() *CacheState {
-	return &CacheState{
+func NewCacheState() *Cache {
+	return &Cache{
 		requests: new(sync.Map),
 	}
 }
 
-func (cs *CacheState) Store(key, value interface{}) {
+func (cs *Cache) Store(key, value interface{}) {
 	cs.requests.Store(key, value)
 }
 
-func (cs *CacheState) Check(key interface{}) bool {
+func (cs *Cache) Check(key interface{}) bool {
 	_, ok := cs.requests.Load(key)
 	return ok
 }
-func (cs *CacheState) Get(key interface{}) (interface{}, bool) {
+func (cs *Cache) Get(key interface{}) (interface{}, bool) {
 	value, ok := cs.requests.Load(key)
 	if !ok {
 		return nil, false
@@ -30,6 +30,6 @@ func (cs *CacheState) Get(key interface{}) (interface{}, bool) {
 	return value, true
 }
 
-func (cs *CacheState) Delete(key interface{}) {
+func (cs *Cache) Delete(key interface{}) {
 	cs.requests.Delete(key)
 }

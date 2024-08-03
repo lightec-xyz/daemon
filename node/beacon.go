@@ -27,12 +27,12 @@ type BeaconAgent struct {
 	store          store.IStore
 	genesisPeriod  uint64
 	genesisSlot    uint64
-	stateCache     *CacheState
+	stateCache     *Cache
 	force          bool
 }
 
 func NewBeaconAgent(store store.IStore, beaconClient *beacon.Client, apiClient *apiclient.Client, zkProofReq chan []*common.ZkProofRequest,
-	fileStore *FileStorage, state *CacheState, genesisSlot, genesisPeriod uint64) (IAgent, error) {
+	fileStore *FileStorage, state *Cache, genesisSlot, genesisPeriod uint64) (IAgent, error) {
 	beaconAgent := &BeaconAgent{
 		fileStore:      fileStore,
 		beaconClient:   beaconClient,

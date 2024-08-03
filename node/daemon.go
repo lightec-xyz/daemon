@@ -159,12 +159,12 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error(err.Error())
 		return nil, err
 	}
-	state := NewCacheState()
+	cache := NewCacheState()
 
 	var agents []*WrapperAgent
 
 	if false {
-		beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, state, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
+		beaconAgent, err := NewBeaconAgent(storeDb, beaconClient, beaClient, proofRequest, fileStore, cache, cfg.BeaconInitSlot, cfg.GenesisSyncPeriod)
 		if err != nil {
 			logger.Error("new node btcClient error:%v", err)
 			return nil, err
@@ -174,7 +174,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 
 	if true {
 		btcAgent, err := NewBitcoinAgent(cfg, submitTxEthAddr, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
-			proofRequest, keyStore, taskManager, state)
+			proofRequest, keyStore, taskManager, cache)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, err
@@ -185,7 +185,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 
 	if false {
 		ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
-			beaconClient, oasisClient, proofRequest, taskManager, state)
+			beaconClient, oasisClient, proofRequest, taskManager, cache)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, err
@@ -216,8 +216,21 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Warn("no local worker to generate proof")
 	}
 	schedule := NewSchedule(workers)
-	msgManager, err := NewManager(btcClient, ethClient, beaconClient, btcProofResp, ethProofResp, syncCommitResp,
-		storeDb, memoryStore, schedule, fileStore, cfg.GenesisSyncPeriod, state)
+
+	proverClient, err := btcproverClient.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
+	if err != nil {
+		logger.Error("new proverClient error:%v", err)
+		return nil, err
+	}
+
+	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisSyncPeriod, proverClient, btcClient, ethClient, beaClient, beaconClient)
+	if err != nil {
+		logger.Error("new PreparedData error: %v", err)
+		return nil, err
+	}
+
+	msgManager, err := NewManager(btcClient, ethClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
+		storeDb, memoryStore, schedule, fileStore, cfg.GenesisSyncPeriod, cache)
 	if err != nil {
 		logger.Error("new msgManager error: %v", err)
 		return nil, err
@@ -320,7 +333,7 @@ func (d *Daemon) Run() error {
 		//go doFetchRespTask(fetchName, agent.fetchResp, agent.node.FetchDataResponse, d.exitSignal)
 		//checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())
 		//go DoTimerTask(checkStateName, agent.checkStateTime, agent.node.CheckState, d.exitSignal)
-		
+
 	}
 
 	signal.Notify(d.exitSignal, syscall.SIGTERM, syscall.SIGQUIT)
