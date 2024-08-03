@@ -39,8 +39,8 @@ type PreparedData struct {
 	genesisPeriod uint64
 }
 
-func (p *PreparedData) GetBtcGenesisData(start, end uint64) (*rpc.BtcGenesisRequest, bool, error) {
-	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(start), uint32(end))
+func (p *PreparedData) GetBtcGenesisData(genesisHeight, end uint64) (*rpc.BtcGenesisRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(end), uint32(genesisHeight))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", 0, err)
 		return nil, false, err
@@ -52,8 +52,8 @@ func (p *PreparedData) GetBtcGenesisData(start, end uint64) (*rpc.BtcGenesisRequ
 	return &genesisRequest, true, nil
 }
 
-func (p *PreparedData) GetBtcRecursiveData(start, end uint64) (*rpc.BtcRecursiveRequest, bool, error) {
-	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(start), uint32(end))
+func (p *PreparedData) GetBtcRecursiveData(genesisHeight, end uint64) (*rpc.BtcRecursiveRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(end), uint32(genesisHeight))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", 0, err)
 		return nil, false, err

@@ -119,7 +119,19 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 			logger.Error("get btc block count error:%v", err)
 			return nil, err
 		}
-		cfg.BtcGenesisHeight = (count/2016 - 4) * 2016
+		cfg.BtcGenesisHeight = (count/2016 - 1) * 2016
+		cfg.BtcGenesisHeight = 2868768
+		fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
+		if err != nil {
+			logger.Error("new fileStorage error: %v", err)
+			return nil, err
+		}
+		logger.Debug("clear fileStore: %v", fileStore.RootPath)
+		err = fileStore.Clear()
+		if err != nil {
+			logger.Error("clear fileStore error: %v", err)
+			return nil, err
+		}
 	}
 	logger.Debug("beaconPeriod: %v,ethInitHeight: %v,btcGenesisHeight: %v,btcInitHeight: %v", cfg.BeaconInitSlot,
 		cfg.EthInitHeight, cfg.BtcGenesisHeight, cfg.BtcInitHeight)
@@ -146,6 +158,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new fileStorage error: %v", err)
 		return nil, err
 	}
+
 	keyStore, err := NewKeyStore(cfg.EthPrivateKey)
 	if err != nil {
 		logger.Error(err.Error())
@@ -251,7 +264,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		txManager:         taskManager,
 		fetch:             nil, // todo
 		debug:             common.GetEnvDebugMode(),
-		manager:           NewWrapperManger(msgManager, proofRequest, 30*time.Second),
+		manager:           NewWrapperManger(msgManager, proofRequest, 15*time.Second),
 	}
 	return daemon, nil
 }

@@ -311,6 +311,11 @@ func (m *manager) DistributeRequest() error {
 						chaResp <- item
 						logger.Debug("chan send -- %v", item.Id())
 					}
+					err := StoreZkProof(m.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
+					if err != nil {
+						logger.Error("store Proof error:%v %v", item.Id(), err)
+						return
+					}
 				}
 				m.pendingQueue.Delete(req.Id())
 				return

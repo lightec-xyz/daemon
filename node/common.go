@@ -53,15 +53,15 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index, end ui
 	case common.BtcWrapType:
 		return fileStore.CheckBtcWrapProof(index)
 	case common.BtcBaseType:
-		return fileStore.CheckBtcBaseProof(index)
+		return fileStore.CheckBtcBaseProof(index, end)
 	case common.BtcMiddleType:
-		return fileStore.CheckBtcMiddleProof(index)
+		return fileStore.CheckBtcMiddleProof(index, end)
 	case common.BtcUpperType:
-		return fileStore.CheckBtcUpperProof(index)
+		return fileStore.CheckBtcUpperProof(index, end)
 	case common.BtcGenesisType:
 		return fileStore.CheckBtcGenesisProof()
 	case common.BtcRecursiveType:
-		return fileStore.CheckBtcRecursiveProof(index)
+		return fileStore.CheckBtcRecursiveProof(index, end)
 	default:
 		return false, fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
@@ -96,15 +96,15 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 	case common.BtcWrapType:
 		return fileStore.StoreBtcWrapProof(index, proof, witness)
 	case common.BtcBaseType:
-		return fileStore.StoreBtcBaseProof(proof, witness, index)
+		return fileStore.StoreBtcBaseProof(proof, witness, index, end)
 	case common.BtcMiddleType:
-		return fileStore.StoreBtcMiddleProof(proof, witness, index)
+		return fileStore.StoreBtcMiddleProof(proof, witness, index, end)
 	case common.BtcUpperType:
-		return fileStore.StoreBtcUpperProof(proof, witness, index)
+		return fileStore.StoreBtcUpperProof(proof, witness, index, end)
 	case common.BtcGenesisType:
 		return fileStore.StoreBtcGenesisProof(proof, witness)
 	case common.BtcRecursiveType:
-		return fileStore.StoreBtcRecursiveProof(proof, witness, index)
+		return fileStore.StoreBtcRecursiveProof(proof, witness, index, end)
 	default:
 		return fmt.Errorf("unSupport now  proof type: %v", zkType.String())
 	}
@@ -213,7 +213,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		}
 		return data, true, nil
 	case common.BtcBaseType:
-		data, ok, err := p.GetBtcBaseData(index)
+		data, ok, err := p.GetBtcBaseData(end - 1)
 		if err != nil {
 			logger.Error("get btc base data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -221,7 +221,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		return data, ok, nil
 
 	case common.BtcMiddleType:
-		data, ok, err := p.GetBtcMiddleData(index)
+		data, ok, err := p.GetBtcMiddleData(end - 1)
 		if err != nil {
 			logger.Error("get btc middle data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -229,7 +229,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		return data, ok, nil
 
 	case common.BtcUpperType:
-		data, ok, err := p.GetBtcUpperData(index)
+		data, ok, err := p.GetBtcUpperData(end - 1)
 		if err != nil {
 			logger.Error("get btc upper data error:%v %v %v", index, end, err)
 			return nil, false, err

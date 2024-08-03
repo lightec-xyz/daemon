@@ -7,6 +7,7 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -785,6 +786,11 @@ func CreateFileStore(root, name string) (*store.FileStore, error) {
 
 func (fs *FileStorage) GetRootPath() string {
 	return fs.RootPath
+}
+
+// Clear be careful when you use it,
+func (fs *FileStorage) Clear() error {
+	return os.RemoveAll(fs.RootPath)
 }
 func parseKey(keys ...interface{}) string {
 	var key string

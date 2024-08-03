@@ -36,6 +36,8 @@ func (s *State) CheckBtcState() error {
 		logger.Error("get block count error:%v", err)
 		return err
 	}
+	// todo
+	blockCount = 2868768 + 2016
 	btcUpperStartIndexes, err := s.fileStore.NeedBtcUpStartIndexes(uint64(blockCount))
 	if err != nil {
 		logger.Error("get need btc up index error:%v", err)
@@ -43,12 +45,13 @@ func (s *State) CheckBtcState() error {
 	}
 	for _, index := range btcUpperStartIndexes {
 		end := index + btccircom.CapacityDifficultyBlock
-		next, err := s.checkBtcUpper(index, end)
+		logger.Debug("start check btc upper: %v %v", index, end)
+		ok, err := s.checkBtcUpper(index, end)
 		if err != nil {
 			logger.Error("check btc update error:%v", err)
 			return err
 		}
-		if !next {
+		if !ok {
 			err := s.tryProofRequest(common.BtcUpperType, index, end, "")
 			if err != nil {
 				logger.Error("try btc upper proof error:%v", err)
@@ -216,27 +219,30 @@ func (s *State) CheckTxConfirms(hash string, amount uint64) (bool, int, error) {
 func (s *State) checkBtcUpper(start, end uint64) (bool, error) {
 	next := true
 	for index := start; index < end; index = index + btccircom.CapacitySuperBatch {
-		middleEnd := index + btccircom.CapacitySuperBatch
-		exists, err := CheckProof(s.fileStore, common.BtcMiddleType, index, middleEnd, "")
+		startIndex := index
+		endIndex := index + btccircom.CapacitySuperBatch
+		logger.Debug("start check btc upper: %v %v", startIndex, endIndex)
+		exists, err := CheckProof(s.fileStore, common.BtcMiddleType, startIndex, endIndex, "")
 		if err != nil {
 			logger.Error("check btc update error:%v", err)
 			return false, err
 		}
 		if !exists {
 			next = false
-			ok, err := s.checkBtcMiddle(index, middleEnd)
+			ok, err := s.checkBtcMiddle(startIndex, endIndex)
 			if err != nil {
 				logger.Error("check btc update error:%v", err)
 				return false, err
 			}
 			if ok {
-				err := s.tryProofRequest(common.BtcMiddleType, index, middleEnd, "")
+				err := s.tryProofRequest(common.BtcMiddleType, startIndex, endIndex, "")
 				if err != nil {
 					logger.Error("try btc middle proof error:%v", err)
 					return false, err
 				}
 			}
 		}
+		logger.Debug("end check btc upper: %v %v", startIndex, endIndex)
 	}
 	return next, nil
 }
@@ -244,20 +250,23 @@ func (s *State) checkBtcUpper(start, end uint64) (bool, error) {
 func (s *State) checkBtcMiddle(start, end uint64) (bool, error) {
 	next := true
 	for index := start; index < end; index = index + btccircom.CapacityBaseLevel {
-		baseEndIndex := index + btccircom.CapacityBaseLevel
-		exists, err := CheckProof(s.fileStore, common.BtcBaseType, start, baseEndIndex, "")
+		logger.Debug("start check btc middle: %v %v", start, end)
+		startIndex := index
+		endIndex := index + btccircom.CapacityBaseLevel
+		exists, err := CheckProof(s.fileStore, common.BtcBaseType, startIndex, endIndex, "")
 		if err != nil {
 			logger.Error("check btc update error:%v", err)
 			return false, err
 		}
 		if !exists {
 			next = false
-			err := s.tryProofRequest(common.BtcBaseType, start, baseEndIndex, "")
+			err := s.tryProofRequest(common.BtcBaseType, startIndex, endIndex, "")
 			if err != nil {
-				logger.Error("try btc base proof error:%v_%v %v", start, baseEndIndex, err)
+				logger.Error("try btc base proof error:%v_%v %v", start, endIndex, err)
 				return false, err
 			}
 		}
+		logger.Debug("end check btc middle: %v %v", start, end)
 	}
 	return next, nil
 
