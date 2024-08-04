@@ -566,6 +566,114 @@ func (s *State) CheckBeaconState() error {
 
 }
 
+func (s *State) CheckProofRequest(resp *common.ZkProofResponse) error {
+	requests, err := s.findNewRequests(resp)
+	if err != nil {
+		logger.Error("check redeem request error:%v %v", resp.Id(), err)
+		return err
+	}
+	for _, req := range requests {
+		if !s.cache.Check(req.Id()) {
+			logger.Debug("add new request:%v to queue", req.Id())
+			s.cache.Store(req.Id(), nil)
+			s.proofQueue.Push(req)
+			err := s.UpdateProofStatus(req, common.ProofQueued)
+			if err != nil {
+				logger.Error("update Proof status error:%v %v", req.Id(), err)
+			}
+		}
+	}
+	return nil
+
+}
+
+func (s *State) findNewRequests(resp *common.ZkProofResponse) ([]*common.ZkProofRequest, error) {
+	switch resp.ZkProofType {
+	case common.TxInEth2:
+		request, ok, err := s.checkRedeemRequest(resp.TxHash)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			return nil, err
+		}
+		if ok {
+			return []*common.ZkProofRequest{request}, nil
+		}
+		return nil, nil
+	case common.BeaconHeaderType:
+		txes, err := ReadAllTxBySlot(s.store, resp.Index)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			return nil, err
+		}
+		var result []*common.ZkProofRequest
+		for _, tx := range txes {
+			request, ok, err := s.checkRedeemRequest(tx.TxHash)
+			if err != nil {
+				logger.Error("get redeem request error:%v %v", resp.Id(), err)
+				return nil, err
+			}
+			if ok {
+				result = append(result, request)
+			}
+		}
+		return result, nil
+	case common.BeaconHeaderFinalityType:
+		txes, err := ReadAllTxByFinalizedSlot(s.store, resp.Index)
+		if err != nil {
+			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			return nil, err
+		}
+		var result []*common.ZkProofRequest
+		for _, tx := range txes {
+			request, ok, err := s.checkRedeemRequest(tx.TxHash)
+			if err != nil {
+				logger.Error("get redeem request error:%v %v", resp.Id(), err)
+				return nil, err
+			}
+			if ok {
+				result = append(result, request)
+			}
+		}
+		return result, nil
+	default:
+		return nil, nil
+	}
+}
+
+func (s *State) checkRedeemRequest(txHash string) (*common.ZkProofRequest, bool, error) {
+	// todo
+	txSlot, ok, err := s.GetSlotByHash(txHash)
+	if err != nil {
+		logger.Error("get slot by hash error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	data, ok, err := s.preparedData.GetRedeemRequestData(s.genesisPeriod, txSlot, txHash)
+	if err != nil {
+		logger.Error("get redeem request data error: %v %v", txHash, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := common.NewZkProofRequest(common.RedeemTxType, data, txSlot, 0, txHash)
+	return request, true, nil
+}
+
+func (s *State) UpdateProofStatus(req *common.ZkProofRequest, status common.ProofStatus) error {
+	// todo
+	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
+		err := UpdateProof(s.store, req.TxHash, "", req.ReqType, status)
+		if err != nil {
+			logger.Error("update Proof status error:%v %v", req.Id(), err)
+			return err
+		}
+	}
+	return nil
+}
+
 func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cache *Cache, preparedData *PreparedData,
 	btcGenesisHeight, genesisPeriod, genesisSlot uint64, btcClient *bitcoin.Client, ethClient *ethereum.Client) (*State, error) {
 	return &State{

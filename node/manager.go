@@ -95,10 +95,10 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	if m.proofQueue.Len() == 0 {
 		return nil, false, nil
 	}
-	m.proofQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
-		//logger.Debug("queryQueueReq: %v", value.Id())
-		return nil
-	})
+	//m.proofQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
+	//	logger.Debug("queryQueueReq: %v", value.Id())
+	//	return nil
+	//})
 
 	request, ok := m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
 		if len(proofTypes) == 0 {
@@ -116,7 +116,7 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 		return nil, false, nil
 	}
 	// todo
-	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, 0, request.TxHash)
+	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.SecondIndex, request.TxHash)
 	if err != nil {
 		logger.Error("check Proof error:%v %v", request.Id(), err)
 		return nil, false, err
@@ -135,18 +135,6 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	return request, true, nil
 }
 
-func (m *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.ProofStatus) error {
-	// todo
-	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
-		err := UpdateProof(m.store, req.TxHash, "", req.ReqType, status)
-		if err != nil {
-			logger.Error("update Proof status error:%v %v", req.Id(), err)
-			return err
-		}
-	}
-	return nil
-}
-
 func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	m.lock.Lock() // todo
 	defer m.lock.Unlock()
@@ -162,91 +150,14 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 		proofId := response.Id()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
-		err = m.waitUpdateProofStatus(response)
+		err = m.state.CheckProofRequest(response)
 		if err != nil {
-			logger.Error("wait update Proof status error:%v", err)
+			logger.Error("check proof request error:%v", err)
 			return err
 		}
+
 	}
 	return nil
-}
-
-func (m *manager) checkRedeemRequest(resp *common.ZkProofResponse) ([]*common.ZkProofRequest, bool, error) {
-	switch resp.ZkProofType {
-	case common.TxInEth2:
-		request, ok, err := m.GetRedeemRequest(resp.TxHash)
-		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id(), err)
-			return nil, false, err
-		}
-		return []*common.ZkProofRequest{request}, ok, nil
-	case common.BeaconHeaderType:
-		txes, err := ReadAllTxBySlot(m.store, resp.Index)
-		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id(), err)
-			return nil, false, err
-		}
-		var result []*common.ZkProofRequest
-		for _, tx := range txes {
-			request, ok, err := m.GetRedeemRequest(tx.TxHash)
-			if err != nil {
-				logger.Error("get redeem request error:%v %v", resp.Id(), err)
-				return nil, false, err
-			}
-			if ok {
-				result = append(result, request)
-			}
-		}
-		if len(result) == 0 {
-			return nil, false, nil
-		}
-		return result, true, nil
-	case common.BeaconHeaderFinalityType:
-		txes, err := ReadAllTxByFinalizedSlot(m.store, resp.Index)
-		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id(), err)
-			return nil, false, err
-		}
-		var result []*common.ZkProofRequest
-		for _, tx := range txes {
-			request, ok, err := m.GetRedeemRequest(tx.TxHash)
-			if err != nil {
-				logger.Error("get redeem request error:%v %v", resp.Id(), err)
-				return nil, false, err
-			}
-			if ok {
-				result = append(result, request)
-			}
-		}
-		if len(result) == 0 {
-			return nil, false, nil
-		}
-		return result, true, nil
-	default:
-		return nil, false, nil
-	}
-}
-
-func (m *manager) GetRedeemRequest(txHash string) (*common.ZkProofRequest, bool, error) {
-	// todo
-	txSlot, ok, err := m.GetSlotByHash(txHash)
-	if err != nil {
-		logger.Error("get slot by hash error: %v %v", txHash, err)
-		return nil, false, err
-	}
-	if !ok {
-		return nil, false, nil
-	}
-	data, ok, err := m.preparedData.GetRedeemRequestData(m.genesisPeriod, txSlot, txHash)
-	if err != nil {
-		logger.Error("get redeem request data error: %v %v", txHash, err)
-		return nil, false, err
-	}
-	if !ok {
-		return nil, false, nil
-	}
-	request := common.NewZkProofRequest(common.RedeemTxType, data, txSlot, 0, txHash)
-	return request, true, nil
 }
 
 // todo
@@ -413,24 +324,6 @@ func (m *manager) checkRequestTimeout(request *common.ZkProofRequest) (bool, err
 	return isTimeout, nil
 }
 
-func (m *manager) GetSlotByHash(hash string) (uint64, bool, error) {
-	// todo
-	dbTx, err := ReadDbTx(m.store, hash)
-	if err != nil {
-		logger.Error("get tx receipt error: %v %v", hash, err)
-		return 0, false, err
-	}
-	beaconSlot, ok, err := ReadBeaconSlot(m.store, dbTx.Height)
-	if err != nil {
-		logger.Error("get beacon slot error: %v %v", hash, err)
-		return 0, false, err
-	}
-	if !ok {
-		return 0, false, nil
-	}
-	return beaconSlot, true, nil
-}
-
 func (m *manager) Close() error {
 	logger.Debug("manager start  cache cache now ...")
 	m.pendingQueue.Iterator(func(value *common.ZkProofRequest) error {
@@ -446,31 +339,14 @@ func (m *manager) Close() error {
 
 }
 
-// todo
-func (m *manager) waitUpdateProofStatus(resp *common.ZkProofResponse) error {
-	switch resp.ZkProofType {
-	case common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType:
-		requests, ok, err := m.checkRedeemRequest(resp)
+func (s *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.ProofStatus) error {
+	// todo
+	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
+		err := UpdateProof(s.store, req.TxHash, "", req.ReqType, status)
 		if err != nil {
-			logger.Error("check redeem request error:%v %v", resp.Id(), err)
+			logger.Error("update Proof status error:%v %v", req.Id(), err)
 			return err
 		}
-		if !ok {
-			return nil
-		}
-		for _, req := range requests {
-			if !m.cache.Check(req.Id()) {
-				logger.Debug("add redeem request:%v to queue", req.Id())
-				m.cache.Store(req.Id(), nil)
-				m.proofQueue.Push(req)
-				err := m.UpdateProofStatus(req, common.ProofQueued)
-				if err != nil {
-					logger.Error("update Proof status error:%v %v", req.Id(), err)
-				}
-			}
-		}
-		return nil
-	default:
 	}
 	return nil
 }
