@@ -155,9 +155,7 @@ func (b *BeaconAgent) FetchDataResponse(req *FetchResponse) error {
 	return nil
 }
 
-// Todo
 func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
-	// todo
 	logger.Info("beacon Proof response type: %v, Index: %v", resp.Id(), resp.Index)
 	return nil
 }

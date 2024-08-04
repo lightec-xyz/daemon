@@ -146,14 +146,14 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	memoryStore := store.NewMemoryStore()
-	proofRequest := make(chan []*common.ZkProofRequest, 10)
-	btcProofResp := make(chan *common.ZkProofResponse, 10)
-	ethProofResp := make(chan *common.ZkProofResponse, 10)
-	syncCommitResp := make(chan *common.ZkProofResponse, 10)
+	proofRequest := make(chan []*common.ZkProofRequest, 1000)
+	btcProofResp := make(chan *common.ZkProofResponse, 1000)
+	ethProofResp := make(chan *common.ZkProofResponse, 1000)
+	syncCommitResp := make(chan *common.ZkProofResponse, 1000)
 
-	ethFetchDataResp := make(chan *FetchResponse, 10)
-	beaconFetchDataResp := make(chan *FetchResponse, 10)
-	btcFetchDataResp := make(chan *FetchResponse, 10)
+	ethFetchDataResp := make(chan *FetchResponse, 1000)
+	beaconFetchDataResp := make(chan *FetchResponse, 1000)
+	btcFetchDataResp := make(chan *FetchResponse, 1000)
 
 	fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
 	if err != nil {

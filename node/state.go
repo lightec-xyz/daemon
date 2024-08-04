@@ -43,6 +43,7 @@ func (s *State) CheckBtcState() error {
 	// btc genesis proof
 	exists, err := CheckProof(s.fileStore, common.BtcGenesisType, s.btcGenesisHeight, s.btcGenesisHeight+common.BtcUpperDistance*2, "")
 	if err != nil {
+		logger.Error("check btc genesis proof error:%v", err)
 		return err
 	}
 	if !exists {
@@ -51,7 +52,6 @@ func (s *State) CheckBtcState() error {
 			logger.Error("try btc genesis proof error:%v", err)
 			return err
 		}
-		return nil
 	}
 
 	// btc upper proof
@@ -368,6 +368,7 @@ func (s *State) CheckReq(reqType common.ZkProofType, index uint64, hash string) 
 }
 
 func (s *State) CheckEthState() error {
+
 	logger.Debug("check pending request ....")
 	unGenProofs, err := ReadAllUnGenProofs(s.store, Ethereum)
 	if err != nil {

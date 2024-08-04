@@ -482,15 +482,16 @@ func (m *manager) CheckProofState() error {
 	//	return err
 	//}
 
-	//err := m.state.CheckEthState()
-	//if err != nil {
-	//	logger.Error("check eth state error:%v", err)
-	//	return err
-	//}
-	err := m.state.CheckBeaconState()
+	err := m.state.CheckEthState()
 	if err != nil {
-		logger.Error("check beacon state error:%v", err)
+		logger.Error("check eth state error:%v", err)
 		return err
 	}
+
+	//err := m.state.CheckBeaconState()
+	//if err != nil {
+	//	logger.Error("check beacon state error:%v", err)
+	//	return err
+	//}
 	return nil
 }
