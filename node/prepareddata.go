@@ -357,7 +357,7 @@ func (p *PreparedData) GetRecursiveData(period uint64) (interface{}, bool, error
 		return nil, false, nil
 	}
 	return &rpc.SyncCommRecursiveRequest{
-		Choice:        "recursive",
+		Choice:        circuits.SyncRecursive,
 		FirstProof:    firstProof.Proof,
 		FirstWitness:  firstProof.Witness,
 		SecondProof:   secondProof.Proof,
@@ -430,7 +430,7 @@ func (p *PreparedData) GetRecursiveGenesisData(period uint64) (interface{}, bool
 		return nil, false, nil
 	}
 	return &rpc.SyncCommRecursiveRequest{
-		Choice:        "genesis",
+		Choice:        circuits.SyncGenesis,
 		FirstProof:    fistProof.Proof,
 		FirstWitness:  fistProof.Witness,
 		SecondProof:   secondProof.Proof,

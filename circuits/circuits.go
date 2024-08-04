@@ -415,7 +415,7 @@ func (c *Circuit) RecursiveProve(choice string, firstProof, secondProof, firstWi
 		logger.Warn("current zk circuit recursive prove is debug mode,skip prove")
 		return debugProof()
 	}
-	if !(choice == "genesis" || choice == "recursive") { // todo
+	if !(choice == SyncGenesis || choice == SyncRecursive) { // todo
 		return nil, fmt.Errorf("invalid choice: %s", choice)
 	}
 	firstPr, err := HexToPlonkProof(firstProof)

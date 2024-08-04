@@ -74,7 +74,7 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 	case common.UnitOuter:
 		return fileStore.StoreOuterProof(index, proof, witness)
 	case common.SyncComGenesisType:
-		return fileStore.StoreGenesisProof(index, proof, witness)
+		return fileStore.StoreGenesisProof(proof, witness)
 	case common.SyncComRecursiveType:
 		return fileStore.StoreRecursiveProof(index, proof, witness)
 	case common.BeaconHeaderFinalityType:
@@ -127,7 +127,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		}
 		return data, ok, nil
 	case common.SyncComRecursiveType:
-		if p.genesisPeriod == index+2 {
+		if index == p.genesisPeriod+2 {
 			data, ok, err := p.GetRecursiveGenesisData(index)
 			if err != nil {
 				logger.Error("get SyncComRecursiveGenesisData error:%v %v", index, err)

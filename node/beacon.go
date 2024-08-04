@@ -59,7 +59,7 @@ func (b *BeaconAgent) Init() error {
 		}
 	}
 
-	latestPeriod, exists, err := b.fileStore.GetPeriod()
+	latestPeriod, exists, err := b.fileStore.GetLatestPeriod()
 	if err != nil {
 		logger.Error("check latest Index error: %v", err)
 		return err

@@ -14,8 +14,10 @@ import (
 )
 
 const (
-	BtcBulk   = "bulk"
-	BtcPacked = "packed"
+	BtcBulk       = "bulk"
+	BtcPacked     = "packed"
+	SyncGenesis   = "genesis"
+	SyncRecursive = "recursive"
 )
 
 type ICircuit interface {
