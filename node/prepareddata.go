@@ -536,7 +536,13 @@ func (p *PreparedData) GetSyncComUnitData(period uint64) (*rpc.SyncCommUnitsRequ
 	if !ok {
 		return nil, false, nil
 	}
-	panic(update)
+	commUnitsRequest := rpc.SyncCommUnitsRequest{
+		Data:    update,
+		Index:   period,
+		Version: update.Version,
+	}
+	return &commUnitsRequest, true, nil
+
 }
 
 func (p *PreparedData) GetReverseHash(height uint64) (string, error) {

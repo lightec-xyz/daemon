@@ -739,8 +739,14 @@ func (fs *FileStorage) NeedGenRecProofIndexes() ([]uint64, error) {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
 	}
+	/*
+	 	unit: u0,u1,u2,u3
+	    genesis: 0~1 (u0,u1)
+	    recursive1:0~2 (genesis,u2)
+	    recursive2:0~3 (recursive1,u3)
+	    ...
+	*/
 	var needUpdateIndex []uint64
-	// todo
 	for index := fs.genesisPeriod + 2; index <= latestPeriod; index++ {
 		if _, ok := indexes[index]; !ok {
 			needUpdateIndex = append(needUpdateIndex, index)
@@ -827,9 +833,8 @@ func getIndex(fileName string) (uint64, error) {
 		return 0, fmt.Errorf("invalid file name %v", fileName)
 	}
 	/*
-		todo: base_101_100
-		index 101
-	*/
+
+	 */
 	index, err := strconv.ParseUint(keys[2], 10, 64)
 	if err != nil {
 		return 0, err
@@ -843,8 +848,7 @@ func getStartIndex(fileName string) (uint64, error) {
 		return 0, fmt.Errorf("invalid file name %v", fileName)
 	}
 	/*
-		todo: base_101_100
-		index 101
+		base_200_100 -> 200
 	*/
 	index, err := strconv.ParseUint(keys[1], 10, 64)
 	if err != nil {
@@ -859,8 +863,7 @@ func getEndIndex(fileName string) (uint64, error) {
 		return 0, fmt.Errorf("invalid file name %v", fileName)
 	}
 	/*
-		todo: base_101_100
-		index 101
+		base_200_100 -> 100
 	*/
 	index, err := strconv.ParseUint(keys[2], 10, 64)
 	if err != nil {

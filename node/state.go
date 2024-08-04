@@ -40,6 +40,20 @@ func (s *State) CheckBtcState() error {
 	// todo
 	blockCount = 2871700 + 8*4
 
+	// btc genesis proof
+	exists, err := CheckProof(s.fileStore, common.BtcGenesisType, s.btcGenesisHeight, s.btcGenesisHeight+common.BtcUpperDistance*2, "")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		err := s.tryProofRequest(common.BtcGenesisType, s.btcGenesisHeight, s.btcGenesisHeight+common.BtcUpperDistance*2, "")
+		if err != nil {
+			logger.Error("try btc genesis proof error:%v", err)
+			return err
+		}
+		return nil
+	}
+
 	// btc upper proof
 	btcUpperEndIndexes, err := s.fileStore.NeedBtcUpEndIndexes(uint64(blockCount))
 	if err != nil {
@@ -63,20 +77,6 @@ func (s *State) CheckBtcState() error {
 		}
 	}
 
-	// btc genesis proof
-	exists, err := CheckProof(s.fileStore, common.BtcGenesisType, s.btcGenesisHeight, s.btcGenesisHeight+common.BtcUpperDistance*2, "")
-	if err != nil {
-		return err
-	}
-	if !exists {
-		err := s.tryProofRequest(common.BtcGenesisType, s.btcGenesisHeight, s.btcGenesisHeight+common.BtcUpperDistance*2, "")
-		if err != nil {
-			logger.Error("try btc genesis proof error:%v", err)
-			return err
-		}
-		return nil
-	}
-
 	// btc recursive proof
 	btcRecursiveEndIndexes, err := s.fileStore.NeedBtcRecursiveEndIndex(uint64(blockCount))
 	if err != nil {
@@ -93,7 +93,7 @@ func (s *State) CheckBtcState() error {
 	}
 
 	return nil
-
+	// btc tx indexes
 	unGenProofs, err := ReadAllUnGenProofs(s.store, Bitcoin)
 	if err != nil {
 		logger.Error("read unGen proof error:%v", err)
@@ -505,12 +505,14 @@ func (s *State) updateRedeemProofStatus(txHash string, index uint64, status comm
 }
 
 func (s *State) CheckBeaconState() error {
-	genesisProofExists, err := s.fileStore.CheckGenesisProof()
+
+	// beacon genesis proof
+	exists, err := s.fileStore.CheckGenesisProof()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	if !genesisProofExists {
+	if !exists {
 		logger.Warn("no find genesis proof, send request genesis proof")
 		genesisPeriod := s.genesisPeriod + 1
 		err := s.tryProofRequest(common.SyncComGenesisType, genesisPeriod, 0, "")
@@ -519,6 +521,7 @@ func (s *State) CheckBeaconState() error {
 			return err
 		}
 	}
+	// beacon unit proof
 	unitProofIndexes, err := s.fileStore.NeedGenUnitProofIndexes()
 	if err != nil {
 		logger.Error(err.Error())
@@ -534,25 +537,22 @@ func (s *State) CheckBeaconState() error {
 			return err
 		}
 	}
+	// beacon recursive index
 	genRecProofIndexes, err := s.fileStore.NeedGenRecProofIndexes()
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
-	var skip bool
 	for _, index := range genRecProofIndexes {
 		if index <= s.genesisPeriod+1 {
 			continue
-		}
-		if skip {
-			break
 		}
 		err := s.tryProofRequest(common.SyncComRecursiveType, index, 0, "")
 		if err != nil {
 			logger.Error(err.Error())
 			return err
 		}
-		skip = true
+		break
 	}
 	return nil
 

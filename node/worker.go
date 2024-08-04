@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/circuits"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
-	"github.com/lightec-xyz/reLight/circuits/utils"
 	"reflect"
 	"sync"
 	"time"
@@ -453,20 +452,13 @@ func (w *LocalWorker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (r
 }
 
 func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
-	// todo
-	logger.Debug("start unit prove : %v Index", req.Period)
-	var update utils.SyncCommitteeUpdate
-	err := ParseObj(req, &update)
-	if err != nil {
-		logger.Error("deep copy error %v", err)
-		return rpc.SyncCommUnitsResponse{}, err
-	}
-	unitProof, outerProof, err := w.circuit.UnitProve(req.Period, &update)
+	unitProof, outerProof, err := w.circuit.UnitProve(req.Index, req.Data)
 	if err != nil {
 		logger.Error("unit prove error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	logger.Debug("complete unit prove %v", req.Period)
+	logger.Debug("complete unit prove %v", req.Index)
+
 	proofBytes, err := circuits.ProofToBytes(unitProof.Proof)
 	if err != nil {
 		logger.Error("proof to bytes error %v", err)
@@ -488,10 +480,10 @@ func (w *LocalWorker) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.
 		logger.Error("witness to bytes error %v", err)
 		return rpc.SyncCommUnitsResponse{}, err
 	}
-	logger.Debug("complete unit prove %v", req.Period)
+	logger.Debug("complete unit prove %v", req.Index)
 	return rpc.SyncCommUnitsResponse{
 		Version:      req.Version,
-		Period:       req.Period,
+		Period:       req.Index,
 		ProofType:    common.SyncComUnitType,
 		Proof:        proofBytes,
 		Witness:      witnessBytes,

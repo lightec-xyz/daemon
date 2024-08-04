@@ -121,17 +121,19 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		cfg.BtcGenesisHeight = (count/2016 - 1) * 2016
 		cfg.BtcGenesisHeight = 2871700
-		fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
-		if err != nil {
-			logger.Error("new fileStorage error: %v", err)
-			return nil, err
-		}
-		logger.Debug("clear fileStore: %v", fileStore.RootPath)
-		err = fileStore.Clear()
-		if err != nil {
-			logger.Error("clear fileStore error: %v", err)
-			return nil, err
-		}
+		cfg.BeaconInitSlot = 181 * 8192
+		cfg.GenesisSyncPeriod = 181
+		//fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
+		//if err != nil {
+		//	logger.Error("new fileStorage error: %v", err)
+		//	return nil, err
+		//}
+		//logger.Debug("clear fileStore: %v", fileStore.RootPath)
+		//err = fileStore.Clear()
+		//if err != nil {
+		//	logger.Error("clear fileStore error: %v", err)
+		//	return nil, err
+		//}
 	}
 	logger.Debug("beaconPeriod: %v,ethInitHeight: %v,btcGenesisHeight: %v,btcInitHeight: %v", cfg.BeaconInitSlot,
 		cfg.EthInitHeight, cfg.BtcGenesisHeight, cfg.BtcInitHeight)

@@ -10,6 +10,7 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
+	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
@@ -214,16 +215,9 @@ type SyncCommGenesisResponse struct {
 }
 
 type SyncCommUnitsRequest struct {
-	Version                 string                     `json:"version"`
-	Period                  uint64                     `json:"period"`
-	AttestedHeader          *structs.BeaconBlockHeader `json:"attested_header"`
-	CurrentSyncCommittee    *structs.SyncCommittee     `json:"current_sync_committee"`
-	SyncAggregate           *structs.SyncAggregate     `json:"sync_aggregate"`
-	NextSyncCommittee       *structs.SyncCommittee     `json:"next_sync_committee"`
-	NextSyncCommitteeBranch []string                   `json:"next_sync_committee_branch"`
-	FinalizedHeader         *structs.BeaconBlockHeader `json:"finalized_header,omitempty"`
-	FinalityBranch          []string                   `json:"finality_branch,omitempty"`
-	SignatureSlot           string                     `json:"signature_slot"`
+	Data    *utils.SyncCommitteeUpdate
+	Index   uint64
+	Version string
 }
 
 type SyncCommUnitsResponse struct {
