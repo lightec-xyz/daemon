@@ -80,7 +80,7 @@ func (zkResp *ZkProofResponse) String() string {
 	return fmt.Sprintf("ZkProofType:%v Index:%v Proof:%v", zkResp.ZkProofType, zkResp.Index, zkResp.Proof)
 }
 
-func NewProofId(reqType ZkProofType, index, end uint64, txHash string) string {
+func NewProofId(reqType ZkProofType, fIndex, sIndex uint64, hash string) string {
 	/* example
 	1. type_hash
 	2. type_index
@@ -89,14 +89,14 @@ func NewProofId(reqType ZkProofType, index, end uint64, txHash string) string {
 	*/
 
 	id := reqType.String()
-	if index != 0 {
-		id = fmt.Sprintf("%v_%v", id, index)
+	if fIndex != 0 {
+		id = fmt.Sprintf("%v_%v", id, fIndex)
 	}
-	if end != 0 {
-		id = fmt.Sprintf("%v_%v", id, end)
+	if sIndex != 0 {
+		id = fmt.Sprintf("%v_%v", id, sIndex)
 	}
-	if txHash != "" {
-		id = fmt.Sprintf("%v_%v", id, txHash)
+	if hash != "" {
+		id = fmt.Sprintf("%v_%v", id, hash)
 	}
 	return id
 }

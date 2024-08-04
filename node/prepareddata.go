@@ -275,7 +275,6 @@ func (p *PreparedData) GetBlockHeaderRequestData(index uint64) (*rpc.BlockHeader
 	if !ok {
 		return nil, false, nil
 	}
-
 	logger.Debug("get beaconHeader %v ~ %v", index, finalizedSlot)
 	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
 	if err != nil {
@@ -371,6 +370,7 @@ func (p *PreparedData) GetRecursiveData(period uint64) (interface{}, bool, error
 func (p *PreparedData) getSlotByNumber(number uint64) (uint64, error) {
 	slot, ok, err := ReadBeaconSlot(p.store, number)
 	if err != nil {
+		logger.Error("get slot error: %v %v", number, err)
 		return 0, err
 	}
 	if !ok {
@@ -802,18 +802,18 @@ func (p *PreparedData) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash
 		logger.Debug("proof request data not prepared: %v", txHash)
 		return nil, false, nil
 	}
-	blockHeaderProof, ok, err := p.filestore.GetBeaconHeaderProof(txSlot)
+	finalizedSlot, ok, err := p.filestore.GetNearTxSlotFinalizedSlot(txSlot)
 	if err != nil {
-		logger.Error("get block header proof error: %v", err)
+		logger.Error("get bhf update proof error: %v", err)
 		return nil, false, err
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txSlot)
 		return nil, false, nil
 	}
-	finalizedSlot, ok, err := p.filestore.GetNearTxSlotFinalizedSlot(txSlot)
+	blockHeaderProof, ok, err := p.filestore.GetBeaconHeaderProof(txSlot, finalizedSlot)
 	if err != nil {
-		logger.Error("get bhf update proof error: %v", err)
+		logger.Error("get block header proof error: %v", err)
 		return nil, false, err
 	}
 	if !ok {

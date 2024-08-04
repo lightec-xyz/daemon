@@ -300,17 +300,17 @@ func (fs *FileStorage) GetBhfProof(period uint64) (*StoreProof, bool, error) {
 	return &storeProof, exist, nil
 }
 
-func (fs *FileStorage) StoreBeaconHeaderProof(period uint64, proof, witness []byte) error {
-	return fs.Store(BeaconHeaderTable, common.BeaconHeaderType, proof, witness, period)
+func (fs *FileStorage) StoreBeaconHeaderProof(start, end uint64, proof, witness []byte) error {
+	return fs.Store(BeaconHeaderTable, common.BeaconHeaderType, proof, witness, start, end)
 }
 
-func (fs *FileStorage) CheckBeaconHeaderProof(period uint64) (bool, error) {
-	return fs.Check(BeaconHeaderTable, period)
+func (fs *FileStorage) CheckBeaconHeaderProof(start, end uint64) (bool, error) {
+	return fs.Check(BeaconHeaderTable, start, end)
 }
 
-func (fs *FileStorage) GetBeaconHeaderProof(period uint64) (*StoreProof, bool, error) {
+func (fs *FileStorage) GetBeaconHeaderProof(start, end uint64) (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.Get(BeaconHeaderTable, &storeProof, period)
+	exist, err := fs.Get(BeaconHeaderTable, &storeProof, start, end)
 	if err != nil {
 		logger.Error("get recursive proof error:%v", err)
 		return nil, false, err
@@ -602,6 +602,7 @@ func (fs *FileStorage) NeedBtcRecursiveEndIndex(height uint64) ([]uint64, error)
 }
 
 func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, error) {
+	// todo  more efficient
 	finalizedStore, ok := fs.GetFileStore(FinalityTable)
 	if !ok {
 		logger.Error("get file store error %v", FinalityTable)
@@ -612,7 +613,6 @@ func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, 
 		logger.Error("get update indexes error:%v", err)
 		return 0, false, err
 	}
-	// todo
 	var tmpIndexes []uint64
 	for key, _ := range indexes {
 		tmpIndexes = append(tmpIndexes, key)

@@ -395,13 +395,14 @@ func (s *State) CheckEthState() error {
 		}
 		txSlot, ok, err := s.GetSlotByHash(txHash)
 		if err != nil {
-			logger.Error("get txSlot error: %v", err)
+			logger.Error("get txSlot error: %v %v", err, txHash)
 			return err
 		}
 		if !ok {
 			logger.Warn("no find  tx %v beacon slot", txHash)
 			continue
 		}
+		// todo
 		finalizedSlot, ok, err := s.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
 		if err != nil {
 			logger.Error("get near tx slot finalized slot error: %v", err)
@@ -416,19 +417,19 @@ func (s *State) CheckEthState() error {
 			logger.Error("update proof status error: %v %v", txHash, err)
 			return err
 		}
-		exists, err = CheckProof(s.fileStore, common.TxInEth2, 0, 0, txHash)
+		exists, err = CheckProof(s.fileStore, common.TxInEth2, txSlot, finalizedSlot, txHash)
 		if err != nil {
 			logger.Error("check tx proof error: %v", err)
 			return err
 		}
 		if !exists {
-			err := s.tryProofRequest(common.TxInEth2, 0, 0, txHash)
+			err := s.tryProofRequest(common.TxInEth2, txSlot, finalizedSlot, txHash)
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
 			}
 		}
-		exists, err = CheckProof(s.fileStore, common.BeaconHeaderType, txSlot, 0, "")
+		exists, err = CheckProof(s.fileStore, common.BeaconHeaderType, txSlot, finalizedSlot, "")
 		if err != nil {
 			logger.Error("check block header proof error: %v", err)
 			return err
@@ -439,7 +440,7 @@ func (s *State) CheckEthState() error {
 				logger.Error("write tx slot error: %v %v %v", txHash, txSlot, err)
 				return err
 			}
-			err = s.tryProofRequest(common.BeaconHeaderType, txSlot, 0, "")
+			err = s.tryProofRequest(common.BeaconHeaderType, txSlot, finalizedSlot, "")
 			if err != nil {
 				logger.Error("try proof request error: %v", err)
 				return err
@@ -464,7 +465,7 @@ func (s *State) CheckEthState() error {
 			}
 			continue
 		}
-		err = s.tryProofRequest(common.RedeemTxType, txSlot, 0, txHash)
+		err = s.tryProofRequest(common.RedeemTxType, 0, 0, txHash)
 		if err != nil {
 			logger.Error("try proof request error: %v", err)
 			return err
@@ -474,14 +475,20 @@ func (s *State) CheckEthState() error {
 }
 
 func (s *State) GetSlotByHash(hash string) (uint64, bool, error) {
-	txHash := ethCommon.HexToHash(hash)
-	receipt, err := s.ethClient.TransactionReceipt(context.Background(), txHash)
+	//txHash := ethCommon.HexToHash(hash)
+	//receipt, err := s.ethClient.TransactionReceipt(context.Background(), txHash)
+	//if err != nil {
+	//	logger.Error("get tx receipt error: %v %v", hash, err)
+	//	return 0, false, err
+	//}
+	// todo
+
+	dbTx, err := ReadDbTx(s.store, hash)
 	if err != nil {
-		logger.Error("get tx receipt error: %v %v", hash, err)
+		logger.Error("read db tx error: %v %v", hash, err)
 		return 0, false, err
 	}
-	// todo
-	beaconSlot, ok, err := ReadBeaconSlot(s.store, receipt.BlockNumber.Uint64())
+	beaconSlot, ok, err := ReadBeaconSlot(s.store, dbTx.Height)
 	if err != nil {
 		logger.Error("get beacon slot error: %v %v", hash, err)
 		return 0, false, err

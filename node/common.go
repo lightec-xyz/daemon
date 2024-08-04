@@ -39,7 +39,7 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index, end ui
 	case common.TxInEth2:
 		return fileStore.CheckTxProof(hash)
 	case common.BeaconHeaderType:
-		return fileStore.CheckBeaconHeaderProof(index)
+		return fileStore.CheckBeaconHeaderProof(index, end)
 	case common.RedeemTxType:
 		return fileStore.CheckRedeemProof(hash)
 	case common.DepositTxType:
@@ -82,7 +82,7 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 	case common.TxInEth2:
 		return fileStore.StoreTxProof(hash, proof, witness)
 	case common.BeaconHeaderType:
-		return fileStore.StoreBeaconHeaderProof(index, proof, witness)
+		return fileStore.StoreBeaconHeaderProof(index, end, proof, witness)
 	case common.RedeemTxType:
 		return fileStore.StoreRedeemProof(hash, proof, witness)
 	case common.DepositTxType:
