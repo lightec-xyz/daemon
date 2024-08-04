@@ -18,15 +18,16 @@ type IState interface {
 }
 
 type State struct {
-	proofQueue    *ArrayQueue
-	fileStore     *FileStorage
-	btcClient     *bitcoin.Client
-	ethClient     *ethereum.Client
-	store         store.IStore
-	cache         *Cache
-	preparedData  *PreparedData
-	genesisPeriod uint64
-	genesisSlot   uint64
+	proofQueue       *ArrayQueue
+	fileStore        *FileStorage
+	btcClient        *bitcoin.Client
+	ethClient        *ethereum.Client
+	store            store.IStore
+	cache            *Cache
+	preparedData     *PreparedData
+	genesisPeriod    uint64
+	genesisSlot      uint64
+	btcGenesisHeight uint64 // start index
 }
 
 func (s *State) CheckBtcState() error {
@@ -37,29 +38,29 @@ func (s *State) CheckBtcState() error {
 		return err
 	}
 	// todo
-	blockCount = 2871700 + 8
+	blockCount = 2871700 + 8*4
 	btcUpperStartIndexes, err := s.fileStore.NeedBtcUpStartIndexes(uint64(blockCount))
 	if err != nil {
 		logger.Error("get need btc up index error:%v", err)
 		return err
 	}
 	for _, index := range btcUpperStartIndexes {
-		end := index + common.BtcUpperDistance
-		logger.Debug("start check btc upper: %v %v", index, end)
-		ok, err := s.checkBtcUpper(index, end)
+		endHeight := index + common.BtcUpperDistance
+		logger.Debug("start check btc upper: %v %v", index, endHeight)
+		ok, err := s.checkBtcUpper(index, endHeight)
 		if err != nil {
 			logger.Error("check btc update error:%v", err)
 			return err
 		}
 		if ok {
-			err := s.tryProofRequest(common.BtcUpperType, index, end, "")
+			err := s.tryProofRequest(common.BtcUpperType, index, endHeight, "")
 			if err != nil {
 				logger.Error("try btc upper proof error:%v", err)
 				return err
 			}
 		}
 	}
-	return nil
+
 	exists, err := CheckProof(s.fileStore, common.BtcGenesisType, 0, 0, "")
 	if err != nil {
 		return err
@@ -70,6 +71,7 @@ func (s *State) CheckBtcState() error {
 			logger.Error("try btc genesis proof error:%v", err)
 			return err
 		}
+		return nil
 	}
 	btcRecursiveIndexes, err := s.fileStore.NeedBtcRecursiveIndex(uint64(blockCount))
 	if err != nil {
@@ -77,14 +79,16 @@ func (s *State) CheckBtcState() error {
 		return err
 	}
 	for _, index := range btcRecursiveIndexes {
-		end := index + common.BtcUpperDistance
-		err = s.tryProofRequest(common.BtcRecursiveType, index, end, "")
+		endHeight := index + common.BtcUpperDistance
+		err = s.tryProofRequest(common.BtcRecursiveType, index, endHeight, "")
 		if err != nil {
-			logger.Error("try btc recursive proof error:%v %v %v", index, end, err)
+			logger.Error("try btc recursive proof error:%v %v %v", index, endHeight, err)
 			return err
 		}
 		continue
 	}
+
+	return nil
 
 	unGenProofs, err := ReadAllUnGenProofs(s.store, Bitcoin)
 	if err != nil {

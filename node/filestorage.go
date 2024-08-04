@@ -494,7 +494,7 @@ func (fs *FileStorage) StoreBtcMiddleProof(proof, witness []byte, key ...interfa
 }
 
 func (fs *FileStorage) CheckBtcMiddleProof(key ...interface{}) (bool, error) {
-	return fs.CheckV1(BtcMiddleTable, key)
+	return fs.CheckV1(BtcMiddleTable, key...)
 }
 
 func (fs *FileStorage) GetBtcMiddleProof(key ...interface{}) (*StoreProof, bool, error) {
@@ -508,7 +508,7 @@ func (fs *FileStorage) GetBtcMiddleProof(key ...interface{}) (*StoreProof, bool,
 }
 
 func (fs *FileStorage) StoreBtcUpperProof(proof, witness []byte, key ...interface{}) error {
-	return fs.StoreV1(BtcUpperTable, common.BtcUpperType, proof, witness, key)
+	return fs.StoreV1(BtcUpperTable, common.BtcUpperType, proof, witness, key...)
 }
 
 func (fs *FileStorage) CheckBtcUpperProof(key ...interface{}) (bool, error) {
@@ -590,6 +590,7 @@ func (fs *FileStorage) NeedBtcUpStartIndexes(height uint64) ([]uint64, error) {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
 	}
+	// todo
 	var tmpIndexes []uint64
 	for index := fs.btcGenesisHeight; index < height; index = index + common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
@@ -610,9 +611,17 @@ func (fs *FileStorage) NeedBtcRecursiveIndex(height uint64) ([]uint64, error) {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
 	}
+	/*
+				example:
+				up1: 0~2, up2 2~4, up3 4~6  up4 6~8
+				genesis: 0~4(up1,up2)
+				recursive1: 0~6(genesis,up3)
+			    recursive2: 0~8(recursive1,up4)
+			    ....
+		 we are record startIndex,not endIndex
+	*/
 	var tmpIndexes []uint64
-	// todo
-	for index := fs.btcGenesisHeight + 2016*2; index <= height; index = index + 2016 {
+	for index := fs.btcGenesisHeight + common.BtcUpperDistance + 2; index < height; index = common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
 			tmpIndexes = append(tmpIndexes, index)
 		}

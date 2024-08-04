@@ -114,7 +114,7 @@ func (w *LocalWorker) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse,
 func (w *LocalWorker) BtcMiddleProve(req *rpc.BtcMiddleRequest) (*rpc.ProofResponse, error) {
 	proofs, err := circuits.HexToProofs(req.Proofs)
 	if err != nil {
-		logger.Error("btc middlehex to proofs error: %v", err)
+		logger.Error("btc middle hex to proofs error: %v", err)
 		return nil, err
 	}
 	proof, err := w.circuit.BtcMiddleProve(req.Data, proofs)
