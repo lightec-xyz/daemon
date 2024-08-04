@@ -580,33 +580,33 @@ func newStoreProofV1(proofType common.ZkProofType, id string, proof, witness []b
 	}
 }
 
-func (fs *FileStorage) NeedBtcUpStartIndexes(height uint64) ([]uint64, error) {
+func (fs *FileStorage) NeedBtcUpEndIndexes(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcUpperTable)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcUpperTable)
 	}
-	indexes, err := fileStore.Indexes(getIndex)
+	indexes, err := fileStore.Indexes(getEndIndex)
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
 	}
 	// todo
-	var tmpIndexes []uint64
-	for index := fs.btcGenesisHeight; index < height; index = index + common.BtcUpperDistance {
+	var endIndexes []uint64
+	for index := fs.btcGenesisHeight + common.BtcUpperDistance; index <= height; index = index + common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
-			tmpIndexes = append(tmpIndexes, index)
+			endIndexes = append(endIndexes, index)
 		}
 	}
-	return tmpIndexes, nil
+	return endIndexes, nil
 
 }
 
-func (fs *FileStorage) NeedBtcRecursiveIndex(height uint64) ([]uint64, error) {
+func (fs *FileStorage) NeedBtcRecursiveEndIndex(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcRecursiveTable)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcRecursiveTable)
 	}
-	indexes, err := fileStore.Indexes(getIndex)
+	indexes, err := fileStore.Indexes(getEndIndex)
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
@@ -620,13 +620,13 @@ func (fs *FileStorage) NeedBtcRecursiveIndex(height uint64) ([]uint64, error) {
 			    ....
 		 we are record startIndex,not endIndex
 	*/
-	var tmpIndexes []uint64
-	for index := fs.btcGenesisHeight + common.BtcUpperDistance + 2; index < height; index = common.BtcUpperDistance {
+	var endIndexes []uint64
+	for index := fs.btcGenesisHeight + common.BtcUpperDistance*3; index <= height; index = index + common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
-			tmpIndexes = append(tmpIndexes, index)
+			endIndexes = append(endIndexes, index)
 		}
 	}
-	return tmpIndexes, nil
+	return endIndexes, nil
 }
 
 func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, error) {
@@ -822,6 +822,38 @@ func genKey(prefix Table, args ...interface{}) string {
 }
 
 func getIndex(fileName string) (uint64, error) {
+	keys := strings.Split(fileName, "_")
+	if len(keys) != 3 {
+		return 0, fmt.Errorf("invalid file name %v", fileName)
+	}
+	/*
+		todo: base_101_100
+		index 101
+	*/
+	index, err := strconv.ParseUint(keys[2], 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return index, nil
+}
+
+func getStartIndex(fileName string) (uint64, error) {
+	keys := strings.Split(fileName, "_")
+	if len(keys) != 3 {
+		return 0, fmt.Errorf("invalid file name %v", fileName)
+	}
+	/*
+		todo: base_101_100
+		index 101
+	*/
+	index, err := strconv.ParseUint(keys[1], 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return index, nil
+}
+
+func getEndIndex(fileName string) (uint64, error) {
 	keys := strings.Split(fileName, "_")
 	if len(keys) != 3 {
 		return 0, fmt.Errorf("invalid file name %v", fileName)

@@ -53,12 +53,12 @@ func initState() (*State, error) {
 	if err != nil {
 		panic(err)
 	}
-	preparedData, err := NewPreparedData(fileStorage, store, genesisPeriod, client, btcClient, ethClient, apiClient, beacon)
+	preparedData, err := NewPreparedData(fileStorage, store, genesisPeriod, 0, client, btcClient, ethClient, apiClient, beacon)
 	if err != nil {
 		panic(err)
 	}
 	state, err := NewState(NewArrayQueue(), fileStorage, store, NewCacheState(), preparedData,
-		0, 0, nil, nil)
+		0, 0, 0, nil, nil)
 	if err != nil {
 		return nil, err
 	}

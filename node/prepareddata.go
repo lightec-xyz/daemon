@@ -29,31 +29,32 @@ import (
 )
 
 type PreparedData struct {
-	filestore     *FileStorage
-	store         store.IStore
-	proverClient  *btcproverClient.Client
-	btcClient     *btcrpc.Client
-	ethClient     *ethrpc.Client
-	apiClient     *apiclient.Client
-	beaconClient  *beacon.Client
-	genesisPeriod uint64
+	filestore        *FileStorage
+	store            store.IStore
+	proverClient     *btcproverClient.Client
+	btcClient        *btcrpc.Client
+	ethClient        *ethrpc.Client
+	apiClient        *apiclient.Client
+	beaconClient     *beacon.Client
+	genesisPeriod    uint64
+	btcGenesisHeight uint64 // startIndex
 }
 
-func (p *PreparedData) GetBtcGenesisData(genesisHeight, endHeight uint64) (*rpc.BtcGenesisRequest, bool, error) {
-	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(endHeight-1), uint32(genesisHeight))
+func (p *PreparedData) GetBtcGenesisData(endHeight uint64) (*rpc.BtcGenesisRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(endHeight-1), uint32(p.btcGenesisHeight))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", 0, err)
 		return nil, false, err
 	}
-	firstProof, ok, err := p.filestore.GetBtcUpperProof(genesisHeight, genesisHeight+common.BtcUpperDistance)
+	firstProof, ok, err := p.filestore.GetBtcUpperProof(p.btcGenesisHeight, p.btcGenesisHeight+common.BtcUpperDistance)
 	if err != nil {
-		logger.Error("get base level proof data error: %v %v", 0, err)
+		logger.Error("get btc genesis proof data error: %v %v", 0, err)
 		return nil, false, err
 	}
 	if !ok {
 		return nil, false, nil
 	}
-	secondProof, ok, err := p.filestore.GetBtcUpperProof(genesisHeight+common.BtcUpperDistance, genesisHeight+common.BtcUpperDistance*2)
+	secondProof, ok, err := p.filestore.GetBtcUpperProof(p.btcGenesisHeight+common.BtcUpperDistance, p.btcGenesisHeight+common.BtcUpperDistance*2)
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", 0, err)
 		return nil, false, err
@@ -75,8 +76,8 @@ func (p *PreparedData) GetBtcGenesisData(genesisHeight, endHeight uint64) (*rpc.
 	return &genesisRequest, true, nil
 }
 
-func (p *PreparedData) GetBtcRecursiveData(genesisHeight, endHeight uint64) (*rpc.BtcRecursiveRequest, bool, error) {
-	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(endHeight-1), uint32(genesisHeight))
+func (p *PreparedData) GetBtcRecursiveData(endHeight uint64) (*rpc.BtcRecursiveRequest, bool, error) {
+	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(endHeight-1), uint32(p.btcGenesisHeight))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", 0, err)
 		return nil, false, err
@@ -91,7 +92,7 @@ func (p *PreparedData) GetBtcRecursiveData(genesisHeight, endHeight uint64) (*rp
 		    recursive2: 0~8(recursive1,up4)
 		    ....
 	*/
-	if endHeight == genesisHeight+common.BtcUpperDistance*3 {
+	if endHeight == p.btcGenesisHeight+common.BtcUpperDistance*3 {
 		genesisProof, ok, err := p.filestore.GetBtcGenesisProof()
 		if err != nil {
 			logger.Error("get base level proof data error: %v %v", 0, err)
@@ -105,8 +106,8 @@ func (p *PreparedData) GetBtcRecursiveData(genesisHeight, endHeight uint64) (*rp
 			Witness: genesisProof.Witness,
 		}
 
-	} else if endHeight > genesisHeight+common.BtcUpperDistance*3 {
-		recursiveProof, ok, err := p.filestore.GetBtcRecursiveProof(endHeight-common.BtcUpperDistance, endHeight)
+	} else if endHeight > p.btcGenesisHeight+common.BtcUpperDistance*3 {
+		recursiveProof, ok, err := p.filestore.GetBtcRecursiveProof(endHeight-2*common.BtcUpperDistance, endHeight-common.BtcUpperDistance)
 		if err != nil {
 			logger.Error("get base level proof data error: %v %v", 0, err)
 			return nil, false, err
@@ -917,16 +918,17 @@ func (p *PreparedData) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, err
 	return beginRoot, endRoot, nil
 }
 
-func NewPreparedData(filestore *FileStorage, store store.IStore, genesisPeriod uint64, proverClient *btcproverClient.Client, btcClient *btcrpc.Client,
+func NewPreparedData(filestore *FileStorage, store store.IStore, genesisPeriod, btcGenesisHeight uint64, proverClient *btcproverClient.Client, btcClient *btcrpc.Client,
 	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client) (*PreparedData, error) {
 	return &PreparedData{
-		filestore:     filestore,
-		store:         store,
-		proverClient:  proverClient,
-		btcClient:     btcClient,
-		ethClient:     ethClient,
-		apiClient:     apiClient,
-		beaconClient:  beaconClient,
-		genesisPeriod: genesisPeriod,
+		filestore:        filestore,
+		store:            store,
+		proverClient:     proverClient,
+		btcClient:        btcClient,
+		ethClient:        ethClient,
+		apiClient:        apiClient,
+		beaconClient:     beaconClient,
+		genesisPeriod:    genesisPeriod,
+		btcGenesisHeight: btcGenesisHeight,
 	}, nil
 }

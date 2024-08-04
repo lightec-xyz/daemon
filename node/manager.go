@@ -32,9 +32,9 @@ type manager struct {
 }
 
 func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *PreparedData, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
-	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, genesisPeriod uint64, cache *Cache) (IManager, error) {
+	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, btcGenesisHeight, genesisPeriod, genesisSlot uint64, cache *Cache) (IManager, error) {
 	queue := NewArrayQueue()
-	state, err := NewState(queue, fileStore, store, cache, prep, genesisPeriod, genesisPeriod, btcClient, ethClient)
+	state, err := NewState(queue, fileStore, store, cache, prep, btcGenesisHeight, genesisPeriod, genesisSlot, btcClient, ethClient)
 	if err != nil {
 		logger.Error("new state error:%v", err)
 		return nil, err

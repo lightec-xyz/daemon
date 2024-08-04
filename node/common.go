@@ -237,7 +237,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		return data, ok, nil
 
 	case common.BtcGenesisType:
-		data, ok, err := p.GetBtcGenesisData(index, end)
+		data, ok, err := p.GetBtcGenesisData(end)
 		if err != nil {
 			logger.Error("get btc genesis data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -245,7 +245,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		return data, ok, nil
 
 	case common.BtcRecursiveType:
-		data, ok, err := p.GetBtcRecursiveData(index, end)
+		data, ok, err := p.GetBtcRecursiveData(end)
 		if err != nil {
 			logger.Error("get btc recursive data error:%v %v %v", index, end, err)
 			return nil, false, err

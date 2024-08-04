@@ -222,14 +222,14 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Warn("no local worker to generate proof")
 	}
 	scheduler := NewSchedule(workers)
-	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisSyncPeriod, btcProverClient, btcClient, ethClient, beaClient, beaconClient)
+	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisSyncPeriod, uint64(cfg.BtcGenesisHeight), btcProverClient, btcClient, ethClient, beaClient, beaconClient)
 	if err != nil {
 		logger.Error("new PreparedData error: %v", err)
 		return nil, err
 	}
 
 	msgManager, err := NewManager(btcClient, ethClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
-		storeDb, memoryStore, scheduler, fileStore, cfg.GenesisSyncPeriod, cache)
+		storeDb, memoryStore, scheduler, fileStore, uint64(cfg.BtcGenesisHeight), cfg.GenesisSyncPeriod, cfg.BeaconInitSlot, cache)
 	if err != nil {
 		logger.Error("new msgManager error: %v", err)
 		return nil, err
