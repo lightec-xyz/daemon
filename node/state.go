@@ -526,20 +526,20 @@ func (s *State) updateRedeemProofStatus(txHash string, index uint64, status comm
 func (s *State) CheckBeaconState() error {
 
 	// beacon genesis proof
-	exists, err := s.fileStore.CheckGenesisProof()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	if !exists {
-		logger.Warn("no find genesis proof, send request genesis proof")
-		genesisPeriod := s.genesisPeriod + 1
-		err := s.tryProofRequest(common.SyncComGenesisType, genesisPeriod, 0, "")
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-	}
+	//exists, err := s.fileStore.CheckGenesisProof()
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return err
+	//}
+	//if !exists {
+	//	logger.Warn("no find genesis proof, send request genesis proof")
+	//	genesisPeriod := s.genesisPeriod + 1
+	//	err := s.tryProofRequest(common.SyncComGenesisType, genesisPeriod, 0, "")
+	//	if err != nil {
+	//		logger.Error(err.Error())
+	//		return err
+	//	}
+	//}
 	// beacon unit proof
 	unitProofIndexes, err := s.fileStore.NeedGenUnitProofIndexes()
 	if err != nil {
