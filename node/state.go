@@ -375,51 +375,12 @@ func (s *State) CheckEthState() error {
 	logger.Debug("check eth state now  ....")
 	// todo
 	if s.debug {
-		// ethereum tx: RedeemTxType_2195577_0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641
-		txHash := "0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"
-		has, err := s.store.HasObj(DbUnGenProofId(Ethereum, txHash))
+		err := s.mockTestEthRedeemData()
 		if err != nil {
-			logger.Error("write ungen proof error: %v", err)
+			logger.Error("mock test eth redeem data error: %v", err)
 			return err
 		}
-		if !has {
-			err := WriteBeaconSlot(s.store, 2025122, 2195577)
-			if err != nil {
-				logger.Error("write beacon slot error: %v", err)
-				return err
-			}
-			err = WriteTxes(s.store, []DbTx{
-				{
-					Height:    2025122,
-					TxHash:    txHash,
-					TxIndex:   16,
-					Amount:    0,
-					TxType:    RedeemTx,
-					ChainType: Ethereum,
-				},
-			})
-			if err != nil {
-				logger.Error("write tx error: %v", err)
-				return err
-			}
-			err = WriteUnGenProof(s.store, Ethereum, []*DbUnGenProof{
-				{
-					TxHash:    txHash,
-					ProofType: common.RedeemTxType,
-					ChainType: Ethereum,
-					Height:    2025122,
-					TxIndex:   16,
-					Amount:    0,
-				},
-			})
-			if err != nil {
-				logger.Error("write ungen proof error: %v", err)
-				return err
-			}
-		}
-
 	}
-
 	unGenProofs, err := ReadAllUnGenProofs(s.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
@@ -739,4 +700,68 @@ func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cac
 		ethClient:        ethClient,
 		debug:            common.GetEnvDebugMode(),
 	}, nil
+}
+
+func (s *State) clearTestEthRedeemData() error {
+	// todo
+	err := s.store.DeleteObj(DbUnGenProofId(Ethereum, "0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"))
+	if err != nil {
+		logger.Error("delete ungen proof error: %v", err)
+		return err
+	}
+	return nil
+}
+
+// just only test purpose
+func (s *State) mockTestEthRedeemData() error {
+	// ethereum tx: RedeemTxType_2195577_0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641
+	txHash := "0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"
+	txHeight := uint64(2025122)
+	txSlot := uint64(2195577)
+	exists, err := s.store.HasObj(DbUnGenProofId(Ethereum, txHash))
+	if err != nil {
+		logger.Error("write ungen proof error: %v", err)
+		return err
+	}
+	if !exists {
+		err := WriteBeaconSlot(s.store, txHeight, txSlot)
+		if err != nil {
+			logger.Error("write beacon slot error: %v", err)
+			return err
+		}
+		if err != nil {
+			logger.Error("write beacon slot error: %v", err)
+			return err
+		}
+		err = WriteTxes(s.store, []DbTx{
+			{
+				Height:    txHeight,
+				TxHash:    txHash,
+				TxIndex:   16,
+				Amount:    0,
+				TxType:    RedeemTx,
+				ChainType: Ethereum,
+			},
+		})
+		if err != nil {
+			logger.Error("write tx error: %v", err)
+			return err
+		}
+		err = WriteUnGenProof(s.store, Ethereum, []*DbUnGenProof{
+			{
+				TxHash:    txHash,
+				ProofType: common.RedeemTxType,
+				ChainType: Ethereum,
+				Height:    txHeight,
+				TxIndex:   16,
+				Amount:    0,
+			},
+		})
+		if err != nil {
+			logger.Error("write ungen proof error: %v", err)
+			return err
+		}
+	}
+	logger.Debug("init test mock redeem complete ....")
+	return nil
 }
