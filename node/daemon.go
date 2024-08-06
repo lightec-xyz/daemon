@@ -325,7 +325,7 @@ func (d *Daemon) Run() error {
 	}
 	go DoTimerTask("manager-checkState", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
 	//go DoTimerTask("manager-checkBtcState", d.manager.checkTime, d.manager.manager.CheckBtcState, d.exitSignal)
-	go DoTimerTask("manager-checkEthState", d.manager.checkTime, d.manager.manager.CheckEthState, d.exitSignal)
+	//go DoTimerTask("manager-checkEthState", d.manager.checkTime, d.manager.manager.CheckEthState, d.exitSignal)
 	go DoTimerTask("manager-checkBeaconState", d.manager.checkTime, d.manager.manager.CheckBeaconState, d.exitSignal)
 
 	for _, agent := range d.agents {
