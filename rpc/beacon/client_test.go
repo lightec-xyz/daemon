@@ -1,9 +1,12 @@
 package beacon
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 // var endpoint = "http://127.0.0.1:9870"
-var endpoint = "http://18.222.137.49:38104"
+var endpoint = "http://18.119.98.31:30814"
 
 // var endpoint = "http://37.120.151.183:8970"
 
@@ -50,11 +53,15 @@ func TestCliet_GetLatestPeriod(t *testing.T) {
 }
 
 func TestClient_Bootstrap(t *testing.T) {
-	bootstrap, err := client.Bootstrap(182 * 8192)
+	bootstrap, err := client.Bootstrap(265 * 8192)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(bootstrap)
+	data, err := json.Marshal(bootstrap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(data))
 }
 
 func TestClient_GetLightClientUpdates(t *testing.T) {

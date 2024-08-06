@@ -33,6 +33,7 @@ type IAgent interface {
 }
 
 type IManager interface {
+	IState
 	Init() error
 	ReceiveRequest(requests []*common.ZkProofRequest) error
 	CheckState() error
@@ -121,8 +122,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		cfg.BtcGenesisHeight = (count/2016 - 1) * 2016
 		cfg.BtcGenesisHeight = 2871700
-		cfg.BeaconInitSlot = 181 * 8192
-		cfg.GenesisSyncPeriod = 181
+		cfg.BeaconInitSlot = 265 * 8192
+		cfg.GenesisSyncPeriod = 265
 		//fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
 		//if err != nil {
 		//	logger.Error("new fileStorage error: %v", err)
@@ -135,7 +136,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		//	return nil, err
 		//}
 	}
-	logger.Debug("beaconPeriod: %v,ethInitHeight: %v,btcGenesisHeight: %v,btcInitHeight: %v", cfg.BeaconInitSlot,
+	logger.Debug("beaconGenesisPeriod: %v,ethInitHeight: %v,btcGenesisHeight: %v,btcInitHeight: %v", cfg.GenesisSyncPeriod,
 		cfg.EthInitHeight, cfg.BtcGenesisHeight, cfg.BtcInitHeight)
 
 	dbPath := fmt.Sprintf("%s/%s", cfg.Datadir, cfg.Network)
@@ -194,7 +195,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
 	}
-	if false {
+	if true {
 		ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
 			beaconClient, oasisClient, proofRequest, taskManager, cache)
 		if err != nil {
@@ -323,13 +324,15 @@ func (d *Daemon) Run() error {
 		go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
 	}
 	go DoTimerTask("manager-checkState", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
+	//go DoTimerTask("manager-checkBtcState", d.manager.checkTime, d.manager.manager.CheckBtcState, d.exitSignal)
+	go DoTimerTask("manager-checkEthState", d.manager.checkTime, d.manager.manager.CheckEthState, d.exitSignal)
+	go DoTimerTask("manager-checkBeaconState", d.manager.checkTime, d.manager.manager.CheckBeaconState, d.exitSignal)
 
 	for _, agent := range d.agents {
 		proofReplyName := fmt.Sprintf("%s-proofResponse", agent.node.Name())
 		go doProofResponseTask(proofReplyName, agent.proofResp, agent.node.ProofResponse, d.exitSignal)
-		scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
-		go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
-
+		//scanName := fmt.Sprintf("%s-scanBlock", agent.node.Name())
+		//go DoTimerTask(scanName, agent.scanTime, agent.node.ScanBlock, d.exitSignal)
 		//fetchName := fmt.Sprintf("%s-fetchResponse", agent.node.Name())
 		//go doFetchRespTask(fetchName, agent.fetchResp, agent.node.FetchDataResponse, d.exitSignal)
 		//checkStateName := fmt.Sprintf("%s-checkState", agent.node.Name())

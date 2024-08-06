@@ -17,6 +17,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	reLightCommon "github.com/lightec-xyz/reLight/circuits/common"
 	"github.com/lightec-xyz/reLight/circuits/utils"
+	"time"
 
 	"math/big"
 )
@@ -90,7 +91,7 @@ type CircuitConfig struct {
 
 func debugProof() (*reLightCommon.Proof, error) {
 	// todo just test for debug
-	//time.Sleep(2 * time.Second)
+	time.Sleep(2 * time.Second)
 	field := ecc.BN254.ScalarField()
 	w, err := witness.New(field)
 	if err != nil {

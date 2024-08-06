@@ -76,6 +76,51 @@ func (m *manager) Init() error {
 	return nil
 }
 
+func (m *manager) CheckBtcState() error {
+	err := m.state.CheckBtcState()
+	if err != nil {
+		logger.Error("check btc state error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func (m *manager) CheckEthState() error {
+	err := m.state.CheckEthState()
+	if err != nil {
+		logger.Error("check eth state error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func (m *manager) CheckBeaconState() error {
+	err := m.state.CheckBeaconState()
+	if err != nil {
+		logger.Error("check beacon state error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func (m *manager) CheckState() error {
+	logger.Debug("check pending request now")
+	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
+		timout, err := m.checkRequestTimeout(request)
+		if err != nil {
+			logger.Error("check pending request error:%v", err)
+			return err
+		}
+		if timout {
+			logger.Debug("%v timeout,add proof queue again", request.Id())
+			m.pendingQueue.Delete(request.Id())
+			m.proofQueue.Push(request)
+		}
+		return nil
+	})
+	return nil
+}
+
 func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
 		logger.Info("queue receive gen Proof request:%v", req.Id())
@@ -276,31 +321,6 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 	return false, nil
 }
 
-func (m *manager) CheckState() error {
-	// todo
-	logger.Info("start check proof state now")
-	err := m.CheckProofState()
-	if err != nil {
-		logger.Error("check proof state error:%v", err)
-		return err
-	}
-	logger.Info("complete check proof state now ")
-	logger.Debug("check pending request now")
-	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
-		timout, err := m.checkRequestTimeout(request)
-		if err != nil {
-			logger.Error("check pending request error:%v", err)
-			return err
-		}
-		if timout {
-			logger.Debug("%v timeout,add proof queue again", request.Id())
-			m.pendingQueue.Delete(request.Id())
-			m.proofQueue.Push(request)
-		}
-		return nil
-	})
-	return nil
-}
 func (m *manager) checkRequestTimeout(request *common.ZkProofRequest) (bool, error) {
 	if request == nil {
 		return false, fmt.Errorf("request is nil")
