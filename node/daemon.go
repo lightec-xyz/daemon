@@ -251,7 +251,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	logger.Debug("wsServer: listen on %v,port  %v", cfg.Rpcbind, cfg.WsPort)
-	//fetch, err := NewFetch(beaconClient, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
+	//fetch, err := NewFetch(beaconClient, storeDb, fileStore, cfg.BeaconInitSlot, ethFetchDataResp)
 	//if err != nil {
 	//	logger.Error("new fetch error: %v", err)
 	//	return nil, err

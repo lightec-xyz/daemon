@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/codec"
 	"github.com/lightec-xyz/daemon/common"
 	"sort"
@@ -646,4 +647,28 @@ func ReadTaskTime(store store.IStore, flag common.TaskStatusFlag, id string) (ti
 		return time.Time{}, false, err
 	}
 	return t, true, nil
+}
+
+func WriteFinalityUpdateSlot(store store.IStore, finalizeSlot uint64) error {
+	return store.PutObj(DbFinalityUpdateSlotId(finalizeSlot), finalizeSlot)
+}
+
+func FindFinalityUpdateNearestSlot(store store.IStore, txSlot uint64) (uint64, bool, error) {
+	var start []byte
+	if txSlot-common.MaxDiffTxFinalitySlot > 0 {
+		start = []byte(fmt.Sprintf("%d", txSlot-common.MaxDiffTxFinalitySlot))
+	}
+	iterator := store.Iterator([]byte(FinalityUpdateSlotPrefix), start)
+	defer iterator.Release()
+	for iterator.Next() {
+		var slot uint64
+		err := codec.Unmarshal(iterator.Value(), &slot)
+		if err != nil {
+			return 0, false, err
+		}
+		if slot >= txSlot {
+			return slot, slot-txSlot <= common.MaxDiffTxFinalitySlot, nil
+		}
+	}
+	return 0, false, nil
 }

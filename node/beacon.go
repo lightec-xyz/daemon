@@ -79,7 +79,7 @@ func (b *BeaconAgent) Init() error {
 	}
 	if !exists || latestSlot < b.genesisSlot {
 		logger.Warn("no find latest slot, store %v slot to db", b.genesisSlot)
-		err := b.fileStore.StoreFinalizedSlot(b.genesisSlot)
+		err := b.fileStore.StoreLatestFinalizedSlot(b.genesisSlot)
 		if err != nil {
 			logger.Error("store latest Slot error: %v", err)
 			return err

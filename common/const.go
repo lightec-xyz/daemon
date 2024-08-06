@@ -23,8 +23,9 @@ const (
 )
 
 const (
-	BeaconHeaderSlot = 32
-	SlotPerPeriod    = 8192
+	BeaconHeaderSlot      = 32
+	SlotPerPeriod         = 8192
+	MaxDiffTxFinalitySlot = 64
 )
 
 type TxType = int

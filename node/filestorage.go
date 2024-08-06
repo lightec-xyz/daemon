@@ -162,7 +162,7 @@ func (fs *FileStorage) GetLatestPeriod() (uint64, bool, error) {
 	return period, exists, nil
 }
 
-func (fs *FileStorage) StoreFinalizedSlot(slot uint64) error {
+func (fs *FileStorage) StoreLatestFinalizedSlot(slot uint64) error {
 	return fs.StoreObj(IndexTable, LatestSlotKey, slot)
 }
 

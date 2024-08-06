@@ -5,6 +5,7 @@ import (
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"github.com/lightec-xyz/daemon/store"
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
@@ -69,7 +70,12 @@ func NewFetch(url, datadir string, genesisSlot uint64) (*Fetch, error) {
 		logger.Error("new fileStorage error: %v", err)
 		return nil, err
 	}
-	fetch, err := node.NewFetch(client, fileStorage, genesisSlot, nil)
+	dbStore, err := store.NewStore(fmt.Sprintf("%s/leveldb", datadir), 0, 0, "zkbtc", false)
+	if err != nil {
+		logger.Error("new dbStore error: %v", err)
+		return nil, err
+	}
+	fetch, err := node.NewFetch(client, dbStore, fileStorage, genesisSlot, nil)
 	if err != nil {
 		logger.Error("new fetch error: %v", err)
 		return nil, err

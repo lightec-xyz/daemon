@@ -15,13 +15,14 @@ const (
 	BeaconSlotPrefix      = "bs_"
 	BeaconEthNumberPrefix = "bh_"
 
-	TxSlotPrefix           = "ts_"
-	TxFinalizeSlotPrefix   = "tfs_"
-	PendingReqPrefix       = "pr_"
-	PendingProofRespPrefix = "prp_"
-	NoncePrefix            = "n_"
-	UnConfirmTxPrefix      = "un_"
-	TaskTimePrefix         = "tt_"
+	TxSlotPrefix             = "ts_"
+	TxFinalizeSlotPrefix     = "tfs_"
+	PendingReqPrefix         = "pr_"
+	PendingProofRespPrefix   = "prp_"
+	NoncePrefix              = "n_"
+	UnConfirmTxPrefix        = "un_"
+	TaskTimePrefix           = "tt_"
+	FinalityUpdateSlotPrefix = "fu_"
 )
 
 const (
@@ -202,5 +203,10 @@ func DbUnConfirmTxId(txId string) string {
 
 func DbTaskTimeId(flag common.TaskStatusFlag, id string) string {
 	key := fmt.Sprintf("%s%s_%s", TaskTimePrefix, id, flag.String())
+	return key
+}
+
+func DbFinalityUpdateSlotId(slot uint64) string {
+	key := fmt.Sprintf("%s%d", FinalityUpdateSlotPrefix, slot)
 	return key
 }

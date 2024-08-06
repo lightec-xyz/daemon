@@ -11,12 +11,37 @@ import (
 )
 
 func initStore() store.IStore {
-	dbPath := "/Users/red/lworkspace/lightec/daemon/node/test/dbtest"
+	dbPath := "/Users/red/lworkspace/lightec/daemon/daemon/node/test/dbtest"
 	db, err := store.NewStore(dbPath, 0, 0, "zkbtc", false)
 	if err != nil {
 		panic(err)
 	}
 	return db
+}
+
+func TestFindFinalityUpdateNearestSlot(t *testing.T) {
+
+	iStore := initStore()
+	err := WriteFinalityUpdateSlot(iStore, 900)
+	assert.Nil(t, err)
+	err = WriteFinalityUpdateSlot(iStore, 200)
+	assert.Nil(t, err)
+	err = WriteFinalityUpdateSlot(iStore, 600)
+	assert.Nil(t, err)
+	err = WriteFinalityUpdateSlot(iStore, 500)
+	assert.Nil(t, err)
+	err = WriteFinalityUpdateSlot(iStore, 100)
+	assert.Nil(t, err)
+	err = WriteFinalityUpdateSlot(iStore, 400)
+	assert.Nil(t, err)
+	err = WriteFinalityUpdateSlot(iStore, 700)
+	assert.Nil(t, err)
+	slot, ok, err := FindFinalityUpdateNearestSlot(iStore, 450)
+	if !ok {
+		t.Fatal("no find slot")
+	}
+	assert.Nil(t, err)
+	t.Log(slot)
 }
 
 func TestPendingRequest(t *testing.T) {

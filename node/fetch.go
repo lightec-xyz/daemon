@@ -5,6 +5,7 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
+	"github.com/lightec-xyz/daemon/store"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 	"math/big"
@@ -19,6 +20,7 @@ type Fetch struct {
 	genesisSlot   uint64
 	genesisPeriod uint64
 	fileStore     *FileStorage
+	store         store.IStore
 	lock          sync.Mutex
 	maxReqs       *atomic.Int64
 	state         *Cache
@@ -49,7 +51,7 @@ func (f *Fetch) Init() error {
 	return nil
 }
 
-func NewFetch(client *beacon.Client, fileStore *FileStorage, genesisSlot uint64, ethFetchResp chan *FetchResponse) (*Fetch, error) {
+func NewFetch(client *beacon.Client, store store.IStore, fileStore *FileStorage, genesisSlot uint64, ethFetchResp chan *FetchResponse) (*Fetch, error) {
 	maxReqs := atomic.Int64{}
 	maxReqs.Store(0)
 	return &Fetch{
@@ -60,6 +62,7 @@ func NewFetch(client *beacon.Client, fileStore *FileStorage, genesisSlot uint64,
 		maxReqs:       &maxReqs,
 		ethFetchResp:  ethFetchResp, // todo
 		state:         NewCacheState(),
+		store:         store,
 	}, nil
 }
 
@@ -225,7 +228,7 @@ func (f *Fetch) GetFinalityUpdate() error {
 	}
 	slot := slotBig.Uint64()
 
-	err = f.fileStore.StoreFinalizedSlot(slot)
+	err = f.fileStore.StoreLatestFinalizedSlot(slot)
 	if err != nil {
 		logger.Error("store finality update error:%v %v", slot, err)
 		return err
@@ -237,6 +240,11 @@ func (f *Fetch) GetFinalityUpdate() error {
 	}
 	if exists {
 		return nil
+	}
+	err = WriteFinalityUpdateSlot(f.store, slot)
+	if err != nil {
+		logger.Error("write finality update slot error:%v %v", slot, err)
+		return err
 	}
 	//todo
 	if f.ethFetchResp == nil {
