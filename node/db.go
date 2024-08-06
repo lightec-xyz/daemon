@@ -667,6 +667,7 @@ func FindFinalityUpdateNearestSlot(store store.IStore, txSlot uint64) (uint64, b
 			return 0, false, err
 		}
 		if slot >= txSlot {
+			// todo
 			return slot, slot-txSlot <= common.MaxDiffTxFinalitySlot, nil
 		}
 	}
