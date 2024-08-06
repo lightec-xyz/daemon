@@ -110,6 +110,7 @@ func (t *TxManager) getEthAddrNonce(addr string) (uint64, error) {
 
 func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 	if common.GetEnvDebugMode() {
+		logger.Debug("current is debug,skip verify and sign: %v", hash)
 		return "", nil
 	}
 	proofBytes, err := hex.DecodeString(proof)
