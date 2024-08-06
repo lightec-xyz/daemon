@@ -266,7 +266,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		txManager:         taskManager,
 		fetch:             nil, // todo
 		debug:             common.GetEnvDebugMode(),
-		manager:           NewWrapperManger(msgManager, proofRequest, 3*time.Second),
+		manager:           NewWrapperManger(msgManager, proofRequest, 8*time.Second),
 	}
 	return daemon, nil
 }

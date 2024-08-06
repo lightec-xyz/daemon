@@ -15,7 +15,6 @@ import (
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/lightec-xyz/daemon/common"
 )
 
 var err error
@@ -241,7 +240,7 @@ func TestRedeemTx(t *testing.T) {
 
 func TestDepositeTransaction(t *testing.T) {
 	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
-	proof := common.ZkProof([]byte("test proof"))
+	proof := []byte("test proof")
 	from := ethcommon.HexToAddress("0x771815eFD58e8D6e66773DB0bc002899c00d5b0c")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -313,5 +312,9 @@ func TestGetTrancaction(t *testing.T) {
 }
 
 func TestClient_Verify(t *testing.T) {
-
+	receipt, err := client.Client.TransactionReceipt(context.Background(), ethcommon.HexToHash("0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(receipt)
 }

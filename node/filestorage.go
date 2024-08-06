@@ -23,10 +23,10 @@ type StoreProof struct {
 }
 
 const (
-	LatestPeriodKey   = "latest"
+	LatestPeriodKey   = "latestPeriod"
 	LatestSlotKey     = "latestFinalitySlot"
 	GenesisRawKey     = "genesisRaw"
-	SyncComGenesisKey = "syncComGenesis"
+	SyncComGenesisKey = "syncComGenesisProof"
 )
 
 type Table string

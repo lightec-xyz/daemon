@@ -866,7 +866,6 @@ func (p *PreparedData) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash
 		logger.Error("get begin and end id error: %v", err)
 		return nil, false, err
 	}
-	// todo need cache
 	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(p.ethClient.Client, txHash)
 	if err != nil {
 		logger.Error("get tx and receipt error: %v", err)

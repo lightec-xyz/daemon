@@ -39,7 +39,9 @@ func (s *State) CheckBtcState() error {
 		return err
 	}
 	// todo
-	blockCount = 2871700 + 8*4
+	if s.debug {
+		blockCount = 2871700 + 8*4
+	}
 
 	// btc genesis proof
 	exists, err := CheckProof(s.fileStore, common.BtcGenesisType, s.btcGenesisHeight, s.btcGenesisHeight+common.BtcUpperDistance*2, "")
@@ -372,19 +374,50 @@ func (s *State) CheckEthState() error {
 
 	logger.Debug("check eth state now  ....")
 	// todo
-	err := WriteUnGenProof(s.store, Ethereum, []*DbUnGenProof{
-		{
-			TxHash:    "0x123",
-			ProofType: common.RedeemTxType,
-			ChainType: Ethereum,
-			Height:    1,
-			TxIndex:   0,
-			Amount:    0,
-		},
-	})
-	if err != nil {
-		logger.Error("write ungen proof error: %v", err)
-		return err
+	if s.debug {
+		// ethereum tx: RedeemTxType_2195577_0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641
+		txHash := "0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"
+		has, err := s.store.HasObj(DbUnGenProofId(Ethereum, txHash))
+		if err != nil {
+			logger.Error("write ungen proof error: %v", err)
+			return err
+		}
+		if !has {
+			err := WriteBeaconSlot(s.store, 2025122, 2195577)
+			if err != nil {
+				logger.Error("write beacon slot error: %v", err)
+				return err
+			}
+			err = WriteTxes(s.store, []DbTx{
+				{
+					Height:    2025122,
+					TxHash:    txHash,
+					TxIndex:   16,
+					Amount:    0,
+					TxType:    RedeemTx,
+					ChainType: Ethereum,
+				},
+			})
+			if err != nil {
+				logger.Error("write tx error: %v", err)
+				return err
+			}
+			err = WriteUnGenProof(s.store, Ethereum, []*DbUnGenProof{
+				{
+					TxHash:    txHash,
+					ProofType: common.RedeemTxType,
+					ChainType: Ethereum,
+					Height:    2025122,
+					TxIndex:   16,
+					Amount:    0,
+				},
+			})
+			if err != nil {
+				logger.Error("write ungen proof error: %v", err)
+				return err
+			}
+		}
+
 	}
 
 	unGenProofs, err := ReadAllUnGenProofs(s.store, Ethereum)
@@ -482,7 +515,7 @@ func (s *State) CheckEthState() error {
 			}
 			continue
 		}
-		err = s.tryProofRequest(common.RedeemTxType, 0, 0, txHash)
+		err = s.tryProofRequest(common.RedeemTxType, txSlot, finalizedSlot, txHash)
 		if err != nil {
 			logger.Error("try proof request error: %v", err)
 			return err
@@ -704,5 +737,6 @@ func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cac
 		genesisSlot:      genesisSlot,
 		btcClient:        btcClient,
 		ethClient:        ethClient,
+		debug:            common.GetEnvDebugMode(),
 	}, nil
 }
