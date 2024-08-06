@@ -96,7 +96,7 @@ func NewNode(cfg Config) (*Node, error) {
 			}
 			fileMd5 := common.HexMd5(fileBytes)
 			if fileMd5 != item.Hash {
-				logger.Error("check zk md5 not match: %v %v %v", path, fileMd5, item.Hash)
+				logger.Error("check zk md5 not match path: %v,fileHash:%v,releaseHash: %v", path, fileMd5, item.Hash)
 				return nil, fmt.Errorf("check zk md5 not match: %v %v %v", path, fileMd5, item.Hash)
 			}
 		}

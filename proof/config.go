@@ -16,6 +16,7 @@ type Config struct {
 	MaxNums        int         `json:"maxNums"`
 	Network        string      `json:"network"`
 	DataDir        string      `json:"datadir"`
+	VerifyZkFile   bool        `json:"verifyZkFile"`
 	Mode           common.Mode `json:"mode"` // rpcServer | client
 	ProofType      []string    `json:"proofType"`
 }
