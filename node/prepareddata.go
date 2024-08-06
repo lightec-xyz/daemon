@@ -709,7 +709,7 @@ func (p *PreparedData) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeU
 	}
 	if !ok {
 		logger.Error("update data verify false: %v", period)
-		return nil, false, nil
+		return nil, false, fmt.Errorf("update data verify false: %v", period)
 	}
 	return &update, true, nil
 
