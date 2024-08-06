@@ -60,13 +60,17 @@ func (c *Config) GetZkProofTypes() ([]common.ZkProofType, error) {
 		return toZkProofType(c.ProofType)
 	}
 	zkProofTypes := common.GetEnvZkProofTypes()
-	var zkEnvProofTypes []string
-	err := json.Unmarshal([]byte(zkProofTypes), &zkEnvProofTypes)
-	if err != nil {
-		return nil, err
+	if zkProofTypes != "" {
+		var zkEnvProofTypes []string
+		err := json.Unmarshal([]byte(zkProofTypes), &zkEnvProofTypes)
+		if err != nil {
+			return nil, err
+		}
+		logger.Debug("proof types:%v", zkEnvProofTypes)
+		return toZkProofType(zkEnvProofTypes)
 	}
-	logger.Debug("proof types:%v", zkEnvProofTypes)
-	return toZkProofType(zkEnvProofTypes)
+	return nil, nil
+
 }
 
 func (c *Config) Info() string {
