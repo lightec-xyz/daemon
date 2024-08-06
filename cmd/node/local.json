@@ -16,7 +16,7 @@
   "btcGenesisHeight": 2865725,
   "ethInitHeight": 1809284,
   "enableLocalWorker": true,
-  "beaconInitSlot": 1955640,
+  "beaconInitSlot": 2170880,
   "autoSubmit": true,
   "disableRecursiveAgent": false,
   "disableTxAgent": false

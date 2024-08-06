@@ -374,7 +374,7 @@ func (s *State) CheckEthState() error {
 
 	logger.Debug("check eth state now  ....")
 	// todo
-	if s.debug {
+	if !s.debug {
 		err := s.mockTestEthRedeemData()
 		if err != nil {
 			logger.Error("mock test eth redeem data error: %v", err)
