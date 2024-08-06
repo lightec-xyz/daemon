@@ -28,6 +28,7 @@ type State struct {
 	genesisPeriod    uint64
 	genesisSlot      uint64
 	btcGenesisHeight uint64 // start index
+	debug            bool
 }
 
 func (s *State) CheckBtcState() error {
@@ -369,7 +370,23 @@ func (s *State) CheckReq(reqType common.ZkProofType, index uint64, hash string) 
 
 func (s *State) CheckEthState() error {
 
-	logger.Debug("check pending request ....")
+	logger.Debug("check eth state now  ....")
+	// todo
+	err := WriteUnGenProof(s.store, Ethereum, []*DbUnGenProof{
+		{
+			TxHash:    "0x123",
+			ProofType: common.RedeemTxType,
+			ChainType: Ethereum,
+			Height:    1,
+			TxIndex:   0,
+			Amount:    0,
+		},
+	})
+	if err != nil {
+		logger.Error("write ungen proof error: %v", err)
+		return err
+	}
+
 	unGenProofs, err := ReadAllUnGenProofs(s.store, Ethereum)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
