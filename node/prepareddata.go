@@ -702,6 +702,15 @@ func (p *PreparedData) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeU
 		}
 		update.CurrentSyncCommittee = &currentSyncCommittee
 	}
+	ok, err := common.VerifyLightClientUpdate(update)
+	if err != nil {
+		logger.Error("verify light client update error: %v %v", period, err)
+		return nil, false, err
+	}
+	if !ok {
+		logger.Error("update data verify false: %v", period)
+		return nil, false, nil
+	}
 	return &update, true, nil
 
 }
