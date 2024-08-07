@@ -557,22 +557,22 @@ func (s *State) CheckBeaconState() error {
 		}
 	}
 	// beacon recursive index
-	genRecProofIndexes, err := s.fileStore.NeedGenRecProofIndexes()
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
-	for _, index := range genRecProofIndexes {
-		if index <= s.genesisPeriod+1 {
-			continue
-		}
-		err := s.tryProofRequest(common.SyncComRecursiveType, index, 0, "")
-		if err != nil {
-			logger.Error(err.Error())
-			return err
-		}
-		break
-	}
+	//genRecProofIndexes, err := s.fileStore.NeedGenRecProofIndexes()
+	//if err != nil {
+	//	logger.Error(err.Error())
+	//	return err
+	//}
+	//for _, index := range genRecProofIndexes {
+	//	if index <= s.genesisPeriod+1 {
+	//		continue
+	//	}
+	//	err := s.tryProofRequest(common.SyncComRecursiveType, index, 0, "")
+	//	if err != nil {
+	//		logger.Error(err.Error())
+	//		return err
+	//	}
+	//	break
+	//}
 	return nil
 
 }

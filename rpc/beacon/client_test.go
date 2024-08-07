@@ -53,7 +53,7 @@ func TestCliet_GetLatestPeriod(t *testing.T) {
 }
 
 func TestClient_Bootstrap(t *testing.T) {
-	bootstrap, err := client.Bootstrap(265 * 8192)
+	bootstrap, err := client.Bootstrap(273 * 8192)
 	if err != nil {
 		t.Fatal(err)
 	}

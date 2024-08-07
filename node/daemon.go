@@ -122,8 +122,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		cfg.BtcGenesisHeight = (count/2016 - 1) * 2016
 		cfg.BtcGenesisHeight = 2871700
-		cfg.BeaconInitSlot = 265 * 8192
-		cfg.GenesisSyncPeriod = 265
+		cfg.BeaconInitSlot = 273 * 8192
+		cfg.GenesisSyncPeriod = 273
 		//fileStore, err := NewFileStorage(cfg.Datadir, cfg.BeaconInitSlot, uint64(cfg.BtcGenesisHeight))
 		//if err != nil {
 		//	logger.Error("new fileStorage error: %v", err)
