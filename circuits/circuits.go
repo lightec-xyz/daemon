@@ -1,6 +1,7 @@
 package circuits
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lightec-xyz/btc_provers/circuits/recursiveduper"
 	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
@@ -389,6 +390,14 @@ func (c *Circuit) UnitProve(period uint64, update *utils.SyncCommitteeUpdate) (*
 		}
 		return proof, proof, err
 	}
+	data, err := json.Marshal(update)
+	if err != nil {
+		logger.Error("marshal update error:%v", err)
+		return nil, nil, err
+	}
+	fmt.Printf("%v\n", string(data))
+
+	// todo need remove
 	subDir := fmt.Sprintf("sc%d", period) // todo need remove
 	err = innerProve(c.Cfg.DataDir, subDir, update)
 	if err != nil {
