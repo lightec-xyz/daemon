@@ -3,8 +3,11 @@ package node
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/ethereum/go-ethereum/crypto"
+	"fmt"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func TestVerifySignature(t *testing.T) {
@@ -22,6 +25,7 @@ func TestVerifySignature(t *testing.T) {
 
 func VerifySha256Signature(publicKey []byte, signature []byte, data []byte) bool {
 	hash := sha256.Sum256(data)
+	fmt.Println(hexutil.Encode(hash[:]))
 	verified := crypto.VerifySignature(publicKey, hash[:], signature)
 	return verified
 }

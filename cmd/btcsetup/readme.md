@@ -13,7 +13,7 @@
         "srsdir": "",
         "setup": true,
         "isFromGenesis": true,
-        "url": "18.116.118.39:18332",
+        "btcHost": "18.116.118.39:18332",
         "btcUser": "lightec",
         "btcPwd": "Abcd1234"
     }
