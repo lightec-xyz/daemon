@@ -33,16 +33,16 @@ type State struct {
 
 func (s *State) CheckBtcState() error {
 	logger.Debug("start check btc state ....")
-	blockCount, err := s.btcClient.GetBlockCount()
-	if err != nil {
-		logger.Error("get block count error:%v", err)
-		return err
-	}
-	// todo
-	if s.debug {
-		blockCount = 2871700 + 8*4
-	}
-
+	//blockCount, err := s.btcClient.GetBlockCount()
+	//if err != nil {
+	//	logger.Error("get block count error:%v", err)
+	//	return err
+	//}
+	//// todo
+	//if s.debug {
+	//	blockCount = 2871700 + 8*4
+	//}
+	blockCount := 2870784
 	// btc genesis proof
 	exists, err := CheckProof(s.fileStore, common.BtcGenesisType, s.btcGenesisHeight, s.btcGenesisHeight+common.BtcUpperDistance*2, "")
 	if err != nil {
