@@ -71,8 +71,8 @@ func (l *Local) Run() error {
 	}
 	go func(request *common.ZkProofRequest) {
 		count := 0
+		defer l.worker.DelReqNum()
 		for {
-			defer l.worker.DelReqNum()
 			if count >= 1 { // todo
 				logger.Error("retry gen proof too much time,stop generate this proof now: %v", request.Id())
 				return
