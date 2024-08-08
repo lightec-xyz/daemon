@@ -2,6 +2,8 @@ package common
 
 import (
 	"fmt"
+	//btcproverCommon"github.com/lightec-xyz/btc_provers/circuits/common"
+	btcproverCommon "github.com/lightec-xyz/btc_provers/circuits/common"
 )
 
 // env
@@ -14,12 +16,12 @@ const (
 )
 
 const (
-	//BtcBaseDistance   = btcproverCommon.CapacityBaseLevel
-	//BtcMiddleDistance = btcproverCommon.CapacityMidLevel * btcproverCommon.CapacityBaseLevel
-	//BtcUpperDistance  = btcproverCommon.CapacityDifficultyBlock
-	BtcBaseDistance   = 2
-	BtcMiddleDistance = 2 * BtcBaseDistance
-	BtcUpperDistance  = 2 * BtcMiddleDistance
+	BtcBaseDistance   = btcproverCommon.CapacityBaseLevel
+	BtcMiddleDistance = btcproverCommon.CapacityMidLevel * btcproverCommon.CapacityBaseLevel
+	BtcUpperDistance  = btcproverCommon.CapacityDifficultyBlock
+	//BtcBaseDistance   = 2
+	//BtcMiddleDistance = 2 * BtcBaseDistance
+	//BtcUpperDistance  = 2 * BtcMiddleDistance
 )
 
 const (
