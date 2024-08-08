@@ -125,11 +125,9 @@ func TestDb_Mock(t *testing.T) {
 		})
 	}
 	assert.Nil(t, err)
-	err = WriteBitcoinTx(db, txes)
-	assert.Nil(t, err)
 	err = WriteDbProof(db, proofs)
 	assert.Nil(t, err)
-	txIds, err := ReadBitcoinTxIds(db, 100)
+	txIds, err := ReadBitcoinTxIdsByHeight(db, 100)
 	assert.Nil(t, err)
 	for _, txId := range txIds {
 		t.Log(txId)

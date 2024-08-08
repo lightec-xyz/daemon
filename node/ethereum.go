@@ -161,14 +161,7 @@ func (e *EthereumAgent) ScanBlock() error {
 			logger.Error("ethereum update deposit info error: %v %v", index, err)
 			return err
 		}
-
-		allTxes := append(redeemTxes, depositTxes...)
-		err = e.saveTransaction(index, allTxes)
-		if err != nil {
-			logger.Error("ethereum save transaction error: %v %v", index, err)
-			return err
-		}
-		err = e.saveData(redeemTxes)
+		err = e.saveData(index, depositTxes, redeemTxes)
 		if err != nil {
 			logger.Error("ethereum save Data error: %v %v", index, err)
 			return err
@@ -262,30 +255,30 @@ func (e *EthereumAgent) updateDepositData(height int64, depositTxes []*Transacti
 	return nil
 }
 
-func (e *EthereumAgent) saveTransaction(height int64, txes []*Transaction) error {
-	err := WriteEthereumTxIds(e.store, height, txesToTxIds(txes))
+func (e *EthereumAgent) saveData(height int64, depositTxes, redeemTxes []*Transaction) error {
+	allTxes := append(depositTxes, redeemTxes...)
+	err := WriteEthereumTxIdsByHeight(e.store, height, txesToTxIds(allTxes))
 	if err != nil {
 		logger.Error("write ethereum tx ids error: %v %v", height, err)
 		return err
 	}
-	err = WriteTxes(e.store, txesToDbTxes(txes))
+	err = WriteTxes(e.store, txesToDbTxes(allTxes))
 	if err != nil {
 		logger.Error("put redeem tx error: %v %v", height, err)
 		return err
 	}
-	return nil
-}
 
-func (e *EthereumAgent) saveData(redeemTxes []*Transaction) error {
+	// todo only redeem tx
 	addrTxesMap := txesByAddrGroup(redeemTxes)
 	for addr, addrTxes := range addrTxesMap {
-		err := WriteTxesByAddr(e.store, addr, addrTxes)
+		err := WriteTxIdsByAddr(e.store, addr, addrTxes)
 		if err != nil {
 			logger.Error("write addr txes error: %v %v", addr, err)
 			return err
 		}
 	}
-	err := WriteDbProof(e.store, txesToDbProofs(redeemTxes))
+
+	err = WriteDbProof(e.store, txesToDbProofs(redeemTxes))
 	if err != nil {
 		logger.Error("put eth current height error:%v", err)
 		return err
@@ -304,7 +297,7 @@ func (e *EthereumAgent) saveData(redeemTxes []*Transaction) error {
 		}
 	}
 	// cache need to generate redeem proof
-	err = WriteUnGenProof(e.store, Ethereum, txesToUnGenProofs(Ethereum, redeemTxes))
+	err = WriteUnGenProof(e.store, Ethereum, txesToUnGenProofs(redeemTxes))
 	if err != nil {
 		logger.Error("write ungen Proof error: %v", err)
 		return err

@@ -37,16 +37,16 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 	if addr == "" || txType == "" {
 		return nil, fmt.Errorf("addr or txType is empty")
 	}
-	dbTxes, err := ReadTxesByAddr(h.store, addr)
+	dbTxes, err := ReadTxIdsByAddr(h.store, addr)
 	if err != nil {
 		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
 		return nil, err
 	}
 	var rpcTxes []*rpc.Transaction
-	for _, tx := range dbTxes {
-		transaction, err := h.Transaction(tx.TxHash)
+	for _, txId := range dbTxes {
+		transaction, err := h.Transaction(txId)
 		if err != nil {
-			logger.Error("read transaction error: %v %v", tx.TxHash, err)
+			logger.Error("read transaction error: %v %v", txId, err)
 			return nil, err
 		}
 		rpcTxes = append(rpcTxes, transaction)
@@ -67,7 +67,6 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 		logger.Error("id: %v current version: %v, unsupported version: %v", request.Id, GeneratorVersion, request.Version)
 		return nil, fmt.Errorf("current version: %v, unsupported version: %v", GeneratorVersion, request.Version)
 	}
-
 	zkProofRequest, ok, err := h.manager.GetProofRequest(request.ProofType)
 	if err != nil {
 		logger.Error("get proof request error: %v %v", request.Id, err)
@@ -109,7 +108,7 @@ func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 
 func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string, error) {
 	if network == BitcoinNetwork {
-		txIds, err := ReadBitcoinTxIds(h.store, int64(height))
+		txIds, err := ReadBitcoinTxIdsByHeight(h.store, int64(height))
 		if err != nil {
 			logger.Error("read bitcoin tx ids error: %v %v", height, err)
 			return nil, err
@@ -117,7 +116,7 @@ func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string,
 		return txIds, nil
 
 	} else if network == EthereumNetwork {
-		txIds, err := ReadEthereumTxIds(h.store, int64(height))
+		txIds, err := ReadEthereumTxIdsByHeight(h.store, int64(height))
 		if err != nil {
 			logger.Error("read bitcoin tx ids error: %v %v", height, err)
 			return nil, err

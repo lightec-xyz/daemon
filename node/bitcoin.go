@@ -187,7 +187,12 @@ func (b *BitcoinAgent) updateRedeemInfo(height int64, txList []*Transaction) err
 }
 
 func (b *BitcoinAgent) saveData(height int64, txes []*Transaction) error {
-	err := WriteTxes(b.store, txesToDbTxes(txes))
+	err := WriteBitcoinTxIdsByHeight(b.store, height, txesToTxIds(txes))
+	if err != nil {
+		logger.Error("write bitcoin tx ids error: %v %v", height, err)
+		return err
+	}
+	err = WriteTxes(b.store, txesToDbTxes(txes))
 	if err != nil {
 		logger.Error("put redeem tx error: %v %v", height, err)
 		return err
@@ -197,7 +202,7 @@ func (b *BitcoinAgent) saveData(height int64, txes []*Transaction) error {
 		logger.Error("write Proof error: %v", err)
 		return err
 	}
-	err = WriteUnGenProof(b.store, Bitcoin, txesToUnGenProofs(Bitcoin, txes))
+	err = WriteUnGenProof(b.store, Bitcoin, txesToUnGenProofs(txes))
 	if err != nil {
 		logger.Error("write ungen Proof error:%v", err)
 		return err

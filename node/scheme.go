@@ -6,23 +6,27 @@ import (
 	"time"
 )
 
-const (
-	ProofPrefix           = "p_"  // p_ + hash
-	TxPrefix              = "t_"  // t_ + hash
-	DestChainHashPrefix   = "d_"  // d_ + hash
-	UnGenProofPrefix      = "u_"  // u_ + hash
-	UnSubmitTxPrefix      = "us_" // s_ + hash
-	BeaconSlotPrefix      = "bs_"
-	BeaconEthNumberPrefix = "bh_"
+const ProtocolSeparator = "_"
 
-	TxSlotPrefix             = "ts_"
-	TxFinalizeSlotPrefix     = "tfs_"
-	PendingReqPrefix         = "pr_"
-	PendingProofRespPrefix   = "prp_"
-	NoncePrefix              = "n_"
-	UnConfirmTxPrefix        = "un_"
-	TaskTimePrefix           = "tt_"
-	FinalityUpdateSlotPrefix = "fu_"
+const (
+	ProofPrefix           = "p"  // p_ + hash
+	TxPrefix              = "t"  // t_ + hash
+	DestChainHashPrefix   = "d"  // d_ + hash
+	UnGenProofPrefix      = "u"  // u_ + hash
+	UnSubmitTxPrefix      = "us" // s_ + hash
+	BeaconSlotPrefix      = "bs"
+	BeaconEthNumberPrefix = "bh"
+
+	TxSlotPrefix             = "ts"
+	TxFinalizeSlotPrefix     = "tfs"
+	PendingReqPrefix         = "pr"
+	PendingProofRespPrefix   = "prp"
+	NoncePrefix              = "n"
+	UnConfirmTxPrefix        = "un"
+	TaskTimePrefix           = "tt"
+	FinalityUpdateSlotPrefix = "fu"
+	BtcHeightPrefix          = "b"
+	EthHeightPrefix          = "e"
 )
 
 const (
@@ -126,87 +130,87 @@ func (ct *ChainType) String() string {
 }
 
 func DbProofId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", ProofPrefix, trimOx(txId))
+	pTxID := fmt.Sprintf("%s%s%s", ProofPrefix, ProtocolSeparator, trimOx(txId))
 	return pTxID
 }
 
-func DbBtcHeightPrefix(height int64, txId string) string {
-	pTxID := fmt.Sprintf("%db_%s", height, trimOx(txId))
+func DbBtcHeightPrefix(height int64) string {
+	pTxID := fmt.Sprintf("%s%s%d", BtcHeightPrefix, ProtocolSeparator, height)
 	return pTxID
 }
 
-func DbEthHeightPrefix(height int64, txId string) string {
-	pTxID := fmt.Sprintf("%de_%s", height, trimOx(txId))
+func DbEthHeightPrefix(height int64) string {
+	pTxID := fmt.Sprintf("%s%s%d", EthHeightPrefix, ProtocolSeparator, height)
 	return pTxID
 }
 
 func DbTxId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", TxPrefix, trimOx(txId))
+	pTxID := fmt.Sprintf("%s%s%s", TxPrefix, ProtocolSeparator, trimOx(txId))
 	return pTxID
 }
 
 func DbDestId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", DestChainHashPrefix, trimOx(txId))
+	pTxID := fmt.Sprintf("%s%s%s", DestChainHashPrefix, ProtocolSeparator, trimOx(txId))
 	return pTxID
 }
 
 func DbUnGenProofId(chain ChainType, txId string) string {
-	pTxID := fmt.Sprintf("%s%d_%s", UnGenProofPrefix, chain, trimOx(txId))
+	pTxID := fmt.Sprintf("%s%s%d%s%s", UnGenProofPrefix, ProtocolSeparator, chain, ProtocolSeparator, trimOx(txId))
 	return pTxID
 }
 
 func DbUnSubmitTxId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s", UnSubmitTxPrefix, trimOx(txId))
+	pTxID := fmt.Sprintf("%s%s%s", UnSubmitTxPrefix, ProtocolSeparator, trimOx(txId))
 	return pTxID
 }
 
 func DbAddrPrefixTxId(addr string, txId string) string {
-	key := fmt.Sprintf("%s_%s", addr, trimOx(txId))
+	key := fmt.Sprintf("%s%s%s", addr, ProtocolSeparator, trimOx(txId))
 	return key
 }
 
 func DbBeaconSlotId(slot uint64) string {
-	key := fmt.Sprintf("%s%d", BeaconSlotPrefix, slot)
+	key := fmt.Sprintf("%s%s%d", BeaconSlotPrefix, ProtocolSeparator, slot)
 	return key
 }
 func DbBeaconEthNumberId(number uint64) string {
-	key := fmt.Sprintf("%s%d", BeaconEthNumberPrefix, number)
+	key := fmt.Sprintf("%s%s%d", BeaconEthNumberPrefix, ProtocolSeparator, number)
 	return key
 }
 
 func DbTxSlotId(slot uint64, hash string) string {
-	key := fmt.Sprintf("%s%d_%s", TxSlotPrefix, slot, hash)
+	key := fmt.Sprintf("%s%s%d%s%s", TxSlotPrefix, ProtocolSeparator, slot, ProtocolSeparator, trimOx(hash))
 	return key
 }
 
 func DbTxFinalizeSlotId(slot uint64, hash string) string {
-	key := fmt.Sprintf("%s%d_%s", TxFinalizeSlotPrefix, slot, hash)
+	key := fmt.Sprintf("%s%s%d%s%s", TxFinalizeSlotPrefix, ProtocolSeparator, slot, ProtocolSeparator, trimOx(hash))
 	return key
 }
 
 func DbPendingRequestId(id string) string {
-	key := fmt.Sprintf("%s%s", PendingReqPrefix, id)
+	key := fmt.Sprintf("%s%s%s", PendingReqPrefix, ProtocolSeparator, id)
 	return key
 }
 
 func DbAddrNonceId(network, addr string) string {
-	key := fmt.Sprintf("%s%s_%s", NoncePrefix, network, addr)
+	key := fmt.Sprintf("%s%s%s%s%s", NoncePrefix, ProtocolSeparator, network, ProtocolSeparator, addr)
 	return key
 }
 
 func DbUnConfirmTxId(txId string) string {
-	key := fmt.Sprintf("%s%s", UnConfirmTxPrefix, txId)
+	key := fmt.Sprintf("%s%s%s", UnConfirmTxPrefix, ProtocolSeparator, trimOx(txId))
 	return key
 }
 
 // proof task time
 
 func DbTaskTimeId(flag common.TaskStatusFlag, id string) string {
-	key := fmt.Sprintf("%s%s_%s", TaskTimePrefix, id, flag.String())
+	key := fmt.Sprintf("%s%s%s%s%s", TaskTimePrefix, ProtocolSeparator, id, ProtocolSeparator, flag.String())
 	return key
 }
 
 func DbFinalityUpdateSlotId(slot uint64) string {
-	key := fmt.Sprintf("%s%d", FinalityUpdateSlotPrefix, slot)
+	key := fmt.Sprintf("%s%s%d", FinalityUpdateSlotPrefix, ProtocolSeparator, slot)
 	return key
 }

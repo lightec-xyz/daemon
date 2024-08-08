@@ -68,7 +68,8 @@ func txesToDbProofs(txes []*Transaction) []DbProof {
 	var dbProofs []DbProof
 	for _, tx := range txes {
 		dbProof := DbProof{
-			TxHash: tx.TxHash,
+			TxHash:    tx.TxHash,
+			ProofType: tx.ProofType,
 		}
 		if tx.Proofed {
 			dbProof.Status = int(common.ProofSuccess)
@@ -111,12 +112,12 @@ func txesToDbTxes(txes []*Transaction) []DbTx {
 	return dbtxes
 }
 
-func txesToUnGenProofs(chainType ChainType, txes []*Transaction) []*DbUnGenProof {
+func txesToUnGenProofs(txes []*Transaction) []*DbUnGenProof {
 	var proofs []*DbUnGenProof
 	for _, tx := range txes {
 		if !tx.Proofed {
 			proofs = append(proofs, &DbUnGenProof{
-				ChainType: chainType,
+				ChainType: tx.ChainType,
 				ProofType: tx.ProofType,
 				TxHash:    tx.TxHash,
 				Height:    tx.Height,

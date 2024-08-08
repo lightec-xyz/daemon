@@ -91,34 +91,22 @@ func CheckBitcoinHeight(store store.IStore) (bool, error) {
 	return store.HasObj(btcCurHeightKey)
 }
 
-func ReadBitcoinTxIds(store store.IStore, height int64) ([]string, error) {
-	var txIds []string
-	iterator := store.Iterator([]byte(DbBtcHeightPrefix(height, "")), nil)
-	defer iterator.Release()
-	for iterator.Next() {
-		txIds = append(txIds, getTxId(string(iterator.Key())))
-	}
-	if err := iterator.Error(); err != nil {
-		return nil, err
-	}
-	return txIds, nil
-}
-
-func WriteBitcoinTx(store store.IStore, txes []DbTx) error {
-	batch := store.Batch()
-	for _, tx := range txes {
-		err := batch.BatchPutObj(DbTxId(tx.TxHash), tx)
-		if err != nil {
-			logger.Error("put bitcoin tx error:%v", err)
-			return err
-		}
-	}
-	err := batch.BatchWriteObj()
+func WriteBitcoinTxIdsByHeight(store store.IStore, height int64, txes []string) error {
+	err := store.PutObj(DbBtcHeightPrefix(height), txes)
 	if err != nil {
-		logger.Error("put bitcoin tx batch error:%v", err)
+		logger.Error("put bitcoin tx error:%v", err)
 		return err
 	}
 	return nil
+}
+
+func ReadBitcoinTxIdsByHeight(store store.IStore, height int64) ([]string, error) {
+	var txIds []string
+	err := store.GetObj(DbBtcHeightPrefix(height), &txIds)
+	if err != nil {
+		return nil, err
+	}
+	return txIds, nil
 }
 
 func WriteDestHash(store store.IStore, key, value string) error {
@@ -222,31 +210,19 @@ func CheckEthereumHeight(store store.IStore) (bool, error) {
 	return store.HasObj(ethCurHeightKey)
 }
 
-func WriteEthereumTxIds(store store.IStore, height int64, txHashes []string) error {
-	batch := store.Batch()
-	for _, hash := range txHashes {
-		err := batch.BatchPutObj(DbEthHeightPrefix(height, hash), nil)
-		if err != nil {
-			logger.Error("put ethereum hash error:%v", err)
-			return err
-		}
-	}
-	err := batch.BatchWriteObj()
+func WriteEthereumTxIdsByHeight(store store.IStore, height int64, txIds []string) error {
+	err := store.PutObj(DbEthHeightPrefix(height), txIds)
 	if err != nil {
-		logger.Error("put bitcoin hash batch error:%v", err)
+		logger.Error("put ethereum tx error:%v", err)
 		return err
 	}
 	return nil
 }
-
-func ReadEthereumTxIds(store store.IStore, height int64) ([]string, error) {
+func ReadEthereumTxIdsByHeight(store store.IStore, height int64) ([]string, error) {
 	var txIds []string
-	iterator := store.Iterator([]byte(DbEthHeightPrefix(height, "")), nil)
-	defer iterator.Release()
-	for iterator.Next() {
-		txIds = append(txIds, getTxId(string(iterator.Key())))
-	}
-	if err := iterator.Error(); err != nil {
+	err := store.GetObj(DbEthHeightPrefix(height), &txIds)
+	if err != nil {
+		logger.Error("get eth current height error:%v", err)
 		return nil, err
 	}
 	return txIds, nil
@@ -372,10 +348,10 @@ func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) erro
 	return nil
 }
 
-func WriteTxesByAddr(store store.IStore, addr string, txes []DbTx) error {
+func WriteTxIdsByAddr(store store.IStore, addr string, txes []DbTx) error {
 	batch := store.Batch()
 	for _, tx := range txes {
-		err := batch.BatchPutObj(DbAddrPrefixTxId(addr, tx.TxHash), tx)
+		err := batch.BatchPutObj(DbAddrPrefixTxId(addr, tx.TxHash), nil)
 		if err != nil {
 			logger.Error("put addr tx error:%v", err)
 			return err
@@ -389,23 +365,20 @@ func WriteTxesByAddr(store store.IStore, addr string, txes []DbTx) error {
 	return nil
 }
 
-func ReadTxesByAddr(store store.IStore, addr string) ([]*DbTx, error) {
-	var txes []*DbTx
+func ReadTxIdsByAddr(store store.IStore, addr string) ([]string, error) {
+	var txIds []string
 	iterator := store.Iterator([]byte(DbAddrPrefixTxId(addr, "")), nil)
 	defer iterator.Release()
 	for iterator.Next() {
-		var tx DbTx
-		err := codec.Unmarshal(iterator.Value(), &tx)
-		if err != nil {
-			logger.Error("get addr tx error:%v", err)
-			return nil, err
+		elems := strings.Split(string(iterator.Value()), ProtocolSeparator)
+		if len(elems) == 2 {
+			txIds = append(txIds, elems[1])
 		}
-		txes = append(txes, &tx)
 	}
 	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
-	return txes, nil
+	return txIds, nil
 }
 
 func getTxId(key string) string {
