@@ -650,7 +650,7 @@ func (fs *FileStorage) NeedUpdateIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest Index error")
 	}
-	indexes, err := fileStore.AllIndexes()
+	indexes, err := fileStore.Indexes(getStartIndex)
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
@@ -706,7 +706,7 @@ func (fs *FileStorage) NeedGenRecProofIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest Index error")
 	}
-	indexes, err := fileStore.AllIndexes()
+	indexes, err := fileStore.Indexes(getStartIndex)
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
@@ -725,39 +725,6 @@ func (fs *FileStorage) NeedGenRecProofIndexes() ([]uint64, error) {
 		}
 	}
 	return needUpdateIndex, nil
-}
-
-func (fs *FileStorage) NeedGenBhfUpdateIndex() ([]uint64, error) {
-	bhfProofStore, ok := fs.GetFileStore(BhfTable)
-	if !ok {
-		logger.Error("get file store error %v", BhfTable)
-		return nil, fmt.Errorf("get file store error %v", BhfTable)
-	}
-	finalityUpdateStore, ok := fs.GetFileStore(FinalityTable)
-	if !ok {
-		logger.Error("get file store error %v", FinalityTable)
-		return nil, fmt.Errorf("get file store error %v", FinalityTable)
-	}
-	allFinalityIndexes, err := finalityUpdateStore.AllIndexes()
-	if err != nil {
-		logger.Error("get update indexes error:%v", err)
-		return nil, err
-	}
-	bhfIndexes, err := bhfProofStore.AllIndexes()
-	if err != nil {
-		logger.Error("get update indexes error:%v", err)
-		return nil, err
-	}
-	var needUpdateIndexes []uint64
-	for key, _ := range allFinalityIndexes {
-		if _, ok := bhfIndexes[key]; !ok {
-			needUpdateIndexes = append(needUpdateIndexes, key)
-		}
-	}
-	sort.SliceStable(needUpdateIndexes, func(i, j int) bool {
-		return needUpdateIndexes[i] < needUpdateIndexes[j]
-	})
-	return needUpdateIndexes, nil
 }
 
 func CreateFileStore(root, name string) (*store.FileStore, error) {

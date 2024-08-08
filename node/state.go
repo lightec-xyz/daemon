@@ -411,7 +411,7 @@ func (s *State) CheckEthState() error {
 			logger.Debug("delete ungen proof tx: %v", txHash)
 			continue
 		}
-		txSlot, ok, err := s.GetSlotByHash(txHash)
+		txSlot, ok, err := ReadSlotByHash(s.store, txHash)
 		if err != nil {
 			logger.Error("get txSlot error: %v %v", err, txHash)
 			return err
@@ -500,31 +500,6 @@ func (s *State) CheckEthState() error {
 		}
 	}
 	return nil
-}
-
-func (s *State) GetSlotByHash(hash string) (uint64, bool, error) {
-	//txHash := ethCommon.HexToHash(hash)
-	//receipt, err := s.ethClient.TransactionReceipt(context.Background(), txHash)
-	//if err != nil {
-	//	logger.Error("get tx receipt error: %v %v", hash, err)
-	//	return 0, false, err
-	//}
-	// todo
-
-	dbTx, err := ReadDbTx(s.store, hash)
-	if err != nil {
-		logger.Error("read db tx error: %v %v", hash, err)
-		return 0, false, err
-	}
-	beaconSlot, ok, err := ReadBeaconSlot(s.store, dbTx.Height)
-	if err != nil {
-		logger.Error("get beacon slot error: %v %v", hash, err)
-		return 0, false, err
-	}
-	if !ok {
-		return 0, false, nil
-	}
-	return beaconSlot, true, nil
 }
 
 func (s *State) updateRedeemProofStatus(txHash string, index uint64, status common.ProofStatus) error {
@@ -663,8 +638,7 @@ func (s *State) findNewRequests(resp *common.ZkProofResponse) ([]*common.ZkProof
 }
 
 func (s *State) checkRedeemRequest(txHash string) (*common.ZkProofRequest, bool, error) {
-	// todo
-	txSlot, ok, err := s.GetSlotByHash(txHash)
+	txSlot, ok, err := ReadSlotByHash(s.store, txHash)
 	if err != nil {
 		logger.Error("get slot by hash error: %v %v", txHash, err)
 		return nil, false, err
