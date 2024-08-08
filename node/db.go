@@ -381,11 +381,6 @@ func ReadTxIdsByAddr(store store.IStore, addr string) ([]string, error) {
 	return txIds, nil
 }
 
-func getTxId(key string) string {
-	txId := key[strings.Index(key, "_")+1:]
-	return txId
-}
-
 func WriteTxSlot(store store.IStore, txSlot uint64, tx *DbUnGenProof) error {
 	return store.PutObj(DbTxSlotId(txSlot, tx.TxHash), tx)
 }
