@@ -202,7 +202,7 @@ func (b *BitcoinAgent) saveData(height int64, txes []*Transaction) error {
 		logger.Error("write Proof error: %v", err)
 		return err
 	}
-	err = WriteUnGenProof(b.store, Bitcoin, txesToUnGenProofs(txes))
+	err = WriteUnGenProof(b.store, common.BitcoinChain, txesToUnGenProofs(txes))
 	if err != nil {
 		logger.Error("write ungen Proof error:%v", err)
 		return err
@@ -461,8 +461,8 @@ func NewDepositBtcTx(height uint64, txId, ethAddr string, utxo []Utxo, amount in
 	return &Transaction{
 		TxHash:    txId,
 		Height:    height,
-		TxType:    DepositTx,
-		ChainType: Bitcoin,
+		TxType:    common.DepositTx,
+		ChainType: common.BitcoinChain,
 		EthAddr:   ethAddr,
 		ProofType: common.DepositTxType,
 		Utxo:      utxo,
@@ -474,8 +474,8 @@ func NewRedeemBtcTx(height uint64, txId, blockHash string, inputs []Utxo, output
 	return &Transaction{
 		TxHash:    txId,
 		Height:    height,
-		TxType:    RedeemTx,
-		ChainType: Bitcoin,
+		TxType:    common.RedeemTx,
+		ChainType: common.BitcoinChain,
 		ProofType: common.VerifyTxType,
 		BlockHash: blockHash,
 	}

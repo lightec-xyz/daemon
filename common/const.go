@@ -9,9 +9,9 @@ import (
 // env
 
 const (
-	ZkDebugEnv     = "ZkDebug"
-	ZkParameterDir = "ZkParameterDir"
-	ZkProofTypes   = "ZkProofTypes"
+	ZkDebugEnv     = "zkDebug"
+	ZkParameterDir = "zkParameterDir"
+	ZkProofTypes   = "zkProofTypes"
 	DbNameSpace    = "zkbtc"
 )
 
@@ -30,19 +30,41 @@ const (
 	MaxDiffTxFinalitySlot = 64
 )
 
-type TxType = int
+type TxType int
 
 const (
 	DepositTx TxType = iota + 1
 	RedeemTx
 )
 
-type ChainType = int
+func (tt *TxType) String() string {
+	switch *tt {
+	case DepositTx:
+		return "deposit"
+	case RedeemTx:
+		return "redeem"
+	default:
+		return "unknown"
+	}
+}
+
+type ChainType int
 
 const (
-	Bitcoin ChainType = iota + 1
-	Ethereum
+	BitcoinChain ChainType = iota + 1
+	EthereumChain
 )
+
+func (ct *ChainType) String() string {
+	switch *ct {
+	case BitcoinChain:
+		return "bitcoin"
+	case EthereumChain:
+		return "ethereum"
+	default:
+		return "unknown"
+	}
+}
 
 type Network string
 
@@ -65,27 +87,6 @@ func (n Network) String() string {
 	}
 }
 
-type TaskStatusFlag int
-
-const (
-	Start TaskStatusFlag = iota + 1
-	Prove
-	End
-)
-
-func (ts TaskStatusFlag) String() string {
-	switch ts {
-	case Start:
-		return "start"
-	case Prove:
-		return "prove"
-	case End:
-		return "end"
-	default:
-		return "unknown"
-	}
-}
-
 type ProofStatus int
 
 const (
@@ -100,17 +101,17 @@ const (
 func (ps *ProofStatus) String() string {
 	switch *ps {
 	case ProofDefault:
-		return "ProofDefault"
+		return "proofDefault"
 	case ProofFinalized:
-		return "ProofFinalized"
+		return "proofFinalized"
 	case ProofQueued:
-		return "ProofQueued"
+		return "proofQueued"
 	case ProofGenerating:
-		return "ProofGenerating"
+		return "proofGenerating"
 	case ProofSuccess:
-		return "ProofSuccess"
+		return "proofSuccess"
 	case ProofFailed:
-		return "ProofFailed"
+		return "proofFailed"
 	default:
 		return "unknown"
 	}
@@ -151,7 +152,7 @@ const (
 	SyncComGenesisType
 	SyncComUnitType
 	SyncComRecursiveType
-	BeaconHeaderFinalityType //BeaconHeaderFinalityUpdate
+	BeaconHeaderFinalityType
 	UnitOuter
 	BeaconHeaderType
 	BtcBulkType
@@ -164,52 +165,51 @@ const (
 	BtcRecursiveType
 )
 
-func (zkpt *ZkProofType) String() string {
-	switch *zkpt {
+func (z *ZkProofType) String() string {
+	switch *z {
 	case DepositTxType:
-		return "DepositTxType"
+		return "depositTxType"
 	case RedeemTxType:
-		return "RedeemTxType"
+		return "redeemTxType"
 	case VerifyTxType:
-		return "VerifyTxType"
+		return "verifyTxType"
 	case SyncComGenesisType:
-		return "SyncComGenesisType"
+		return "syncComGenesisType"
 	case SyncComUnitType:
-		return "SyncComUnitType"
+		return "syncComUnitType"
 	case SyncComRecursiveType:
-		return "SyncComRecursiveType"
+		return "syncComRecursiveType"
 	case TxInEth2:
-		return "TxInEth2"
+		return "txInEth2"
 	case UnitOuter:
-		return "UnitOuter"
+		return "unitOuter"
 	case BeaconHeaderFinalityType:
-		return "BeaconHeaderFinalityType"
+		return "beaconHeaderFinalityType"
 	case BeaconHeaderType:
-		return "BeaconHeaderType"
+		return "beaconHeaderType"
 	case BtcPackedType:
-		return "BtcPackedType"
+		return "btcPackedType"
 	case BtcWrapType:
-		return "BtcWrapType"
+		return "btcWrapType"
 	case BtcBulkType:
-		return "BtcBulkType"
+		return "btcBulkType"
 	case BtcBaseType:
-		return "BtcBaseType"
+		return "btcBaseType"
 	case BtcMiddleType:
-		return "BtcMiddleType"
+		return "btcMiddleType"
 	case BtcUpperType:
-		return "BtcUpperType"
+		return "btcUpperType"
 	case BtcGenesisType:
-		return "BtcGenesisType"
+		return "btcGenesisType"
 	case BtcRecursiveType:
-		return "BtcRecursiveType"
+		return "btcRecursiveType"
 	default:
 		return "unKnown"
 	}
 }
 
-func (zkpt *ZkProofType) Weight() ProofWeight {
-	// todo
-	switch *zkpt {
+func (z *ZkProofType) Weight() ProofWeight {
+	switch *z {
 	case DepositTxType:
 		return Highest
 	case RedeemTxType:
@@ -229,41 +229,41 @@ func (zkpt *ZkProofType) Weight() ProofWeight {
 
 func ToZkProofType(str string) (ZkProofType, error) {
 	switch str {
-	case "DepositTxType":
+	case "depositTxType":
 		return DepositTxType, nil
-	case "RedeemTxType":
+	case "redeemTxType":
 		return RedeemTxType, nil
-	case "VerifyTxType":
+	case "verifyTxType":
 		return VerifyTxType, nil
-	case "SyncComGenesisType":
+	case "syncComGenesisType":
 		return SyncComGenesisType, nil
-	case "SyncComUnitType":
+	case "syncComUnitType":
 		return SyncComUnitType, nil
-	case "SyncComRecursiveType":
+	case "syncComRecursiveType":
 		return SyncComRecursiveType, nil
-	case "TxInEth2":
+	case "txInEth2":
 		return TxInEth2, nil
-	case "UnitOuter":
+	case "unitOuter":
 		return UnitOuter, nil
-	case "BeaconHeaderFinalityType":
+	case "beaconHeaderFinalityType":
 		return BeaconHeaderFinalityType, nil
-	case "BeaconHeaderType":
+	case "beaconHeaderType":
 		return BeaconHeaderType, nil
-	case "BtcBulkType":
+	case "btcBulkType":
 		return BtcBulkType, nil
-	case "BtcPackedType":
+	case "btcPackedType":
 		return BtcPackedType, nil
-	case "BtcWrapType":
+	case "btcWrapType":
 		return BtcWrapType, nil
-	case "BtcBaseType":
+	case "btcBaseType":
 		return BtcBaseType, nil
-	case "BtcMiddleType":
+	case "btcMiddleType":
 		return BtcMiddleType, nil
-	case "BtcUpperType":
+	case "btcUpperType":
 		return BtcUpperType, nil
-	case "BtcGenesisType":
+	case "btcGenesisType":
 		return BtcGenesisType, nil
-	case "BtcRecursiveType":
+	case "btcRecursiveType":
 		return BtcRecursiveType, nil
 	default:
 		return 0, fmt.Errorf("uKnown zk proof type %v", str)

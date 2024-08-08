@@ -246,7 +246,7 @@ func (e *EthereumAgent) updateDepositData(height int64, depositTxes []*Transacti
 			return err
 		}
 		// delete bitcoin ungen proof
-		err = DeleteUnGenProof(e.store, Bitcoin, tx.BtcTxId)
+		err = DeleteUnGenProof(e.store, common.BitcoinChain, tx.BtcTxId)
 		if err != nil {
 			logger.Error("delete ungen proof error: %v %v", height, err)
 			return err
@@ -297,7 +297,7 @@ func (e *EthereumAgent) saveData(height int64, depositTxes, redeemTxes []*Transa
 		}
 	}
 	// cache need to generate redeem proof
-	err = WriteUnGenProof(e.store, Ethereum, txesToUnGenProofs(redeemTxes))
+	err = WriteUnGenProof(e.store, common.EthereumChain, txesToUnGenProofs(redeemTxes))
 	if err != nil {
 		logger.Error("write ungen Proof error: %v", err)
 		return err
@@ -521,8 +521,8 @@ func NewDepositEthTx(height uint64, txIndex uint, txHash, btcTxId string, utxo [
 		TxHash:    txHash,
 		TxIndex:   txIndex,
 		Height:    height,
-		ChainType: Ethereum,
-		TxType:    DepositTx,
+		ChainType: common.EthereumChain,
+		TxType:    common.DepositTx,
 		BtcTxId:   btcTxId,
 	}
 }
@@ -531,8 +531,8 @@ func NewRedeemEthTx(height uint64, txIndex uint, txHash, sender, btcTxId string,
 		Height:    height,
 		TxIndex:   txIndex,
 		TxHash:    txHash,
-		ChainType: Ethereum,
-		TxType:    RedeemTx,
+		ChainType: common.EthereumChain,
+		TxType:    common.RedeemTx,
 		BtcTxId:   btcTxId,
 		From:      sender,
 		Amount:    amount,

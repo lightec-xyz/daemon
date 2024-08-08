@@ -44,8 +44,8 @@ type DbTx struct {
 	TxHash    string
 	Height    uint64
 	TxIndex   uint
-	TxType    TxType
-	ChainType ChainType
+	TxType    common.TxType
+	ChainType common.ChainType
 	Amount    int64
 }
 
@@ -59,7 +59,7 @@ type DbProof struct {
 type DbUnGenProof struct {
 	TxHash    string
 	ProofType common.ZkProofType
-	ChainType ChainType
+	ChainType common.ChainType
 	Height    uint64
 	TxIndex   uint
 	Amount    uint64
@@ -83,50 +83,6 @@ type DbTask struct {
 	ProofType common.ZkProofType
 	StartTime time.Time
 	EndTime   time.Time
-}
-
-type TxStatus int
-
-const (
-	UnSend TxStatus = iota
-	Send
-	Confirmed
-)
-
-type TxType int
-
-const (
-	DepositTx TxType = iota + 1
-	RedeemTx
-)
-
-func (tt *TxType) String() string {
-	switch *tt {
-	case DepositTx:
-		return "deposit"
-	case RedeemTx:
-		return "redeem"
-	default:
-		return "unknown"
-	}
-}
-
-type ChainType int
-
-const (
-	Bitcoin ChainType = iota + 1
-	Ethereum
-)
-
-func (ct *ChainType) String() string {
-	switch *ct {
-	case Bitcoin:
-		return "bitcoin"
-	case Ethereum:
-		return "ethereum"
-	default:
-		return "unknown"
-	}
 }
 
 func DbProofId(txId string) string {
@@ -154,7 +110,7 @@ func DbDestId(txId string) string {
 	return pTxID
 }
 
-func DbUnGenProofId(chain ChainType, txId string) string {
+func DbUnGenProofId(chain common.ChainType, txId string) string {
 	pTxID := fmt.Sprintf("%s%s%d%s%s", UnGenProofPrefix, ProtocolSeparator, chain, ProtocolSeparator, trimOx(txId))
 	return pTxID
 }
@@ -205,7 +161,7 @@ func DbUnConfirmTxId(txId string) string {
 
 // proof task time
 
-func DbTaskTimeId(flag common.TaskStatusFlag, id string) string {
+func DbTaskTimeId(flag common.ProofStatus, id string) string {
 	key := fmt.Sprintf("%s%s%s%s%s", TaskTimePrefix, ProtocolSeparator, id, ProtocolSeparator, flag.String())
 	return key
 }

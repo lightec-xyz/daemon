@@ -129,7 +129,7 @@ func txesToUnGenProofs(txes []*Transaction) []*DbUnGenProof {
 	return proofs
 }
 
-func requestsToUnGenProofs(chainType ChainType, requests []*common.ZkProofRequest) []*DbUnGenProof {
+func requestsToUnGenProofs(chainType common.ChainType, requests []*common.ZkProofRequest) []*DbUnGenProof {
 	var proofs []*DbUnGenProof
 	for _, req := range requests {
 		proofs = append(proofs, &DbUnGenProof{

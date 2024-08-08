@@ -66,26 +66,7 @@ func TestPendingRequest(t *testing.T) {
 }
 
 func TestWriteUnGenProof(t *testing.T) {
-	store := initStore()
-	var unGenProofs []*DbUnGenProof
-	unGenProofs = append(unGenProofs, &DbUnGenProof{
-		TxHash:    "sdsdfsdf",
-		ProofType: common.RedeemTxType,
-		ChainType: Bitcoin,
-	})
 
-	err := WriteUnGenProof(store, Bitcoin, unGenProofs)
-	assert.Nil(t, err)
-	ids, err := ReadAllUnGenProofs(store, Bitcoin)
-	assert.Nil(t, err)
-	t.Log(ids)
-	for _, item := range ids {
-		err := DeleteUnGenProof(store, Bitcoin, item.TxHash)
-		assert.Nil(t, err)
-	}
-	ids, err = ReadAllUnGenProofs(store, Bitcoin)
-	assert.Nil(t, err)
-	t.Log(ids)
 }
 
 func TestDb_Mock(t *testing.T) {

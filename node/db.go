@@ -285,7 +285,7 @@ func DeleteUnSubmitTx(store store.IStore, hash string) error {
 	return store.DeleteObj(DbUnSubmitTxId(hash))
 }
 
-func WriteUnGenProof(store store.IStore, chain ChainType, list []*DbUnGenProof) error {
+func WriteUnGenProof(store store.IStore, chain common.ChainType, list []*DbUnGenProof) error {
 	batch := store.Batch()
 	for _, item := range list {
 		err := batch.BatchPutObj(DbUnGenProofId(chain, item.TxHash), item)
@@ -304,7 +304,7 @@ func WriteUnGenProof(store store.IStore, chain ChainType, list []*DbUnGenProof) 
 
 // todo
 
-func ReadUnGenProof(store store.IStore, chainType ChainType, txId string) (*DbUnGenProof, error) {
+func ReadUnGenProof(store store.IStore, chainType common.ChainType, txId string) (*DbUnGenProof, error) {
 	var proof DbUnGenProof
 	err := store.GetObj(DbUnGenProofId(chainType, txId), &proof)
 	if err != nil {
@@ -314,7 +314,7 @@ func ReadUnGenProof(store store.IStore, chainType ChainType, txId string) (*DbUn
 	return &proof, nil
 }
 
-func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProof, error) {
+func ReadAllUnGenProofs(store store.IStore, chainType common.ChainType) ([]*DbUnGenProof, error) {
 	iterator := store.Iterator([]byte(DbUnGenProofId(chainType, "")), nil)
 	defer iterator.Release()
 	var txes []*DbUnGenProof
@@ -339,7 +339,7 @@ func ReadAllUnGenProofs(store store.IStore, chainType ChainType) ([]*DbUnGenProo
 	return txes, nil
 }
 
-func DeleteUnGenProof(store store.IStore, chainType ChainType, txId string) error {
+func DeleteUnGenProof(store store.IStore, chainType common.ChainType, txId string) error {
 	err := store.DeleteObj(DbUnGenProofId(chainType, txId))
 	if err != nil {
 		logger.Error("delete ungen Proof error:%v", err)
@@ -597,11 +597,11 @@ func ReadAllUnConfirmTx(store store.IStore) ([]*DbUnConfirmTx, error) {
 	return txes, nil
 }
 
-func WriteTaskTime(store store.IStore, flag common.TaskStatusFlag, id string, t time.Time) error {
+func WriteTaskTime(store store.IStore, flag common.ProofStatus, id string, t time.Time) error {
 	return store.PutObj(DbTaskTimeId(flag, id), t)
 }
 
-func ReadTaskTime(store store.IStore, flag common.TaskStatusFlag, id string) (time.Time, bool, error) {
+func ReadTaskTime(store store.IStore, flag common.ProofStatus, id string) (time.Time, bool, error) {
 	exists, err := store.HasObj(DbTaskTimeId(flag, id))
 	if err != nil {
 		return time.Time{}, false, err

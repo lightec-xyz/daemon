@@ -97,7 +97,7 @@ func (s *State) CheckBtcState() error {
 
 	return nil
 	// btc tx indexes
-	unGenProofs, err := ReadAllUnGenProofs(s.store, Bitcoin)
+	unGenProofs, err := ReadAllUnGenProofs(s.store, common.BitcoinChain)
 	if err != nil {
 		logger.Error("read unGen proof error:%v", err)
 		return err
@@ -106,7 +106,7 @@ func (s *State) CheckBtcState() error {
 		logger.Debug("bitcoin check ungen proof: %v %v", tx.ProofType.String(), tx.TxHash)
 		if tx.ProofType == 0 || tx.TxHash == "" {
 			logger.Warn("unGenProof error:%v %v", tx.ProofType.String(), tx.TxHash)
-			err := DeleteUnGenProof(s.store, Bitcoin, tx.TxHash)
+			err := DeleteUnGenProof(s.store, common.BitcoinChain, tx.TxHash)
 			if err != nil {
 				logger.Error("delete ungen proof error:%v %v", tx.TxHash, err)
 			}
@@ -140,7 +140,7 @@ func (s *State) checkDepositRequest(tx *DbUnGenProof) error {
 	}
 	if exists {
 		logger.Debug("%v %v proof exists ,delete ungen proof now", tx.ProofType.String(), tx.TxHash)
-		err = DeleteUnGenProof(s.store, Bitcoin, tx.TxHash)
+		err = DeleteUnGenProof(s.store, common.BitcoinChain, tx.TxHash)
 		if err != nil {
 			logger.Error("delete ungen proof error:%v %v", tx.TxHash, err)
 			return err
@@ -381,7 +381,7 @@ func (s *State) CheckEthState() error {
 			return err
 		}
 	}
-	unGenProofs, err := ReadAllUnGenProofs(s.store, Ethereum)
+	unGenProofs, err := ReadAllUnGenProofs(s.store, common.EthereumChain)
 	if err != nil {
 		logger.Error("read all ungen proof ids error: %v", err)
 		return err
@@ -396,7 +396,7 @@ func (s *State) CheckEthState() error {
 		}
 		if exists {
 			logger.Debug("redeem proof exist now,delete cache: %v", txHash)
-			err := DeleteUnGenProof(s.store, Ethereum, txHash)
+			err := DeleteUnGenProof(s.store, common.EthereumChain, txHash)
 			if err != nil {
 				logger.Error("delete ungen proof error: %v", err)
 				return err
@@ -704,7 +704,7 @@ func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cac
 
 func (s *State) clearTestEthRedeemData() error {
 	// todo
-	err := s.store.DeleteObj(DbUnGenProofId(Ethereum, "0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"))
+	err := s.store.DeleteObj(DbUnGenProofId(common.EthereumChain, "0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"))
 	if err != nil {
 		logger.Error("delete ungen proof error: %v", err)
 		return err
@@ -718,7 +718,7 @@ func (s *State) mockTestEthRedeemData() error {
 	txHash := "0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"
 	txHeight := uint64(2025122)
 	txSlot := uint64(2195577)
-	exists, err := s.store.HasObj(DbUnGenProofId(Ethereum, txHash))
+	exists, err := s.store.HasObj(DbUnGenProofId(common.EthereumChain, txHash))
 	if err != nil {
 		logger.Error("write ungen proof error: %v", err)
 		return err
@@ -739,19 +739,19 @@ func (s *State) mockTestEthRedeemData() error {
 				TxHash:    txHash,
 				TxIndex:   16,
 				Amount:    0,
-				TxType:    RedeemTx,
-				ChainType: Ethereum,
+				TxType:    common.RedeemTx,
+				ChainType: common.EthereumChain,
 			},
 		})
 		if err != nil {
 			logger.Error("write tx error: %v", err)
 			return err
 		}
-		err = WriteUnGenProof(s.store, Ethereum, []*DbUnGenProof{
+		err = WriteUnGenProof(s.store, common.EthereumChain, []*DbUnGenProof{
 			{
 				TxHash:    txHash,
 				ProofType: common.RedeemTxType,
-				ChainType: Ethereum,
+				ChainType: common.EthereumChain,
 				Height:    txHeight,
 				TxIndex:   16,
 				Amount:    0,

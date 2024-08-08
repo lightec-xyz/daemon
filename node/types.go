@@ -179,8 +179,8 @@ type Transaction struct {
 	Height    uint64
 	TxIndex   uint
 	BlockHash string
-	TxType    TxType
-	ChainType ChainType
+	TxType    common.TxType
+	ChainType common.ChainType
 	From      string
 	To        string
 	Proofed   bool
@@ -205,5 +205,5 @@ type Proof struct {
 // todo
 type UnGenPreProof struct {
 	TxId      string
-	ChainType ChainType
+	ChainType common.ChainType
 }
