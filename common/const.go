@@ -37,8 +37,8 @@ const (
 	RedeemTx
 )
 
-func (tt *TxType) String() string {
-	switch *tt {
+func (tt TxType) String() string {
+	switch tt {
 	case DepositTx:
 		return "deposit"
 	case RedeemTx:
@@ -55,8 +55,8 @@ const (
 	EthereumChain
 )
 
-func (ct *ChainType) String() string {
-	switch *ct {
+func (ct ChainType) String() string {
+	switch ct {
 	case BitcoinChain:
 		return "bitcoin"
 	case EthereumChain:
@@ -98,8 +98,8 @@ const (
 	ProofFailed
 )
 
-func (ps *ProofStatus) String() string {
-	switch *ps {
+func (ps ProofStatus) String() string {
+	switch ps {
 	case ProofDefault:
 		return "proofDefault"
 	case ProofFinalized:
@@ -165,8 +165,8 @@ const (
 	BtcRecursiveType
 )
 
-func (z *ZkProofType) String() string {
-	switch *z {
+func (z ZkProofType) String() string {
+	switch z {
 	case DepositTxType:
 		return "depositTxType"
 	case RedeemTxType:
@@ -208,8 +208,8 @@ func (z *ZkProofType) String() string {
 	}
 }
 
-func (z *ZkProofType) Weight() ProofWeight {
-	switch *z {
+func (z ZkProofType) Weight() ProofWeight {
+	switch z {
 	case DepositTxType:
 		return Highest
 	case RedeemTxType:

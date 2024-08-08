@@ -641,3 +641,18 @@ func FindFinalityUpdateNearestSlot(store store.IStore, txSlot uint64) (uint64, b
 	}
 	return 0, false, nil
 }
+
+func ReadSlotByHash(store store.IStore, hash string) (uint64, bool, error) {
+	dbTx, err := ReadDbTx(store, hash)
+	if err != nil {
+		return 0, false, err
+	}
+	slot, ok, err := ReadBeaconSlot(store, dbTx.Height)
+	if err != nil {
+		return 0, false, err
+	}
+	if !ok {
+		return 0, false, nil
+	}
+	return slot, true, nil
+}

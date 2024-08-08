@@ -39,13 +39,13 @@ type ZkProofRequest struct {
 	EndTime     time.Time
 }
 
-func NewZkProofRequest(reqType ZkProofType, data interface{}, index, end uint64, txHash string) *ZkProofRequest {
+func NewZkProofRequest(reqType ZkProofType, data interface{}, fIndex, sIndex uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
-		ZkId:        NewProofId(reqType, index, end, txHash), // todo
+		ZkId:        NewProofId(reqType, fIndex, sIndex, txHash), // todo
 		ReqType:     reqType,
 		Data:        data,
-		Index:       index,
-		SecondIndex: end,
+		Index:       fIndex,
+		SecondIndex: sIndex,
 		TxHash:      txHash,
 		Weight:      reqType.Weight(),
 		Status:      ProofDefault,

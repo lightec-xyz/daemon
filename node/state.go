@@ -308,11 +308,18 @@ func (s *State) tryProofRequest(reqType common.ZkProofType, fIndex, sIndex uint6
 		return nil
 	}
 	zkProofRequest := common.NewZkProofRequest(reqType, data, fIndex, sIndex, hash)
-	// todo
-	s.cache.Store(proofId, nil)
-	s.proofQueue.Push(zkProofRequest)
-	logger.Info("success add request:%v", proofId)
+	s.AddReqToQueue(zkProofRequest)
 	return nil
+}
+
+func (s *State) AddReqToQueue(req *common.ZkProofRequest) {
+	s.cache.Store(req.Id(), nil)
+	s.proofQueue.Push(req)
+	logger.Info("success add request to queue :%v", req.Id())
+	err := s.UpdateProofStatus(req, common.ProofQueued)
+	if err != nil {
+		logger.Error("update proof status error:%v %v", req.Id(), err)
+	}
 }
 
 func (s *State) CheckReq(reqType common.ZkProofType, index uint64, hash string) (bool, error) {
@@ -414,6 +421,16 @@ func (s *State) CheckEthState() error {
 			continue
 		}
 		// todo
+		//finalizedSlot, ok, err := FindFinalityUpdateNearestSlot(s.store, txSlot)
+		//if err != nil {
+		//	logger.Error("find nearest finalized slot error: %v", err)
+		//	return err
+		//}
+		//if !ok {
+		//	logger.Warn("no find  %v nearest finalized slot", txSlot)
+		//	continue
+		//}
+
 		finalizedSlot, ok, err := s.fileStore.GetNearTxSlotFinalizedSlot(txSlot)
 		if err != nil {
 			logger.Error("get near tx slot finalized slot error: %v", err)
@@ -585,13 +602,7 @@ func (s *State) CheckProofRequest(resp *common.ZkProofResponse) error {
 	}
 	for _, req := range requests {
 		if !s.cache.Check(req.Id()) {
-			logger.Debug("add new request:%v to queue", req.Id())
-			s.cache.Store(req.Id(), nil)
-			s.proofQueue.Push(req)
-			err := s.UpdateProofStatus(req, common.ProofQueued)
-			if err != nil {
-				logger.Error("update Proof status error:%v %v", req.Id(), err)
-			}
+			s.AddReqToQueue(req)
 		}
 	}
 	return nil
