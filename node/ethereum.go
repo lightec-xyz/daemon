@@ -271,7 +271,7 @@ func (e *EthereumAgent) saveData(height int64, depositTxes, redeemTxes []*Transa
 	// todo only redeem tx
 	addrTxesMap := txesByAddrGroup(redeemTxes)
 	for addr, addrTxes := range addrTxesMap {
-		err := WriteTxIdsByAddr(e.store, addr, addrTxes)
+		err := WriteTxIdsByAddr(e.store, common.RedeemTx, addr, addrTxes)
 		if err != nil {
 			logger.Error("write addr txes error: %v %v", addr, err)
 			return err

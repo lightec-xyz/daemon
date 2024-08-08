@@ -37,7 +37,7 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 	if addr == "" || txType == "" {
 		return nil, fmt.Errorf("addr or txType is empty")
 	}
-	dbTxes, err := ReadTxIdsByAddr(h.store, addr)
+	dbTxes, err := ReadTxIdsByAddr(h.store, common.RedeemTx, addr)
 	if err != nil {
 		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
 		return nil, err

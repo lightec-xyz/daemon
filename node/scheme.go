@@ -120,8 +120,8 @@ func DbUnSubmitTxId(txId string) string {
 	return pTxID
 }
 
-func DbAddrPrefixTxId(addr string, txId string) string {
-	key := fmt.Sprintf("%s%s%s", addr, ProtocolSeparator, trimOx(txId))
+func DbAddrPrefixTxId(addr string, txType common.TxType, txId string) string {
+	key := fmt.Sprintf("%s%s%d%s%s", addr, ProtocolSeparator, txType, ProtocolSeparator, trimOx(txId))
 	return key
 }
 
