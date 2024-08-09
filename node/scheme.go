@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"strings"
 	"time"
 )
 
@@ -86,87 +87,87 @@ type DbTask struct {
 }
 
 func DbProofId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s%s", ProofPrefix, ProtocolSeparator, trimOx(txId))
-	return pTxID
+	key := fmt.Sprintf("%s%s%s", ProofPrefix, ProtocolSeparator, trimOx(txId))
+	return strings.ToLower(key)
 }
 
 func DbBtcHeightPrefix(height int64) string {
-	pTxID := fmt.Sprintf("%s%s%d", BtcHeightPrefix, ProtocolSeparator, height)
-	return pTxID
+	key := fmt.Sprintf("%s%s%d", BtcHeightPrefix, ProtocolSeparator, height)
+	return strings.ToLower(key)
 }
 
 func DbEthHeightPrefix(height int64) string {
-	pTxID := fmt.Sprintf("%s%s%d", EthHeightPrefix, ProtocolSeparator, height)
-	return pTxID
+	key := fmt.Sprintf("%s%s%d", EthHeightPrefix, ProtocolSeparator, height)
+	return strings.ToLower(key)
 }
 
 func DbTxId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s%s", TxPrefix, ProtocolSeparator, trimOx(txId))
-	return pTxID
+	key := fmt.Sprintf("%s%s%s", TxPrefix, ProtocolSeparator, trimOx(txId))
+	return strings.ToLower(key)
 }
 
 func DbDestId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s%s", DestChainHashPrefix, ProtocolSeparator, trimOx(txId))
-	return pTxID
+	key := fmt.Sprintf("%s%s%s", DestChainHashPrefix, ProtocolSeparator, trimOx(txId))
+	return strings.ToLower(key)
 }
 
 func DbUnGenProofId(chain common.ChainType, txId string) string {
-	pTxID := fmt.Sprintf("%s%s%d%s%s", UnGenProofPrefix, ProtocolSeparator, chain, ProtocolSeparator, trimOx(txId))
-	return pTxID
+	key := fmt.Sprintf("%s%s%d%s%s", UnGenProofPrefix, ProtocolSeparator, chain, ProtocolSeparator, trimOx(txId))
+	return strings.ToLower(key)
 }
 
 func DbUnSubmitTxId(txId string) string {
-	pTxID := fmt.Sprintf("%s%s%s", UnSubmitTxPrefix, ProtocolSeparator, trimOx(txId))
-	return pTxID
+	key := fmt.Sprintf("%s%s%s", UnSubmitTxPrefix, ProtocolSeparator, trimOx(txId))
+	return strings.ToLower(key)
 }
 
 func DbAddrPrefixTxId(addr string, txType common.TxType, txId string) string {
 	key := fmt.Sprintf("%s%s%d%s%s", addr, ProtocolSeparator, txType, ProtocolSeparator, trimOx(txId))
-	return key
+	return strings.ToLower(key)
 }
 
 func DbBeaconSlotId(slot uint64) string {
 	key := fmt.Sprintf("%s%s%d", BeaconSlotPrefix, ProtocolSeparator, slot)
-	return key
+	return strings.ToLower(key)
 }
 func DbBeaconEthNumberId(number uint64) string {
 	key := fmt.Sprintf("%s%s%d", BeaconEthNumberPrefix, ProtocolSeparator, number)
-	return key
+	return strings.ToLower(key)
 }
 
 func DbTxSlotId(slot uint64, hash string) string {
 	key := fmt.Sprintf("%s%s%d%s%s", TxSlotPrefix, ProtocolSeparator, slot, ProtocolSeparator, trimOx(hash))
-	return key
+	return strings.ToLower(key)
 }
 
 func DbTxFinalizeSlotId(slot uint64, hash string) string {
 	key := fmt.Sprintf("%s%s%d%s%s", TxFinalizeSlotPrefix, ProtocolSeparator, slot, ProtocolSeparator, trimOx(hash))
-	return key
+	return strings.ToLower(key)
 }
 
 func DbPendingRequestId(id string) string {
 	key := fmt.Sprintf("%s%s%s", PendingReqPrefix, ProtocolSeparator, id)
-	return key
+	return strings.ToLower(key)
 }
 
 func DbAddrNonceId(network, addr string) string {
 	key := fmt.Sprintf("%s%s%s%s%s", NoncePrefix, ProtocolSeparator, network, ProtocolSeparator, addr)
-	return key
+	return strings.ToLower(key)
 }
 
 func DbUnConfirmTxId(txId string) string {
 	key := fmt.Sprintf("%s%s%s", UnConfirmTxPrefix, ProtocolSeparator, trimOx(txId))
-	return key
+	return strings.ToLower(key)
 }
 
 // proof task time
 
 func DbTaskTimeId(flag common.ProofStatus, id string) string {
 	key := fmt.Sprintf("%s%s%s%s%s", TaskTimePrefix, ProtocolSeparator, id, ProtocolSeparator, flag.String())
-	return key
+	return strings.ToLower(key)
 }
 
 func DbFinalityUpdateSlotId(slot uint64) string {
 	key := fmt.Sprintf("%s%s%d", FinalityUpdateSlotPrefix, ProtocolSeparator, slot)
-	return key
+	return strings.ToLower(key)
 }
