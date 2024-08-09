@@ -27,7 +27,9 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 	if addr == "" || txType == "" {
 		return nil, fmt.Errorf("addr or txType is empty")
 	}
-	dbTxes, err := ReadTxesByAddr(h.store, addr)
+	logger.Debug("rpc handler receive txes by addr: %v %v", addr, txType)
+	// todo just support current version
+	dbTxes, err := ReadTxesByAddr(h.store, EIP55Addr(addr))
 	if err != nil {
 		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
 		return nil, err

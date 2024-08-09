@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/lightec-xyz/daemon/common"
@@ -12,6 +13,9 @@ import (
 	"time"
 )
 
+func EIP55Addr(addr string) string {
+	return ethCommon.HexToAddress(addr).Hex()
+}
 func UUID() string {
 	newV7, err := uuid.NewV7()
 	if err != nil {
