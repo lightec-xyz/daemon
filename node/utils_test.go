@@ -29,3 +29,20 @@ func VerifySha256Signature(publicKey []byte, signature []byte, data []byte) bool
 	verified := crypto.VerifySignature(publicKey, hash[:], signature)
 	return verified
 }
+
+func TestEIP55Addr(t *testing.T) {
+
+	addr := EIP55Addr("0x0ef907a4cfd17202d4035ff07f06030e2203da5a")
+	t.Log(addr)
+	addr = EIP55Addr("0x2A6443B5838f9524970c471289AB22f399395Ff6")
+	t.Log(addr)
+	addr = EIP55Addr("0x0ef907a4cfd172")
+	t.Log(addr)
+	addr = EIP55Addr("0x0ef907a4cfd17202d4035ff07f06030e20ef907a4cfd17202d4035ff07f06030e2")
+	t.Log(addr)
+	addr = EIP55Addr("0x")
+	t.Log(addr)
+	addr = EIP55Addr("")
+	t.Log(addr)
+
+}

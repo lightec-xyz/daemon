@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/lightec-xyz/daemon/common"
@@ -11,6 +12,10 @@ import (
 	"strings"
 	"time"
 )
+
+func EIP55Addr(addr string) string {
+	return ethCommon.HexToAddress(addr).Hex()
+}
 
 func TxIdIsEmpty(txId [32]byte) bool {
 	for _, b := range txId {
