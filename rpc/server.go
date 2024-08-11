@@ -38,9 +38,9 @@ func NewServer(name, addr string, handler interface{}, verify IVerify, wsHandler
 	}
 	var middlewareHandler http.Handler
 	if wsHandler == nil {
-		middlewareHandler = CORSHandler(rpcServer, verify)
+		middlewareHandler = CORSHandler(VerifyHandler(rpcServer, verify))
 	} else {
-		middlewareHandler = WsConnHandler(rpcServer, wsHandler)
+		middlewareHandler = WsConnHandler(VerifyHandler(rpcServer, verify), wsHandler)
 	}
 	rpcServer.SetBatchLimits(BatchRequestLimit, BatchResponseMaxSize)
 	httpServer := &http.Server{
@@ -151,9 +151,15 @@ func wsHandshakeValidator(allowedOrigins []string) func(*http.Request) bool {
 		return false
 	}
 }
-func CORSHandler(h http.Handler, verify IVerify) http.Handler {
+func CORSHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//todo
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		h.ServeHTTP(w, r)
+	})
+}
+
+func VerifyHandler(h http.Handler, verify IVerify) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if verify != nil {
 			err := verifyJwt(r, verify)
 			if err != nil {
@@ -162,7 +168,6 @@ func CORSHandler(h http.Handler, verify IVerify) http.Handler {
 				return
 			}
 		}
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		h.ServeHTTP(w, r)
 	})
 }
