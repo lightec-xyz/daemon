@@ -54,6 +54,6 @@ type IWorker interface {
 	Id() string
 }
 
-type IJwt interface {
+type IVerify interface {
 	VerifyJwt(token string) (*CustomClaims, error)
 }

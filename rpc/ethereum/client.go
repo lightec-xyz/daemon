@@ -262,10 +262,10 @@ func (c *Client) Deposit(secret string, nonce, gasLimit uint64, chainID, gasPric
 
 }
 
-func (c *Client) UpdateUtxoChange(secret string, txIds []string, nonce, gasLimit uint64, chainID, gasPrice *big.Int, proof []byte) (string, error) {
+func (c *Client) UpdateUtxoChange(secret []byte, txIds []string, nonce, gasLimit uint64, chainID, gasPrice *big.Int, proof []byte) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
-	privateKey, err := crypto.HexToECDSA(secret)
+	privateKey, err := crypto.ToECDSA(secret)
 	if err != nil {
 		return "", err
 	}

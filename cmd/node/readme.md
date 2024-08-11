@@ -1,6 +1,9 @@
 ## Command 
 
-      ./node --config ./node.json run
+    ./node --config ./node.json run
+
+    ./node --config ./local.json jwt
+
 
 
 ## Config

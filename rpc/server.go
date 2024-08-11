@@ -25,7 +25,7 @@ type Server struct {
 	name       string
 }
 
-func NewServer(name, addr string, handler interface{}, verify IJwt, wsHandler WsFn) (*Server, error) {
+func NewServer(name, addr string, handler interface{}, verify IVerify, wsHandler WsFn) (*Server, error) {
 	isOpen := isPortOpen(addr)
 	if isOpen {
 		return nil, fmt.Errorf("port is open:%v", addr)
@@ -151,12 +151,13 @@ func wsHandshakeValidator(allowedOrigins []string) func(*http.Request) bool {
 		return false
 	}
 }
-func CORSHandler(h http.Handler, verify IJwt) http.Handler {
+func CORSHandler(h http.Handler, verify IVerify) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		//todo
 		if verify != nil {
-			_, err := verifyJwt(r, nil)
+			err := verifyJwt(r, verify)
 			if err != nil {
+				logger.Error("verify jwt error: %v", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
@@ -212,32 +213,35 @@ func pathPermission(method string) (Permission, error) {
 	}
 }
 
-func verifyJwt(request *http.Request, verify func(auth string) (*CustomClaims, bool)) (*CustomClaims, error) {
+// todo
+func verifyJwt(request *http.Request, verify IVerify) error {
 	bodyBytes, err := io.ReadAll(request.Body)
 	if err != nil {
 		logger.Error("read body error: %v", err)
-		return nil, err
+		return err
 	}
-	authorization := request.Header.Get(AuthorizationHeader)
-	jwt, ok := verify(authorization)
-	if !ok {
-		return nil, fmt.Errorf("invalid jwt token")
-	}
-	logger.Debug("data: %v", string(bodyBytes))
 	method, err := getMethod(bodyBytes)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	permission, err := pathPermission(method)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	// todo
-	if permission != jwt.Permission {
-		return nil, fmt.Errorf("permission not match")
+	if permission != NonePermission {
+		authorization := request.Header.Get(AuthorizationHeader)
+		jwt, err := verify.VerifyJwt(authorization)
+		if err != nil {
+			return fmt.Errorf("invalid jwt token")
+		}
+		if permission != jwt.Permission {
+			return fmt.Errorf("permission not match")
+		}
+		return nil
 	}
+
 	request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	return jwt, nil
+	return nil
 }
 
 func getMethod(data []byte) (string, error) {

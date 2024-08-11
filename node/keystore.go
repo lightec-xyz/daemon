@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/hex"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 )
@@ -24,7 +25,12 @@ func NewKeyStore(privateKey string) (*KeyStore, error) {
 		return nil, err
 	}
 	logger.Debug("keystore address: %v", address)
-	memguard.Store(SecretKeyId, []byte(privateKey))
+	hexSecret, err := hex.DecodeString(privateKey)
+	if err != nil {
+		logger.Error("decode private key error:%v", err)
+		return nil, err
+	}
+	memguard.Store(SecretKeyId, hexSecret)
 	return &KeyStore{
 		memguard: memguard,
 		address:  address,
@@ -35,13 +41,13 @@ func (k *KeyStore) EthAddress() string {
 	return k.address
 }
 
-func (k *KeyStore) GetPrivateKey() (string, error) {
+func (k *KeyStore) GetPrivateKey() ([]byte, error) {
 	bytes, err := k.memguard.Load(SecretKeyId)
 	if err != nil {
 		logger.Error("get private key error:%v", err)
-		return "", err
+		return nil, err
 	}
-	return string(bytes), nil
+	return bytes, nil
 }
 
 func (k *KeyStore) VerifyJwt(token string) (*rpc.CustomClaims, error) {
@@ -50,7 +56,7 @@ func (k *KeyStore) VerifyJwt(token string) (*rpc.CustomClaims, error) {
 		logger.Error("get private key error:%v", err)
 		return nil, err
 	}
-	jwt, err := rpc.VerifyJWT([]byte(secret), token)
+	jwt, err := rpc.VerifyJWT(secret, token)
 	if err != nil {
 		logger.Error("verify jwt error:%v", err)
 		return nil, err
