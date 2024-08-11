@@ -16,13 +16,21 @@ type Handler struct {
 }
 
 func (h *Handler) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response, err := h.worker.BtcGenesis(req)
+	if err != nil {
+		logger.Error("btc genesis error:%v", err)
+		return nil, err
+	}
+	return response, nil
 }
 
 func (h *Handler) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	response, err := h.worker.BtcRecursiveProve(req)
+	if err != nil {
+		logger.Error("btc recursive prove error:%v", err)
+		return nil, err
+	}
+	return response, nil
 }
 
 func (h *Handler) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
