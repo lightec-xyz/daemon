@@ -1,11 +1,13 @@
 package rpc
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/websocket"
 	"github.com/lightec-xyz/daemon/logger"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -150,6 +152,11 @@ func wsHandshakeValidator(allowedOrigins []string) func(*http.Request) bool {
 }
 func CORSHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := verifyJwt(r, nil)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		h.ServeHTTP(w, r)
 	})
@@ -190,4 +197,37 @@ func isPortOpen(endpoint string) bool {
 	}
 	_ = listener.Close()
 	return false
+}
+
+func pathPermission(url string) (Permission, error) {
+	path := getRealPath(url)
+	switch path {
+	case RemoveProofPath:
+		return JwtPermission, nil
+	default:
+		return NonePermission, nil
+	}
+}
+func getRealPath(path string) string {
+	index := strings.LastIndex(path, "/")
+	if index == -1 {
+		return ""
+	}
+	return path[index+1:]
+}
+
+func verifyJwt(request *http.Request, verify func(auth string) (*CustomClaims, bool)) (*CustomClaims, error) {
+	bodyBytes, err := io.ReadAll(request.Body)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debug("data: %v", string(bodyBytes))
+	// todo get url
+	authorization := request.Header.Get(AuthorizationHeader)
+	jwt, ok := verify(authorization)
+	if !ok {
+		return nil, fmt.Errorf("invalid jwt token")
+	}
+	request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	return jwt, nil
 }

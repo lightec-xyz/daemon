@@ -16,6 +16,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.7
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/gin-gonic/gin v1.9.1
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/lightec-xyz/btc_provers v0.0.0-00010101000000-000000000000
