@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/fxamacker/cbor/v2"
 	"testing"
+	"time"
 )
 
 func TestCbor(t *testing.T) {
@@ -55,13 +56,13 @@ func TestCbor_Demo(t *testing.T) {
 }
 
 func TestCodec_Demo(t *testing.T) {
-	value := 100
+	value := time.Now()
 	result, err := cbor.Marshal(value)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(result)
-	var tmp int
+	var tmp time.Time
 	err = cbor.Unmarshal(result, &tmp)
 	if err != nil {
 		t.Fatal(err)

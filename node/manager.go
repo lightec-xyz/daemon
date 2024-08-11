@@ -64,10 +64,10 @@ func (m *manager) Init() error {
 		return err
 	}
 	for _, request := range allPendingRequests {
-		logger.Info("load pending request:%v", request.Id())
-		m.pendingQueue.Push(request.Id(), request)
-		m.cache.Store(request.Id(), nil)
-		err = DeletePendingRequest(m.store, request.Id())
+		logger.Info("load pending request:%v", request.RequestId())
+		m.pendingQueue.Push(request.RequestId(), request)
+		m.cache.Store(request.RequestId(), nil)
+		err = DeletePendingRequest(m.store, request.RequestId())
 		if err != nil {
 			logger.Error("delete pending request error:%v", err)
 		}
@@ -109,13 +109,13 @@ func (m *manager) CheckState() error {
 			return nil
 		}
 		if request.StartTime.IsZero() {
-			logger.Error("request start time is zero: %v", request.Id())
+			logger.Error("request start time is zero: %v", request.RequestId())
 			return nil
 		}
 		timeout := time.Now().Sub(request.StartTime) >= request.ReqType.Timeout()
 		if timeout {
-			logger.Debug("%v timeout,add proof queue again", request.Id())
-			m.pendingQueue.Delete(request.Id())
+			logger.Debug("%v timeout,add proof queue again", request.RequestId())
+			m.pendingQueue.Delete(request.RequestId())
 			m.proofQueue.Push(request)
 		}
 		return nil
@@ -123,13 +123,17 @@ func (m *manager) CheckState() error {
 	return nil
 }
 
+func (m *manager) PendingProofList() []*common.ZkProofRequest {
+	return m.proofQueue.List()
+}
+
 func (m *manager) ReceiveRequest(requestList []*common.ZkProofRequest) error {
 	for _, req := range requestList {
-		logger.Info("queue receive gen Proof request:%v", req.Id())
+		logger.Info("queue receive gen Proof request:%v", req.RequestId())
 		m.proofQueue.Push(req)
 		err := m.UpdateProofStatus(req, common.ProofQueued)
 		if err != nil {
-			logger.Error("update Proof status error:%v %v", req.Id(), err)
+			logger.Error("update Proof status error:%v %v", req.RequestId(), err)
 		}
 	}
 	return nil
@@ -143,7 +147,7 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 		return nil, false, nil
 	}
 	//m.proofQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
-	//	logger.Debug("queryQueueReq: %v", value.Id())
+	//	logger.Debug("queryQueueReq: %v", value.RequestId())
 	//	return nil
 	//})
 	var request *common.ZkProofRequest
@@ -169,18 +173,18 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	}
 	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.SIndex, request.TxHash)
 	if err != nil {
-		logger.Error("check Proof error:%v %v", request.Id(), err)
+		logger.Error("check Proof error:%v %v", request.RequestId(), err)
 		return nil, false, err
 	}
 	if exists {
 		return nil, false, nil
 	}
-	logger.Debug("get proof request:%v", request.Id())
+	logger.Debug("get proof request:%v", request.RequestId())
 	request.StartTime = time.Now()
-	m.pendingQueue.Push(request.Id(), request)
+	m.pendingQueue.Push(request.RequestId(), request)
 	err = m.UpdateProofStatus(request, common.ProofGenerating)
 	if err != nil {
-		logger.Error("update Proof status error:%v %v", request.Id(), err)
+		logger.Error("update Proof status error:%v %v", request.RequestId(), err)
 	}
 	return request, true, nil
 }
@@ -197,7 +201,7 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 		if chanResponse != nil {
 			chanResponse <- response
 		}
-		proofId := response.Id()
+		proofId := response.RespId()
 		logger.Info("delete pending request:%v", proofId)
 		m.pendingQueue.Delete(proofId)
 		err = m.state.CheckProofRequest(response)
@@ -246,7 +250,7 @@ func (m *manager) DistributeRequest() error {
 		worker.AddReqNum()
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
 			defer worker.DelReqNum()
-			logger.Debug("worker %v start generate Proof type: %v", worker.Id(), req.Id())
+			logger.Debug("worker %v start generate Proof type: %v", worker.Id(), req.RequestId())
 			err := m.fileStore.StoreRequest(req)
 			if err != nil {
 				logger.Error("store Proof error:%v %v %v", req.ReqType.String(), req.Index, err)
@@ -267,18 +271,18 @@ func (m *manager) DistributeRequest() error {
 					continue
 				}
 				for _, item := range zkProofResponse {
-					logger.Debug("complete generate Proof type: %v", item.Id())
+					logger.Debug("complete generate Proof type: %v", item.RespId())
 					if chaResp != nil {
 						chaResp <- item
-						logger.Debug("chan send -- %v", item.Id())
+						logger.Debug("chan send -- %v", item.RespId())
 					}
 					err := StoreZkProof(m.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
 					if err != nil {
-						logger.Error("store Proof error:%v %v", item.Id(), err)
+						logger.Error("store Proof error:%v %v", item.RespId(), err)
 						return
 					}
 				}
-				m.pendingQueue.Delete(req.Id())
+				m.pendingQueue.Delete(req.RequestId())
 				return
 			}
 		}(request, chanResponse)
@@ -291,7 +295,7 @@ func (m *manager) DistributeRequest() error {
 		return err
 	}
 	if !find {
-		logger.Warn(" no find best worker to gen Proof: %v", request.Id())
+		logger.Warn(" no find best worker to gen Proof: %v", request.RequestId())
 		m.CacheRequest(request)
 		time.Sleep(waitTime)
 		return nil
@@ -303,7 +307,7 @@ func (m *manager) DistributeRequest() error {
 // todo
 func (m *manager) CacheRequest(request *common.ZkProofRequest) {
 	m.proofQueue.Push(request)
-	m.pendingQueue.Delete(request.Id())
+	m.pendingQueue.Delete(request.RequestId())
 }
 
 func (m *manager) getChanResponse(reqType common.ZkProofType) (chan *common.ZkProofResponse, error) {
@@ -328,10 +332,10 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 func (m *manager) Close() error {
 	logger.Debug("manager start  cache cache now ...")
 	m.pendingQueue.Iterator(func(value *common.ZkProofRequest) error {
-		logger.Debug("write pending request to db :%v", value.Id())
-		err := WritePendingRequest(m.store, value.Id(), value)
+		logger.Debug("write pending request to db :%v", value.RequestId())
+		err := WritePendingRequest(m.store, value.RequestId(), value)
 		if err != nil {
-			logger.Error("write pending request error:%v %v", value.Id(), err)
+			logger.Error("write pending request error:%v %v", value.RequestId(), err)
 			return err
 		}
 		return nil
@@ -345,7 +349,7 @@ func (s *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.Pr
 	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
 		err := UpdateProof(s.store, req.TxHash, "", req.ReqType, status)
 		if err != nil {
-			logger.Error("update Proof status error:%v %v", req.Id(), err)
+			logger.Error("update Proof status error:%v %v", req.RequestId(), err)
 			return err
 		}
 	}

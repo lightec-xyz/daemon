@@ -25,13 +25,40 @@ type Handler struct {
 }
 
 func (h *Handler) ProofTask(id string) (*rpc.ProofTaskInfo, error) {
-	//TODO implement me
-	panic("implement me")
+	queueTime, err := ReadTaskTime(h.store, id, common.ProofQueued)
+	if err != nil {
+		logger.Error("read queue time error: %v %v", id, err)
+		return nil, err
+	}
+	generatingTime, err := ReadTaskTime(h.store, id, common.ProofGenerating)
+	if err != nil {
+		//logger.Error("read generating time error: %v %v", id, err)
+		//return nil, err
+	}
+	end, err := ReadTaskTime(h.store, id, common.ProofSuccess)
+	if err != nil {
+		//logger.Error("read proof time error: %v %v", id, err)
+		//return nil, err
+	}
+	logger.Info("proof task: %v, queue time: %v, generating time: %v, proof time: %v", id, queueTime, generatingTime, end)
+	return &rpc.ProofTaskInfo{
+		Id:             id,
+		QueueTime:      queueTime,
+		GeneratingTime: generatingTime,
+		EndTime:        end,
+	}, nil
 }
 
 func (h *Handler) PendingTask() ([]*rpc.ProofTaskInfo, error) {
-	//TODO implement me
-	panic("implement me")
+	proofList := h.manager.PendingProofList()
+	var proofInfos []*rpc.ProofTaskInfo
+	for _, proof := range proofList {
+		proofInfos = append(proofInfos, &rpc.ProofTaskInfo{
+			Id:        proof.Id,
+			QueueTime: proof.CreateTime,
+		})
+	}
+	return proofInfos, nil
 }
 
 func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
@@ -81,25 +108,25 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 	}
 	response.CanGen = true
 	response.Request = zkProofRequest
-	logger.Info("worker: %v get zk proof task: %v", request.Id, zkProofRequest.Id())
+	logger.Info("worker: %v get zk proof task: %v", request.Id, zkProofRequest.RequestId())
 	return &response, nil
 }
 
 func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//if req.Version != GeneratorVersion {
-	//	logger.Error("id: %v current version: %v, unsupported version: %v", req.Id, GeneratorVersion, req.Version)
+	//	logger.Error("id: %v current version: %v, unsupported version: %v", req.RequestId, GeneratorVersion, req.Version)
 	//	return "", fmt.Errorf("current version: %v, unsupported version: %v", GeneratorVersion, req.Version)
 	//}
 	for _, item := range req.Data {
-		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.Id())
+		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.RespId())
 		err := StoreZkProof(h.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
 		if err != nil {
-			logger.Error("store zk proof error: %v %v", item.Id(), err)
+			logger.Error("store zk proof error: %v %v", item.RespId(), err)
 			return "", err
 		}
-		err = WriteTaskTime(h.store, item.Id(), common.ProofSuccess, time.Now())
+		err = WriteTaskTime(h.store, item.RespId(), common.ProofSuccess, time.Now())
 		if err != nil {
-			logger.Error("write task time error: %v %v", item.Id(), err)
+			logger.Error("write task time error: %v %v", item.RespId(), err)
 			return "", err
 		}
 	}

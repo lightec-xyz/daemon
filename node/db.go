@@ -601,20 +601,20 @@ func WriteTaskTime(store store.IStore, id string, status common.ProofStatus, val
 	return store.PutObj(DbTaskTimeId(id, status), value)
 }
 
-func ReadTaskTime(store store.IStore, id string, status common.ProofStatus) (time.Time, bool, error) {
+func ReadTaskTime(store store.IStore, id string, status common.ProofStatus) (time.Time, error) {
 	exists, err := store.HasObj(DbTaskTimeId(id, status))
 	if err != nil {
-		return time.Time{}, false, err
+		return time.Time{}, err
 	}
 	if !exists {
-		return time.Time{}, false, nil
+		return time.Time{}, nil
 	}
 	var t time.Time
 	err = store.GetObj(DbTaskTimeId(id, status), &t)
 	if err != nil {
-		return time.Time{}, false, err
+		return time.Time{}, err
 	}
-	return t, true, nil
+	return t, nil
 }
 
 func WriteFinalityUpdateSlot(store store.IStore, finalizeSlot uint64) error {

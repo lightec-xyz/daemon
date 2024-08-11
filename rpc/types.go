@@ -12,10 +12,14 @@ import (
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
+	"time"
 )
 
 type ProofTaskInfo struct {
-	Hash string
+	Id             string    `json:"id"`
+	QueueTime      time.Time `json:"queueTime"`
+	GeneratingTime time.Time `json:"generatingTime"`
+	EndTime        time.Time `json:"endTime"`
 }
 
 type Transaction struct {

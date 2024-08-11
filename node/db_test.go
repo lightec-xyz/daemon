@@ -47,7 +47,7 @@ func TestFindFinalityUpdateNearestSlot(t *testing.T) {
 func TestPendingRequest(t *testing.T) {
 	iStore := initStore()
 	err := WritePendingRequest(iStore, "test01", &common.ZkProofRequest{
-		ZkId:      "test01",
+		Id:        "test01",
 		StartTime: time.Now(),
 	})
 	assert.Nil(t, err)
@@ -56,7 +56,7 @@ func TestPendingRequest(t *testing.T) {
 	assert.Nil(t, err)
 	t.Log(ids)
 	for _, id := range ids {
-		err := DeletePendingRequest(iStore, id.Id())
+		err := DeletePendingRequest(iStore, id.RequestId())
 		assert.Nil(t, err)
 	}
 	requests, err := ReadAllPendingRequests(iStore)

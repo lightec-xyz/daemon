@@ -52,7 +52,7 @@ func TestArrayQueue(t *testing.T) {
 	arrayQueue.Push(common.NewZkProofRequest(common.BeaconHeaderType, nil, 400, 0, ""))
 
 	arrayQueue.Iterator(func(index int, value *common.ZkProofRequest) error {
-		t.Log(value.Id())
+		t.Log(value.RequestId())
 		return nil
 	})
 	fmt.Printf("*********** lenghth: %v  **************** \n", arrayQueue.Len())
@@ -65,7 +65,7 @@ func TestArrayQueue(t *testing.T) {
 
 		})
 		if ok {
-			t.Log(request.Id())
+			t.Log(request.RequestId())
 		}
 
 	}

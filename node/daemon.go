@@ -35,6 +35,7 @@ type IAgent interface {
 type IManager interface {
 	IState
 	Init() error
+	PendingProofList() []*common.ZkProofRequest
 	ReceiveRequest(requests []*common.ZkProofRequest) error
 	CheckState() error
 	GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkProofRequest, bool, error)

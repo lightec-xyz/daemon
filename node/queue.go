@@ -297,11 +297,15 @@ func (ag *ArrayQueue) Remove(id string) {
 	ag.lock.Lock()
 	defer ag.lock.Unlock()
 	for index, value := range ag.list {
-		if value.Id() == id {
+		if value.RequestId() == id {
 			ag.list = append(ag.list[:index], ag.list[index+1:]...)
 			return
 		}
 	}
+}
+
+func (aq *ArrayQueue) List() []*common.ZkProofRequest {
+	return aq.list
 }
 
 // ProofRespQueue todo
@@ -316,7 +320,7 @@ func NewSubmitQueue() *SubmitQueue {
 }
 
 func (q *SubmitQueue) Push(value *common.ZkProofResponse) {
-	q.list.Store(value.Id(), value)
+	q.list.Store(value.RespId(), value)
 }
 
 func (q *SubmitQueue) Delete(key string) {

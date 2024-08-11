@@ -310,7 +310,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		var redeemRpcRequest rpc.RedeemRequest
 		err := common.ParseObj(request.Data, &redeemRpcRequest)
 		if err != nil {
-			logger.Error("parse redeem Proof param error:%v", request.Id())
+			logger.Error("parse redeem Proof param error:%v", request.RequestId())
 			return nil, fmt.Errorf("not redeem Proof param")
 		}
 		proofResponse, err := worker.GenRedeemProof(&redeemRpcRequest)
@@ -511,14 +511,14 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 	}
 
 	for _, item := range result {
-		logger.Info("send zkProof:%v", item.Id())
+		logger.Info("send zkProof:%v", item.RespId())
 	}
 	return result, nil
 
 }
 func NewProofResp(reqType common.ZkProofType, index, end uint64, hash string, proof, witness []byte) *common.ZkProofResponse {
 	return &common.ZkProofResponse{
-		RespId:      common.NewProofId(reqType, index, end, hash),
+		Id:          common.NewProofId(reqType, index, end, hash),
 		ZkProofType: reqType,
 		Index:       index,
 		End:         end,

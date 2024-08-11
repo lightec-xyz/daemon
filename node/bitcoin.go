@@ -176,8 +176,8 @@ func (b *BitcoinAgent) SendProofRequest(requests ...*common.ZkProofRequest) {
 		b.proofRequest <- requests
 	}
 	for _, request := range requests {
-		logger.Info(" btc agent success send btc proof request: %v", request.Id())
-		b.cache.Store(request.Id(), nil)
+		logger.Info(" btc agent success send btc proof request: %v", request.RequestId())
+		b.cache.Store(request.RequestId(), nil)
 	}
 }
 
@@ -309,8 +309,8 @@ func (b *BitcoinAgent) CheckChainProof(proofType common.ZkProofType, txHash stri
 }
 
 func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
-	logger.Info("bitcoinAgent receive Proof resp: %v %x", resp.Id(), resp.Proof)
-	b.cache.Delete(resp.Id())
+	logger.Info("bitcoinAgent receive Proof resp: %v %x", resp.RespId(), resp.Proof)
+	b.cache.Delete(resp.RespId())
 	switch resp.ZkProofType {
 	case common.DepositTxType:
 		err := b.updateDepositProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)

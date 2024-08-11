@@ -45,7 +45,7 @@ func (l *Local) Init() error {
 	}
 	for _, resp := range submitProofs {
 		for _, item := range resp.Data {
-			logger.Debug("load pending proof response:%v %v", resp.Id, item.Id())
+			logger.Debug("load pending proof response:%v %v", resp.Id, item.RespId())
 		}
 		_, err := l.client.SubmitProof(resp)
 		if err != nil {
@@ -89,7 +89,7 @@ func (l *Local) polling() error {
 	l.worker.AddReqNum()
 	err = l.fileStore.StoreRequest(requestResp.Request)
 	if err != nil {
-		logger.Error("store request error:%v %v", requestResp.Request.Id(), err)
+		logger.Error("store request error:%v %v", requestResp.Request.RequestId(), err)
 		return nil
 	}
 	go func(request *common.ZkProofRequest) {
@@ -97,28 +97,28 @@ func (l *Local) polling() error {
 		defer l.worker.DelReqNum()
 		for {
 			if count >= 1 { // todo
-				logger.Error("retry gen proof too much time,stop generate this proof now: %v", request.Id())
+				logger.Error("retry gen proof too much time,stop generate this proof now: %v", request.RequestId())
 				return
 			}
 			count = count + 1
-			logger.Info("worker %v start generate Proof type: %v", l.Id, request.Id())
+			logger.Info("worker %v start generate Proof type: %v", l.Id, request.RequestId())
 			proofs, err := node.WorkerGenProof(l.worker, request)
 			if err != nil {
-				logger.Error("worker gen proof error:%v %v", request.Id(), err)
+				logger.Error("worker gen proof error:%v %v", request.RequestId(), err)
 				continue
 			}
-			logger.Info("complete generate Proof type: %v", request.Id())
+			logger.Info("complete generate Proof type: %v", request.RequestId())
 			submitProof := common.SubmitProof{Id: common.MustUUID(), WorkerId: l.Id, Data: proofs, Version: node.GeneratorVersion}
 			_, err = l.client.SubmitProof(&submitProof)
 			if err != nil {
 				for _, proof := range proofs {
-					logger.Error("submit proof %v_%v error cache now, %v", submitProof.Id, proof.Id(), err)
+					logger.Error("submit proof %v_%v error cache now, %v", submitProof.Id, proof.RespId(), err)
 				}
 				l.cacheProofs.Push(&submitProof)
 				return
 			}
 			for _, proof := range proofs {
-				logger.Info("success submit proof to server: workerId %v,proofId %v", submitProof.WorkerId, proof.Id())
+				logger.Info("success submit proof to server: workerId %v,proofId %v", submitProof.WorkerId, proof.RespId())
 			}
 			return
 		}
@@ -150,7 +150,7 @@ func (l *Local) Close() error {
 			return err
 		}
 		for _, item := range value.Data {
-			logger.Debug("write pending proof response: %v %v", value.Id, item.Id())
+			logger.Debug("write pending proof response: %v %v", value.Id, item.RespId())
 		}
 		return nil
 	})

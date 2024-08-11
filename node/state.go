@@ -314,16 +314,16 @@ func (s *State) tryProofRequest(reqType common.ZkProofType, fIndex, sIndex uint6
 }
 
 func (s *State) AddReqToQueue(req *common.ZkProofRequest) {
-	s.cache.Store(req.Id(), nil)
+	s.cache.Store(req.RequestId(), nil)
 	s.proofQueue.Push(req)
-	logger.Info("success add request to queue :%v", req.Id())
-	err := WriteTaskTime(s.store, req.Id(), common.ProofQueued, time.Now())
+	logger.Info("success add request to queue :%v", req.RequestId())
+	err := WriteTaskTime(s.store, req.RequestId(), common.ProofQueued, time.Now())
 	if err != nil {
-		logger.Error("write task time error:%v %v", req.Id(), err)
+		logger.Error("write task time error:%v %v", req.RequestId(), err)
 	}
 	err = s.UpdateProofStatus(req, common.ProofQueued)
 	if err != nil {
-		logger.Error("update proof status error:%v %v", req.Id(), err)
+		logger.Error("update proof status error:%v %v", req.RequestId(), err)
 	}
 }
 
@@ -577,11 +577,11 @@ func (s *State) CheckBeaconState() error {
 func (s *State) CheckProofRequest(resp *common.ZkProofResponse) error {
 	requests, err := s.findNewRequests(resp)
 	if err != nil {
-		logger.Error("check redeem request error:%v %v", resp.Id(), err)
+		logger.Error("check redeem request error:%v %v", resp.RespId(), err)
 		return err
 	}
 	for _, req := range requests {
-		if !s.cache.Check(req.Id()) {
+		if !s.cache.Check(req.RequestId()) {
 			s.AddReqToQueue(req)
 		}
 	}
@@ -594,7 +594,7 @@ func (s *State) findNewRequests(resp *common.ZkProofResponse) ([]*common.ZkProof
 	case common.TxInEth2:
 		request, ok, err := s.checkRedeemRequest(resp.TxHash)
 		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			logger.Error("get redeem request error:%v %v", resp.RespId(), err)
 			return nil, err
 		}
 		if ok {
@@ -604,14 +604,14 @@ func (s *State) findNewRequests(resp *common.ZkProofResponse) ([]*common.ZkProof
 	case common.BeaconHeaderType:
 		txes, err := ReadAllTxBySlot(s.store, resp.Index)
 		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			logger.Error("get redeem request error:%v %v", resp.RespId(), err)
 			return nil, err
 		}
 		var result []*common.ZkProofRequest
 		for _, tx := range txes {
 			request, ok, err := s.checkRedeemRequest(tx.TxHash)
 			if err != nil {
-				logger.Error("get redeem request error:%v %v", resp.Id(), err)
+				logger.Error("get redeem request error:%v %v", resp.RespId(), err)
 				return nil, err
 			}
 			if ok {
@@ -622,14 +622,14 @@ func (s *State) findNewRequests(resp *common.ZkProofResponse) ([]*common.ZkProof
 	case common.BeaconHeaderFinalityType:
 		txes, err := ReadAllTxByFinalizedSlot(s.store, resp.Index)
 		if err != nil {
-			logger.Error("get redeem request error:%v %v", resp.Id(), err)
+			logger.Error("get redeem request error:%v %v", resp.RespId(), err)
 			return nil, err
 		}
 		var result []*common.ZkProofRequest
 		for _, tx := range txes {
 			request, ok, err := s.checkRedeemRequest(tx.TxHash)
 			if err != nil {
-				logger.Error("get redeem request error:%v %v", resp.Id(), err)
+				logger.Error("get redeem request error:%v %v", resp.RespId(), err)
 				return nil, err
 			}
 			if ok {
@@ -668,7 +668,7 @@ func (s *State) UpdateProofStatus(req *common.ZkProofRequest, status common.Proo
 	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
 		err := UpdateProof(s.store, req.TxHash, "", req.ReqType, status)
 		if err != nil {
-			logger.Error("update Proof status error:%v %v", req.Id(), err)
+			logger.Error("update Proof status error:%v %v", req.RequestId(), err)
 			return err
 		}
 	}

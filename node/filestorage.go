@@ -145,7 +145,7 @@ func (fs *FileStorage) GetGenesisPeriod() uint64 {
 	return fs.genesisPeriod
 }
 func (fs *FileStorage) StoreRequest(req *common.ZkProofRequest) error {
-	return fs.StoreObj(RequestTable, req.Id(), req)
+	return fs.StoreObj(RequestTable, req.RequestId(), req)
 }
 
 func (fs *FileStorage) StorePeriod(period uint64) error {

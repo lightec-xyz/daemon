@@ -26,7 +26,7 @@ type SubmitProof struct {
 }
 
 type ZkProofRequest struct {
-	ZkId       string // todo
+	Id         string // todo
 	ReqType    ZkProofType
 	Data       interface{}
 	Index      uint64
@@ -42,7 +42,7 @@ type ZkProofRequest struct {
 
 func NewZkProofRequest(reqType ZkProofType, data interface{}, fIndex, sIndex uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
-		ZkId:       NewProofId(reqType, fIndex, sIndex, txHash), // todo
+		Id:         NewProofId(reqType, fIndex, sIndex, txHash), // todo
 		ReqType:    reqType,
 		Data:       data,
 		Index:      fIndex,
@@ -62,8 +62,8 @@ func (zk *ZkProofRequest) SetEndTime(t time.Time) {
 	zk.EndTime = t
 }
 
-func (zk *ZkProofRequest) Id() string {
-	return zk.ZkId
+func (zk *ZkProofRequest) RequestId() string {
+	return zk.Id
 }
 
 func (r *ZkProofRequest) String() string {
@@ -71,7 +71,7 @@ func (r *ZkProofRequest) String() string {
 }
 
 type ZkProofResponse struct {
-	RespId      string
+	Id          string
 	ZkProofType ZkProofType
 	Status      ProofStatus
 	Proof       []byte
@@ -81,8 +81,8 @@ type ZkProofResponse struct {
 	TxHash      string
 }
 
-func (zkp *ZkProofResponse) Id() string {
-	return zkp.RespId
+func (zkp *ZkProofResponse) RespId() string {
+	return zkp.Id
 }
 
 func (zkResp *ZkProofResponse) String() string {

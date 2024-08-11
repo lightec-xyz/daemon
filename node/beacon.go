@@ -156,7 +156,7 @@ func (b *BeaconAgent) FetchDataResponse(req *FetchResponse) error {
 }
 
 func (b *BeaconAgent) ProofResponse(resp *common.ZkProofResponse) error {
-	logger.Info("beacon Proof response type: %v, Index: %v", resp.Id(), resp.Index)
+	logger.Info("beacon Proof response type: %v, Index: %v", resp.RespId(), resp.Index)
 	return nil
 }
 
