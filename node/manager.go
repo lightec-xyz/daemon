@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -106,12 +105,15 @@ func (m *manager) CheckBeaconState() error {
 func (m *manager) CheckState() error {
 	logger.Debug("check pending request now")
 	m.pendingQueue.Iterator(func(request *common.ZkProofRequest) error {
-		timout, err := m.checkRequestTimeout(request)
-		if err != nil {
-			logger.Error("check pending request error:%v", err)
-			return err
+		if request == nil {
+			return nil
 		}
-		if timout {
+		if request.StartTime.IsZero() {
+			logger.Error("request start time is zero: %v", request.Id())
+			return nil
+		}
+		timeout := time.Now().Sub(request.StartTime) >= request.ReqType.Timeout()
+		if timeout {
 			logger.Debug("%v timeout,add proof queue again", request.Id())
 			m.pendingQueue.Delete(request.Id())
 			m.proofQueue.Push(request)
@@ -144,24 +146,28 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	//	logger.Debug("queryQueueReq: %v", value.Id())
 	//	return nil
 	//})
-
-	request, ok := m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
-		if len(proofTypes) == 0 {
-			return true
-		}
-		for _, req := range proofTypes {
-			if request.ReqType == req {
+	var request *common.ZkProofRequest
+	var ok bool
+	if len(proofTypes) == 0 {
+		request, ok = m.proofQueue.Pop()
+	} else {
+		request, ok = m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
+			if len(proofTypes) == 0 {
 				return true
 			}
-		}
-		return false
-	})
+			for _, req := range proofTypes {
+				if request.ReqType == req {
+					return true
+				}
+			}
+			return false
+		})
+	}
 	if !ok {
 		logger.Warn("no find match proof task")
 		return nil, false, nil
 	}
-	// todo
-	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.SecondIndex, request.TxHash)
+	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.SIndex, request.TxHash)
 	if err != nil {
 		logger.Error("check Proof error:%v %v", request.Id(), err)
 		return nil, false, err
@@ -169,7 +175,6 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	if exists {
 		return nil, false, nil
 	}
-
 	logger.Debug("get proof request:%v", request.Id())
 	request.StartTime = time.Now()
 	m.pendingQueue.Push(request.Id(), request)
@@ -200,7 +205,6 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 			logger.Error("check proof request error:%v", err)
 			return err
 		}
-
 	}
 	return nil
 }
@@ -321,29 +325,6 @@ func (m *manager) CheckProofStatus(request *common.ZkProofRequest) (bool, error)
 	return false, nil
 }
 
-func (m *manager) checkRequestTimeout(request *common.ZkProofRequest) (bool, error) {
-	if request == nil {
-		return false, fmt.Errorf("request is nil")
-	}
-	if request.StartTime.IsZero() {
-		logger.Error("request start time is zero: %v", request.Id())
-		return false, fmt.Errorf("request start time is zero: %v", request.Id())
-	}
-	isTimeout := false
-	currentTime := time.Now()
-	switch request.ReqType {
-	case common.SyncComUnitType:
-		if currentTime.Sub(request.StartTime).Hours() >= 1.3 { // todo
-			isTimeout = true
-		}
-	default:
-		if currentTime.Sub(request.StartTime).Minutes() >= 30 { // todo
-			isTimeout = true
-		}
-	}
-	return isTimeout, nil
-}
-
 func (m *manager) Close() error {
 	logger.Debug("manager start  cache cache now ...")
 	m.pendingQueue.Iterator(func(value *common.ZkProofRequest) error {
@@ -368,26 +349,5 @@ func (s *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.Pr
 			return err
 		}
 	}
-	return nil
-}
-
-func (m *manager) CheckProofState() error {
-	//err := m.state.CheckBtcState()
-	//if err != nil {
-	//	logger.Error("check btc state error:%v", err)
-	//	return err
-	//}
-
-	err := m.state.CheckEthState()
-	if err != nil {
-		logger.Error("check eth state error:%v", err)
-		return err
-	}
-
-	//err := m.state.CheckBeaconState()
-	//if err != nil {
-	//	logger.Error("check beacon state error:%v", err)
-	//	return err
-	//}
 	return nil
 }

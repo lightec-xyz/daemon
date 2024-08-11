@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
 )
 
 var _ rpc.INode = (*Handler)(nil)
@@ -91,10 +92,14 @@ func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//}
 	for _, item := range req.Data {
 		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.Id())
-		// todo
 		err := StoreZkProof(h.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
 		if err != nil {
 			logger.Error("store zk proof error: %v %v", item.Id(), err)
+			return "", err
+		}
+		err = WriteTaskTime(h.store, item.Id(), common.ProofSuccess, time.Now())
+		if err != nil {
+			logger.Error("write task time error: %v %v", item.Id(), err)
 			return "", err
 		}
 	}

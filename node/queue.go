@@ -293,6 +293,17 @@ func (aq *ArrayQueue) Len() int {
 	return len(aq.list)
 }
 
+func (ag *ArrayQueue) Remove(id string) {
+	ag.lock.Lock()
+	defer ag.lock.Unlock()
+	for index, value := range ag.list {
+		if value.Id() == id {
+			ag.list = append(ag.list[:index], ag.list[index+1:]...)
+			return
+		}
+	}
+}
+
 // ProofRespQueue todo
 type SubmitQueue struct {
 	list *sync.Map

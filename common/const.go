@@ -2,6 +2,8 @@ package common
 
 import (
 	"fmt"
+	"time"
+
 	//btcproverCommon"github.com/lightec-xyz/btc_provers/circuits/common"
 	btcproverCommon "github.com/lightec-xyz/btc_provers/circuits/common"
 )
@@ -101,17 +103,17 @@ const (
 func (ps ProofStatus) String() string {
 	switch ps {
 	case ProofDefault:
-		return "proofDefault"
+		return "default"
 	case ProofFinalized:
-		return "proofFinalized"
+		return "finalized"
 	case ProofQueued:
-		return "proofQueued"
+		return "queued"
 	case ProofGenerating:
-		return "proofGenerating"
+		return "generating"
 	case ProofSuccess:
-		return "proofSuccess"
+		return "success"
 	case ProofFailed:
-		return "proofFailed"
+		return "failed"
 	default:
 		return "unknown"
 	}
@@ -224,6 +226,16 @@ func (z ZkProofType) Weight() ProofWeight {
 		return SixLevel
 	default:
 		return WeightDefault
+	}
+}
+
+func (zk ZkProofType) Timeout() time.Duration {
+	// todo
+	switch zk {
+	case SyncComUnitType:
+		return 1*time.Hour + 30*time.Minute
+	default:
+		return 30 * time.Minute
 	}
 }
 

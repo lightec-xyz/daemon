@@ -10,14 +10,13 @@ import (
 const ProtocolSeparator = "_"
 
 const (
-	ProofPrefix           = "p"  // p_ + hash
-	TxPrefix              = "t"  // t_ + hash
-	DestChainHashPrefix   = "d"  // d_ + hash
-	UnGenProofPrefix      = "u"  // u_ + hash
-	UnSubmitTxPrefix      = "us" // s_ + hash
-	BeaconSlotPrefix      = "bs"
-	BeaconEthNumberPrefix = "bh"
-
+	ProofPrefix              = "p"  // p_ + hash
+	TxPrefix                 = "t"  // t_ + hash
+	DestChainHashPrefix      = "d"  // d_ + hash
+	UnGenProofPrefix         = "u"  // u_ + hash
+	UnSubmitTxPrefix         = "us" // s_ + hash
+	BeaconSlotPrefix         = "bs"
+	BeaconEthNumberPrefix    = "bh"
 	TxSlotPrefix             = "ts"
 	TxFinalizeSlotPrefix     = "tfs"
 	PendingReqPrefix         = "pr"
@@ -28,6 +27,9 @@ const (
 	FinalityUpdateSlotPrefix = "fu"
 	BtcHeightPrefix          = "b"
 	EthHeightPrefix          = "e"
+	TaskCreateTime           = "tct"
+	TaskStartTime            = "tst"
+	TaskEndTime              = "tet"
 )
 
 const (
@@ -160,10 +162,8 @@ func DbUnConfirmTxId(txId string) string {
 	return strings.ToLower(key)
 }
 
-// proof task time
-
-func DbTaskTimeId(flag common.ProofStatus, id string) string {
-	key := fmt.Sprintf("%s%s%s%s%s", TaskTimePrefix, ProtocolSeparator, id, ProtocolSeparator, flag.String())
+func DbTaskTimeId(id string, status common.ProofStatus) string {
+	key := fmt.Sprintf("%s%s%s", id, ProtocolSeparator, status.String())
 	return strings.ToLower(key)
 }
 

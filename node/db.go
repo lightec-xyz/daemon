@@ -597,12 +597,12 @@ func ReadAllUnConfirmTx(store store.IStore) ([]*DbUnConfirmTx, error) {
 	return txes, nil
 }
 
-func WriteTaskTime(store store.IStore, flag common.ProofStatus, id string, t time.Time) error {
-	return store.PutObj(DbTaskTimeId(flag, id), t)
+func WriteTaskTime(store store.IStore, id string, status common.ProofStatus, value time.Time) error {
+	return store.PutObj(DbTaskTimeId(id, status), value)
 }
 
-func ReadTaskTime(store store.IStore, flag common.ProofStatus, id string) (time.Time, bool, error) {
-	exists, err := store.HasObj(DbTaskTimeId(flag, id))
+func ReadTaskTime(store store.IStore, id string, status common.ProofStatus) (time.Time, bool, error) {
+	exists, err := store.HasObj(DbTaskTimeId(id, status))
 	if err != nil {
 		return time.Time{}, false, err
 	}
@@ -610,7 +610,7 @@ func ReadTaskTime(store store.IStore, flag common.ProofStatus, id string) (time.
 		return time.Time{}, false, nil
 	}
 	var t time.Time
-	err = store.GetObj(DbTaskTimeId(flag, id), &t)
+	err = store.GetObj(DbTaskTimeId(id, status), &t)
 	if err != nil {
 		return time.Time{}, false, err
 	}

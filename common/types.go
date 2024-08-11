@@ -26,31 +26,40 @@ type SubmitProof struct {
 }
 
 type ZkProofRequest struct {
-	ZkId        string // todo
-	ReqType     ZkProofType
-	Data        interface{}
-	Index       uint64
-	SecondIndex uint64
-	TxHash      string
-	Status      ProofStatus
-	Weight      ProofWeight // todo
-	CreateTime  time.Time
-	StartTime   time.Time
-	EndTime     time.Time
+	ZkId       string // todo
+	ReqType    ZkProofType
+	Data       interface{}
+	Index      uint64
+	SIndex     uint64
+	TxHash     string
+	Status     ProofStatus
+	Weight     ProofWeight // todo
+	ProvedNum  int
+	CreateTime time.Time
+	StartTime  time.Time
+	EndTime    time.Time
 }
 
 func NewZkProofRequest(reqType ZkProofType, data interface{}, fIndex, sIndex uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
-		ZkId:        NewProofId(reqType, fIndex, sIndex, txHash), // todo
-		ReqType:     reqType,
-		Data:        data,
-		Index:       fIndex,
-		SecondIndex: sIndex,
-		TxHash:      txHash,
-		Weight:      reqType.Weight(),
-		Status:      ProofDefault,
-		CreateTime:  time.Now(),
+		ZkId:       NewProofId(reqType, fIndex, sIndex, txHash), // todo
+		ReqType:    reqType,
+		Data:       data,
+		Index:      fIndex,
+		SIndex:     sIndex,
+		TxHash:     txHash,
+		Weight:     reqType.Weight(),
+		Status:     ProofDefault,
+		CreateTime: time.Now(),
 	}
+}
+
+func (zk *ZkProofRequest) SetStartTime(t time.Time) {
+	zk.StartTime = t
+}
+
+func (zk *ZkProofRequest) SetEndTime(t time.Time) {
+	zk.EndTime = t
 }
 
 func (zk *ZkProofRequest) Id() string {

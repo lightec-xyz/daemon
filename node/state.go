@@ -9,6 +9,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"time"
 )
 
 type IState interface {
@@ -316,7 +317,11 @@ func (s *State) AddReqToQueue(req *common.ZkProofRequest) {
 	s.cache.Store(req.Id(), nil)
 	s.proofQueue.Push(req)
 	logger.Info("success add request to queue :%v", req.Id())
-	err := s.UpdateProofStatus(req, common.ProofQueued)
+	err := WriteTaskTime(s.store, req.Id(), common.ProofQueued, time.Now())
+	if err != nil {
+		logger.Error("write task time error:%v %v", req.Id(), err)
+	}
+	err = s.UpdateProofStatus(req, common.ProofQueued)
 	if err != nil {
 		logger.Error("update proof status error:%v %v", req.Id(), err)
 	}
