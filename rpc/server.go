@@ -3,6 +3,7 @@ package rpc
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/websocket"
@@ -24,7 +25,7 @@ type Server struct {
 	name       string
 }
 
-func NewServer(name, addr string, handler interface{}, wsHandler WsFn) (*Server, error) {
+func NewServer(name, addr string, handler interface{}, verify IJwt, wsHandler WsFn) (*Server, error) {
 	isOpen := isPortOpen(addr)
 	if isOpen {
 		return nil, fmt.Errorf("port is open:%v", addr)
@@ -37,7 +38,7 @@ func NewServer(name, addr string, handler interface{}, wsHandler WsFn) (*Server,
 	}
 	var middlewareHandler http.Handler
 	if wsHandler == nil {
-		middlewareHandler = CORSHandler(rpcServer)
+		middlewareHandler = CORSHandler(rpcServer, verify)
 	} else {
 		middlewareHandler = WsConnHandler(rpcServer, wsHandler)
 	}
@@ -150,12 +151,15 @@ func wsHandshakeValidator(allowedOrigins []string) func(*http.Request) bool {
 		return false
 	}
 }
-func CORSHandler(h http.Handler) http.Handler {
+func CORSHandler(h http.Handler, verify IJwt) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := verifyJwt(r, nil)
-		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+		//todo
+		if verify != nil {
+			_, err := verifyJwt(r, nil)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 		}
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		h.ServeHTTP(w, r)
@@ -199,35 +203,54 @@ func isPortOpen(endpoint string) bool {
 	return false
 }
 
-func pathPermission(url string) (Permission, error) {
-	path := getRealPath(url)
-	switch path {
+func pathPermission(method string) (Permission, error) {
+	switch method {
 	case RemoveProofPath:
 		return JwtPermission, nil
 	default:
 		return NonePermission, nil
 	}
 }
-func getRealPath(path string) string {
-	index := strings.LastIndex(path, "/")
-	if index == -1 {
-		return ""
-	}
-	return path[index+1:]
-}
 
 func verifyJwt(request *http.Request, verify func(auth string) (*CustomClaims, bool)) (*CustomClaims, error) {
 	bodyBytes, err := io.ReadAll(request.Body)
 	if err != nil {
+		logger.Error("read body error: %v", err)
 		return nil, err
 	}
-	logger.Debug("data: %v", string(bodyBytes))
-	// todo get url
 	authorization := request.Header.Get(AuthorizationHeader)
 	jwt, ok := verify(authorization)
 	if !ok {
 		return nil, fmt.Errorf("invalid jwt token")
 	}
+	logger.Debug("data: %v", string(bodyBytes))
+	method, err := getMethod(bodyBytes)
+	if err != nil {
+		return nil, err
+	}
+	permission, err := pathPermission(method)
+	if err != nil {
+		return nil, err
+	}
+	// todo
+	if permission != jwt.Permission {
+		return nil, fmt.Errorf("permission not match")
+	}
 	request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	return jwt, nil
+}
+
+func getMethod(data []byte) (string, error) {
+	var req ReqMsg
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		return "", err
+	}
+	return req.Method, nil
+}
+
+type ReqMsg struct {
+	Method  string `json:"method"`
+	Jsonrpc string `json:"jsonrpc"`
+	Id      int    `json:"id"`
 }

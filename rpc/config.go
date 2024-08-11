@@ -18,6 +18,6 @@ const (
 )
 
 const (
-	RemoveProofPath     = "zkbtc_removeProof"
+	RemoveProofPath     = "zkbtc_removeProofTask"
 	AuthorizationHeader = "Authorization"
 )

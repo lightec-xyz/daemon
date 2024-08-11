@@ -241,7 +241,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	exitSignal := make(chan os.Signal, 1)
 
 	rpcHandler := NewHandler(msgManager, storeDb, memoryStore, scheduler, fileStore, exitSignal)
-	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, scheduler.AddWsWorker)
+	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, keyStore, nil)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err

@@ -53,3 +53,7 @@ type IWorker interface {
 	CurrentNums() int
 	Id() string
 }
+
+type IJwt interface {
+	VerifyJwt(token string) (*CustomClaims, error)
+}

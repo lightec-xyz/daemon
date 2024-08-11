@@ -1,6 +1,9 @@
 package node
 
-import "github.com/lightec-xyz/daemon/logger"
+import (
+	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
+)
 
 // todo
 
@@ -39,4 +42,18 @@ func (k *KeyStore) GetPrivateKey() (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+func (k *KeyStore) VerifyJwt(token string) (*rpc.CustomClaims, error) {
+	secret, err := k.GetPrivateKey()
+	if err != nil {
+		logger.Error("get private key error:%v", err)
+		return nil, err
+	}
+	jwt, err := rpc.VerifyJWT([]byte(secret), token)
+	if err != nil {
+		logger.Error("verify jwt error:%v", err)
+		return nil, err
+	}
+	return jwt, nil
 }

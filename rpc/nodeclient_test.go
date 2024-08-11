@@ -9,8 +9,8 @@ var nodeClient *NodeClient
 var err error
 
 func init() {
-	url := "https://testnet.zkbtc.money/api"
-	//url:="http://127.0.0.1:9780"
+	//url := "https://testnet.zkbtc.money/api"
+	url := "http://127.0.0.1:8970"
 	nodeClient, err = NewNodeClient(url)
 	if err != nil {
 		panic(err)
