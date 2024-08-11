@@ -37,6 +37,7 @@ type IManager interface {
 	Init() error
 	PendingProofList() []*common.ZkProofRequest
 	ReceiveRequest(requests []*common.ZkProofRequest) error
+	RemoveProofRequest(id string) error
 	CheckState() error
 	GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkProofRequest, bool, error)
 	SendProofResponse(response []*common.ZkProofResponse) error

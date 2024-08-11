@@ -4,7 +4,12 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 )
 
+type IAdmin interface {
+	RemoveRequest(id string) error
+}
+
 type INode interface {
+	IAdmin
 	Version() (NodeInfo, error)
 	AddWorker(endpoint string, max int) (string, error)
 	ProofInfo(txIds []string) ([]ProofInfo, error)

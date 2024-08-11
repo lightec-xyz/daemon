@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/lightec-xyz/daemon/common"
+	"net/http"
 	"reflect"
 	"time"
 )
@@ -14,6 +15,16 @@ var _ INode = (*NodeClient)(nil)
 type NodeClient struct {
 	*rpc.Client
 	timeout time.Duration
+	token   string
+}
+
+func (c *NodeClient) RemoveRequest(id string) error {
+	var result string
+	err := c.call(&result, "zkbtc_removeRequest", id)
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 func (c *NodeClient) ProofTask(id string) (*ProofTaskInfo, error) {
@@ -126,7 +137,7 @@ func (c *NodeClient) Version() (NodeInfo, error) {
 
 }
 
-func NewNodeClient(url string) (*NodeClient, error) {
+func NewNodeClient(url, token string) (*NodeClient, error) {
 	client, err := rpc.DialHTTP(url)
 	if err != nil {
 		return nil, err
@@ -134,6 +145,7 @@ func NewNodeClient(url string) (*NodeClient, error) {
 	return &NodeClient{
 		Client:  client,
 		timeout: 15 * time.Second,
+		token:   token,
 	}, nil
 }
 
@@ -143,6 +155,9 @@ func (c *NodeClient) call(result interface{}, method string, args ...interface{}
 		return fmt.Errorf("result must be pointer")
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	header := http.Header{}
+	header.Add("Authorization", c.token)
+	ctx.Value(header)
 	defer cancelFunc()
 	return c.CallContext(ctx, result, method, args...)
 }

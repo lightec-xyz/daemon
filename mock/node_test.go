@@ -8,7 +8,7 @@ import (
 )
 
 func TestNodeVersion(t *testing.T) {
-	client, err := rpc.NewNodeClient("http://127.0.0.1:8899")
+	client, err := rpc.NewNodeClient("http://127.0.0.1:8899", "")
 	if err != nil {
 		t.Fatal(err)
 	}

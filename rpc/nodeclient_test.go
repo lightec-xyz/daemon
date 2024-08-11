@@ -11,9 +11,17 @@ var err error
 func init() {
 	//url := "https://testnet.zkbtc.money/api"
 	url := "http://127.0.0.1:8970"
-	nodeClient, err = NewNodeClient(url)
+	token := " eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwdWJsaWNLZXkiOjIsImV4cCI6MTcyMzQ2NTI3NX0.OLRvuJ9xs_nunVm7vbeubZIRsv9H3aq0lHT3S6jgcNU"
+	nodeClient, err = NewNodeClient(url, token)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func TestNodeClient_RemoveRequest(t *testing.T) {
+	err := nodeClient.RemoveRequest("test_id")
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

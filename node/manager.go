@@ -74,6 +74,12 @@ func (m *manager) Init() error {
 	}
 	return nil
 }
+func (m *manager) RemoveProofRequest(id string) error {
+	m.proofQueue.Remove(id)
+	m.pendingQueue.Delete(id)
+	logger.Debug("remove pending request:%v", id)
+	return nil
+}
 
 func (m *manager) CheckBtcState() error {
 	err := m.state.CheckBtcState()

@@ -24,6 +24,16 @@ type Handler struct {
 	manager   IManager
 }
 
+func (h *Handler) RemoveRequest(id string) error {
+	err := h.manager.RemoveProofRequest(id)
+	if err != nil {
+		logger.Error("remove proof request error: %v %v", id, err)
+		return err
+	}
+	return nil
+
+}
+
 func (h *Handler) ProofTask(id string) (*rpc.ProofTaskInfo, error) {
 	queueTime, err := ReadTaskTime(h.store, id, common.ProofQueued)
 	if err != nil {
