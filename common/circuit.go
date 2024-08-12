@@ -12,6 +12,15 @@ import (
 	"os"
 )
 
+const (
+	SignatureThreshold = 2
+)
+
+var (
+	NotEnoughSigner  = fmt.Errorf("not enough signer")
+	InvalidSignature = fmt.Errorf("invalid signature")
+)
+
 func CheckZkParametersMd5(zkDir string, list []*Parameters) error {
 	for _, item := range list {
 		path := zkDir + "/" + item.FileName
@@ -27,8 +36,7 @@ func CheckZkParametersMd5(zkDir string, list []*Parameters) error {
 	return nil
 }
 
-// todo
-
+// TODO(Keep@20240808), suggest use prysm/LightClientUpdateWithVersion directly
 type LightClientUpdateInfo struct {
 	Version                 string                     `json:"version"`
 	AttestedHeader          *structs.BeaconBlockHeader `json:"attested_header"`
@@ -129,6 +137,7 @@ func verifyLightClientUpdateInfo(update *LightClientUpdateInfo) (bool, error) {
 		return false, err
 	}
 
+	nbSigner := 0
 	aggregateBits := bitfield.Bitvector512(aggregateBytes)
 	for i := uint64(0); i < aggregateBits.Len(); i++ {
 		if aggregateBits.BitAt(i) {
@@ -137,6 +146,7 @@ func verifyLightClientUpdateInfo(update *LightClientUpdateInfo) (bool, error) {
 				return false, err
 			}
 			pubkeys = append(pubkeys, pubKey)
+			nbSigner++
 		}
 	}
 
@@ -150,7 +160,102 @@ func verifyLightClientUpdateInfo(update *LightClientUpdateInfo) (bool, error) {
 	}
 
 	signingRoot, err := signing.ComputeSigningRoot(attestedHeader, domain)
-	return sig.FastAggregateVerify(pubkeys, signingRoot), nil
+
+	valid = sig.FastAggregateVerify(pubkeys, signingRoot)
+	if !valid {
+		return false, InvalidSignature
+	}
+	if nbSigner < SignatureThreshold {
+		return false, NotEnoughSigner
+	}
+	return true, nil
+}
+
+// VerifyFinalityUpdateSignature check the finalityUpdate signature is valid or not,
+// issue: FinalityUpdate_2189440 and FinalityUpdate_2193440
+func VerifyFinalityUpdateSignature(update structs.LightClientFinalityUpdateEvent, currentSyncCommittee structs.SyncCommittee) (bool, error) {
+	var domain []byte
+	switch update.Version {
+	case "bellatrix":
+		domain, _ = decodeHex("0700000069b7d97441dbd33e5ee5b4cb8fc8b08d6a58a7274b6e6daf19ef4ca7")
+	case "capella":
+		domain, _ = decodeHex("0700000017e2dad36f1d3595152042a9ad23430197557e2e7e82bc7f7fc72972")
+	case "deneb":
+		domain, _ = decodeHex("0700000069ae0e9900d509b38350c53915fccde15c6ef44214aa1b5bdec34d3a")
+	default:
+		panic("unknown version")
+	}
+
+	attestedHeader, err := update.Data.AttestedHeader.ToConsensus()
+	if err != nil {
+		return false, err
+	}
+
+	finalizedHeader, err := update.Data.FinalizedHeader.ToConsensus()
+	if err != nil {
+		return false, err
+	}
+
+	finalizedHeaderRoot, err := finalizedHeader.HashTreeRoot()
+	if err != nil {
+		return false, err
+	}
+
+	sc, err := currentSyncCommittee.ToConsensus()
+	if err != nil {
+		return false, err
+	}
+
+	finalityBranch := make([][]byte, len(update.Data.FinalityBranch))
+	for i, v := range update.Data.FinalityBranch {
+		finalityBranch[i] = make([]byte, 32)
+		finalityBranch[i], err = decodeHex(v)
+		if err != nil {
+			return false, err
+		}
+	}
+	valid := trie.VerifyMerkleProof(attestedHeader.GetStateRoot(), finalizedHeaderRoot[:], 105, finalityBranch)
+	if !valid {
+		return false, nil
+	}
+
+	var pubkeys []bls.PublicKey
+	aggregateBytes, err := decodeHex(update.Data.SyncAggregate.SyncCommitteeBits)
+	if err != nil {
+		return false, err
+	}
+
+	nbSigner := 0
+	aggregateBits := bitfield.Bitvector512(aggregateBytes)
+	for i := uint64(0); i < aggregateBits.Len(); i++ {
+		if aggregateBits.BitAt(i) {
+			pubKey, err := bls.PublicKeyFromBytes(sc.Pubkeys[i])
+			if err != nil {
+				return false, err
+			}
+			pubkeys = append(pubkeys, pubKey)
+			nbSigner++
+		}
+	}
+
+	sigBytes, err := decodeHex(update.Data.SyncAggregate.SyncCommitteeSignature)
+	if err != nil {
+		return false, err
+	}
+	sig, err := bls.SignatureFromBytes(sigBytes)
+	if err != nil {
+		return false, err
+	}
+
+	signingRoot, err := signing.ComputeSigningRoot(attestedHeader, domain)
+	valid = sig.FastAggregateVerify(pubkeys, signingRoot)
+	if !valid {
+		return false, InvalidSignature
+	}
+	if nbSigner < SignatureThreshold {
+		return false, NotEnoughSigner
+	}
+	return true, nil
 }
 
 func decodeHex(hexString string) ([]byte, error) {
