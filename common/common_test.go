@@ -1,11 +1,11 @@
 package common
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/lightec-xyz/daemon/logger"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 )
 
@@ -17,7 +17,7 @@ func TestHexToTxVar(t *testing.T) {
 	}
 	txVar, receiptVar, err := txineth2.GenerateTxAndReceiptU128Padded(ethClient, txHash)
 	if err != nil {
-		logger.Error("get tx and receipt error: %v", err)
+		fmt.Printf("get tx and receipt error: %v", err)
 		t.Fatal(err)
 	}
 	t.Log(txVar[0])
