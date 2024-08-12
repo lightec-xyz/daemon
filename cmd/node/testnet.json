@@ -1,0 +1,21 @@
+{
+  "datadir": "/opt/lightec/zkbtcBeta1/.daemon",
+  "network": "testnet",
+  "rpcbind": "127.0.0.1",
+  "rpcport": "9870",
+  "wsPort": "9880",
+  "btcUser": "lightec",
+  "btcPwd": "Abcd1234",
+  "btcUrl": "http://172.31.1.213:18332",
+  "ethUrl": "http://172.31.24.61:8545",
+  "beaconUrl": "http://172.31.24.61:30814",
+  "oasisUrl": "https://testnet.sapphire.oasis.dev",
+  "ethPrivateKey": "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49",
+  "btcInitHeight":2813330,
+  "ethInitHeight":1500350,
+  "enableLocalWorker": false,
+  "beaconInitSlot": 1482752,
+  "autoSubmit": true,
+  "disableRecursiveAgent": false,
+  "disableTxAgent": false
+}

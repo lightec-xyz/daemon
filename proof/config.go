@@ -33,7 +33,10 @@ func (c *Config) Check() error {
 		c.DataDir = fmt.Sprintf("%s/.generateor", homeDir)
 	}
 	if c.Network == "" {
-		c.Network = "local" // todo
+		c.Network = "testnet" // todo
+	}
+	if c.Url == "" {
+		c.Url = "https://testnet.zkbtc.money/api"
 	}
 	if c.Mode == "" {
 		c.Mode = common.Client

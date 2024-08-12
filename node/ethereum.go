@@ -416,7 +416,6 @@ func (e *EthereumAgent) getTxSender(txHash, blockHash string, index uint) (strin
 }
 
 func (e *EthereumAgent) isRedeemTx(log types.Log) (*Transaction, bool, error) {
-
 	if log.Removed {
 		return nil, false, nil
 	}
@@ -425,6 +424,14 @@ func (e *EthereumAgent) isRedeemTx(log types.Log) (*Transaction, bool, error) {
 	}
 	//todo more check
 	if strings.ToLower(log.Address.Hex()) == e.logAddrFilter.LogRedeemAddr && strings.ToLower(log.Topics[0].Hex()) == e.logAddrFilter.LogTopicRedeemAddr {
+		tx, _, err := e.ethClient.TransactionByHash(context.TODO(), ethCommon.HexToHash(log.TxHash.String()))
+		if err != nil {
+			logger.Error("get eth tx error:%v %v", log.TxHash, err)
+			return nil, false, err
+		}
+		if tx.Type() != 2 {
+			return nil, false, nil
+		}
 		btcTxId := strings.ToLower(log.Topics[1].Hex())
 		txData, _, err := ethereum.DecodeRedeemLog(log.Data)
 		if err != nil {

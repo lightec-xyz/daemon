@@ -1,5 +1,11 @@
 # Generator
 
+## Docker
+tips: you must download the zk parameter file before running the docker container
+    
+    docker run -it -v <host machine zk parameter dir>:/opt/ZkParameterDir  --name generator redli123/zkbtcgenerator:0.0.1
+
+
 ## Build
 ```sh
 makdir <projectDir>
@@ -35,7 +41,7 @@ nohup tar --zstd -xvf circuits.tar.zst >log.log 2>&1 &
 If you have downloaded some files before, you can run the following command to complete incremental synchronization:
 
 ```sh
-rsync -avzuP <userName>@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits/ <path-to-circuits-dir>/
+rsync -avzuP --delete <userName>@58.41.9.129:/opt/lightec/circuit_data/beta1/circuits/ <path-to-circuits-dir>/
 ```
 
 set ZkParameterDir environment variables
@@ -44,7 +50,8 @@ set ZkParameterDir environment variables
 export ZkParameterDir=<local circuit param file dir>
 ```
 
-generator run config file `testnet.json`: if proofType is empty,the worker will support all proofType task.
+generator running config file `testnet.json`, if proofType is empty,the worker will support all proofType task.
+
 ```json
 {
   "url": "http://127.0.0.1:9970",
@@ -85,7 +92,7 @@ nohup ./generator --config ./testnet.json run >log.log 2>&1 &
 1. 从mac studio 下载aztec_bn254的srs/lsrs到本地
 
 ```sh
-rsync -avzuP <userName>@58.41.9.129:/opt/lightec/srs/aztec_bn254 <本地保存srs的路径>
+rsync -avzuP --delete <userName>@58.41.9.129:/opt/lightec/srs/aztec_bn254 <本地保存srs的路径>
 ```
 
 2. setup provers中的各个模块
