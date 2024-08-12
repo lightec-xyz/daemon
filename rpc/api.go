@@ -4,10 +4,6 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 )
 
-type IAdmin interface {
-	RemoveRequest(id string) error
-}
-
 type INode interface {
 	IAdmin
 	Version() (NodeInfo, error)
@@ -57,6 +53,10 @@ type IWorker interface {
 	MaxNums() int
 	CurrentNums() int
 	Id() string
+}
+
+type IAdmin interface {
+	RemoveRequest(id string) error
 }
 
 type IVerify interface {

@@ -9,6 +9,8 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -671,6 +673,72 @@ func (s *State) UpdateProofStatus(req *common.ZkProofRequest, status common.Proo
 			logger.Error("update Proof status error:%v %v", req.RequestId(), err)
 			return err
 		}
+	}
+	return nil
+}
+
+// todo
+func (s *State) RemoveProofRequest(proofId string) error {
+	ids := strings.Split(proofId, "_")
+	if len(ids) < 2 {
+		return fmt.Errorf("proofId format error")
+	}
+	proofType, err := common.ToZkProofType(ids[0])
+	if err != nil {
+		logger.Error("to zk proof type error: %v %v", proofId, err)
+		return err
+	}
+	switch proofType {
+	case common.RedeemTxType, common.TxInEth2:
+		err := DeleteUnGenProof(s.store, common.EthereumChain, ids[1])
+		if err != nil {
+			logger.Error("delete ungen proof error: %v %v", proofId, err)
+			return err
+		}
+	case common.DepositTxType:
+		err := DeleteUnGenProof(s.store, common.BitcoinChain, ids[1])
+		if err != nil {
+			logger.Error("delete ungen proof error: %v %v", proofId, err)
+			return err
+		}
+	case common.BeaconHeaderType:
+		txSlot, err := strconv.ParseUint(ids[1], 10, 64)
+		if err != nil {
+			logger.Error("parse tx slot error: %v %v", proofId, err)
+			return err
+		}
+		unGenProofs, err := ReadAllTxBySlot(s.store, txSlot)
+		if err != nil {
+			logger.Error("read all ungen proof error: %v %v", proofId, err)
+			return err
+		}
+		for _, item := range unGenProofs {
+			err := DeleteUnGenProof(s.store, common.EthereumChain, item.TxHash)
+			if err != nil {
+				logger.Error("delete ungen proof error: %v %v", proofId, err)
+				return err
+			}
+		}
+	case common.BeaconHeaderFinalityType:
+		finalizedSlot, err := strconv.ParseUint(ids[1], 10, 64)
+		if err != nil {
+			logger.Error("parse tx slot error: %v %v", proofId, err)
+			return err
+		}
+		unGenProofs, err := ReadAllTxByFinalizedSlot(s.store, finalizedSlot)
+		if err != nil {
+			logger.Error("read all ungen proof error: %v %v", proofId, err)
+			return err
+		}
+		for _, item := range unGenProofs {
+			err := DeleteUnGenProof(s.store, common.EthereumChain, item.TxHash)
+			if err != nil {
+				logger.Error("delete ungen proof error: %v %v", proofId, err)
+				return err
+			}
+		}
+	default:
+		// todo
 	}
 	return nil
 }

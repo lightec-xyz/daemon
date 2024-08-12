@@ -77,6 +77,11 @@ func (m *manager) Init() error {
 func (m *manager) RemoveProofRequest(id string) error {
 	m.proofQueue.Remove(id)
 	m.pendingQueue.Delete(id)
+	err := m.state.RemoveProofRequest(id)
+	if err != nil {
+		logger.Error("remove proof request error:%v", err)
+		return err
+	}
 	logger.Debug("remove pending request:%v", id)
 	return nil
 }

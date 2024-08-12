@@ -2,7 +2,6 @@ package node
 
 import (
 	"crypto/ecdsa"
-	"encoding/hex"
 	"fmt"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -10,7 +9,6 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"math/big"
 	"strings"
-	"time"
 )
 
 func EIP55Addr(addr string) string {
@@ -84,25 +82,6 @@ func txesToDbProofs(txes []*Transaction) []DbProof {
 	return dbProofs
 }
 
-func proofsToDbProofs(proofs []*common.ZkProofRequest) []DbProof {
-	var dbProofs []DbProof
-	for _, proof := range proofs {
-		dbProofs = append(dbProofs, DbProof{ // todo
-			TxHash: proof.TxHash,
-		})
-	}
-	return dbProofs
-}
-
-func proofToUnSubmitTx(resp *common.ZkProofResponse) DbUnSubmitTx {
-	return DbUnSubmitTx{
-		Hash:      resp.TxHash,
-		ProofType: resp.ZkProofType,
-		Proof:     hex.EncodeToString(resp.Proof),
-		Timestamp: time.Now().UnixNano(),
-	}
-}
-
 func txesToDbTxes(txes []*Transaction) []DbTx {
 	var dbtxes []DbTx
 	for _, tx := range txes {
@@ -130,18 +109,6 @@ func txesToUnGenProofs(txes []*Transaction) []*DbUnGenProof {
 				Amount:    uint64(tx.Amount),
 			})
 		}
-	}
-	return proofs
-}
-
-func requestsToUnGenProofs(chainType common.ChainType, requests []*common.ZkProofRequest) []*DbUnGenProof {
-	var proofs []*DbUnGenProof
-	for _, req := range requests {
-		proofs = append(proofs, &DbUnGenProof{
-			TxHash:    req.TxHash,
-			ProofType: req.ReqType,
-			ChainType: chainType,
-		})
 	}
 	return proofs
 }

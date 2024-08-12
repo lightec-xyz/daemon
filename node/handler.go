@@ -25,6 +25,7 @@ type Handler struct {
 }
 
 func (h *Handler) RemoveRequest(id string) error {
+	//todo
 	err := h.manager.RemoveProofRequest(id)
 	if err != nil {
 		logger.Error("remove proof request error: %v %v", id, err)
