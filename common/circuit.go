@@ -21,21 +21,6 @@ var (
 	InvalidSignature = fmt.Errorf("invalid signature")
 )
 
-func CheckZkParametersMd5(zkDir string, list []*Parameters) error {
-	for _, item := range list {
-		path := zkDir + "/" + item.FileName
-		fileBytes, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("read zk file error: %v %v", path, err)
-		}
-		fileMd5 := HexMd5(fileBytes)
-		if fileMd5 != item.Hash {
-			return fmt.Errorf("check zk md5 not match: %v %v %v", path, fileMd5, item.Hash)
-		}
-	}
-	return nil
-}
-
 // TODO(Keep@20240808), suggest use prysm/LightClientUpdateWithVersion directly
 type LightClientUpdateInfo struct {
 	Version                 string                     `json:"version"`
