@@ -2,6 +2,8 @@ package dfinity
 
 import (
 	"github.com/aviate-labs/agent-go"
+	"github.com/aviate-labs/agent-go/candid/idl"
+	aIc "github.com/aviate-labs/agent-go/ic"
 	"github.com/aviate-labs/agent-go/ic/ic"
 	"github.com/aviate-labs/agent-go/principal"
 	"time"
@@ -66,6 +68,19 @@ func (c *Client) BlockHeight() (*BlockHeight, error) {
 	return &height, nil
 }
 
+func (c *Client) BtcBalance(address string) (interface{}, error) {
+	balance, err := c.icAgent.BitcoinGetBalance(ic.BitcoinGetBalanceArgs{
+		Address: address,
+		Network: ic.BitcoinNetwork{
+			Testnet: &idl.Null{},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &balance, nil
+}
+
 func (c *Client) call(canisterID principal.Principal, method string, args []any, rets []any) error {
 	return c.agent.Call(canisterID, method, args, rets)
 }
@@ -85,7 +100,8 @@ func NewClient(canId string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	icAgent, err := ic.NewAgent(canisterId, config)
+	// todo
+	icAgent, err := ic.NewAgent(aIc.MANAGEMENT_CANISTER_PRINCIPAL, config)
 	if err != nil {
 		return nil, err
 	}
