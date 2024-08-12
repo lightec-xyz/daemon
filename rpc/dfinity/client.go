@@ -1,7 +1,6 @@
 package dfinity
 
 import (
-	"fmt"
 	"github.com/aviate-labs/agent-go"
 	"github.com/aviate-labs/agent-go/ic/ic"
 	"github.com/aviate-labs/agent-go/principal"
@@ -9,74 +8,62 @@ import (
 )
 
 type Client struct {
-	agent   *agent.Agent
-	icAgent *ic.Agent
+	agent      *agent.Agent
+	icAgent    *ic.Agent
+	canisterId principal.Principal
 }
 
-func (c *Client) PublicKey(canisterId string) (interface{}, error) {
-	publicKey := make(map[string]interface{})
-	canId, err := principal.Decode(canisterId)
+func (c *Client) PublicKey() (string, error) {
+	var result string
+	err := c.call(c.canisterId, "public_key", []any{}, []any{&result})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	err = c.call(canId, "public_key", []any{}, []any{&publicKey})
-	if err != nil {
-		return nil, err
-	}
-	return &publicKey, nil
+	return result, nil
 }
 
-func (c *Client) Sign(canisterId, msg string) (interface{}, error) {
-	canId, err := principal.Decode(canisterId)
+func (c *Client) DummyAddress() (string, error) {
+	var result string
+	err := c.call(c.canisterId, "dummy_address", []any{}, []any{&result})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	signature := make(map[string]interface{})
-	err = c.call(canId, "sign", []any{msg}, []any{&signature})
+	return result, nil
+}
+
+func (c *Client) EthDecoderCanister() (string, error) {
+	var result string
+	err := c.call(c.canisterId, "eth_decoder_canister", []any{}, []any{&result})
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+func (c *Client) PlonkVerifierCanister() (string, error) {
+	var result string
+	err := c.call(c.canisterId, "plonk_verifier_canister", []any{}, []any{&result})
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+func (c *Client) VerifyAndSign(txRaw, receiptRaw, proof string) (*Signature, error) {
+	signature := Signature{}
+	err := c.call(c.canisterId, "verify_and_sign", []any{txRaw, receiptRaw, proof}, []any{&signature.Signed, &signature.Signature})
 	if err != nil {
 		return nil, err
 	}
 	return &signature, nil
 }
-
-func (c *Client) Verify(canisterId, signature, msg, publicKey string) (bool, error) {
-	canId, err := principal.Decode(canisterId)
-	if err != nil {
-		return false, err
-	}
-	var resp bool
-	err = c.call(canId, "verify", []any{signature, msg, publicKey}, []any{&resp})
-	if err != nil {
-		return false, err
-	}
-	return resp, nil
-}
-
-func (c *Client) BtcUtxo(canisterId, addr string, network ...string) (interface{}, error) {
-	canId, err := principal.Decode(canisterId)
+func (c *Client) BlockHeight() (*BlockHeight, error) {
+	height := BlockHeight{}
+	err := c.call(c.canisterId, "block_height", []any{}, []any{&height.Hash, &height.Height, &height.Signature})
 	if err != nil {
 		return nil, err
 	}
-	var resp string
-	err = c.agent.Call(canId, "get_utxos", []any{addr}, []any{&resp})
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-func (c *Client) BtcBalance(canisterId, addr string, network ...string) (uint64, error) {
-	canId, err := principal.Decode(canisterId)
-	if err != nil {
-		return 0, err
-	}
-	var resp uint64
-	err = c.agent.Call(canId, "get_balance", []any{addr}, []any{&resp})
-	if err != nil {
-		return 0, err
-	}
-	fmt.Printf("%v \n", resp)
-	return resp, nil
+	return &height, nil
 }
 
 func (c *Client) call(canisterID principal.Principal, method string, args []any, rets []any) error {
@@ -86,21 +73,25 @@ func (c *Client) query(canisterID principal.Principal, method string, args []any
 	return c.agent.Query(canisterID, method, args, rets)
 }
 
-func NewClient() (*Client, error) {
+func NewClient(canId string) (*Client, error) {
 	config := agent.Config{
 		PollTimeout: 45 * time.Second,
+	}
+	canisterId, err := principal.Decode(canId)
+	if err != nil {
+		return nil, err
 	}
 	agent, err := agent.New(config)
 	if err != nil {
 		return nil, err
 	}
-	canId, err := principal.Decode("0")
-	icAgent, err := ic.NewAgent(canId, config)
+	icAgent, err := ic.NewAgent(canisterId, config)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
-		agent:   agent,
-		icAgent: icAgent,
+		agent:      agent,
+		icAgent:    icAgent,
+		canisterId: canisterId,
 	}, nil
 }
