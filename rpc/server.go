@@ -209,15 +209,6 @@ func isPortOpen(endpoint string) bool {
 	return false
 }
 
-func pathPermission(method string) (Permission, error) {
-	switch method {
-	case RemoveProofPath:
-		return JwtPermission, nil
-	default:
-		return NonePermission, nil
-	}
-}
-
 // todo
 func verifyJwt(request *http.Request, verify IVerify) error {
 	bodyBytes, err := io.ReadAll(request.Body)
@@ -227,10 +218,12 @@ func verifyJwt(request *http.Request, verify IVerify) error {
 	}
 	method, err := getMethod(bodyBytes)
 	if err != nil {
+		logger.Error("get method error: %v", err)
 		return err
 	}
-	permission, err := pathPermission(method)
+	permission, err := verify.CheckPermission(method)
 	if err != nil {
+		logger.Error("check permission error: %v", err)
 		return err
 	}
 	if permission != NonePermission {

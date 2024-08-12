@@ -61,4 +61,5 @@ type IAdmin interface {
 
 type IVerify interface {
 	VerifyJwt(token string) (*CustomClaims, error)
+	CheckPermission(method string) (Permission, error)
 }

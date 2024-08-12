@@ -716,7 +716,10 @@ func (s *State) RemoveProofRequest(proofId string) error {
 			err := DeleteUnGenProof(s.store, common.EthereumChain, item.TxHash)
 			if err != nil {
 				logger.Error("delete ungen proof error: %v %v", proofId, err)
-				return err
+			}
+			err = DeleteTxSlot(s.store, txSlot, item.TxHash)
+			if err != nil {
+				logger.Error("delete tx slot error: %v %v", proofId, err)
 			}
 		}
 	case common.BeaconHeaderFinalityType:
@@ -734,7 +737,10 @@ func (s *State) RemoveProofRequest(proofId string) error {
 			err := DeleteUnGenProof(s.store, common.EthereumChain, item.TxHash)
 			if err != nil {
 				logger.Error("delete ungen proof error: %v %v", proofId, err)
-				return err
+			}
+			err = DeleteTxFinalizedSlot(s.store, finalizedSlot, item.TxHash)
+			if err != nil {
+				logger.Error("delete tx finalized slot error: %v %v", proofId, err)
 			}
 		}
 	default:

@@ -2,8 +2,11 @@ package node
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"reflect"
+	"sync"
 )
 
 // todo
@@ -13,8 +16,9 @@ const (
 )
 
 type KeyStore struct {
-	memguard *Memguard
-	address  string
+	memguard  *Memguard
+	address   string
+	adminPath *sync.Map
 }
 
 func NewKeyStore(privateKey string) (*KeyStore, error) {
@@ -30,10 +34,17 @@ func NewKeyStore(privateKey string) (*KeyStore, error) {
 		logger.Error("decode private key error:%v", err)
 		return nil, err
 	}
+	// todo
+	adminPath := new(sync.Map)
+	typeValue := reflect.TypeOf((*rpc.IAdmin)(nil)).Elem()
+	for i := 0; i < typeValue.NumMethod(); i++ {
+		adminPath.Store(typeValue.Method(i).Name, rpc.JwtPermission)
+	}
 	memguard.Store(SecretKeyId, hexSecret)
 	return &KeyStore{
-		memguard: memguard,
-		address:  address,
+		memguard:  memguard,
+		address:   address,
+		adminPath: adminPath,
 	}, nil
 }
 
@@ -62,4 +73,15 @@ func (k *KeyStore) VerifyJwt(token string) (*rpc.CustomClaims, error) {
 		return nil, err
 	}
 	return jwt, nil
+}
+
+func (k *KeyStore) CheckPermission(method string) (rpc.Permission, error) {
+	if value, ok := k.adminPath.Load(method); ok {
+		perm, ok := value.(rpc.Permission)
+		if ok {
+			return perm, nil
+		}
+		return rpc.NonePermission, fmt.Errorf("invalid permission value ")
+	}
+	return rpc.NonePermission, nil
 }

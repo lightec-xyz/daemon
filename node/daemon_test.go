@@ -55,7 +55,7 @@ func TestLocalDevDaemon(t *testing.T) {
 
 func TestServer(t *testing.T) {
 	handler := NewHandler(nil, nil, nil, nil, nil, nil)
-	server, err := rpc.NewServer(RpcRegisterName, "127.0.0.1:8970", handler, func(opt *rpc.WsOpt) error {
+	server, err := rpc.NewServer(RpcRegisterName, "127.0.0.1:8970", handler, nil, func(opt *rpc.WsOpt) error {
 		t.Logf("new connection: %v \n", opt.Id)
 		newConn := ws.NewConn(opt.Conn, nil, nil, true)
 		go newConn.Run()

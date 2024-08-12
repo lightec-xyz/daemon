@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/lightec-xyz/daemon/rpc"
+	"reflect"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -44,5 +46,11 @@ func TestEIP55Addr(t *testing.T) {
 	t.Log(addr)
 	addr = EIP55Addr("")
 	t.Log(addr)
+}
 
+func TestHandler(t *testing.T) {
+	typeValue := reflect.TypeOf((*rpc.IAdmin)(nil)).Elem()
+	for i := 0; i < typeValue.NumMethod(); i++ {
+		fmt.Println(typeValue.Method(i).Name)
+	}
 }
