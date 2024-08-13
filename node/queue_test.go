@@ -58,7 +58,7 @@ func TestArrayQueue(t *testing.T) {
 	fmt.Printf("*********** lenghth: %v  **************** \n", arrayQueue.Len())
 	for arrayQueue.Len() > 0 {
 		request, ok := arrayQueue.PopFn(func(req *common.ZkProofRequest) bool {
-			if req.ReqType == common.BeaconHeaderType {
+			if req.ProofType == common.BeaconHeaderType {
 				return true
 			}
 			return false

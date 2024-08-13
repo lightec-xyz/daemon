@@ -272,7 +272,7 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 				//	return nil, nil, nil, err
 				//}
 				//data := rpc.DepositRequest{
-				//	TxHash:    tx.Txid,
+				//	Hash:    tx.Txid,
 				//	BlockHash: blockHash,
 				//	Data:      proofData,
 				//}
@@ -311,22 +311,22 @@ func (b *BitcoinAgent) CheckChainProof(proofType common.ZkProofType, txHash stri
 func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive Proof resp: %v %x", resp.RespId(), resp.Proof)
 	b.cache.Delete(resp.RespId())
-	switch resp.ZkProofType {
+	switch resp.ProofType {
 	case common.DepositTxType:
-		err := b.updateDepositProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
+		err := b.updateDepositProof(resp.Hash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
-			logger.Error("update Proof error: %v %v", resp.TxHash, err)
+			logger.Error("update Proof error: %v %v", resp.Hash, err)
 			return err
 		}
 	case common.VerifyTxType:
-		logger.Info("start update utxo change: %v", resp.TxHash)
-		hash, err := b.txManager.UpdateUtxoChange(resp.TxHash, hex.EncodeToString(resp.Proof))
+		logger.Info("start update utxo change: %v", resp.Hash)
+		hash, err := b.txManager.UpdateUtxoChange(resp.Hash, hex.EncodeToString(resp.Proof))
 		if err != nil {
-			logger.Error("update utxo fail: %v %v,save to db", resp.TxHash, err)
+			logger.Error("update utxo fail: %v %v,save to db", resp.Hash, err)
 			b.txManager.AddTask(resp)
 			return err
 		}
-		logger.Debug("success update utxo: txId:%v hash:%v", resp.TxHash, hash)
+		logger.Debug("success update utxo: txId:%v hash:%v", resp.Hash, hash)
 
 	default:
 	}

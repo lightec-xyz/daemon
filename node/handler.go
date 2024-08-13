@@ -123,7 +123,7 @@ func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//}
 	for _, item := range req.Data {
 		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.RespId())
-		err := StoreZkProof(h.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
+		err := StoreZkProof(h.fileStore, item.ProofType, item.Index, item.SIndex, item.Hash, item.Proof, item.Witness)
 		if err != nil {
 			logger.Error("store zk proof error: %v %v", item.RespId(), err)
 			return "", err
@@ -214,7 +214,7 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 
 func (h *Handler) readDepositTask(tx DbTx) ([]TaskTime, error) {
 	var list []TaskTime
-	//txId := common.NewProofId(common.DepositTxType, 0, 0, tx.TxHash)
+	//txId := common.NewProofId(common.DepositTxType, 0, 0, tx.Hash)
 	//txInEth2Task, err := ReadAllTaskTime(h.store, txId)
 	//if err != nil {
 	//	logger.Error("read queue time error: %v %v", txId, err)
