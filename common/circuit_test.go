@@ -49,7 +49,7 @@ func TestVerifyFinalitySignature_NotEnoughSigner_2189440(t *testing.T) {
 		},
 	}
 
-	valid, err := VerifyFinalityUpdateSignature(update, sc)
+	valid, err := VerifyFinalityUpdateSignature(&update, &sc)
 	assert.False(t, valid)
 	assert.Equal(t, err.Error(), "not enough signer")
 }
@@ -86,7 +86,7 @@ func TestVerifyFinalitySignature_NotEnoughSigner_2193440(t *testing.T) {
 		},
 	}
 
-	valid, err := VerifyFinalityUpdateSignature(update, sc)
+	valid, err := VerifyFinalityUpdateSignature(&update, &sc)
 	assert.False(t, valid)
 	assert.Equal(t, err.Error(), "not enough signer")
 }
@@ -126,7 +126,7 @@ func TestVerifyFinalitySignature_2268736(t *testing.T) {
 		},
 	}
 
-	valid, err := VerifyFinalityUpdateSignature(update, sc)
+	valid, err := VerifyFinalityUpdateSignature(&update, &sc)
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
