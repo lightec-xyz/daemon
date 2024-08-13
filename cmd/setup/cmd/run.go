@@ -37,11 +37,12 @@ var setup = &cobra.Command{
 				fmt.Printf("setup group error: %v \n", err)
 				return
 			}
-		}
-		if circuitType != "" {
-			if err = circuitSetup.Setup(CircuitType(circuitType)); err != nil {
-				fmt.Printf("setup circuit type error: %v \n", err)
-				return
+		} else {
+			if circuitType != "" {
+				if err = circuitSetup.Setup(CircuitType(circuitType)); err != nil {
+					fmt.Printf("setup circuit type error: %v \n", err)
+					return
+				}
 			}
 		}
 

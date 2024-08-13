@@ -66,10 +66,10 @@ func (cs *CircuitSetup) SetupGroup(group Group) error {
 func (cs *CircuitSetup) Setup(circuitType CircuitType) error {
 	logger.Info("start setup circuit: %s", circuitType)
 	switch circuitType {
-	case beaconOuter:
-		return cs.SyncCommOuter()
 	case beaconInner:
 		return cs.SyncCommInner()
+	case beaconOuter:
+		return cs.SyncCommOuter()
 	case beaconUnit:
 		return cs.SyncCommUnit()
 	case beaconGenesis:
