@@ -21,7 +21,7 @@ type Local struct {
 }
 
 func NewLocal(url string, worker rpc.IWorker, proofTypes []common.ZkProofType, store store.IStore, fileStore *node.FileStorage) (*Local, error) {
-	client, err := rpc.NewNodeClient(url)
+	client, err := rpc.NewNodeClient(url, "")
 	if err != nil {
 		logger.Error("new node client error:%v", err)
 		return nil, err
