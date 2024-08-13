@@ -187,7 +187,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		}
 		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, 17*time.Second, syncCommitResp, beaconFetchDataResp))
 	}
-	if true {
+	if false {
 		btcAgent, err := NewBitcoinAgent(cfg, storeDb, memoryStore, fileStore, btcClient, ethClient, btcProverClient,
 			proofRequest, keyStore, taskManager, cache)
 		if err != nil {
@@ -197,7 +197,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(btcAgent, cfg.BtcScanTime, 1*time.Minute, btcProofResp, btcFetchDataResp))
 
 	}
-	if false {
+	if true {
 		ethAgent, err := NewEthereumAgent(cfg, cfg.BeaconInitSlot, fileStore, storeDb, memoryStore, beaClient, btcClient, ethClient,
 			beaconClient, oasisClient, proofRequest, taskManager, cache)
 		if err != nil {
@@ -326,8 +326,8 @@ func (d *Daemon) Run() error {
 		go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal) // todo
 	}
 	go DoTimerTask("manager-checkState", d.manager.checkTime, d.manager.manager.CheckState, d.exitSignal)
-	go DoTimerTask("manager-checkBtcState", d.manager.checkTime, d.manager.manager.CheckBtcState, d.exitSignal)
-	//go DoTimerTask("manager-checkEthState", d.manager.checkTime, d.manager.manager.CheckEthState, d.exitSignal)
+	//go DoTimerTask("manager-checkBtcState", d.manager.checkTime, d.manager.manager.CheckBtcState, d.exitSignal)
+	go DoTimerTask("manager-checkEthState", d.manager.checkTime, d.manager.manager.CheckEthState, d.exitSignal)
 	//go DoTimerTask("manager-checkBeaconState", d.manager.checkTime, d.manager.manager.CheckBeaconState, d.exitSignal)
 
 	for _, agent := range d.agents {
