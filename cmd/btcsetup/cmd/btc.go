@@ -62,14 +62,14 @@ func (bs *BtcSetup) Run() error {
 	if bs.cfg.IsSetup {
 		err := bs.Setup()
 		if err != nil {
-			logger.Error("bs setup error: %v", err)
+			logger.Error("setup error: %v", err)
 			return err
 		}
 	}
 
-	err := bs.Prove()
+	err := bs.BlockChainProve()
 	if err != nil {
-		logger.Error("bs prove error: %v", err)
+		logger.Error("blockchain prove error: %v", err)
 		return err
 	}
 
@@ -115,7 +115,7 @@ func (bs *BtcSetup) Setup() error {
 	return nil
 }
 
-func (bs *BtcSetup) Prove() error {
+func (bs *BtcSetup) BlockChainProve() error {
 	duperProofs := make([]reLight_common.Proof, 2)
 	genesisHeight := uint32(bs.cfg.GenesisBlockHeight)
 
@@ -146,7 +146,7 @@ func (bs *BtcSetup) Prove() error {
 		return err
 	}
 
-	err = bs.fileStore.StoreRecursive(genKey(string(recursiveTable), genesisHeight, chainEndHeight), genesisProof)
+	err = bs.fileStore.StoreRecursiveDuper(genKey(string(recursiveDuperTable), genesisHeight, chainEndHeight), genesisProof)
 	if err != nil {
 		logger.Error("store recursiveduper proof error %v~%v %v", genesisHeight, chainEndHeight, err)
 		return err
@@ -257,7 +257,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	err = bs.fileStore.StoreUp(genKey(string(upTable), beginHeight, endHeight), upProof)
+	err = bs.fileStore.StoreUpper(genKey(string(upperTable), beginHeight, endHeight), upProof)
 	if err != nil {
 		logger.Error("store upperlevel proof error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err

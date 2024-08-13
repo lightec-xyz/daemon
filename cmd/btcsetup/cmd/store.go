@@ -20,13 +20,15 @@ type StoreProof struct {
 type Table string
 
 const (
-	baseTable      Table = "base"
-	middleTable    Table = "middle"
-	upTable        Table = "up"
-	recursiveTable Table = "recursive"
+	baseTable           Table = "base"
+	middleTable         Table = "middle"
+	upperTable          Table = "upper"
+	recursiveDuperTable Table = "recursiveDuper"
+	bulkTable           Table = "bulk"
+	recursiveBulkTable  Table = "recursiveBulk"
 )
 
-var InitStoreTables = []Table{baseTable, middleTable, upTable, recursiveTable}
+var InitStoreTables = []Table{baseTable, middleTable, upperTable, recursiveDuperTable, bulkTable, recursiveBulkTable}
 
 type FileStorage struct {
 	RootPath     string
@@ -71,20 +73,36 @@ func (fs *FileStorage) StoreMiddle(key string, proof *reLight_common.Proof) erro
 	return fs.Store(middleTable, key, storeProof)
 }
 
-func (fs *FileStorage) StoreUp(key string, proof *reLight_common.Proof) error {
-	storeProof, err := newStoreProof(string(upTable), key, proof)
+func (fs *FileStorage) StoreUpper(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(upperTable), key, proof)
 	if err != nil {
 		return err
 	}
-	return fs.Store(upTable, key, storeProof)
+	return fs.Store(upperTable, key, storeProof)
 }
 
-func (fs *FileStorage) StoreRecursive(key string, proof *reLight_common.Proof) error {
-	storeProof, err := newStoreProof(string(recursiveTable), key, proof)
+func (fs *FileStorage) StoreRecursiveDuper(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(recursiveDuperTable), key, proof)
 	if err != nil {
 		return err
 	}
-	return fs.Store(recursiveTable, key, storeProof)
+	return fs.Store(recursiveDuperTable, key, storeProof)
+}
+
+func (fs *FileStorage) StoreBulk(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(bulkTable), key, proof)
+	if err != nil {
+		return err
+	}
+	return fs.Store(bulkTable, key, storeProof)
+}
+
+func (fs *FileStorage) StoreRecursiveBulk(key string, proof *reLight_common.Proof) error {
+	storeProof, err := newStoreProof(string(recursiveBulkTable), key, proof)
+	if err != nil {
+		return err
+	}
+	return fs.Store(recursiveBulkTable, key, storeProof)
 }
 
 func (fs *FileStorage) GetFileStore(table Table) (*store.FileStore, bool) {
