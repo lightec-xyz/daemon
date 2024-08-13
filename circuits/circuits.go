@@ -3,23 +3,20 @@ package circuits
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lightec-xyz/btc_provers/circuits/recursiveduper"
-	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
 	"path/filepath"
 
-	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/baselevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/midlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/recursiveduper"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
-	"github.com/lightec-xyz/btc_provers/circuits/grandrollup"
-	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/bulk"
-	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/packed"
-	"github.com/lightec-xyz/btc_provers/circuits/header-to-latest/wrap"
-	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
-	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
-	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
-	btcmiddle "github.com/lightec-xyz/btc_provers/utils/midlevel"
-	btcupper "github.com/lightec-xyz/btc_provers/utils/upperlevel"
+	btcbase "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	btcmiddle "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	btcupper "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
@@ -362,7 +359,7 @@ func (c *Circuit) DepositProve(data *grUtil.GrandRollupProofData) (*reLightCommo
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
+	proof, _, err := txinchain.Prove(c.Cfg.DataDir, data)
 	if err != nil {
 		logger.Error("deposit prove error:%v", err)
 		return nil, err
@@ -510,7 +507,7 @@ func (c *Circuit) UpdateChangeProve(data *grUtil.GrandRollupProofData) (*reLight
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
 		return debugProof()
 	}
-	proof, _, err := grandrollup.Prove(c.Cfg.DataDir, data)
+	proof, _, err := txinchain.Prove(c.Cfg.DataDir, data)
 	if err != nil {
 		logger.Error("update change prove error:%v", err)
 		return nil, err

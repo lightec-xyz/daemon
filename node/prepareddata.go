@@ -3,14 +3,16 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
+
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
-	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
+	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
-	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
-	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
-	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -25,7 +27,6 @@ import (
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
-	"strconv"
 )
 
 type PreparedData struct {

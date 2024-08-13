@@ -1,18 +1,19 @@
 package rpc
 
 import (
+	"time"
+
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
-	btcbase "github.com/lightec-xyz/btc_provers/utils/baselevel"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
-	btcmiddle "github.com/lightec-xyz/btc_provers/utils/midlevel"
-	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
-	btcupper "github.com/lightec-xyz/btc_provers/utils/upperlevel"
+	btcbase "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	btcmiddle "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	btcupper "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
-	"time"
 )
 
 type ProofTaskInfo struct {
