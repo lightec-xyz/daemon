@@ -243,25 +243,28 @@ func (aq *ArrayQueue) Pop() (*common.ZkProofRequest, bool) {
 	return value, true
 }
 
-func (aq *ArrayQueue) PopFn(fn func(req *common.ZkProofRequest) bool) (*common.ZkProofRequest, bool) {
+func (aq *ArrayQueue) PopFn(fn func(req *common.ZkProofRequest) (bool, error)) (*common.ZkProofRequest, bool, error) {
 	aq.lock.Lock()
 	defer aq.lock.Unlock()
 	if len(aq.list) == 0 {
-		return nil, false
+		return nil, false, nil
 	}
 	var newList []*common.ZkProofRequest
 	for index, value := range aq.list {
-		ok := fn(value)
+		ok, err := fn(value)
+		if err != nil {
+			return nil, false, err
+		}
 		if ok {
 			newList = append(newList, aq.list[0:index]...)
 			if index+1 < len(aq.list) {
 				newList = append(newList, aq.list[index+1:]...)
 			}
 			aq.list = newList
-			return value, true
+			return value, true, nil
 		}
 	}
-	return nil, false
+	return nil, false, nil
 
 }
 

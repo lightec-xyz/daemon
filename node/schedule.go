@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/ws"
@@ -21,15 +22,15 @@ func NewSchedule(workers []rpc.IWorker) *Schedule {
 	}
 }
 
-func (m *Schedule) Close() error {
-	for _, worker := range m.Workers {
+func (s *Schedule) Close() error {
+	for _, worker := range s.Workers {
 		if worker != nil {
 			_ = worker.Close()
 		}
 	}
 	return nil
 }
-func (m *Schedule) AddWorker(endpoint string, nums int) error {
+func (s *Schedule) AddWorker(endpoint string, nums int) error {
 	var client rpc.IProof
 	var err error
 	if strings.HasPrefix(endpoint, "http") {
@@ -48,11 +49,11 @@ func (m *Schedule) AddWorker(endpoint string, nums int) error {
 		return fmt.Errorf("unSupport protocol: %v", endpoint)
 	}
 	newWorker := NewWorker(client, nums)
-	m.Workers = append(m.Workers, newWorker)
+	s.Workers = append(s.Workers, newWorker)
 	return nil
 }
 
-func (m *Schedule) AddWsWorker(opt *rpc.WsOpt) error {
+func (s *Schedule) AddWsWorker(opt *rpc.WsOpt) error {
 	wsConn := ws.NewConn(opt.Conn, nil, nil, true)
 	wsConn.Run()
 	proofClient, err := rpc.NewCustomWsProofClient(wsConn)
@@ -61,16 +62,35 @@ func (m *Schedule) AddWsWorker(opt *rpc.WsOpt) error {
 		return err
 	}
 	worker := NewWorker(proofClient, 1)
-	m.Workers = append(m.Workers, worker)
+	s.Workers = append(s.Workers, worker)
 	return nil
 }
 
-func (m *Schedule) findBestWorker(work func(worker rpc.IWorker) error) (rpc.IWorker, bool, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (s *Schedule) findWorker(req common.ZkProofType) (rpc.IWorker, bool, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	var tmpWorkers []rpc.IWorker
+	for _, worker := range s.Workers {
+		if matchReqType(worker.SupportProofType(), req) && worker.CurrentNums() < worker.MaxNums() {
+			tmpWorkers = append(tmpWorkers, worker)
+		}
+	}
+	if len(tmpWorkers) == 0 {
+		return nil, false, nil
+	}
+	sort.SliceStable(tmpWorkers, func(i, j int) bool {
+		return tmpWorkers[i].CurrentNums() < tmpWorkers[j].CurrentNums()
+	})
+	bestWork := tmpWorkers[0]
+	return bestWork, true, nil
+}
+
+func (s *Schedule) findBestWorker(work func(worker rpc.IWorker) error) (rpc.IWorker, bool, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	// todo find work by Proof type
 	var tmpWorkers []rpc.IWorker
-	for _, worker := range m.Workers {
+	for _, worker := range s.Workers {
 		if worker.CurrentNums() < worker.MaxNums() {
 			tmpWorkers = append(tmpWorkers, worker)
 		}
@@ -87,5 +107,13 @@ func (m *Schedule) findBestWorker(work func(worker rpc.IWorker) error) (rpc.IWor
 		return nil, false, err
 	}
 	return bestWork, true, nil
+}
 
+func matchReqType(wProofTypes []common.ZkProofType, reqType common.ZkProofType) bool {
+	for _, wProofType := range wProofTypes {
+		if wProofType == reqType {
+			return true
+		}
+	}
+	return false
 }

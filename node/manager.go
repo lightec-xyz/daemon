@@ -1,9 +1,9 @@
 package node
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
@@ -163,19 +163,20 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	//})
 	var request *common.ZkProofRequest
 	var ok bool
+	var err error
 	if len(proofTypes) == 0 {
 		request, ok = m.proofQueue.Pop()
 	} else {
-		request, ok = m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
+		request, ok, err = m.proofQueue.PopFn(func(request *common.ZkProofRequest) (bool, error) {
 			if len(proofTypes) == 0 {
-				return true
+				return true, nil
 			}
 			for _, req := range proofTypes {
 				if request.ProofType == req {
-					return true
+					return true, nil
 				}
 			}
-			return false
+			return false, nil
 		})
 	}
 	if !ok {
@@ -224,43 +225,37 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	return nil
 }
 
-// todo
 func (m *manager) DistributeRequest() error {
-	logger.Debug("start distribute request now")
-	request, ok, err := m.GetProofRequest(nil)
-	waitTime := 3 * time.Second
-	if err != nil {
-		logger.Error("get Proof request error:%v", err)
-		time.Sleep(waitTime)
-		return err
-	}
-	if !ok {
-		//logger.Warn("current queue is empty")
-		time.Sleep(waitTime)
-		return nil
-	}
-	proofSubmitted, err := m.CheckProofStatus(request)
-	if err != nil {
-		logger.Error("check Proof error:%v", err)
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
-		return err
-	}
-	if proofSubmitted {
-		logger.Info("Proof already submitted:%v", request.String())
-		return nil
-	}
-	chanResponse, err := m.getChanResponse(request.ProofType)
-	if err != nil {
-		logger.Error("get chan response error:%v", err)
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
-		return err
-	}
-	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
+	_, find, err := m.proofQueue.PopFn(func(req *common.ZkProofRequest) (bool, error) {
+		proofSubmitted, err := m.CheckProofStatus(req)
+		if err != nil {
+			logger.Error("check Proof error:%v", err)
+			return false, err
+		}
+		if proofSubmitted {
+			logger.Info("Proof already submitted:%v", req.String())
+			return true, nil
+		}
+		worker, ok, err := m.schedule.findWorker(req.ProofType)
+		if err != nil {
+			logger.Error("find worker error:%v", err)
+			return false, err
+		}
+		if !ok {
+			return false, fmt.Errorf("no find worker") // skip proofQueue loop
+		}
+		chanResp, err := m.getChanResponse(req.ProofType)
+		if err != nil {
+			logger.Error("get chan response error:%v", err)
+			return false, err
+		}
 		worker.AddReqNum()
+		m.pendingQueue.Push(req.RequestId(), req)
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
-			defer worker.DelReqNum()
+			defer func() {
+				worker.DelReqNum()
+				m.pendingQueue.Delete(req.RequestId())
+			}()
 			logger.Debug("worker %v start generate Proof type: %v", worker.Id(), req.RequestId())
 			err := m.fileStore.StoreRequest(req)
 			if err != nil {
@@ -269,10 +264,10 @@ func (m *manager) DistributeRequest() error {
 			}
 			count := 0
 			for {
+				// todo
 				if count >= 1 {
-					// todo
 					logger.Error("gen Proof error:%v %v %v", req.ProofType.String(), req.Index, count)
-					//m.proofQueue.Push(request)
+					m.proofQueue.Push(req)
 					return
 				}
 				count++
@@ -293,25 +288,21 @@ func (m *manager) DistributeRequest() error {
 						return
 					}
 				}
-				m.pendingQueue.Delete(req.RequestId())
 				return
 			}
-		}(request, chanResponse)
-		return nil
+		}(req, chanResp)
+		return true, nil
 	})
 	if err != nil {
-		logger.Error("find best worker error:%v", err)
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
+		logger.Warn("find worker error:%v", err)
+		time.Sleep(10 * time.Second)
 		return err
 	}
 	if !find {
-		logger.Warn(" no find best worker to gen Proof: %v", request.RequestId())
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
+		logger.Warn("no find match proof task")
+		time.Sleep(10 * time.Second)
 		return nil
 	}
-	time.Sleep(waitTime)
 	return nil
 }
 
