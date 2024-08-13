@@ -61,6 +61,7 @@ func NewNode(cfg Config) (*Node, error) {
 			return nil, fmt.Errorf("zkParameterDir is empty,please config ZkParameterDir env")
 		}
 	}
+	logger.Debug("zkParameterDir: %v", zkParameterDir)
 	workerId, exists, err := dnode.ReadWorkerId(storeDb)
 	if err != nil {
 		logger.Error("read worker id error:%v", err)

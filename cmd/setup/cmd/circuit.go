@@ -6,6 +6,10 @@ import (
 	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
 	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
+	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
+	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
+	"github.com/lightec-xyz/provers/circuits/redeem"
+	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
@@ -23,19 +27,23 @@ const (
 type CircuitType string
 
 const (
-	btcBase         CircuitType = "btcBase"
-	btcMiddle       CircuitType = "btcMiddle"
-	btcUpper        CircuitType = "btcUpper"
-	beaconInner     CircuitType = "beaconInner"
-	beaconOuter     CircuitType = "beaconOuter"
-	beaconUnit      CircuitType = "beaconUnit"
-	beaconGenesis   CircuitType = "beaconGenesis"
-	beaconRecursive CircuitType = "beaconRecursive"
+	btcBase           CircuitType = "btcBase"
+	btcMiddle         CircuitType = "btcMiddle"
+	btcUpper          CircuitType = "btcUpper"
+	beaconInner       CircuitType = "beaconInner"
+	beaconOuter       CircuitType = "beaconOuter"
+	beaconUnit        CircuitType = "beaconUnit"
+	beaconGenesis     CircuitType = "beaconGenesis"
+	beaconRecursive   CircuitType = "beaconRecursive"
+	ethTxInEth2       CircuitType = "ethTxInEth2"
+	ethBeaconHeader   CircuitType = "ethBeaconHeader"
+	ethFinalityHeader CircuitType = "ethFinalityHeader"
+	ethRedeem         CircuitType = "ethRedeem"
 )
 
 var btcGroups = []CircuitType{btcBase, btcMiddle, btcUpper}
 var beaconGroups = []CircuitType{beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive}
-var ethGroups = []CircuitType{}
+var ethGroups = []CircuitType{ethTxInEth2, ethBeaconHeader, ethFinalityHeader, ethRedeem}
 
 type CircuitSetup struct {
 	datadir string
@@ -76,6 +84,14 @@ func (cs *CircuitSetup) Setup(circuitType CircuitType) error {
 		return cs.SyncCommGenesis()
 	case beaconRecursive:
 		return cs.SyncCommRecursive()
+	case ethTxInEth2:
+		return cs.EthTxInEth2()
+	case ethBeaconHeader:
+		return cs.EthBeaconHeader()
+	case ethFinalityHeader:
+		return cs.EthFinalityHeader()
+	case ethRedeem:
+		return cs.EthRedeem()
 	case btcBase:
 		return cs.BtcBase()
 	case btcMiddle:
@@ -150,6 +166,43 @@ func (cs *CircuitSetup) SyncCommRecursive() error {
 	}
 	return nil
 }
+
+func (cs *CircuitSetup) EthTxInEth2() error {
+	err := txineth2.Setup(cs.srsdir, cs.datadir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cs *CircuitSetup) EthBeaconHeader() error {
+	err := beacon_header.SetupInnerCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		return err
+	}
+	err = beacon_header.SetupOuterCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cs *CircuitSetup) EthFinalityHeader() error {
+	err := beacon_header_finality.SetupCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cs *CircuitSetup) EthRedeem() error {
+	err := redeem.SetupCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (cs *CircuitSetup) BtcBase() error {
 	err := baselevel.Setup(cs.datadir, cs.srsdir)
 	if err != nil {
