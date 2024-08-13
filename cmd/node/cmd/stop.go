@@ -16,7 +16,7 @@ var stopCmd = &cobra.Command{
 			fmt.Println("rpcbind or rpcport is empty")
 			return
 		}
-		client, err := rpc.NewNodeClient(fmt.Sprintf("http://%s:%s", rpcbind, rpcport))
+		client, err := rpc.NewNodeClient(fmt.Sprintf("http://%s:%s", rpcbind, rpcport), "")
 		cobra.CheckErr(err)
 		err = client.Stop()
 		cobra.CheckErr(err)
