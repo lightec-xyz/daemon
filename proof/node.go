@@ -74,39 +74,39 @@ func NewNode(cfg Config) (*Node, error) {
 			return nil, err
 		}
 	}
-	verified, err := dnode.ReadZkParamVerify(storeDb)
-	if err != nil {
-		logger.Error("read zkParamVerify error:%v", err)
-		return nil, err
-	}
-	if !verified && !debugMode {
-		logger.Debug("**** start check zk parameters md5 ****")
-		parameters, err := ReadParameters([]byte(common.ParametersStr)) // todo get from http server
-		if err != nil {
-			logger.Error("read parameters error:%v", err)
-			return nil, err
-		}
-		for index, item := range parameters {
-			path := zkParameterDir + "/" + item.FileName
-			logger.Debug("start verify zk file:%v %v ", index, path)
-			fileBytes, err := os.ReadFile(path)
-			if err != nil {
-				logger.Error("read zk file error: %v %v", path, err)
-				return nil, fmt.Errorf("read zk file error: %v %v", path, err)
-			}
-			fileMd5 := common.HexMd5(fileBytes)
-			if fileMd5 != item.Hash {
-				logger.Error("check zk md5 not match path: %v,fileHash:%v,releaseHash: %v", path, fileMd5, item.Hash)
-				return nil, fmt.Errorf("check zk md5 not match: %v %v %v", path, fileMd5, item.Hash)
-			}
-		}
-		logger.Debug("**** check zk parameters md5 end ****")
-		err = dnode.WriteZkParamVerify(storeDb, true)
-		if err != nil {
-			logger.Error("write zkParamVerify error:%v", err)
-			return nil, err
-		}
-	}
+	//verified, err := dnode.ReadZkParamVerify(storeDb)
+	//if err != nil {
+	//	logger.Error("read zkParamVerify error:%v", err)
+	//	return nil, err
+	//}
+	//if !verified && !debugMode {
+	//	logger.Debug("**** start check zk parameters md5 ****")
+	//	parameters, err := ReadParameters([]byte(common.ParametersStr)) // todo get from http server
+	//	if err != nil {
+	//		logger.Error("read parameters error:%v", err)
+	//		return nil, err
+	//	}
+	//	for index, item := range parameters {
+	//		path := zkParameterDir + "/" + item.FileName
+	//		logger.Debug("start verify zk file:%v %v ", index, path)
+	//		fileBytes, err := os.ReadFile(path)
+	//		if err != nil {
+	//			logger.Error("read zk file error: %v %v", path, err)
+	//			return nil, fmt.Errorf("read zk file error: %v %v", path, err)
+	//		}
+	//		fileMd5 := common.HexMd5(fileBytes)
+	//		if fileMd5 != item.Hash {
+	//			logger.Error("check zk md5 not match path: %v,fileHash:%v,releaseHash: %v", path, fileMd5, item.Hash)
+	//			return nil, fmt.Errorf("check zk md5 not match: %v %v %v", path, fileMd5, item.Hash)
+	//		}
+	//	}
+	//	logger.Debug("**** check zk parameters md5 end ****")
+	//	err = dnode.WriteZkParamVerify(storeDb, true)
+	//	if err != nil {
+	//		logger.Error("write zkParamVerify error:%v", err)
+	//		return nil, err
+	//	}
+	//}
 	worker, err := dnode.NewLocalWorker(zkParameterDir, cfg.DataDir, cfg.MaxNums)
 	if err != nil {
 		logger.Error("new local worker error:%v", err)
