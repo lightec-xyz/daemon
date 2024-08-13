@@ -10,9 +10,12 @@ import (
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
 	"github.com/lightec-xyz/provers/circuits/redeem"
 	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
+	"github.com/lightec-xyz/provers/common"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
+	"github.com/lightec-xyz/reLight/circuits/utils"
+	"path/filepath"
 )
 
 type Group string
@@ -198,6 +201,18 @@ func (cs *CircuitSetup) EthFinalityHeader() error {
 func (cs *CircuitSetup) EthRedeem() error {
 	err := redeem.SetupCircuit(cs.datadir, cs.srsdir)
 	if err != nil {
+		logger.Error("setup redeem circuit error: %v", err)
+		return err
+	}
+	solFile := filepath.Join(cs.datadir, common.RedeemSolFile)
+	redeemVk, err := utils.ReadVk(filepath.Join(cs.datadir, common.RedeemVkFile))
+	if err != nil {
+		logger.Error("read redeem vk error: %v", err)
+		return err
+	}
+	err = utils.ExportSolidity(solFile, redeemVk)
+	if err != nil {
+		logger.Error("export redeem sol error: %v", err)
 		return err
 	}
 	return nil
