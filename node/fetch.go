@@ -241,6 +241,16 @@ func (f *Fetch) GetFinalityUpdate() error {
 	if exists {
 		return nil
 	}
+	ok, err = f.CheckFinalityUpdate(slot/common.SlotPerPeriod, finalityUpdate)
+	if err != nil {
+		logger.Error("check finality update error:%v %v", slot, err)
+		return err
+	}
+	if !ok {
+		logger.Error("verify  finality update error:%v", slot)
+		return nil
+	}
+
 	err = WriteFinalityUpdateSlot(f.store, slot)
 	if err != nil {
 		logger.Error("write finality update slot error:%v %v", slot, err)
@@ -263,6 +273,29 @@ func (f *Fetch) GetFinalityUpdate() error {
 		}
 	}
 	return nil
+}
+
+func (f *Fetch) CheckFinalityUpdate(period uint64, finalityUpdate *structs.LightClientFinalityUpdateEvent) (bool, error) {
+	if period-1 < 0 {
+		return false, nil
+	}
+	var update structs.LightClientUpdateWithVersion
+	exists, err := f.fileStore.GetUpdate(period-1, &update)
+	if err != nil {
+		logger.Error("get update error:%v %v", period, err)
+		return false, err
+	}
+	if exists {
+		//todo
+		logger.Warn("no find update :%v %v", period)
+		return true, nil
+	}
+	ok, err := common.VerifyFinalityUpdateSignature(finalityUpdate, update.Data.NextSyncCommittee)
+	if err != nil {
+		logger.Error("verify finality update signature error:%v %v", period, err)
+		return false, err
+	}
+	return ok, nil
 }
 
 func (f *Fetch) CheckLightClientUpdate(period uint64, update *structs.LightClientUpdateWithVersion) (bool, error) {
