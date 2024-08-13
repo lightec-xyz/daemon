@@ -303,14 +303,18 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 }
 
 type RunConfig struct {
-	DataDir       string `json:"datadir"`
-	SetupDir      string `json:"setupdir"`
-	SrsDir        string `json:"srsdir"`
-	Setup         bool   `json:"setup"`
-	IsFromGenesis bool   `json:"isFromGenesis"`
-	BtcHost       string `json:"btcHost"`
-	BtcUser       string `json:"btcUser"`
-	BtcPwd        string `json:"btcPwd"`
+	IsSetup            bool   `json:"isSetup"`
+	PubKeyInDfinity    string `json:"pubKeyInDfinity"`
+	SrsDir             string `json:"srsDir"`
+	RedeemSetupDir     string `json:"redeemSetupDir"`
+	SetupDir           string `json:"setupDir"`
+	ProveDir           string `json:"proveDir"`
+	BtcHost            string `json:"btcHost"`
+	BtcUser            string `json:"btcUser"`
+	BtcPwd             string `json:"btcPwd"`
+	GenesisBlockHeight int    `json:"genesisBlockHeight"`
+	CpBlockHeight      int    `json:"cpBlockHeight"`
+	EndBlockHeight     int    `json:"endBlockHeight"`
 }
 
 func (rc *RunConfig) check() error {
