@@ -61,6 +61,7 @@ func NewCircuitSetup(datadir, srsdir string) *CircuitSetup {
 }
 
 func (cs *CircuitSetup) SetupGroup(group Group) error {
+	logger.Info("start setup group: %s", group)
 	circuitTypes, err := cs.CircuitTypes(group)
 	if err != nil {
 		logger.Error("get circuit types error: %v", err)
@@ -73,6 +74,7 @@ func (cs *CircuitSetup) SetupGroup(group Group) error {
 		}
 		logger.Info("finish setup circuit: %s", circuitType)
 	}
+	logger.Info("finish setup group: %s", group)
 	return nil
 }
 

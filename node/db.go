@@ -602,19 +602,29 @@ func WriteTaskTime(store store.IStore, id string, status common.ProofStatus, val
 }
 
 func ReadTaskTime(store store.IStore, id string, status common.ProofStatus) (time.Time, error) {
-	exists, err := store.HasObj(DbTaskTimeId(id, status))
-	if err != nil {
-		return time.Time{}, err
-	}
-	if !exists {
-		return time.Time{}, nil
-	}
 	var t time.Time
-	err = store.GetObj(DbTaskTimeId(id, status), &t)
+	err := store.GetObj(DbTaskTimeId(id, status), &t)
 	if err != nil {
 		return time.Time{}, err
 	}
 	return t, nil
+}
+
+type TaskTime struct {
+	QueueTime      time.Time `json:"queueTime"`
+	GeneratingTime time.Time `json:"generatingTime"`
+	EndTime        time.Time `json:"endTime"`
+}
+
+func ReadAllTaskTime(store store.IStore, id string) (TaskTime, error) {
+	task := TaskTime{}
+	queueTime, _ := ReadTaskTime(store, id, common.ProofQueued)
+	task.QueueTime = queueTime
+	generatingTime, _ := ReadTaskTime(store, id, common.ProofGenerating)
+	task.GeneratingTime = generatingTime
+	endTime, _ := ReadTaskTime(store, id, common.ProofSuccess)
+	task.EndTime = endTime
+	return task, nil
 }
 
 func WriteFinalityUpdateSlot(store store.IStore, finalizeSlot uint64) error {
