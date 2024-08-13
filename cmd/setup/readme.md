@@ -1,17 +1,11 @@
 # circuit Setup
 
-### bitcoin circuit setup
+#### Command
 
-command
+generate single circuit setup
 
-    // if flag is nil,generat bitcoin all circuit setup
-    ./setup btc
+    ./setup  --datadir ./testdir --srsdir ./srsdir run --type beaconOuter 
 
-     //generate bitcoin base circuit setup
-    ./setup btc --flag "base"
+batch generate circuit setup:(all, bitcoin, beacon, ethereum)
 
-    //generate bitcoin middle circuit setup
-    ./setup btc --flag "middle"
-
-    //generate bitcoin up circuit setup
-    ./setup btc --flag "up"
+    ./setup  --datadir ./testdir --srsdir ./srsdir run --group all 

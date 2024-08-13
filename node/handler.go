@@ -64,10 +64,12 @@ func (h *Handler) PendingTask() ([]*rpc.ProofTaskInfo, error) {
 	proofList := h.manager.PendingProofList()
 	var proofInfos []*rpc.ProofTaskInfo
 	for _, proof := range proofList {
-		proofInfos = append(proofInfos, &rpc.ProofTaskInfo{
-			Id:        proof.Id,
-			QueueTime: proof.CreateTime,
-		})
+		taskInfo, err := h.ProofTask(proof.Id)
+		if err != nil {
+			logger.Error("read proof task error: %v %v", proof.Id, err)
+			return nil, err
+		}
+		proofInfos = append(proofInfos, taskInfo)
 	}
 	return proofInfos, nil
 }
