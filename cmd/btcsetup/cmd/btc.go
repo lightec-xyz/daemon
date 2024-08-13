@@ -14,10 +14,7 @@ import (
 	"github.com/lightec-xyz/btc_provers/circuits/blockdepth"
 	"github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
-	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
-	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
-	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
-	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	blockchainlUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	"github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/logger"
 	reLight_common "github.com/lightec-xyz/reLight/circuits/common"
@@ -119,11 +116,11 @@ func (bs *BtcSetup) Setup() error {
 }
 
 func (bs *BtcSetup) Prove() error {
-	duperProofs := make([]reLight_common.Proof, 3)
-	beginHeight := bs.startBlockheight
+	duperProofs := make([]reLight_common.Proof, 2)
+	genesisHeight := uint32(bs.cfg.GenesisBlockHeight)
 
-	for i := uint32(0); i < 3; i++ {
-		duperBeginHeight := beginHeight + i*common.CapacityDifficultyBlock
+	for i := uint32(0); i < 2; i++ {
+		duperBeginHeight := genesisHeight + i*common.CapacityDifficultyBlock
 
 		duperProof, err := bs.DuperProve(duperBeginHeight)
 		if err != nil {
@@ -134,63 +131,38 @@ func (bs *BtcSetup) Prove() error {
 		duperProofs[i] = *duperProof
 	}
 
-	endHeight1 := beginHeight + common.CapacityDifficultyBlock*2 - 1
-	logger.Info("start genesis recursiveduper prove: %v~%v", beginHeight, endHeight1)
+	chainEndHeight := genesisHeight + common.CapacityDifficultyBlock*2 - 1
+	logger.Info("start genesis recursiveduper prove: %v~%v", genesisHeight, chainEndHeight)
 
-	proofData1, err := recursiveduperUtil.GetRecursiveProofData(bs.client, endHeight1, beginHeight)
+	proofData, err := blockchainlUtil.GetRecursiveProofData(bs.client, chainEndHeight, genesisHeight)
 	if err != nil {
-		logger.Error("get recursiveduper data error: %v %v", endHeight1, err)
+		logger.Error("get recursiveduper data error: %v~%v %v", genesisHeight, chainEndHeight, err)
 		return err
 	}
 
-	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, &duperProofs[0], &duperProofs[1], proofData1)
+	genesisProof, err := recursiveduper.Prove(bs.cfg.SetupDir, &duperProofs[0], &duperProofs[1], proofData)
 	if err != nil {
-		logger.Error("genesis recursiveduper prove error: %v %v", endHeight1, err)
+		logger.Error("genesis recursiveduper prove error: %v~%v %v", genesisHeight, chainEndHeight, err)
 		return err
 	}
 
-	err = bs.fileStore.StoreRecursive(genKey(string(recursiveTable), beginHeight, endHeight1), genesisProof)
+	err = bs.fileStore.StoreRecursive(genKey(string(recursiveTable), genesisHeight, chainEndHeight), genesisProof)
 	if err != nil {
-		logger.Error("store recursiveduper proof error %v %v", endHeight1, err)
+		logger.Error("store recursiveduper proof error %v~%v %v", genesisHeight, chainEndHeight, err)
 		return err
 	}
 
-	recursiveduper.SaveProof(bs.cfg.DataDir, genesisProof, endHeight1, beginHeight)
-	logger.Info("complete genesis recursiveduper prove: %v~%v", beginHeight, endHeight1)
+	recursiveduper.SaveProof(bs.cfg.ProveDir, genesisProof, chainEndHeight, genesisHeight)
+	logger.Info("complete genesis recursiveduper prove: %v~%v", genesisHeight, chainEndHeight)
 
-	endHeight2 := endHeight1 + common.CapacityDifficultyBlock
-	logger.Info("start recursiveduper prove: %v~%v", beginHeight, endHeight2)
-
-	proofData2, err := recursiveduperUtil.GetRecursiveProofData(bs.client, endHeight2, beginHeight)
-	if err != nil {
-		logger.Error("get recursiveduper data error: %v %v", endHeight2, err)
-		return err
-	}
-
-	recursiveProof, err := recursiveduper.ProveRecursive(
-		bs.cfg.SetupDir, genesisProof, &duperProofs[2], proofData2)
-	if err != nil {
-		logger.Error("recursiveduper prove error: %v %v", endHeight2, err)
-		return err
-	}
-
-	err = bs.fileStore.StoreRecursive(genKey(string(recursiveTable), beginHeight, endHeight2), recursiveProof)
-	if err != nil {
-		logger.Error("store recursiveduper proof error %v %v", endHeight2, err)
-		return err
-	}
-
-	recursiveduper.SaveProof(bs.cfg.DataDir, recursiveProof, endHeight2, beginHeight)
-	logger.Info("complete recursiveduper prove: %v~%v", beginHeight, endHeight2)
 	return nil
-
 }
 
 func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error) {
 	endHeight := beginHeight + common.CapacityBaseLevel - 1
 	logger.Info("start baseLevel prove: %v~%v", beginHeight, endHeight)
 
-	baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, endHeight)
+	baseData, err := blockchainlUtil.GetBaseLevelProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get baseLevel proof data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -208,7 +180,7 @@ func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	baselevel.SaveProof(bs.cfg.DataDir, baseProof, endHeight)
+	baselevel.SaveProof(bs.cfg.ProveDir, baseProof, endHeight)
 	logger.Info("complete baseLevel prove: %v~%v", beginHeight, endHeight)
 	return baseProof, nil
 }
@@ -231,7 +203,7 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 	endHeight := beginHeight + common.CapacitySuperBatch - 1
 	logger.Info("start middLevel prove: %v~%v", beginHeight, endHeight)
 
-	middleData, err := midlevelUtil.GetBatchedProofData(bs.client, endHeight)
+	middleData, err := blockchainlUtil.GetMidLevelProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get middLevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -249,7 +221,7 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	midlevel.SaveProof(bs.cfg.DataDir, middleProof, endHeight)
+	midlevel.SaveProof(bs.cfg.ProveDir, middleProof, endHeight)
 	logger.Info("complete middLevel level proof: %v~%v", beginHeight, endHeight)
 	return middleProof, nil
 
@@ -273,7 +245,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 	endHeight := beginHeight + common.CapacityDifficultyBlock - 1
 	logger.Info("start upperlevel prove: %v~%v", beginHeight, endHeight)
 
-	upData, err := upperlevelUtil.GetBatchedProofData(bs.client, endHeight)
+	upData, err := blockchainlUtil.GetUpperLevelProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get upperlevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -291,7 +263,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	upperlevel.SaveProof(bs.cfg.DataDir, upProof, endHeight)
+	upperlevel.SaveProof(bs.cfg.ProveDir, upProof, endHeight)
 	logger.Info("complete upperlevel prove: %v~%v", beginHeight, endHeight)
 	return upProof, nil
 }
