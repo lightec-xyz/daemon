@@ -71,7 +71,7 @@ func TestServer(t *testing.T) {
 				result, err := client.GenVerifyProof(rpc.VerifyRequest{
 					TxHash:    "testhash",
 					BlockHash: "blockHash",
-					Data: &grUtil.GrandRollupProofData{
+					Data: &grUtil.TxInChainProofData{
 						GenesisHash: &chainhash.Hash{},
 					}})
 				if err != nil {

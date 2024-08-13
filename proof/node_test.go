@@ -143,7 +143,7 @@ func TestRpcHandler(t *testing.T) {
 	request := rpc.VerifyRequest{
 		TxHash:    "testhash",
 		BlockHash: "blockHash",
-		Data: &txinchainUtil.GrandRollupProofData{
+		Data: &txinchainUtil.TxInChainProofData{
 			GenesisHash: &chainhash.Hash{},
 		}}
 	param, err := json.Marshal([]interface{}{request})

@@ -82,17 +82,17 @@ type BtcBaseRequest struct {
 }
 
 type BtcMiddleRequest struct {
-	Data   *btcmiddle.MidLevelProofData
+	Data   *btcmiddle.BatchedProofData
 	Proofs []Proof
 }
 
 type BtcUpperRequest struct {
-	Data   *btcupper.UpperLevelProofData
+	Data   *btcupper.BatchedProofData
 	Proofs []Proof
 }
 
 type BtcBulkRequest struct {
-	Data *btcprovertypes.BlockHeaderChain
+	Data *btcprovertypes.BlockBulkProofData
 }
 
 type BtcBulkResponse struct {
@@ -101,7 +101,7 @@ type BtcBulkResponse struct {
 }
 
 type BtcPackedRequest struct {
-	Data *btcprovertypes.BlockHeaderChain
+	Data *btcprovertypes.BlockBulkProofData
 }
 
 type BtcPackResponse struct {
@@ -160,7 +160,7 @@ type BlockHeaderFinalityResponse struct {
 type DepositRequest struct {
 	TxHash    string
 	BlockHash string
-	Data      *grUtil.GrandRollupProofData
+	Data      *grUtil.TxInChainProofData
 }
 
 type DepositResponse struct {
@@ -189,7 +189,7 @@ type RedeemResponse struct {
 type VerifyRequest struct {
 	TxHash    string
 	BlockHash string
-	Data      *grUtil.GrandRollupProofData
+	Data      *grUtil.TxInChainProofData
 }
 
 type VerifyResponse struct {

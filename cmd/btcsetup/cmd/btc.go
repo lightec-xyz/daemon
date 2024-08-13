@@ -237,7 +237,7 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 	endHeight := beginHeight + common.CapacitySuperBatch - 1
 	logger.Info("start middLevel prove: %v~%v", beginHeight, endHeight)
 
-	middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, endHeight)
+	middleData, err := midlevelUtil.GetBatchedProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get middLevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -279,7 +279,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 	endHeight := beginHeight + common.CapacityDifficultyBlock - 1
 	logger.Info("start upperlevel prove: %v~%v", beginHeight, endHeight)
 
-	upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, endHeight)
+	upData, err := upperlevelUtil.GetBatchedProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get upperlevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err

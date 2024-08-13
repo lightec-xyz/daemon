@@ -11,11 +11,11 @@ import (
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
-	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	btcbase "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcmiddle "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcupper "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	"github.com/lightec-xyz/btc_provers/utils/blockdepth"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -81,7 +81,7 @@ func (c *Circuit) BtcBaseProve(req *btcbase.BaseLevelProofData) (*reLightCommon.
 	return baseProof, nil
 }
 
-func (c *Circuit) BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList []reLightCommon.Proof) (*reLightCommon.Proof, error) {
+func (c *Circuit) BtcMiddleProve(req *btcmiddle.BatchedProofData, proofList []reLightCommon.Proof) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit btcMiddle prove....")
 	if c.debug {
 		logger.Warn("current zk circuit btcMiddle prove is debug,skip prove")
@@ -95,7 +95,7 @@ func (c *Circuit) BtcMiddleProve(req *btcmiddle.MidLevelProofData, proofList []r
 	return middleProof, nil
 }
 
-func (c *Circuit) BtcUpperProve(req *btcupper.UpperLevelProofData, proofList []reLightCommon.Proof) (*reLightCommon.Proof, error) {
+func (c *Circuit) BtcUpperProve(req *btcupper.BatchedProofData, proofList []reLightCommon.Proof) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit btcUpper prove....")
 	if c.debug {
 		logger.Warn("current zk circuit btcUpper prove is debug,skip prove")
@@ -109,7 +109,7 @@ func (c *Circuit) BtcUpperProve(req *btcupper.UpperLevelProofData, proofList []r
 	return upProof, nil
 }
 
-func (c *Circuit) BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*reLightCommon.Proof, error) {
+func (c *Circuit) BtcBulkProve(data *blockdepth.BlockBulkProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit BtcBulkProve")
 	err := data.Verify()
 	if err != nil {
@@ -128,7 +128,7 @@ func (c *Circuit) BtcBulkProve(data *btcprovertypes.BlockHeaderChain) (*reLightC
 	return proof, nil
 }
 
-func (c *Circuit) BtcPackProve(data *btcprovertypes.BlockHeaderChain) (*reLightCommon.Proof, error) {
+func (c *Circuit) BtcPackProve(data *blockdepth.BlockBulkProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit BtcPackedRequest")
 	if c.debug {
 		logger.Warn("current zk circuit btcPack prove is debug,skip prove")
@@ -353,7 +353,7 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*reLightComm
 		Wit:   proof.Wit,
 	}, err
 }
-func (c *Circuit) DepositProve(data *grUtil.GrandRollupProofData) (*reLightCommon.Proof, error) {
+func (c *Circuit) DepositProve(data *grUtil.TxInChainProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit DepositProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
@@ -501,7 +501,7 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 	return proof, err
 }
 
-func (c *Circuit) UpdateChangeProve(data *grUtil.GrandRollupProofData) (*reLightCommon.Proof, error) {
+func (c *Circuit) UpdateChangeProve(data *grUtil.TxInChainProofData) (*reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit UpdateChangeProve")
 	if c.debug {
 		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
