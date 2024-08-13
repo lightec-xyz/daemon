@@ -1,15 +1,19 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/baselevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/midlevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/recursiveduper"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth"
 	"github.com/lightec-xyz/btc_provers/circuits/common"
+	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
@@ -20,11 +24,10 @@ import (
 )
 
 type BtcSetup struct {
-	cfg              *RunConfig
-	client           *client.Client
-	exit             chan os.Signal
-	fileStore        *FileStorage
-	startBlockheight uint32
+	cfg       *RunConfig
+	client    *client.Client
+	exit      chan os.Signal
+	fileStore *FileStorage
 }
 
 func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
@@ -44,46 +47,35 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 		return nil, err
 	}
 
-	proofPath := fmt.Sprintf("%v/proof", cfg.DataDir)
-	fileStorage, err := NewFileStorage(proofPath)
+	fileStorage, err := NewFileStorage(cfg.ProveDir)
 	if err != nil {
-		logger.Error("new file storage error: %v %v", proofPath, err)
+		logger.Error("new file storage error: %v %v", cfg.ProveDir, err)
 		return nil, err
 	}
 
-	startBlockheight := uint32(0)
-	if !cfg.IsFromGenesis {
-		lastestBh, err := btcClient.GetBlockCount()
-		if err != nil {
-			logger.Error("get block height error: %v", err)
-			return nil, err
-		}
-		startBlockheight = (uint32(lastestBh)/common.CapacityDifficultyBlock - 3) * common.CapacityDifficultyBlock
-	}
-	logger.Info("start block height: %v", startBlockheight)
-
 	return &BtcSetup{
-		cfg:              cfg,
-		client:           btcClient,
-		exit:             make(chan os.Signal, 1),
-		fileStore:        fileStorage,
-		startBlockheight: startBlockheight,
+		cfg:       cfg,
+		client:    btcClient,
+		exit:      make(chan os.Signal, 1),
+		fileStore: fileStorage,
 	}, nil
 }
 
 func (bs *BtcSetup) Run() error {
-	if bs.cfg.Setup {
+	if bs.cfg.IsSetup {
 		err := bs.Setup()
 		if err != nil {
 			logger.Error("bs setup error: %v", err)
 			return err
 		}
 	}
+
 	err := bs.Prove()
 	if err != nil {
 		logger.Error("bs prove error: %v", err)
 		return err
 	}
+
 	return nil
 }
 
@@ -92,32 +84,34 @@ func (bs *BtcSetup) Close() error {
 }
 
 func (bs *BtcSetup) Setup() error {
-	logger.Debug("start baselevel setup ...")
-
-	err := baselevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	logger.Debug("start blockchain setup ...")
+	err := blockchain.BlockChainSetup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup baselevel error: %v", err)
+		logger.Error("setup blockchain error: %v", err)
 		return err
 	}
 
-	logger.Debug("start midlevel setup ...")
-	err = midlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	logger.Debug("start blockdepth setup ...")
+	err = blockdepth.BlockDepthSetup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup midlevel error: %v", err)
+		logger.Error("setup blockdepth error: %v", err)
 		return err
 	}
 
-	logger.Debug("start upperlevel setup ...")
-	err = upperlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	logger.Debug("start txinchain setup ...")
+	pubKey, err := hex.DecodeString(bs.cfg.PubKeyInDfinity)
 	if err != nil {
-		logger.Error("setup upperlevel error: %v", err)
+		logger.Error("decode pubkey error: %v", err)
+		return err
+	}
+	if len(pubKey) != 33 {
+		logger.Error("pubkey length is not 33")
 		return err
 	}
 
-	logger.Debug("start recursiveduper setup ...")
-	err = recursiveduper.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	err = txinchain.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir, bs.cfg.RedeemSetupDir, [33]byte(pubKey))
 	if err != nil {
-		logger.Error("setup recursiveduper error: %v", err)
+		logger.Error("setup txinchain error: %v", err)
 		return err
 	}
 
@@ -318,18 +312,31 @@ type RunConfig struct {
 }
 
 func (rc *RunConfig) check() error {
-	if rc.BtcHost == "" {
-		return fmt.Errorf("host is empty")
+	if rc.PubKeyInDfinity == "" {
+		return fmt.Errorf("pubKeyInDfinity is empty")
 	}
-	if rc.DataDir == "" {
-		return fmt.Errorf("dataDir can not be empty")
+
+	if rc.SetupDir == "" || rc.ProveDir == "" || rc.SrsDir == "" || rc.RedeemSetupDir == "" {
+		return fmt.Errorf("dir is empty")
 	}
-	if rc.SetupDir == "" {
-		return fmt.Errorf("setupdir is empty")
+
+	if rc.BtcHost == "" || rc.BtcUser == "" || rc.BtcPwd == "" {
+		return fmt.Errorf("btc config is empty")
 	}
-	if rc.SrsDir == "" {
-		return fmt.Errorf("srsDir can not be empty")
+
+	if rc.GenesisBlockHeight > rc.CpBlockHeight || rc.GenesisBlockHeight >= rc.EndBlockHeight {
+		return fmt.Errorf("invalid genesisBlockHeight")
 	}
+
+	if rc.CpBlockHeight >= rc.EndBlockHeight {
+		return fmt.Errorf("invalid cpBlockHeight")
+	}
+
+	if rc.EndBlockHeight-rc.CpBlockHeight < common.CapacityBulkUint*2 ||
+		rc.EndBlockHeight-rc.GenesisBlockHeight+1 < common.CapacityDifficultyBlock*2 {
+		return fmt.Errorf("invalid endBlockHeight")
+	}
+
 	return nil
 }
 
