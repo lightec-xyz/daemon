@@ -7,9 +7,16 @@ import (
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/midlevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
+	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
+	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
+	"github.com/lightec-xyz/provers/circuits/redeem"
+	txineth2 "github.com/lightec-xyz/provers/circuits/tx-in-eth2"
+	"github.com/lightec-xyz/provers/common"
 	"github.com/lightec-xyz/reLight/circuits/genesis"
 	"github.com/lightec-xyz/reLight/circuits/recursive"
 	"github.com/lightec-xyz/reLight/circuits/unit"
+	"github.com/lightec-xyz/reLight/circuits/utils"
+	"path/filepath"
 )
 
 type Group string
@@ -24,19 +31,23 @@ const (
 type CircuitType string
 
 const (
-	btcBase         CircuitType = "btcBase"
-	btcMiddle       CircuitType = "btcMiddle"
-	btcUpper        CircuitType = "btcUpper"
-	beaconInner     CircuitType = "beaconInner"
-	beaconOuter     CircuitType = "beaconOuter"
-	beaconUnit      CircuitType = "beaconUnit"
-	beaconGenesis   CircuitType = "beaconGenesis"
-	beaconRecursive CircuitType = "beaconRecursive"
+	btcBase           CircuitType = "btcBase"
+	btcMiddle         CircuitType = "btcMiddle"
+	btcUpper          CircuitType = "btcUpper"
+	beaconInner       CircuitType = "beaconInner"
+	beaconOuter       CircuitType = "beaconOuter"
+	beaconUnit        CircuitType = "beaconUnit"
+	beaconGenesis     CircuitType = "beaconGenesis"
+	beaconRecursive   CircuitType = "beaconRecursive"
+	ethTxInEth2       CircuitType = "ethTxInEth2"
+	ethBeaconHeader   CircuitType = "ethBeaconHeader"
+	ethFinalityHeader CircuitType = "ethFinalityHeader"
+	ethRedeem         CircuitType = "ethRedeem"
 )
 
 var btcGroups = []CircuitType{btcBase, btcMiddle, btcUpper}
 var beaconGroups = []CircuitType{beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive}
-var ethGroups = []CircuitType{}
+var ethGroups = []CircuitType{ethTxInEth2, ethBeaconHeader, ethFinalityHeader, ethRedeem}
 
 type CircuitSetup struct {
 	datadir string
@@ -53,10 +64,12 @@ func NewCircuitSetup(datadir, srsdir string) *CircuitSetup {
 func (cs *CircuitSetup) SetupGroup(group Group) error {
 	circuitTypes, err := cs.CircuitTypes(group)
 	if err != nil {
+		logger.Error("get circuit types error: %v", err)
 		return err
 	}
 	for _, circuitType := range circuitTypes {
 		if err = cs.Setup(circuitType); err != nil {
+			logger.Error("setup circuit error: %v", err)
 			return err
 		}
 		logger.Info("finish setup circuit: %s", circuitType)
@@ -67,16 +80,24 @@ func (cs *CircuitSetup) SetupGroup(group Group) error {
 func (cs *CircuitSetup) Setup(circuitType CircuitType) error {
 	logger.Info("start setup circuit: %s", circuitType)
 	switch circuitType {
-	case beaconOuter:
-		return cs.SyncCommOuter()
 	case beaconInner:
 		return cs.SyncCommInner()
+	case beaconOuter:
+		return cs.SyncCommOuter()
 	case beaconUnit:
 		return cs.SyncCommUnit()
 	case beaconGenesis:
 		return cs.SyncCommGenesis()
 	case beaconRecursive:
 		return cs.SyncCommRecursive()
+	case ethTxInEth2:
+		return cs.EthTxInEth2()
+	case ethBeaconHeader:
+		return cs.EthBeaconHeader()
+	case ethFinalityHeader:
+		return cs.EthFinalityHeader()
+	case ethRedeem:
+		return cs.EthRedeem()
 	case btcBase:
 		return cs.BtcBase()
 	case btcMiddle:
@@ -108,6 +129,7 @@ func (cs *CircuitSetup) SyncCommInner() error {
 	inner := unit.NewInner(&config)
 	err := inner.Setup()
 	if err != nil {
+		logger.Error("setup inner circuit error: %v", err)
 		return err
 	}
 	return nil
@@ -118,6 +140,7 @@ func (cs *CircuitSetup) SyncCommOuter() error {
 	outer := unit.NewOuter(&config)
 	err := outer.Setup()
 	if err != nil {
+		logger.Error("setup outer circuit error: %v", err)
 		return err
 	}
 	return nil
@@ -128,6 +151,7 @@ func (cs *CircuitSetup) SyncCommUnit() error {
 	unitCir := unit.NewUnit(config)
 	err := unitCir.Setup()
 	if err != nil {
+		logger.Error("setup unit circuit error: %v", err)
 		return err
 	}
 	return nil
@@ -137,6 +161,7 @@ func (cs *CircuitSetup) SyncCommGenesis() error {
 	genesis := genesis.NewGenesis(genesisConfig)
 	err := genesis.Setup()
 	if err != nil {
+		logger.Error("setup genesis circuit error: %v", err)
 		return err
 	}
 	return nil
@@ -147,13 +172,68 @@ func (cs *CircuitSetup) SyncCommRecursive() error {
 	recursive := recursive.NewRecursive(recursiveConfig)
 	err := recursive.Setup()
 	if err != nil {
+		logger.Error("setup recursive circuit error: %v", err)
 		return err
 	}
 	return nil
 }
+
+func (cs *CircuitSetup) EthTxInEth2() error {
+	err := txineth2.Setup(cs.srsdir, cs.datadir)
+	if err != nil {
+		logger.Error("setup txineth2 circuit error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (cs *CircuitSetup) EthBeaconHeader() error {
+	err := beacon_header.SetupInnerCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		logger.Error("setup inner circuit error: %v", err)
+		return err
+	}
+	err = beacon_header.SetupOuterCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		logger.Error("setup outer circuit error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (cs *CircuitSetup) EthFinalityHeader() error {
+	err := beacon_header_finality.SetupCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		logger.Error("setup finality circuit error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (cs *CircuitSetup) EthRedeem() error {
+	err := redeem.SetupCircuit(cs.datadir, cs.srsdir)
+	if err != nil {
+		logger.Error("setup redeem circuit error: %v", err)
+		return err
+	}
+	solFile := filepath.Join(cs.datadir, common.RedeemSolFile)
+	redeemVk, err := utils.ReadVk(filepath.Join(cs.datadir, common.RedeemVkFile))
+	if err != nil {
+		logger.Error("read redeem vk error: %v", err)
+		return err
+	}
+	err = utils.ExportSolidity(solFile, redeemVk)
+	if err != nil {
+		logger.Error("export redeem sol error: %v", err)
+		return err
+	}
+	return nil
+}
+
 func (cs *CircuitSetup) BtcBase() error {
 	err := baselevel.Setup(cs.datadir, cs.srsdir)
 	if err != nil {
+		logger.Error("setup baselevel error: %v", err)
 		return err
 	}
 	return nil
@@ -162,6 +242,7 @@ func (cs *CircuitSetup) BtcBase() error {
 func (cs *CircuitSetup) BtcMiddle() error {
 	err := midlevel.Setup(cs.datadir, cs.srsdir)
 	if err != nil {
+		logger.Error("setup midlevel error: %v", err)
 		return err
 	}
 	return nil
@@ -170,6 +251,7 @@ func (cs *CircuitSetup) BtcMiddle() error {
 func (cs *CircuitSetup) BtcUpleve() error {
 	err := upperlevel.Setup(cs.datadir, cs.srsdir)
 	if err != nil {
+		logger.Error("setup upperlevel error: %v", err)
 		return err
 	}
 	return nil

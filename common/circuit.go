@@ -158,7 +158,7 @@ func verifyLightClientUpdateInfo(update *LightClientUpdateInfo) (bool, error) {
 
 // VerifyFinalityUpdateSignature check the finalityUpdate signature is valid or not,
 // issue: FinalityUpdate_2189440 and FinalityUpdate_2193440
-func VerifyFinalityUpdateSignature(update structs.LightClientFinalityUpdateEvent, currentSyncCommittee structs.SyncCommittee) (bool, error) {
+func VerifyFinalityUpdateSignature(update *structs.LightClientFinalityUpdateEvent, currentSyncCommittee *structs.SyncCommittee) (bool, error) {
 	var domain []byte
 	switch update.Version {
 	case "bellatrix":

@@ -135,8 +135,8 @@ func (c *Client) BeaconHeaderByRoot(root string) (*structs.GetBlockHeaderRespons
 	return result, nil
 }
 
-func (c *Client) GetFinalityUpdate() (*structs.LightClientUpdateWithVersion, error) {
-	var result structs.LightClientUpdateWithVersion
+func (c *Client) GetFinalityUpdate() (*structs.LightClientFinalityUpdateEvent, error) {
+	var result structs.LightClientFinalityUpdateEvent
 	err := c.get("/eth/v1/beacon/light_client/finality_update", nil, &result)
 	if err != nil {
 		return nil, err

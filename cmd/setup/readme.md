@@ -2,7 +2,7 @@
 
 #### Command
 
-generate single circuit setup
+generate single circuit setup:(beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive, btcBase, btcMiddle, btcUpper)
 
     ./setup  --datadir ./testdir --srsdir ./srsdir run --type beaconOuter 
 

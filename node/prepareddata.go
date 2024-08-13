@@ -718,7 +718,7 @@ func (p *PreparedData) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeU
 
 func (p *PreparedData) GetBhfUpdateData(finalizedSlot, genesisPeriod uint64) (*rpc.BlockHeaderFinalityRequest, bool, error) {
 	logger.Debug("get bhf update data: %v", finalizedSlot)
-	var currentFinalityUpdate structs.LightClientUpdateWithVersion
+	var currentFinalityUpdate structs.LightClientFinalityUpdateEvent
 	exists, err := p.filestore.GetFinalityUpdate(finalizedSlot, &currentFinalityUpdate)
 	if err != nil {
 		logger.Error("get finality update error: %v %v", finalizedSlot, err)
@@ -849,7 +849,7 @@ func (p *PreparedData) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash
 		return nil, false, nil
 	}
 
-	var finalityUpdate *structs.LightClientUpdateWithVersion
+	var finalityUpdate *structs.LightClientFinalityUpdateEvent
 	ok, err = p.filestore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
 	if err != nil {
 		logger.Error("get finality update error: %v", err)

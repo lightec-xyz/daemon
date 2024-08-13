@@ -37,11 +37,12 @@ var setup = &cobra.Command{
 				fmt.Printf("setup group error: %v \n", err)
 				return
 			}
-		}
-		if circuitType != "" {
-			if err = circuitSetup.Setup(CircuitType(circuitType)); err != nil {
-				fmt.Printf("setup circuit type error: %v \n", err)
-				return
+		} else {
+			if circuitType != "" {
+				if err = circuitSetup.Setup(CircuitType(circuitType)); err != nil {
+					fmt.Printf("setup circuit type error: %v \n", err)
+					return
+				}
 			}
 		}
 
@@ -49,7 +50,7 @@ var setup = &cobra.Command{
 }
 
 func init() {
-	setup.Flags().String("type", "", "setup circuit type value: beaconOuter, beaconInner, beaconUnit, beaconGenesis,...")
+	setup.Flags().String("type", "", "setup circuit type value: beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive, btcBase, btcMiddle, btcUpper")
 	setup.Flags().String("group", "", "batch setup circuit group value: all, bitcoin, beacon, ethereum")
 	rootCmd.AddCommand(setup)
 }
