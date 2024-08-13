@@ -12,9 +12,12 @@ import (
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/recursiveduper"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockdepth"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth/blockbulk"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth/recursivebulks"
 	"github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
 	blockchainlUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
 	"github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/logger"
 	reLight_common "github.com/lightec-xyz/reLight/circuits/common"
@@ -73,6 +76,12 @@ func (bs *BtcSetup) Run() error {
 		return err
 	}
 
+	err = bs.CpDepthProve()
+	if err != nil {
+		logger.Error("blockchain prove error: %v", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -113,6 +122,77 @@ func (bs *BtcSetup) Setup() error {
 	}
 
 	return nil
+}
+
+func (bs *BtcSetup) CpDepthProve() error {
+	bulkProofs := make([]reLight_common.Proof, 2)
+	cpHeight := uint32(bs.cfg.CpBlockHeight)
+
+	for i := uint32(0); i < 2; i++ {
+		bulkBeginHeight := cpHeight + i*common.CapacityBulkUint
+
+		bulkProof, err := bs.BulkProve(bulkBeginHeight)
+		if err != nil {
+			logger.Error("BulkProve(begin Height: %v) error: %v", bulkBeginHeight, err)
+			return err
+		}
+
+		bulkProofs[i] = *bulkProof
+	}
+
+	cpDepthEndHeight := cpHeight + common.CapacityBulkUint*2
+	logger.Info("start genesis recursivebulk prove: %v~%v", cpHeight, cpDepthEndHeight)
+
+	proofData, err := blockdepthUtil.GetRecursiveProofData(bs.client, cpHeight, cpDepthEndHeight)
+	if err != nil {
+		logger.Error("get recursivebulk data error: %v~%v %v", cpHeight, cpDepthEndHeight, err)
+		return err
+	}
+
+	genesisProof, err := recursivebulks.Prove(bs.cfg.SetupDir, &bulkProofs[0], &bulkProofs[1], proofData)
+	if err != nil {
+		logger.Error("genesis recursivebulk prove error: %v~%v %v", cpHeight, cpDepthEndHeight, err)
+		return err
+	}
+
+	err = bs.fileStore.StoreRecursiveBulk(genKey(string(recursiveBulkTable), cpHeight, cpDepthEndHeight), genesisProof)
+	if err != nil {
+		logger.Error("store recursivebulk proof error %v~%v %v", cpHeight, cpDepthEndHeight, err)
+		return err
+	}
+
+	recursivebulks.SaveProof(bs.cfg.ProveDir, genesisProof, cpHeight, cpDepthEndHeight)
+	logger.Info("complete genesis recursivebulk prove: %v~%v", cpHeight, cpDepthEndHeight)
+
+	return nil
+}
+
+func (bs *BtcSetup) BulkProve(beginHeight uint32) (*reLight_common.Proof, error) {
+	endHeight := beginHeight + common.CapacityBulkUint
+	logger.Info("start bulk prove: %v~%v", beginHeight, endHeight)
+
+	bulkData, err := blockdepthUtil.GetBlockBulkProofData(bs.client, beginHeight, endHeight)
+	if err != nil {
+		logger.Error("get bulk proof data error: %v~%v %v", beginHeight, endHeight, err)
+		return nil, err
+	}
+
+	bulkProof, err := blockbulk.Prove(bs.cfg.SetupDir, bulkData)
+	if err != nil {
+		logger.Error("blockbulk prove error: %v~%v %v", beginHeight, endHeight, err)
+		return nil, err
+	}
+
+	err = bs.fileStore.StoreBulk(genKey(string(bulkTable), beginHeight, endHeight), bulkProof)
+	if err != nil {
+		logger.Error("store blockbulk proof error %v~%v %v", beginHeight, endHeight, err)
+		return nil, err
+	}
+
+	blockbulk.SaveProof(bs.cfg.ProveDir, bulkProof, beginHeight, endHeight)
+	logger.Info("complete blockbulk prove: %v~%v", beginHeight, endHeight)
+
+	return bulkProof, nil
 }
 
 func (bs *BtcSetup) BlockChainProve() error {
@@ -182,6 +262,7 @@ func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error
 
 	baselevel.SaveProof(bs.cfg.ProveDir, baseProof, endHeight)
 	logger.Info("complete baseLevel prove: %v~%v", beginHeight, endHeight)
+
 	return baseProof, nil
 }
 
@@ -223,6 +304,7 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 
 	midlevel.SaveProof(bs.cfg.ProveDir, middleProof, endHeight)
 	logger.Info("complete middLevel level proof: %v~%v", beginHeight, endHeight)
+
 	return middleProof, nil
 
 }
@@ -265,6 +347,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 
 	upperlevel.SaveProof(bs.cfg.ProveDir, upProof, endHeight)
 	logger.Info("complete upperlevel prove: %v~%v", beginHeight, endHeight)
+
 	return upProof, nil
 }
 
