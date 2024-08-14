@@ -14,12 +14,12 @@ import (
 )
 
 type StoreProof struct {
-	Id        string             `json:"id"`
-	ProofType common.ZkProofType `json:"type"`
-	Hash      string             `json:"hash"`
-	Index     uint64             `json:"Index"`
-	Proof     string             `json:"proof"`
-	Witness   string             `json:"witness"`
+	Id        string `json:"id"`
+	ProofType string `json:"type"`
+	Hash      string `json:"hash"`
+	Index     uint64 `json:"Index"`
+	Proof     string `json:"proof"`
+	Witness   string `json:"witness"`
 }
 
 const (
@@ -32,33 +32,35 @@ const (
 type Table string
 
 const (
-	IndexTable        Table = "index"
-	GenesisTable      Table = "genesis"
-	UpdateTable       Table = "update"
+	IndexTable    Table = "index"
+	UpdateTable   Table = "update"
+	FinalityTable Table = "finalityUpdate"
+	RequestTable  Table = "request"
+
 	OuterTable        Table = "outer"
 	UnitTable         Table = "unit"
+	GenesisTable      Table = "genesis"
 	RecursiveTable    Table = "recursive"
-	FinalityTable     Table = "finalityUpdate"
-	BhfTable          Table = "bhf"
-	BeaconHeaderTable Table = "beaconHeader"
 	TxesTable         Table = "txes"
+	BeaconHeaderTable Table = "beaconHeader"
+	BhfTable          Table = "bhf"
 	RedeemTable       Table = "redeem"
-	RequestTable      Table = "request"
-	DepositTable      Table = "deposit"
-	VerifyTable       Table = "verify"
+
 	BtcBulkTable      Table = "btcBulk"
 	BtcPackedTable    Table = "btcPack"
-	BtcWrapTable      Table = "btcWrap"
 	BtcBaseTable      Table = "btcBase"
 	BtcMiddleTable    Table = "btcMiddle"
 	BtcUpperTable     Table = "btcUpper"
-	BtcGenesisTable   Table = "btcGenesis"
-	BtcRecursiveTable Table = "btcRecursive"
+	BtcDuperRecursive Table = "btcDuperRecursive"
+	BtcDepthRecursive Table = "btcDepthRecursive"
+	BtcChainTable     Table = "btcChain"
+	BtcDepositTable   Table = "btcDeposit"
+	BtcChangeTable    Table = "btcChange"
 )
 
-var InitStoreTables = []Table{IndexTable, GenesisTable, UpdateTable, OuterTable, UnitTable, RecursiveTable,
-	FinalityTable, BhfTable, BeaconHeaderTable, TxesTable, RedeemTable, RequestTable, DepositTable, VerifyTable,
-	BtcBulkTable, BtcPackedTable, BtcWrapTable, BtcBaseTable, BtcMiddleTable, BtcUpperTable, BtcGenesisTable, BtcRecursiveTable}
+var initStoreTables = []Table{IndexTable, UpdateTable, FinalityTable, RequestTable, OuterTable, UnitTable, GenesisTable, RecursiveTable,
+	TxesTable, BeaconHeaderTable, BhfTable, RedeemTable, BtcBulkTable, BtcPackedTable, BtcBaseTable, BtcMiddleTable, BtcUpperTable,
+	BtcDuperRecursive, BtcDepthRecursive, BtcChainTable, BtcDepositTable, BtcChangeTable}
 
 type FileStorage struct {
 	RootPath         string
@@ -74,7 +76,7 @@ func NewFileStorage(rootPath string, genesisSlot, btcGenesisHeight uint64, table
 	path := fmt.Sprintf("%s/proofData", rootPath) // todo
 	logger.Info("fileStorage path: %v", path)
 	if tables == nil {
-		tables = InitStoreTables
+		tables = initStoreTables
 	}
 	for _, key := range tables {
 		fileStore, err := CreateFileStore(path, string(key))
@@ -93,54 +95,6 @@ func NewFileStorage(rootPath string, genesisSlot, btcGenesisHeight uint64, table
 	}, nil
 }
 
-func (fs *FileStorage) StoreObj(table Table, key string, value interface{}) error {
-	fileStore, ok := fs.GetFileStore(table)
-	if !ok {
-		logger.Error("get file store error %v", table)
-		return fmt.Errorf("get file store error %v", table)
-	}
-	return fileStore.Store(key, value)
-}
-func (fs *FileStorage) GetObj(table Table, key string, value interface{}) (bool, error) {
-	fileStore, ok := fs.GetFileStore(table)
-	if !ok {
-		logger.Error("get file store error %v", table)
-		return false, fmt.Errorf("get file store error %v", table)
-	}
-	return fileStore.Get(key, value)
-}
-
-func (fs *FileStorage) CheckObj(table Table, key string) (bool, error) {
-	fileStore, ok := fs.GetFileStore(table)
-	if !ok {
-		logger.Error("get file store error %v", table)
-		return false, fmt.Errorf("get file store error %v", table)
-	}
-	return fileStore.CheckExists(key)
-}
-
-func (fs *FileStorage) Store(table Table, pType common.ZkProofType, proof, witness []byte, keys ...interface{}) error {
-	key := genKey(table, keys...)
-	obj := newStoreProof(pType, key, proof, witness)
-	return fs.StoreObj(table, key, obj)
-}
-func (fs *FileStorage) Get(table Table, value interface{}, key ...interface{}) (bool, error) {
-	return fs.GetObj(table, genKey(table, key...), value)
-}
-
-func (fs *FileStorage) Check(table Table, key ...interface{}) (bool, error) {
-	return fs.CheckObj(table, genKey(table, key...))
-}
-func (fs *FileStorage) GetFileStore(table Table) (*store.FileStore, bool) {
-	fs.lock.Lock()
-	defer fs.lock.Unlock()
-	filestore, ok := fs.FileStoreMap[table]
-	if !ok {
-		return nil, false
-	}
-	return filestore, true
-}
-
 func (fs *FileStorage) GetGenesisPeriod() uint64 {
 	return fs.genesisPeriod
 }
@@ -148,7 +102,7 @@ func (fs *FileStorage) StoreRequest(req *common.ZkProofRequest) error {
 	return fs.StoreObj(RequestTable, req.RequestId(), req)
 }
 
-func (fs *FileStorage) StorePeriod(period uint64) error {
+func (fs *FileStorage) StoreLatestPeriod(period uint64) error {
 	return fs.StoreObj(IndexTable, LatestPeriodKey, period)
 }
 
@@ -166,7 +120,7 @@ func (fs *FileStorage) StoreLatestFinalizedSlot(slot uint64) error {
 	return fs.StoreObj(IndexTable, LatestSlotKey, slot)
 }
 
-func (fs *FileStorage) GetFinalizedSlot() (uint64, bool, error) {
+func (fs *FileStorage) GetLatestFinalizedSlot() (uint64, bool, error) {
 	var slot uint64
 	exists, err := fs.GetObj(IndexTable, LatestSlotKey, &slot)
 	if err != nil {
@@ -174,6 +128,17 @@ func (fs *FileStorage) GetFinalizedSlot() (uint64, bool, error) {
 		return 0, false, err
 	}
 	return slot, exists, nil
+}
+func (fs *FileStorage) StoreFinalityUpdate(period uint64, data interface{}) error {
+	return fs.StoreObj(FinalityTable, genKey(FinalityTable, period), data)
+}
+
+func (fs *FileStorage) CheckFinalityUpdate(period uint64) (bool, error) {
+	return fs.CheckObj(FinalityTable, genKey(FinalityTable, period))
+}
+
+func (fs *FileStorage) GetFinalityUpdate(period uint64, value interface{}) (bool, error) {
+	return fs.GetObj(FinalityTable, genKey(FinalityTable, period), value)
 }
 
 func (fs *FileStorage) StoreUpdate(period uint64, value interface{}) error {
@@ -211,7 +176,7 @@ func (fs *FileStorage) CheckBootstrap() (bool, error) {
 }
 
 func (fs *FileStorage) StoreOuterProof(period uint64, proof, witness []byte) error {
-	return fs.Store(OuterTable, common.UnitOuter, proof, witness, period)
+	return fs.Store(OuterTable, common.SyncComOuterType, proof, witness, period)
 }
 func (fs *FileStorage) CheckOuterProof(period uint64) (bool, error) {
 	return fs.Check(OuterTable, period)
@@ -281,20 +246,19 @@ func (fs *FileStorage) GetRecursiveProof(period uint64) (*StoreProof, bool, erro
 	}
 	return &storeProof, exist, nil
 }
-
-func (fs *FileStorage) StoreBhfProof(period uint64, proof, witness []byte) error {
-	return fs.Store(BhfTable, common.BeaconHeaderFinalityType, proof, witness, period)
+func (fs *FileStorage) StoreTxProof(txHash string, proof, witness []byte) error {
+	return fs.Store(TxesTable, common.TxInEth2, proof, witness, txHash)
 }
 
-func (fs *FileStorage) CheckBhfProof(period uint64) (bool, error) {
-	return fs.Check(BhfTable, period)
+func (fs *FileStorage) CheckTxProof(txHash string) (bool, error) {
+	return fs.Check(TxesTable, txHash)
 }
 
-func (fs *FileStorage) GetBhfProof(period uint64) (*StoreProof, bool, error) {
+func (fs *FileStorage) GetTxProof(txHash string) (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.Get(BhfTable, &storeProof, period)
+	exist, err := fs.Get(TxesTable, &storeProof, txHash)
 	if err != nil {
-		logger.Error("get recursive proof error:%v", err)
+		logger.Error("get tx proof error:%v", err)
 		return nil, false, err
 	}
 	return &storeProof, exist, nil
@@ -317,32 +281,19 @@ func (fs *FileStorage) GetBeaconHeaderProof(start, end uint64) (*StoreProof, boo
 	}
 	return &storeProof, exist, nil
 }
-
-func (fs *FileStorage) StoreFinalityUpdate(period uint64, data interface{}) error {
-	return fs.StoreObj(FinalityTable, genKey(FinalityTable, period), data)
+func (fs *FileStorage) StoreBhfProof(period uint64, proof, witness []byte) error {
+	return fs.Store(BhfTable, common.BeaconHeaderFinalityType, proof, witness, period)
 }
 
-func (fs *FileStorage) CheckFinalityUpdate(period uint64) (bool, error) {
-	return fs.CheckObj(FinalityTable, genKey(FinalityTable, period))
+func (fs *FileStorage) CheckBhfProof(period uint64) (bool, error) {
+	return fs.Check(BhfTable, period)
 }
 
-func (fs *FileStorage) GetFinalityUpdate(period uint64, value interface{}) (bool, error) {
-	return fs.GetObj(FinalityTable, genKey(FinalityTable, period), value)
-}
-
-func (fs *FileStorage) StoreTxProof(txHash string, proof, witness []byte) error {
-	return fs.Store(TxesTable, common.TxInEth2, proof, witness, txHash)
-}
-
-func (fs *FileStorage) CheckTxProof(txHash string) (bool, error) {
-	return fs.Check(TxesTable, txHash)
-}
-
-func (fs *FileStorage) GetTxProof(txHash string) (*StoreProof, bool, error) {
+func (fs *FileStorage) GetBhfProof(period uint64) (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.Get(TxesTable, &storeProof, txHash)
+	exist, err := fs.Get(BhfTable, &storeProof, period)
 	if err != nil {
-		logger.Error("get tx proof error:%v", err)
+		logger.Error("get recursive proof error:%v", err)
 		return nil, false, err
 	}
 	return &storeProof, exist, nil
@@ -361,40 +312,6 @@ func (fs *FileStorage) GetRedeemProof(txHash string) (*StoreProof, bool, error) 
 	exist, err := fs.Get(RedeemTable, &storeProof, txHash)
 	if err != nil {
 		logger.Error("get redeem proof error:%v", err)
-		return nil, false, err
-	}
-	return &storeProof, exist, nil
-}
-
-func (fs *FileStorage) StoreDepositProof(txHash string, proof, witness []byte) error {
-	return fs.Store(DepositTable, common.DepositTxType, proof, witness, txHash)
-}
-func (fs *FileStorage) CheckDepositProof(txHash string) (bool, error) {
-	return fs.Check(DepositTable, txHash)
-}
-
-func (fs *FileStorage) GetDepositProof(txHash string) (*StoreProof, bool, error) {
-	var storeProof StoreProof
-	exist, err := fs.Get(DepositTable, &storeProof, txHash)
-	if err != nil {
-		logger.Error("get deposit proof error:%v %v", txHash, err)
-		return nil, false, err
-	}
-	return &storeProof, exist, nil
-}
-
-func (fs *FileStorage) StoreVerifyProof(txHash string, proof, witness []byte) error {
-	return fs.Store(VerifyTable, common.VerifyTxType, proof, witness, txHash)
-}
-func (fs *FileStorage) CheckVerifyProof(txHash string) (bool, error) {
-	return fs.Check(VerifyTable, txHash)
-}
-
-func (fs *FileStorage) GetVerifyProof(txHash string) (*StoreProof, bool, error) {
-	var storeProof StoreProof
-	exist, err := fs.Get(VerifyTable, &storeProof, txHash)
-	if err != nil {
-		logger.Error("get verify proof error:%v %v", txHash, err)
 		return nil, false, err
 	}
 	return &storeProof, exist, nil
@@ -431,24 +348,6 @@ func (fs *FileStorage) GetBtcPackedProof(index uint64) (*StoreProof, bool, error
 	exist, err := fs.Get(BtcPackedTable, &storeProof, index)
 	if err != nil {
 		logger.Error("get btc packed proof error:%v %v", index, err)
-		return nil, false, err
-	}
-	return &storeProof, exist, nil
-}
-
-func (fs *FileStorage) StoreBtcWrapProof(index uint64, proof, witness []byte) error {
-	return fs.Store(BtcWrapTable, common.BtcWrapType, proof, witness, index)
-}
-
-func (fs *FileStorage) CheckBtcWrapProof(index uint64) (bool, error) {
-	return fs.Check(BtcWrapTable, index)
-}
-
-func (fs *FileStorage) GetBtcWrapProof(index uint64) (*StoreProof, bool, error) {
-	var storeProof StoreProof
-	exist, err := fs.Get(BtcWrapTable, &storeProof, index)
-	if err != nil {
-		logger.Error("get btc wrap proof error:%v %v", index, err)
 		return nil, false, err
 	}
 	return &storeProof, exist, nil
@@ -506,38 +405,85 @@ func (fs *FileStorage) GetBtcUpperProof(key ...interface{}) (*StoreProof, bool, 
 	}
 	return &storeProof, exist, nil
 }
-
-func (fs *FileStorage) StoreBtcGenesisProof(proof, witness []byte, key ...interface{}) error {
-	return fs.Store(BtcGenesisTable, common.BtcGenesisType, proof, witness, key...)
+func (fs *FileStorage) StoreBtcDuperRecursiveProof(proof, witness []byte, key ...interface{}) error {
+	return fs.Store(BtcDuperRecursive, common.BtcDuperRecursive, proof, witness, key...)
+}
+func (fs *FileStorage) CheckBtcDuperRecursiveProof(key ...interface{}) (bool, error) {
+	return fs.Check(BtcDuperRecursive, key...)
 }
 
-func (fs *FileStorage) CheckBtcGenesisProof(key ...interface{}) (bool, error) {
-	return fs.Check(BtcGenesisTable, key...)
-}
-
-func (fs *FileStorage) GetBtcGenesisProof(key ...interface{}) (*StoreProof, bool, error) {
+func (fs *FileStorage) GetBtcDuperRecursiveProof(key ...interface{}) (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.Get(BtcGenesisTable, &storeProof, key...)
+	exist, err := fs.Get(BtcDuperRecursive, &storeProof, key...)
 	if err != nil {
-		logger.Error("get btc genesis proof error:%v %v", key, err)
+		logger.Error("get btc upper proof error:%v %v", key, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+func (fs *FileStorage) StoreBtcDepthRecursiveProof(proof, witness []byte, key ...interface{}) error {
+	return fs.Store(BtcDepthRecursive, common.BtcDepthRecursiveType, proof, witness, key...)
+}
+func (fs *FileStorage) CheckBtcDepthRecursiveProof(key ...interface{}) (bool, error) {
+	return fs.Check(BtcDepthRecursive, key...)
+}
+
+func (fs *FileStorage) GetBtcDepthRecursiveProof(key ...interface{}) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcDepthRecursive, &storeProof, key...)
+	if err != nil {
+		logger.Error("get btc upper proof error:%v %v", key, err)
 		return nil, false, err
 	}
 	return &storeProof, exist, nil
 }
 
-func (fs *FileStorage) StoreBtcRecursiveProof(proof, witness []byte, key ...interface{}) error {
-	return fs.Store(BtcRecursiveTable, common.BtcRecursiveType, proof, witness, key...)
+func (fs *FileStorage) StoreBtcBlockChainProof(proof, witness []byte, key ...interface{}) error {
+	return fs.Store(BtcChainTable, common.BtcChainType, proof, witness, key...)
+}
+func (fs *FileStorage) CheckBtcBlockChainProof(key ...interface{}) (bool, error) {
+	return fs.Check(BtcChainTable, key...)
 }
 
-func (fs *FileStorage) CheckBtcRecursiveProof(key ...interface{}) (bool, error) {
-	return fs.Check(BtcRecursiveTable, key...)
-}
-
-func (fs *FileStorage) GetBtcRecursiveProof(key ...interface{}) (*StoreProof, bool, error) {
+func (fs *FileStorage) GetBtcBlockChainProof(key ...interface{}) (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.Get(BtcRecursiveTable, &storeProof, key...)
+	exist, err := fs.Get(BtcChainTable, &storeProof, key...)
 	if err != nil {
-		logger.Error("get btc recursive proof error:%v %v", key, err)
+		logger.Error("get btc upper proof error:%v %v", key, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcDepositProof(proof, witness []byte, key ...interface{}) error {
+	return fs.Store(BtcDepositTable, common.BtcDepositType, proof, witness, key...)
+}
+func (fs *FileStorage) CheckBtcDepositProof(key ...interface{}) (bool, error) {
+	return fs.Check(BtcDepositTable, key...)
+}
+
+func (fs *FileStorage) GetBtcBtcDepositProof(key ...interface{}) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcDepositTable, &storeProof, key...)
+	if err != nil {
+		logger.Error("get btc upper proof error:%v %v", key, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcChangeProof(proof, witness []byte, key ...interface{}) error {
+	return fs.Store(BtcChangeTable, common.BtcChangeType, proof, witness, key...)
+}
+func (fs *FileStorage) CheckBtcChangeProof(key ...interface{}) (bool, error) {
+	return fs.Check(BtcChangeTable, key...)
+}
+
+func (fs *FileStorage) GetBtcChangeProof(key ...interface{}) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcChangeTable, &storeProof, key...)
+	if err != nil {
+		logger.Error("get btc upper proof error:%v %v", key, err)
 		return nil, false, err
 	}
 	return &storeProof, exist, nil
@@ -545,7 +491,7 @@ func (fs *FileStorage) GetBtcRecursiveProof(key ...interface{}) (*StoreProof, bo
 
 func newStoreProof(proofType common.ZkProofType, id string, proof, witness []byte) *StoreProof {
 	return &StoreProof{
-		ProofType: proofType,
+		ProofType: proofType.String(),
 		Id:        id,
 		Proof:     hex.EncodeToString(proof),   // todo
 		Witness:   hex.EncodeToString(witness), // todo
@@ -574,9 +520,9 @@ func (fs *FileStorage) NeedBtcUpEndIndexes(height uint64) ([]uint64, error) {
 }
 
 func (fs *FileStorage) NeedBtcRecursiveEndIndex(height uint64) ([]uint64, error) {
-	fileStore, ok := fs.GetFileStore(BtcRecursiveTable)
+	fileStore, ok := fs.GetFileStore(BtcDuperRecursive)
 	if !ok {
-		return nil, fmt.Errorf("get file store error %v", BtcRecursiveTable)
+		return nil, fmt.Errorf("get file store error %v", BtcDuperRecursive)
 	}
 	indexes, err := fileStore.Indexes(getEndIndex)
 	if err != nil {
@@ -727,14 +673,52 @@ func (fs *FileStorage) NeedGenRecProofIndexes() ([]uint64, error) {
 	return needUpdateIndex, nil
 }
 
-func CreateFileStore(root, name string) (*store.FileStore, error) {
-	path := fmt.Sprintf("%s/%s/", root, name)
-	fileStore, err := store.NewFileStore(path)
-	if err != nil {
-		logger.Error("create file store error %v %v %v", root, name, err)
-		return nil, err
+func (fs *FileStorage) StoreObj(table Table, key string, value interface{}) error {
+	fileStore, ok := fs.GetFileStore(table)
+	if !ok {
+		logger.Error("get file store error %v", table)
+		return fmt.Errorf("get file store error %v", table)
 	}
-	return fileStore, nil
+	return fileStore.Store(key, value)
+}
+func (fs *FileStorage) GetObj(table Table, key string, value interface{}) (bool, error) {
+	fileStore, ok := fs.GetFileStore(table)
+	if !ok {
+		logger.Error("get file store error %v", table)
+		return false, fmt.Errorf("get file store error %v", table)
+	}
+	return fileStore.Get(key, value)
+}
+
+func (fs *FileStorage) CheckObj(table Table, key string) (bool, error) {
+	fileStore, ok := fs.GetFileStore(table)
+	if !ok {
+		logger.Error("get file store error %v", table)
+		return false, fmt.Errorf("get file store error %v", table)
+	}
+	return fileStore.CheckExists(key)
+}
+
+func (fs *FileStorage) Store(table Table, pType common.ZkProofType, proof, witness []byte, keys ...interface{}) error {
+	key := genKey(table, keys...)
+	obj := newStoreProof(pType, key, proof, witness)
+	return fs.StoreObj(table, key, obj)
+}
+func (fs *FileStorage) Get(table Table, value interface{}, key ...interface{}) (bool, error) {
+	return fs.GetObj(table, genKey(table, key...), value)
+}
+
+func (fs *FileStorage) Check(table Table, key ...interface{}) (bool, error) {
+	return fs.CheckObj(table, genKey(table, key...))
+}
+func (fs *FileStorage) GetFileStore(table Table) (*store.FileStore, bool) {
+	fs.lock.Lock()
+	defer fs.lock.Unlock()
+	filestore, ok := fs.FileStoreMap[table]
+	if !ok {
+		return nil, false
+	}
+	return filestore, true
 }
 
 func (fs *FileStorage) GetRootPath() string {
@@ -744,6 +728,16 @@ func (fs *FileStorage) GetRootPath() string {
 // Clear be careful when you use it,
 func (fs *FileStorage) Clear() error {
 	return os.RemoveAll(fs.RootPath)
+}
+
+func CreateFileStore(root, name string) (*store.FileStore, error) {
+	path := fmt.Sprintf("%s/%s/", root, name)
+	fileStore, err := store.NewFileStore(path)
+	if err != nil {
+		logger.Error("create file store error %v %v %v", root, name, err)
+		return nil, err
+	}
+	return fileStore, nil
 }
 
 func genKey(prefix Table, args ...interface{}) string {
@@ -778,6 +772,21 @@ func getEndIndex(fileName string) (uint64, error) {
 		base_200_100 -> 100
 	*/
 	index, err := strconv.ParseUint(keys[2], 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return index, nil
+}
+
+func getPeriodIndex(fileName string) (uint64, error) {
+	keys := strings.Split(fileName, "_")
+	if len(keys) != 3 {
+		return 0, fmt.Errorf("invalid file name %v", fileName)
+	}
+	/*
+		base_200_100 -> 200
+	*/
+	index, err := strconv.ParseUint(keys[1], 10, 64)
 	if err != nil {
 		return 0, err
 	}

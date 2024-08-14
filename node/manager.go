@@ -314,11 +314,11 @@ func (m *manager) CacheRequest(request *common.ZkProofRequest) {
 
 func (m *manager) getChanResponse(reqType common.ZkProofType) (chan *common.ZkProofResponse, error) {
 	switch reqType {
-	case common.DepositTxType, common.VerifyTxType, common.BtcBulkType, common.BtcPackedType, common.BtcWrapType:
+	case common.BtcDepositType, common.BtcChangeType, common.BtcBulkType, common.BtcPackedType:
 		return m.btcProofResp, nil
 	case common.RedeemTxType, common.TxInEth2, common.BeaconHeaderType, common.BeaconHeaderFinalityType: // todo
 		return m.ethProofResp, nil
-	case common.SyncComGenesisType, common.SyncComUnitType, common.UnitOuter, common.SyncComRecursiveType:
+	case common.SyncComGenesisType, common.SyncComUnitType, common.SyncComOuterType, common.SyncComRecursiveType:
 		return m.syncCommitResp, nil
 	default:
 		//logger.Error("never should happen Proof type:%v", reqType.String())
@@ -348,7 +348,7 @@ func (m *manager) Close() error {
 
 func (s *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.ProofStatus) error {
 	// todo
-	if req.ProofType == common.DepositTxType || req.ProofType == common.RedeemTxType {
+	if req.ProofType == common.BtcDepositType || req.ProofType == common.RedeemTxType {
 		err := UpdateProof(s.store, req.Hash, "", req.ProofType, status)
 		if err != nil {
 			logger.Error("update Proof status error:%v %v", req.RequestId(), err)

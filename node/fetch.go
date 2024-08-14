@@ -92,7 +92,7 @@ func (f *Fetch) StoreLatestPeriod() error {
 		logger.Error("get latest Index error:%v", err)
 		return err
 	}
-	err = f.fileStore.StorePeriod(period)
+	err = f.fileStore.StoreLatestPeriod(period)
 	if err != nil {
 		logger.Error("store latest Index error:%v", err)
 		return err

@@ -340,7 +340,7 @@ func (s *State) CheckReq(reqType common.ZkProofType, index uint64, hash string) 
 	case common.BeaconHeaderFinalityType:
 		return index >= s.genesisSlot, nil
 	case common.TxInEth2:
-		finalizedSlot, ok, err := s.fileStore.GetFinalizedSlot()
+		finalizedSlot, ok, err := s.fileStore.GetLatestFinalizedSlot()
 		if err != nil {
 			logger.Error("get latest slot error: %v", err)
 			return false, err

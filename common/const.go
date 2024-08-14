@@ -147,64 +147,66 @@ const (
 type ZkProofType int
 
 const (
-	DepositTxType ZkProofType = iota + 1
-	RedeemTxType
-	TxInEth2
-	VerifyTxType
-	SyncComGenesisType
+	SyncComOuterType ZkProofType = iota + 1
 	SyncComUnitType
+	SyncComGenesisType
 	SyncComRecursiveType
-	BeaconHeaderFinalityType
-	UnitOuter
+	TxInEth2
 	BeaconHeaderType
+	BeaconHeaderFinalityType
+	RedeemTxType
+
 	BtcBulkType
 	BtcPackedType
-	BtcWrapType
 	BtcBaseType
 	BtcMiddleType
 	BtcUpperType
-	BtcGenesisType
-	BtcRecursiveType
+	BtcDuperRecursive
+	BtcDepthRecursiveType
+	BtcChainType
+	BtcDepositType
+	BtcChangeType
 )
 
 func (z ZkProofType) String() string {
 	switch z {
-	case DepositTxType:
-		return "depositTxType"
-	case RedeemTxType:
-		return "redeemTxType"
-	case VerifyTxType:
-		return "verifyTxType"
-	case SyncComGenesisType:
-		return "syncComGenesisType"
+
+	case SyncComOuterType:
+		return "unitOuter"
 	case SyncComUnitType:
 		return "syncComUnitType"
+	case SyncComGenesisType:
+		return "syncComGenesisType"
 	case SyncComRecursiveType:
 		return "syncComRecursiveType"
 	case TxInEth2:
 		return "txInEth2"
-	case UnitOuter:
-		return "unitOuter"
-	case BeaconHeaderFinalityType:
-		return "beaconHeaderFinalityType"
 	case BeaconHeaderType:
 		return "beaconHeaderType"
-	case BtcPackedType:
-		return "btcPackedType"
-	case BtcWrapType:
-		return "btcWrapType"
+	case BeaconHeaderFinalityType:
+		return "beaconHeaderFinalityType"
+	case RedeemTxType:
+		return "redeemTxType"
 	case BtcBulkType:
 		return "btcBulkType"
+	case BtcPackedType:
+		return "btcPackedType"
 	case BtcBaseType:
 		return "btcBaseType"
 	case BtcMiddleType:
 		return "btcMiddleType"
 	case BtcUpperType:
 		return "btcUpperType"
-	case BtcGenesisType:
-		return "btcGenesisType"
-	case BtcRecursiveType:
-		return "btcRecursiveType"
+	case BtcDuperRecursive:
+		return "btcDuperRecursive"
+	case BtcDepthRecursiveType:
+		return "btcDepthRecursiveType"
+	case BtcChainType:
+		return "btcChainType"
+	case BtcDepositType:
+		return "btcDepositType"
+	case BtcChangeType:
+		return "btcChangeType"
 	default:
 		return "unKnown"
 	}
@@ -212,12 +214,8 @@ func (z ZkProofType) String() string {
 
 func (z ZkProofType) Weight() ProofWeight {
 	switch z {
-	case DepositTxType:
-		return Highest
 	case RedeemTxType:
 		return TenLevel
-	case VerifyTxType:
-		return NineLevel
 	case SyncComRecursiveType, SyncComGenesisType:
 		return EightLevel
 	case SyncComUnitType:
@@ -241,42 +239,42 @@ func (zk ZkProofType) Timeout() time.Duration {
 
 func ToZkProofType(str string) (ZkProofType, error) {
 	switch str {
-	case "depositTxType":
-		return DepositTxType, nil
-	case "redeemTxType":
-		return RedeemTxType, nil
-	case "verifyTxType":
-		return VerifyTxType, nil
-	case "syncComGenesisType":
-		return SyncComGenesisType, nil
+	//case "syncUnitOuter":
+	//	return SyncComOuterType, nil
 	case "syncComUnitType":
 		return SyncComUnitType, nil
+	case "syncComGenesisType":
+		return SyncComGenesisType, nil
 	case "syncComRecursiveType":
 		return SyncComRecursiveType, nil
 	case "txInEth2":
 		return TxInEth2, nil
-	case "unitOuter":
-		return UnitOuter, nil
-	case "beaconHeaderFinalityType":
-		return BeaconHeaderFinalityType, nil
 	case "beaconHeaderType":
 		return BeaconHeaderType, nil
+	case "beaconHeaderFinalityType":
+		return BeaconHeaderFinalityType, nil
+	case "redeemTxType":
+		return RedeemTxType, nil
 	case "btcBulkType":
 		return BtcBulkType, nil
 	case "btcPackedType":
 		return BtcPackedType, nil
-	case "btcWrapType":
-		return BtcWrapType, nil
 	case "btcBaseType":
 		return BtcBaseType, nil
 	case "btcMiddleType":
 		return BtcMiddleType, nil
 	case "btcUpperType":
 		return BtcUpperType, nil
-	case "btcGenesisType":
-		return BtcGenesisType, nil
-	case "btcRecursiveType":
-		return BtcRecursiveType, nil
+	case "btcDuperRecursive":
+		return BtcDuperRecursive, nil
+	case "btcDepthRecursiveType":
+		return BtcDepthRecursiveType, nil
+	case "btcChainType":
+		return BtcChainType, nil
+	case "btcDepositType":
+		return BtcDepositType, nil
+	case "btcChangeType":
+		return BtcChangeType, nil
 	default:
 		return 0, fmt.Errorf("uKnown zk proof type %v", str)
 	}

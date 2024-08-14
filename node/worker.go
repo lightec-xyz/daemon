@@ -1,11 +1,10 @@
 package node
 
 import (
-	"encoding/json"
 	"fmt"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/circuits"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
-	"reflect"
 	"sync"
 	"time"
 
@@ -23,6 +22,170 @@ type LocalWorker struct {
 	currentNums int
 	lock        sync.Mutex
 	wid         string
+}
+
+func (w *LocalWorker) BtcDuperRecursiveProve(req *rpc.BtcDuperRecursiveRequest) (*rpc.ProofResponse, error) {
+	first, err := circuits.HexToProof(req.First)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	second, err := circuits.HexToProof(req.Duper)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcDuperRecursiveProve(req.Data, first, second)
+	if err != nil {
+		logger.Error("btc duper recursive prove error: %v", err)
+		return nil, err
+	}
+	proofBytes, witnessBytes, err := circuits.PlonkProofToBytes(proof)
+	if err != nil {
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+
+}
+
+func (w *LocalWorker) BtcDepthRecursiveProve(req *rpc.BtcDepthRequest) (*rpc.ProofResponse, error) {
+	recursiveProof, err := circuits.HexToProof(req.Recursive)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	unitProof, err := circuits.HexToProof(req.Unit)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcDepthRecursiveProve(req.Data, recursiveProof, unitProof)
+	if err != nil {
+		logger.Error("btc depth recursive prove error: %v", err)
+		return nil, err
+	}
+	proofBytes, witnessBytes, err := circuits.PlonkProofToBytes(proof)
+	if err != nil {
+		logger.Error("btc depth recursive prove error: %v", err)
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+
+}
+
+func (w *LocalWorker) BtcChainProve(req *rpc.BtcChainRequest) (*rpc.ProofResponse, error) {
+	recursive, err := circuits.HexToProof(req.Recursive)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	base, err := circuits.HexToProof(req.Base)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	middle, err := circuits.HexToProof(req.MidLevel)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	uppper, err := circuits.HexToProof(req.Upper)
+	if err != nil {
+		logger.Error("btc recursive hex to proof error: %v", err)
+		return nil, err
+	}
+	result, err := w.circuit.BtcChainProve(req.Data, recursive, base, middle, uppper)
+	if err != nil {
+		logger.Error("btc chain prove error: %v", err)
+		return nil, err
+	}
+	proofBytes, witnessBytes, err := circuits.PlonkProofToBytes(result)
+	if err != nil {
+		logger.Error("btc chain prove error: %v", err)
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+}
+
+func (w *LocalWorker) BtcDepositProve(req *rpc.BtcDepositRequest) (*rpc.ProofResponse, error) {
+	blockChain, err := circuits.HexToProof(req.BlockChain)
+	if err != nil {
+		logger.Error("btc deposit hex to proof error: %v", err)
+		return nil, err
+	}
+	cpDepth, err := circuits.HexToProof(req.CpDepth)
+	if err != nil {
+		logger.Error("btc deposit hex to proof error: %v", err)
+		return nil, err
+	}
+	txDepth, err := circuits.HexToProof(req.TxDepth)
+	if err != nil {
+		logger.Error("btc deposit hex to proof error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcDepositProve(req.Data, blockChain, txDepth, cpDepth, ethCommon.HexToHash(req.R),
+		ethCommon.HexToHash(req.S), ethCommon.HexToAddress(req.ProverAddr))
+	if err != nil {
+		logger.Error("btc deposit prove error: %v", err)
+		return nil, err
+	}
+	proofBytes, witnessBytes, err := circuits.PlonkProofToBytes(proof)
+	if err != nil {
+		logger.Error("btc deposit prove error: %v", err)
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+}
+
+func (w *LocalWorker) BtcChangeProve(req *rpc.BtcChangeRequest) (*rpc.ProofResponse, error) {
+	blockChain, err := circuits.HexToProof(req.BlockChain)
+	if err != nil {
+		logger.Error("btc change hex to proof error: %v", err)
+		return nil, err
+	}
+	cpDepth, err := circuits.HexToProof(req.CpDepth)
+	if err != nil {
+		logger.Error("btc change hex to proof error: %v", err)
+		return nil, err
+	}
+	txDepth, err := circuits.HexToProof(req.TxDepth)
+	if err != nil {
+		logger.Error("btc change hex to proof error: %v", err)
+		return nil, err
+	}
+	redeem, err := circuits.HexToProof(req.Redeem)
+	if err != nil {
+		logger.Error("btc change hex to proof error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcChangeProve(req.Data, blockChain, txDepth, cpDepth, redeem, ethCommon.HexToHash(req.R),
+		ethCommon.HexToHash(req.S), ethCommon.HexToAddress(req.ProverAddr))
+	if err != nil {
+		logger.Error("btc change prove error: %v", err)
+		return nil, err
+	}
+	proofBytes, witnessBytes, err := circuits.PlonkProofToBytes(proof)
+	if err != nil {
+		logger.Error("btc change prove error: %v", err)
+		return nil, err
+	}
+	return &rpc.ProofResponse{
+		Proof:   proofBytes,
+		Witness: witnessBytes,
+	}, nil
+
 }
 
 func (w *LocalWorker) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
@@ -49,39 +212,6 @@ func (w *LocalWorker) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse
 	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
 	if err != nil {
 		logger.Error("btc genesis witness to bytes error: %v", err)
-		return nil, err
-	}
-	return &rpc.ProofResponse{
-		Proof:   proofBytes,
-		Witness: witnessBytes,
-	}, nil
-
-}
-
-func (w *LocalWorker) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
-	firstProof, err := circuits.HexToProof(req.First)
-	if err != nil {
-		logger.Error("btc recursive hex to proof error: %v", err)
-		return nil, err
-	}
-	secondProof, err := circuits.HexToProof(req.Second)
-	if err != nil {
-		logger.Error("btc recursive hex to proof error: %v", err)
-		return nil, err
-	}
-	proof, err := w.circuit.BtcRecursiveProve(req.Data, firstProof, secondProof)
-	if err != nil {
-		logger.Error("btc recursive prove error: %v", err)
-		return nil, err
-	}
-	proofBytes, err := circuits.ProofToBytes(proof.Proof)
-	if err != nil {
-		logger.Error("btc recursive proof to bytes error: %v", err)
-		return nil, err
-	}
-	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
-	if err != nil {
-		logger.Error("btc recursive witness to bytes error: %v", err)
 		return nil, err
 	}
 	return &rpc.ProofResponse{
@@ -178,7 +308,17 @@ func (w *LocalWorker) BtcBulkProve(req *rpc.BtcBulkRequest) (*rpc.BtcBulkRespons
 }
 
 func (w *LocalWorker) BtcPackedRequest(req *rpc.BtcPackedRequest) (*rpc.BtcPackResponse, error) {
-	proof, err := w.circuit.BtcPackProve(req.Data)
+	recursive, err := circuits.HexToProof(req.Recursive)
+	if err != nil {
+		logger.Error("btc packed hex to proofs error: %v", err)
+		return nil, err
+	}
+	bulk, err := circuits.HexToProof(req.Bulk)
+	if err != nil {
+		logger.Error("btc packed hex to proofs error: %v", err)
+		return nil, err
+	}
+	proof, err := w.circuit.BtcPackProve(req.Data, recursive, bulk)
 	if err != nil {
 		return nil, err
 	}
@@ -197,31 +337,11 @@ func (w *LocalWorker) BtcPackedRequest(req *rpc.BtcPackedRequest) (*rpc.BtcPackR
 
 }
 
-func (w *LocalWorker) BtcWrapProve(req *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
-	proof, err := w.circuit.BtcWrapProve(req.Flag, req.Proof, req.Witness, req.BeginHash, req.EndHash, req.NbBlocks)
-	if err != nil {
-		return nil, err
-	}
-	proofBytes, err := circuits.ProofToBytes(proof.Proof)
-	if err != nil {
-		return nil, err
-	}
-	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
-	if err != nil {
-		return nil, err
-	}
-	return &rpc.BtcWrapResponse{
-		Proof:   proofBytes,
-		Witness: witnessBytes,
-	}, nil
-
-}
 func (w *LocalWorker) SupportProofType() []common.ZkProofType {
 	return nil
 }
 
 func (w *LocalWorker) Close() error {
-	// todo
 	return nil
 }
 
@@ -347,31 +467,6 @@ func (w *LocalWorker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	}, nil
 }
 
-func (w *LocalWorker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	logger.Debug("start gen deposit prove: %v", req.TxHash)
-	proof, err := w.circuit.DepositProve(req.Data)
-	if err != nil {
-		logger.Error(err.Error())
-		return rpc.DepositResponse{}, fmt.Errorf("gen deposit prove error: %v", err)
-	}
-	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
-	if err != nil {
-		logger.Error(err.Error())
-		return rpc.DepositResponse{}, nil
-	}
-	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
-	if err != nil {
-		logger.Error(err.Error())
-		return rpc.DepositResponse{}, nil
-	}
-	logger.Debug("complete gen deposit prove: %v", req.TxHash)
-	return rpc.DepositResponse{
-		TxHash:  req.TxHash,
-		Proof:   proofSolBytes,
-		Witness: witnessBytes,
-	}, nil
-}
-
 func (w *LocalWorker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	logger.Debug("start gen redeem proof: %v", req.TxHash)
 	proof, err := w.circuit.RedeemProve(req.TxProof, req.TxWitness, req.BhProof, req.BhWitness, req.BhfProof, req.BhfWitness,
@@ -394,31 +489,6 @@ func (w *LocalWorker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemRespons
 	return &rpc.RedeemResponse{
 		Proof:   proofSolBytes,
 		Witness: witnessBytes,
-	}, nil
-}
-
-func (w *LocalWorker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	logger.Debug("start gen verify proof %v", req.TxHash)
-	proof, err := w.circuit.UpdateChangeProve(req.Data)
-	if err != nil {
-		logger.Error(err.Error())
-		return rpc.VerifyResponse{}, fmt.Errorf("gen verify proof error: %v", err)
-	}
-	proofSolBytes, err := circuits.ProofToSolBytes(proof.Proof)
-	if err != nil {
-		logger.Error(err.Error())
-		return rpc.VerifyResponse{}, nil
-	}
-	witnessBytes, err := circuits.WitnessToBytes(proof.Wit)
-	if err != nil {
-		logger.Error(err.Error())
-		return rpc.VerifyResponse{}, nil
-	}
-	logger.Debug("complete gen verify proof %v", req.TxHash)
-	return rpc.VerifyResponse{
-		TxHash: req.TxHash,
-		Proof:  proofSolBytes,
-		Wit:    witnessBytes,
 	}, nil
 }
 
@@ -554,14 +624,24 @@ type Worker struct {
 	wid         string
 }
 
-func (w *Worker) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (w *Worker) BtcDuperRecursiveProve(req *rpc.BtcDuperRecursiveRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcDuperRecursiveProve(req)
 }
 
-func (w *Worker) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (w *Worker) BtcDepthRecursiveProve(req *rpc.BtcDepthRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcDepthRecursiveProve(req)
+}
+
+func (w *Worker) BtcChainProve(req *rpc.BtcChainRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcChainProve(req)
+}
+
+func (w *Worker) BtcDepositProve(req *rpc.BtcDepositRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcDepositProve(req)
+}
+
+func (w *Worker) BtcChangeProve(req *rpc.BtcChangeRequest) (*rpc.ProofResponse, error) {
+	return w.client.BtcChangeProve(req)
 }
 
 func (w *Worker) BtcBaseProve(req *rpc.BtcBaseRequest) (*rpc.ProofResponse, error) {
@@ -595,10 +675,6 @@ func (w *Worker) BtcPackedRequest(req *rpc.BtcPackedRequest) (*rpc.BtcPackRespon
 	return w.client.BtcPackedRequest(req)
 }
 
-func (w *Worker) BtcWrapProve(req *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
-	return w.client.BtcWrapProve(req)
-}
-
 func (w *Worker) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
 	return w.client.TxInEth2Prove(req)
 }
@@ -615,16 +691,8 @@ func (w *Worker) ProofInfo(proofId string) (rpc.ProofInfo, error) {
 	return w.client.ProofInfo(proofId)
 }
 
-func (w *Worker) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	return w.client.GenDepositProof(req)
-}
-
 func (w *Worker) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	return w.GenRedeemProof(req)
-}
-
-func (w *Worker) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	return w.client.GenVerifyProof(req)
 }
 
 func (w *Worker) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
@@ -669,18 +737,4 @@ func NewWorker(client rpc.IProof, parallelNums int) *Worker {
 		currentNums: 0,
 		wid:         UUID(),
 	}
-}
-func ParseObj(src, dst interface{}) error {
-	if reflect.ValueOf(dst).Kind() != reflect.Ptr {
-		return fmt.Errorf("dst must be a pointer")
-	}
-	srcBytes, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(srcBytes, dst)
-	if err != nil {
-		return err
-	}
-	return nil
 }

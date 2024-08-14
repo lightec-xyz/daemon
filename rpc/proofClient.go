@@ -20,14 +20,49 @@ type ProofClient struct {
 	custom  bool
 }
 
-func (p *ProofClient) BtcGenesis(req *BtcGenesisRequest) (*ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (p *ProofClient) BtcDuperRecursiveProve(req *BtcDuperRecursiveRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcDuperRecursiveProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
-func (p *ProofClient) BtcRecursiveProve(req *BtcRecursiveRequest) (*ProofResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (p *ProofClient) BtcDepthRecursiveProve(req *BtcDepthRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcDepthRecursiveProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (p *ProofClient) BtcChainProve(req *BtcChainRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcChainProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (p *ProofClient) BtcDepositProve(req *BtcDepositRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcDepositProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (p *ProofClient) BtcChangeProve(req *BtcChangeRequest) (*ProofResponse, error) {
+	var result ProofResponse
+	err := p.call(&result, "zkbtc_btcChangeProve", req)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (p *ProofClient) BtcBaseProve(req *BtcBaseRequest) (*ProofResponse, error) {
@@ -84,15 +119,6 @@ func (p *ProofClient) BtcPackedRequest(data *BtcPackedRequest) (*BtcPackResponse
 	return &result, nil
 }
 
-func (p *ProofClient) BtcWrapProve(data *BtcWrapRequest) (*BtcWrapResponse, error) {
-	var result BtcWrapResponse
-	err := p.call(&result, "zkbtc_btcWrapProve", data)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
 func (p *ProofClient) TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error) {
 	var result TxInEth2ProveResponse
 	err := p.call(&result, "zkbtc_txInEth2Prove", req)
@@ -120,15 +146,6 @@ func (p *ProofClient) BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) 
 	return &result, nil
 }
 
-func (p *ProofClient) GenDepositProof(req DepositRequest) (DepositResponse, error) {
-	response := DepositResponse{}
-	err := p.call(&response, "zkbtc_genDepositProof", req)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
-}
-
 func (p *ProofClient) GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error) {
 	response := RedeemResponse{}
 	err := p.call(&response, "zkbtc_genRedeemProof", req)
@@ -136,15 +153,6 @@ func (p *ProofClient) GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error
 		return nil, err
 	}
 	return &response, nil
-}
-
-func (p *ProofClient) GenVerifyProof(req VerifyRequest) (VerifyResponse, error) {
-	response := VerifyResponse{}
-	err := p.call(&response, "zkbtc_genVerifyProof", req)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
 }
 
 func (p *ProofClient) GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error) {

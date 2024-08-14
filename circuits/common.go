@@ -166,6 +166,18 @@ func ProofToBytes(proof native_plonk.Proof) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func PlonkProofToBytes(proof *reLightCommon.Proof) ([]byte, []byte, error) {
+	proofBytes, err := ProofToBytes(proof.Proof)
+	if err != nil {
+		return nil, nil, err
+	}
+	witnessBytes, err := WitnessToBytes(proof.Wit)
+	if err != nil {
+		return nil, nil, err
+	}
+	return proofBytes, witnessBytes, nil
+}
+
 func WitnessToBytes(witness witness.Witness) ([]byte, error) {
 	var buf bytes.Buffer
 	pubWit, err := witness.Public()

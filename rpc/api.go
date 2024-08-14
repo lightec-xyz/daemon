@@ -22,25 +22,25 @@ type INode interface {
 
 // IProof api between node and proof
 type IProof interface {
-	GenDepositProof(req DepositRequest) (DepositResponse, error)
-	GenVerifyProof(req VerifyRequest) (VerifyResponse, error)
-	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
 	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
+	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
 	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
-
-	GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error)
 	TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error)
 	BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error)
 	BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error)
+	GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error)
 
 	BtcBulkProve(req *BtcBulkRequest) (*BtcBulkResponse, error)
 	BtcPackedRequest(req *BtcPackedRequest) (*BtcPackResponse, error)
-	BtcWrapProve(req *BtcWrapRequest) (*BtcWrapResponse, error)
 	BtcBaseProve(req *BtcBaseRequest) (*ProofResponse, error)
 	BtcMiddleProve(req *BtcMiddleRequest) (*ProofResponse, error)
 	BtcUpperProve(req *BtcUpperRequest) (*ProofResponse, error)
-	BtcGenesis(req *BtcGenesisRequest) (*ProofResponse, error)
-	BtcRecursiveProve(req *BtcRecursiveRequest) (*ProofResponse, error)
+	BtcDuperRecursiveProve(req *BtcDuperRecursiveRequest) (*ProofResponse, error)
+	BtcDepthRecursiveProve(req *BtcDepthRequest) (*ProofResponse, error)
+	BtcChainProve(req *BtcChainRequest) (*ProofResponse, error)
+	BtcDepositProve(req *BtcDepositRequest) (*ProofResponse, error)
+	BtcChangeProve(req *BtcChangeRequest) (*ProofResponse, error)
+
 	ProofInfo(proofId string) (ProofInfo, error)
 	SupportProofType() []common.ZkProofType
 	Close() error

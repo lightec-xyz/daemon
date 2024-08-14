@@ -3,13 +3,15 @@ package circuits
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
-
+	ethCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/baselevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/midlevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/recursiveduper"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
-	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth/blockbulk"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth/packedbulks"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth/recursivebulks"
 	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
 	btcbase "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcmiddle "github.com/lightec-xyz/btc_provers/utils/blockchain"
@@ -37,6 +39,91 @@ var _ ICircuit = (*Circuit)(nil)
 type Circuit struct {
 	Cfg   *CircuitConfig
 	debug bool
+}
+
+func (c *Circuit) BtcDepthRecursiveProve(data *blockdepth.BulksProofData, recursive, unit *reLightCommon.Proof) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit recursivebulks....")
+	if c.debug {
+		logger.Warn("current zk circuit recursivebulks prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := recursivebulks.Prove(c.Cfg.SetupDir, recursive, unit, data)
+	if err != nil {
+		logger.Error("recursivebulks prove error: %v", err)
+		return nil, err
+	}
+	return proof, nil
+}
+
+func (c *Circuit) BtcPackProve(data *blockdepth.BulksProofData, recursive, bulk *reLightCommon.Proof) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit packedbulks....")
+	if c.debug {
+		logger.Warn("current zk circuit packedbulks prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := packedbulks.Prove(c.Cfg.SetupDir, recursive, bulk, data)
+	if err != nil {
+		logger.Error("packedbulks prove error: %v", err)
+		return nil, err
+	}
+	return proof, nil
+}
+
+func (c *Circuit) BtcDuperRecursiveProve(data *recursiveUtil.RecursiveProofData, first, duperProofFile *reLightCommon.Proof) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit recursiveduper....")
+	if c.debug {
+		logger.Warn("current zk circuit recursiveduper prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := recursiveduper.Prove(c.Cfg.SetupDir, first, duperProofFile, data)
+	if err != nil {
+		logger.Error("recursiveduper prove error: %v", err)
+		return nil, err
+	}
+	return proof, nil
+
+}
+
+func (c *Circuit) BtcChainProve(data *recursiveUtil.BlockChainProofData, recursive, base, midLevel, upper *reLightCommon.Proof) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit blockchain....")
+	if c.debug {
+		logger.Warn("current zk circuit blockchain prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := blockchain.Prove(c.Cfg.SetupDir, recursive, base, midLevel, upper, data)
+	if err != nil {
+		logger.Error("blockchain prove error: %v", err)
+		return nil, err
+	}
+	return proof, nil
+}
+
+func (c *Circuit) BtcDepositProve(data *grUtil.TxInChainProofData, blockChainProofFile, txDepthProofFile, cpDepthProofFile *reLightCommon.Proof, r, s ethCommon.Hash, proverAddr ethCommon.Address) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit DepositProve....")
+	if c.debug {
+		logger.Warn("current zk circuit DepositProve prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := txinchain.DepositProve(c.Cfg.SetupDir, blockChainProofFile, txDepthProofFile, cpDepthProofFile, r, s, data, proverAddr)
+	if err != nil {
+		logger.Error("DepositProve prove error: %v", err)
+		return nil, err
+	}
+	return proof, nil
+}
+
+func (c *Circuit) BtcChangeProve(data *grUtil.TxInChainProofData, blockChainProofFile, txDepthProofFile, cpDepthProofFile, redeemInEthProofFile *reLightCommon.Proof, r, s ethCommon.Hash, proverAddr ethCommon.Address) (*reLightCommon.Proof, error) {
+	logger.Debug("current zk circuit ChangeProve....")
+	if c.debug {
+		logger.Warn("current zk circuit ChangeProve prove is debug,skip prove")
+		return debugProof()
+	}
+	proof, err := txinchain.ChangeProve(c.Cfg.SetupDir, c.Cfg.SetupDir, blockChainProofFile, txDepthProofFile, cpDepthProofFile, redeemInEthProofFile, r, s, data, proverAddr)
+	if err != nil {
+		logger.Error("ChangeProve prove error: %v", err)
+		return nil, err
+	}
+	return proof, nil
 }
 
 func (c *Circuit) BtcGenesisProve(data *recursiveUtil.RecursiveProofData, first, second *reLightCommon.Proof) (*reLightCommon.Proof, error) {
@@ -110,83 +197,17 @@ func (c *Circuit) BtcUpperProve(req *btcupper.BatchedProofData, proofList []reLi
 }
 
 func (c *Circuit) BtcBulkProve(data *blockdepth.BlockBulkProofData) (*reLightCommon.Proof, error) {
-	logger.Debug("current zk circuit BtcBulkProve")
-	err := data.Verify()
-	if err != nil {
-		logger.Error("verify error:%v", err)
-		return nil, err
-	}
+	logger.Debug("current zk circuit blockbulk")
 	if c.debug {
-		logger.Warn("current zk circuit BtcBulkProve prove is debug,skip prove")
+		logger.Warn("current zk circuit blockbulk prove is debug,skip prove")
 		return debugProof()
 	}
-	proof, err := bulk.Prove(c.Cfg.DataDir, data)
+	proof, err := blockbulk.Prove(c.Cfg.DataDir, data)
 	if err != nil {
-		logger.Error("btc bulk prove error:%v", err)
+		logger.Error("blockbulk prove error:%v", err)
 		return nil, err
 	}
 	return proof, nil
-}
-
-func (c *Circuit) BtcPackProve(data *blockdepth.BlockBulkProofData) (*reLightCommon.Proof, error) {
-	logger.Debug("current zk circuit BtcPackedRequest")
-	if c.debug {
-		logger.Warn("current zk circuit btcPack prove is debug,skip prove")
-		return debugProof()
-	}
-	proof, err := packed.Prove(c.Cfg.DataDir, data)
-	if err != nil {
-		logger.Error("btc pack prove error:%v", err)
-		return nil, err
-	}
-	return proof, nil
-}
-
-func (c *Circuit) BtcWrapProve(flag, hexProof, hexWitness, beginHash, endHash string, nbBlocks uint64) (*reLightCommon.Proof, error) {
-	logger.Debug("current zk circuit BtcWrapProve")
-	if c.debug {
-		logger.Warn("current zk circuit BtcWrapProve prove is debug,skip prove")
-		return debugProof()
-	}
-	proof, err := HexToPlonkProof(hexProof)
-	if err != nil {
-		logger.Error("parse proof error:%v", err)
-		return nil, err
-	}
-	witness, err := HexToWitness(hexWitness)
-	if err != nil {
-		logger.Error("parse witness error:%v", err)
-		return nil, err
-	}
-	beginId, err := HashToLinkageId(beginHash)
-	if err != nil {
-		logger.Error("parse beginId error:%v", err)
-		return nil, err
-	}
-	endId, err := HashToLinkageId(endHash)
-	if err != nil {
-		logger.Error("parse endId error:%v", err)
-		return nil, err
-	}
-	var vkPath string
-	if flag == BtcBulk {
-		vkPath = filepath.Join(c.Cfg.SetupDir, btcprovercom.BlockHeaderBulkOuterVkFile)
-	} else if flag == BtcPacked {
-		vkPath = filepath.Join(c.Cfg.SetupDir, btcprovercom.BlockHeaderPackedVkFile)
-	} else {
-		return nil, fmt.Errorf("unknown flag")
-	}
-	verifyingKey, err := utils.ReadVk(vkPath)
-	if err != nil {
-		logger.Error("read vk error:%v", err)
-		return nil, err
-	}
-	result, err := wrap.Prove(c.Cfg.DataDir, verifyingKey, proof, witness, beginId, endId, nbBlocks)
-	if err != nil {
-		logger.Error("btc wrap prove error:%v", err)
-		return nil, err
-	}
-	return result, nil
 }
 
 func (c *Circuit) RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot,
@@ -353,20 +374,7 @@ func (c *Circuit) TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*reLightComm
 		Wit:   proof.Wit,
 	}, err
 }
-func (c *Circuit) DepositProve(data *grUtil.TxInChainProofData) (*reLightCommon.Proof, error) {
-	logger.Debug("current zk circuit DepositProve")
-	if c.debug {
-		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
-		return debugProof()
-	}
-	proof, _, err := txinchain.Prove(c.Cfg.DataDir, data)
-	if err != nil {
-		logger.Error("deposit prove error:%v", err)
-		return nil, err
-	}
-	return proof, nil
 
-}
 func (c *Circuit) UnitProve(period uint64, update *utils.SyncCommitteeUpdate) (*reLightCommon.Proof, *reLightCommon.Proof, error) {
 	logger.Debug("current zk circuit unit prove")
 	ok, err := common.VerifyLightClientUpdate(update)
@@ -499,20 +507,6 @@ func (c *Circuit) GenesisProve(firstProof, secondProof, firstWitness, secondWitn
 		return nil, err
 	}
 	return proof, err
-}
-
-func (c *Circuit) UpdateChangeProve(data *grUtil.TxInChainProofData) (*reLightCommon.Proof, error) {
-	logger.Debug("current zk circuit UpdateChangeProve")
-	if c.debug {
-		logger.Warn("current zk circuit DepositProve is debug,skip prove ")
-		return debugProof()
-	}
-	proof, _, err := txinchain.Prove(c.Cfg.DataDir, data)
-	if err != nil {
-		logger.Error("update change prove error:%v", err)
-		return nil, err
-	}
-	return proof, nil
 }
 
 func NewCircuit(cfg *CircuitConfig) (*Circuit, error) {
