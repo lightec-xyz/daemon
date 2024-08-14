@@ -414,7 +414,19 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		}
 		zkbProofResponse := NewProofResp(request.ProofType, request.Index, request.SIndex, request.Hash, response.Proof, response.Witness)
 		result = append(result, zkbProofResponse)
-
+	case common.BtcGenesisType:
+		var req rpc.BtcDuperRecursiveRequest
+		err := common.ParseObj(req.Data, &req)
+		if err != nil {
+			return nil, fmt.Errorf("parse btcDuperRecursiveRequest error:%v", err)
+		}
+		response, err := worker.BtcDuperRecursiveProve(&req)
+		if err != nil {
+			logger.Error("gen btcDuperRecursive Proof error:%v", err)
+			return nil, err
+		}
+		zkbProofResponse := NewProofResp(request.ProofType, request.Index, request.SIndex, request.Hash, response.Proof, response.Witness)
+		result = append(result, zkbProofResponse)
 	case common.BtcDuperRecursive:
 		var req rpc.BtcDuperRecursiveRequest
 		err := common.ParseObj(req.Data, &req)
