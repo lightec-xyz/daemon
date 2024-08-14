@@ -30,7 +30,7 @@ func (w *LocalWorker) BtcDuperRecursiveProve(req *rpc.BtcDuperRecursiveRequest) 
 		logger.Error("btc recursive hex to proof error: %v", err)
 		return nil, err
 	}
-	second, err := circuits.HexToProof(req.Duper)
+	second, err := circuits.HexToProof(req.Second)
 	if err != nil {
 		logger.Error("btc recursive hex to proof error: %v", err)
 		return nil, err
@@ -51,7 +51,7 @@ func (w *LocalWorker) BtcDuperRecursiveProve(req *rpc.BtcDuperRecursiveRequest) 
 
 }
 
-func (w *LocalWorker) BtcDepthRecursiveProve(req *rpc.BtcDepthRequest) (*rpc.ProofResponse, error) {
+func (w *LocalWorker) BtcDepthRecursiveProve(req *rpc.BtcDepthRecursiveRequest) (*rpc.ProofResponse, error) {
 	recursiveProof, err := circuits.HexToProof(req.Recursive)
 	if err != nil {
 		logger.Error("btc recursive hex to proof error: %v", err)
@@ -619,7 +619,7 @@ func (w *Worker) BtcDuperRecursiveProve(req *rpc.BtcDuperRecursiveRequest) (*rpc
 	return w.client.BtcDuperRecursiveProve(req)
 }
 
-func (w *Worker) BtcDepthRecursiveProve(req *rpc.BtcDepthRequest) (*rpc.ProofResponse, error) {
+func (w *Worker) BtcDepthRecursiveProve(req *rpc.BtcDepthRecursiveRequest) (*rpc.ProofResponse, error) {
 	return w.client.BtcDepthRecursiveProve(req)
 }
 

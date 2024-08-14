@@ -116,7 +116,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		return data, ok, nil
 
 	case common.SyncComRecursiveType:
-		if index == p.genesisPeriod+2 {
+		if index == p.genesisPeriod+2 { // todo
 			data, ok, err := p.GetRecursiveGenesisData(index)
 			if err != nil {
 				logger.Error("get SyncComRecursiveGenesisData error:%v %v", index, err)
@@ -197,22 +197,29 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 			return nil, false, err
 		}
 		return data, ok, nil
+	case common.BtcGenesisType:
+		data, ok, err := p.GetBtcGenesisData()
+		if err != nil {
+			logger.Error("get btc genesis data error:%v %v %v", index, end, err)
+			return nil, false, err
+		}
+		return data, ok, nil
 	case common.BtcDuperRecursive:
-		data, ok, err := p.GetBtcDuperRecursive(index)
+		data, ok, err := p.GetBtcDuperRecursiveRequest(index)
 		if err != nil {
 			logger.Error("get btc duper recursive data error:%v %v %v", index, end, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BtcDepthRecursiveType:
-		data, ok, err := p.GetBtcDepthRecursive(index)
+		data, ok, err := p.GetBtcDepthRecursiveRequest(index, end)
 		if err != nil {
 			logger.Error("get btc depth recursive data error:%v %v %v", index, end, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BtcChainType:
-		data, ok, err := p.GetBtcChainData(index)
+		data, ok, err := p.GetBtcChainData(index, end)
 		if err != nil {
 			logger.Error("get btc chain data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -423,7 +430,7 @@ func WorkerGenProof(worker rpc.IWorker, request *common.ZkProofRequest) ([]*comm
 		result = append(result, zkbProofResponse)
 
 	case common.BtcDepthRecursiveType:
-		var req rpc.BtcDepthRequest
+		var req rpc.BtcDepthRecursiveRequest
 		err := common.ParseObj(req.Data, &req)
 		if err != nil {
 			return nil, fmt.Errorf("parse btcDepthRecursiveRequest error:%v", err)

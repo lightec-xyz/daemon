@@ -57,11 +57,11 @@ type NodeInfo struct {
 //------
 
 type BtcDuperRecursiveRequest struct {
-	Data         *recursiveUtil.RecursiveProofData
-	First, Duper Proof
+	Data          *recursiveUtil.RecursiveProofData
+	First, Second Proof
 }
 
-type BtcDepthRequest struct {
+type BtcDepthRecursiveRequest struct {
 	Data            *blockdepth.BulksProofData
 	Recursive, Unit Proof
 }

@@ -29,7 +29,7 @@ func (p *ProofClient) BtcDuperRecursiveProve(req *BtcDuperRecursiveRequest) (*Pr
 	return &result, nil
 }
 
-func (p *ProofClient) BtcDepthRecursiveProve(req *BtcDepthRequest) (*ProofResponse, error) {
+func (p *ProofClient) BtcDepthRecursiveProve(req *BtcDepthRecursiveRequest) (*ProofResponse, error) {
 	var result ProofResponse
 	err := p.call(&result, "zkbtc_btcDepthRecursiveProve", req)
 	if err != nil {

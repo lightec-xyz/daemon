@@ -3,11 +3,11 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"strconv"
 
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	blockCu "github.com/lightec-xyz/btc_provers/utils/blockchain"
-	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	blockDu "github.com/lightec-xyz/btc_provers/utils/blockdepth"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/circuits"
@@ -36,42 +36,6 @@ type PreparedData struct {
 	beaconClient     *beacon.Client
 	genesisPeriod    uint64
 	btcGenesisHeight uint64 // startIndex
-}
-
-func (p *PreparedData) GetBtcGenesisData(endHeight uint64) (*rpc.BtcGenesisRequest, bool, error) {
-	data, err := recursiveduperUtil.GetRecursiveProofData(p.proverClient, uint32(endHeight-1), uint32(p.btcGenesisHeight))
-	if err != nil {
-		logger.Error("get base level proof data error: %v %v", 0, err)
-		return nil, false, err
-	}
-	firstProof, ok, err := p.filestore.GetBtcUpperProof(p.btcGenesisHeight, p.btcGenesisHeight+common.BtcUpperDistance)
-	if err != nil {
-		logger.Error("get btc genesis proof data error: %v %v", 0, err)
-		return nil, false, err
-	}
-	if !ok {
-		return nil, false, nil
-	}
-	secondProof, ok, err := p.filestore.GetBtcUpperProof(p.btcGenesisHeight+common.BtcUpperDistance, p.btcGenesisHeight+common.BtcUpperDistance*2)
-	if err != nil {
-		logger.Error("get base level proof data error: %v %v", 0, err)
-		return nil, false, err
-	}
-	if !ok {
-		return nil, false, nil
-	}
-	genesisRequest := rpc.BtcGenesisRequest{
-		Data: data,
-		First: rpc.Proof{
-			Proof:   firstProof.Proof,
-			Witness: firstProof.Witness,
-		},
-		Second: rpc.Proof{
-			Proof:   secondProof.Proof,
-			Witness: secondProof.Witness,
-		},
-	}
-	return &genesisRequest, true, nil
 }
 
 func (p *PreparedData) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
@@ -107,11 +71,6 @@ func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest
 				Witness: baseProof.Witness,
 			})
 		}
-	}
-	// todo
-	if len(proofs) != 2 {
-		logger.Error("get base level proof data error: %v %v", endHeight, err)
-		return nil, false, fmt.Errorf("get base level proof data error: %v", endHeight)
 	}
 	baseRequest := rpc.BtcMiddleRequest{
 		Data:   data,
@@ -787,24 +746,179 @@ func (p *PreparedData) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, err
 	return beginRoot, endRoot, nil
 }
 
-func (p *PreparedData) GetBtcDuperRecursive(index uint64) (*rpc.BtcDuperRecursiveRequest, bool, error) {
-	return nil, false, nil
+func (p *PreparedData) GetBtcDuperRecursiveRequest(index uint64) (*rpc.BtcDuperRecursiveRequest, bool, error) {
+	data, err := blockCu.GetRecursiveProofData(p.proverClient, uint32(index), uint32(p.btcGenesisHeight))
+	if err != nil {
+		logger.Error("get recursive proof data error: %v", err)
+		return nil, false, err
+	}
+	var firstProof *StoreProof
+	var ok bool
+	if index == p.btcGenesisHeight+2*common.BtcUpperDistance {
+		firstProof, ok, err = p.filestore.GetBtcGenesisProof()
+		if err != nil {
+			logger.Error("get btc genesis proof data error: %v %v", 0, err)
+			return nil, false, err
+		}
+		if !ok {
+			return nil, false, nil
+		}
+	} else {
+		firstProof, ok, err = p.filestore.GetBtcDuperRecursiveProof(index, index+common.BtcUpperDistance)
+		if err != nil {
+			logger.Error("get btc genesis proof data error: %v %v", 0, err)
+			return nil, false, err
+		}
+		if !ok {
+			return nil, false, nil
+		}
+	}
+	secondProof, ok, err := p.filestore.GetBtcUpperProof(index+common.BtcUpperDistance, index+common.BtcUpperDistance*2)
+	if err != nil {
+		logger.Error("get base level proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := rpc.BtcDuperRecursiveRequest{
+		Data: data,
+		First: rpc.Proof{
+			Proof:   firstProof.Proof,
+			Witness: firstProof.Witness,
+		},
+		Second: rpc.Proof{
+			Proof:   secondProof.Proof,
+			Witness: secondProof.Witness,
+		},
+	}
+	return &request, false, nil
 }
 
-func (p *PreparedData) GetBtcDepthRecursive(index uint64) (*rpc.BtcDepthRequest, bool, error) {
-	return nil, false, nil
+func (p *PreparedData) GetBtcDepthRecursiveRequest(start, end uint64) (*rpc.BtcDepthRecursiveRequest, bool, error) {
+	// todo
+	proofData, err := blockDu.GetPackedProofData(p.proverClient, uint32(start), uint32(end))
+	if err != nil {
+		logger.Error("btc bulk data error: %v", err)
+		return nil, false, err
+	}
+	recursiveProof, ok, err := p.filestore.GetBtcDepthRecursiveProof(start, end)
+	if err != nil {
+		logger.Error("get btc depth recursive proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := rpc.BtcDepthRecursiveRequest{
+		Data: proofData,
+		Recursive: rpc.Proof{
+			Proof:   recursiveProof.Proof,
+			Witness: recursiveProof.Witness,
+		},
+		Unit: rpc.Proof{},
+	}
+	return &request, false, nil
 }
 
-func (p *PreparedData) GetBtcChainData(index uint64) (*rpc.BtcChainRequest, bool, error) {
-	return nil, false, nil
+func (p *PreparedData) GetBtcChainData(start, end uint64) (*rpc.BtcChainRequest, bool, error) {
+	data, err := blockCu.GetBlockChainProofData(p.proverClient, uint32(start), uint32(end))
+	if err != nil {
+		logger.Error("get block chain proof data error: %v", err)
+		return nil, false, err
+	}
+	recursiveProof, ok, err := p.filestore.GetBtcDuperRecursiveProof(start, end)
+	if err != nil {
+		logger.Error("get btc duper recursive proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := rpc.BtcChainRequest{
+		Data: data,
+		Recursive: rpc.Proof{
+			Proof:   recursiveProof.Proof,
+			Witness: recursiveProof.Witness,
+		},
+		Base:     rpc.Proof{},
+		MidLevel: rpc.Proof{},
+		Upper:    rpc.Proof{},
+	}
+	return &request, false, nil
 }
 
 func (p *PreparedData) GetBtcDeposit() (*rpc.BtcDepositRequest, bool, error) {
-	return nil, false, nil
+	data, err := grUtil.GetTxInChainProofData(p.proverClient, "", "", 0, 0, 0)
+	if err != nil {
+		logger.Error("get tx in chain proof data error: %v", err)
+		return nil, false, err
+	}
+	request := rpc.BtcDepositRequest{
+		Data:       data,
+		BlockChain: rpc.Proof{},
+		TxDepth:    rpc.Proof{},
+		CpDepth:    rpc.Proof{},
+		R:          "",
+		S:          "",
+		ProverAddr: "",
+	}
+	return &request, false, nil
 }
 
 func (p *PreparedData) GetBtcChange() (*rpc.BtcChangeRequest, bool, error) {
-	return nil, false, nil
+	data, err := grUtil.GetTxInChainProofData(p.proverClient, "", "", 0, 0, 0)
+	if err != nil {
+		logger.Error("get tx in chain proof data error: %v", err)
+		return nil, false, err
+	}
+	request := rpc.BtcChangeRequest{
+		Data:       data,
+		BlockChain: rpc.Proof{},
+		TxDepth:    rpc.Proof{},
+		CpDepth:    rpc.Proof{},
+		Redeem:     rpc.Proof{},
+		R:          "",
+		S:          "",
+		ProverAddr: "",
+	}
+	return &request, false, nil
+}
+
+func (p *PreparedData) GetBtcGenesisData() (*rpc.BtcDuperRecursiveRequest, bool, error) {
+	data, err := blockCu.GetRecursiveProofData(p.proverClient, uint32(p.btcGenesisHeight+common.BtcUpperDistance-1), uint32(p.btcGenesisHeight))
+	if err != nil {
+		logger.Error("get recursive proof data error: %v", err)
+		return nil, false, err
+	}
+	firstProof, ok, err := p.filestore.GetBtcUpperProof(p.btcGenesisHeight, p.btcGenesisHeight+common.BtcUpperDistance)
+	if err != nil {
+		logger.Error("get btc genesis proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	secondProof, ok, err := p.filestore.GetBtcUpperProof(p.btcGenesisHeight+common.BtcUpperDistance, p.btcGenesisHeight+common.BtcUpperDistance*2)
+	if err != nil {
+		logger.Error("get base level proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := rpc.BtcDuperRecursiveRequest{
+		Data: data,
+		First: rpc.Proof{
+			Proof:   firstProof.Proof,
+			Witness: firstProof.Witness,
+		},
+		Second: rpc.Proof{
+			Proof:   secondProof.Proof,
+			Witness: secondProof.Witness,
+		},
+	}
+	return &request, false, nil
 }
 
 func NewPreparedData(filestore *FileStorage, store store.IStore, genesisPeriod, btcGenesisHeight uint64, proverClient *btcproverClient.Client, btcClient *btcrpc.Client,

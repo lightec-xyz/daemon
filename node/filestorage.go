@@ -27,6 +27,7 @@ const (
 	LatestSlotKey     = "latestFinalitySlot"
 	GenesisRawKey     = "genesisRaw"
 	SyncComGenesisKey = "syncComGenesisProof"
+	BtcGenesisKey     = "btcGenesisProof"
 )
 
 type Table string
@@ -51,6 +52,7 @@ const (
 	BtcBaseTable      Table = "btcBase"
 	BtcMiddleTable    Table = "btcMiddle"
 	BtcUpperTable     Table = "btcUpper"
+	BtcGenesisTable   Table = "btcGenesis"
 	BtcDuperRecursive Table = "btcDuperRecursive"
 	BtcDepthRecursive Table = "btcDepthRecursive"
 	BtcChainTable     Table = "btcChain"
@@ -60,7 +62,7 @@ const (
 
 var initStoreTables = []Table{IndexTable, UpdateTable, FinalityTable, RequestTable, OuterTable, UnitTable, GenesisTable, RecursiveTable,
 	TxesTable, BeaconHeaderTable, BhfTable, RedeemTable, BtcBulkTable, BtcPackedTable, BtcBaseTable, BtcMiddleTable, BtcUpperTable,
-	BtcDuperRecursive, BtcDepthRecursive, BtcChainTable, BtcDepositTable, BtcChangeTable}
+	BtcGenesisTable, BtcDuperRecursive, BtcDepthRecursive, BtcChainTable, BtcDepositTable, BtcChangeTable}
 
 type FileStorage struct {
 	RootPath         string
@@ -222,6 +224,25 @@ func (fs *FileStorage) CheckGenesisProof() (bool, error) {
 func (fs *FileStorage) GetGenesisProof() (*StoreProof, bool, error) {
 	var storeProof StoreProof
 	exist, err := fs.GetObj(GenesisTable, SyncComGenesisKey, &storeProof)
+	if err != nil {
+		logger.Error("get genesis proof error:%v", err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcGenesisProof(proof, witness []byte) error {
+	obj := newStoreProof(common.BtcGenesisType, BtcGenesisKey, proof, witness)
+	return fs.StoreObj(BtcGenesisTable, BtcGenesisKey, obj)
+}
+
+func (fs *FileStorage) CheckBtcGenesisProof() (bool, error) {
+	return fs.CheckObj(BtcGenesisTable, BtcGenesisKey)
+}
+
+func (fs *FileStorage) GetBtcGenesisProof() (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.GetObj(BtcGenesisTable, BtcGenesisKey, &storeProof)
 	if err != nil {
 		logger.Error("get genesis proof error:%v", err)
 		return nil, false, err
@@ -405,6 +426,7 @@ func (fs *FileStorage) GetBtcUpperProof(key ...interface{}) (*StoreProof, bool, 
 	}
 	return &storeProof, exist, nil
 }
+
 func (fs *FileStorage) StoreBtcDuperRecursiveProof(proof, witness []byte, key ...interface{}) error {
 	return fs.Store(BtcDuperRecursive, common.BtcDuperRecursive, proof, witness, key...)
 }

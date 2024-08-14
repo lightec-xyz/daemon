@@ -24,7 +24,7 @@ func (h *Handler) BtcDuperRecursiveProve(req *rpc.BtcDuperRecursiveRequest) (*rp
 	return response, nil
 }
 
-func (h *Handler) BtcDepthRecursiveProve(req *rpc.BtcDepthRequest) (*rpc.ProofResponse, error) {
+func (h *Handler) BtcDepthRecursiveProve(req *rpc.BtcDepthRecursiveRequest) (*rpc.ProofResponse, error) {
 	response, err := h.worker.BtcDepthRecursiveProve(req)
 	if err != nil {
 		logger.Error("btc depth recursive prove error:%v", err)

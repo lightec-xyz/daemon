@@ -161,6 +161,7 @@ const (
 	BtcBaseType
 	BtcMiddleType
 	BtcUpperType
+	BtcGenesisType
 	BtcDuperRecursive
 	BtcDepthRecursiveType
 	BtcChainType
@@ -197,6 +198,8 @@ func (z ZkProofType) String() string {
 		return "btcMiddleType"
 	case BtcUpperType:
 		return "btcUpperType"
+	case BtcGenesisType:
+		return "btcGenesisType"
 	case BtcDuperRecursive:
 		return "btcDuperRecursive"
 	case BtcDepthRecursiveType:
