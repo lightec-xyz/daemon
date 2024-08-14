@@ -67,7 +67,7 @@ func (t *TxManager) Check() error {
 	}
 	for _, tx := range unSubmitTxs {
 		switch tx.ProofType {
-		case common.VerifyTxType:
+		case common.BtcChangeType:
 			hash, err := t.UpdateUtxoChange(tx.Hash, tx.Proof)
 			if err != nil {
 				logger.Error("update utxo error: %v %v", tx.ProofType.String(), tx.Hash)
