@@ -171,7 +171,6 @@ const (
 
 func (z ZkProofType) String() string {
 	switch z {
-
 	case SyncComOuterType:
 		return "unitOuter"
 	case SyncComUnitType:

@@ -98,7 +98,7 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 	}
 }
 
-func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint64, hash string) (interface{}, bool, error) {
+func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, hash string) (interface{}, bool, error) {
 	switch reqType {
 	case common.SyncComUnitType:
 		data, ok, err := p.GetSyncComUnitData(index)
@@ -198,7 +198,7 @@ func GenRequestData(p *PreparedData, reqType common.ZkProofType, index, end uint
 		}
 		return data, ok, nil
 	case common.BtcGenesisType:
-		data, ok, err := p.GetBtcGenesisData()
+		data, ok, err := p.GetBtcDuperGenesisData()
 		if err != nil {
 			logger.Error("get btc genesis data error:%v %v %v", index, end, err)
 			return nil, false, err

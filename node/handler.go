@@ -25,7 +25,6 @@ type Handler struct {
 }
 
 func (h *Handler) RemoveRequest(id string) error {
-	//todo
 	err := h.manager.RemoveProofRequest(id)
 	if err != nil {
 		logger.Error("remove proof request error: %v %v", id, err)
@@ -94,7 +93,6 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 }
 
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
-	// Todo
 	if request.Version != GeneratorVersion {
 		logger.Error("id: %v current version: %v, unsupported version: %v", request.Id, GeneratorVersion, request.Version)
 		return nil, fmt.Errorf("current version: %v, unsupported version: %v", GeneratorVersion, request.Version)
@@ -104,7 +102,7 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 		logger.Error("get proof request error: %v %v", request.Id, err)
 		return nil, err
 	}
-	var response common.TaskResponse
+	response := common.TaskResponse{}
 	if !ok {
 		logger.Warn("workerId: %v ,rpcServer maybe no new proof task", request.Id)
 		response.CanGen = false

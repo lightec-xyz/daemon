@@ -26,7 +26,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
-type PreparedData struct {
+type Prepared struct {
 	filestore        *FileStorage
 	store            store.IStore
 	proverClient     *btcproverClient.Client
@@ -38,7 +38,7 @@ type PreparedData struct {
 	btcGenesisHeight uint64 // startIndex
 }
 
-func (p *PreparedData) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
+func (p *Prepared) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bool, error) {
 	data, err := baselevelUtil.GetBaseLevelProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
@@ -50,7 +50,7 @@ func (p *PreparedData) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bo
 	return &baseRequest, true, nil
 }
 
-func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest, bool, error) {
+func (p *Prepared) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest, bool, error) {
 	data, err := blockCu.GetMidLevelProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
@@ -79,7 +79,7 @@ func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest
 	return &baseRequest, true, nil
 }
 
-func (p *PreparedData) GetBtcUpperData(endHeight uint64) (*rpc.BtcUpperRequest, bool, error) {
+func (p *Prepared) GetBtcUpperData(endHeight uint64) (*rpc.BtcUpperRequest, bool, error) {
 	data, err := blockCu.GetUpperLevelProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
@@ -108,7 +108,7 @@ func (p *PreparedData) GetBtcUpperData(endHeight uint64) (*rpc.BtcUpperRequest, 
 	return &baseRequest, true, nil
 }
 
-func (p *PreparedData) GetTxInEth2Data(txHash string, getSlotByNumber func(uint64) (uint64, error)) (*rpc.TxInEth2ProveRequest, bool, error) {
+func (p *Prepared) GetTxInEth2Data(txHash string, getSlotByNumber func(uint64) (uint64, error)) (*rpc.TxInEth2ProveRequest, bool, error) {
 	txData, err := ethblock.GenerateTxInEth2Proof(p.ethClient.Client, p.apiClient, getSlotByNumber, txHash)
 	if err != nil {
 		logger.Error("get tx data error: %v", err)
@@ -120,7 +120,7 @@ func (p *PreparedData) GetTxInEth2Data(txHash string, getSlotByNumber func(uint6
 	}, true, nil
 }
 
-func (p *PreparedData) GetBlockHeaderRequestData(index uint64) (*rpc.BlockHeaderRequest, bool, error) {
+func (p *Prepared) GetBlockHeaderRequestData(index uint64) (*rpc.BlockHeaderRequest, bool, error) {
 	finalizedSlot, ok, err := p.filestore.GetNearTxSlotFinalizedSlot(index)
 	if err != nil {
 		logger.Error("get finalized slot error: %v", err)
@@ -158,7 +158,7 @@ func (p *PreparedData) GetBlockHeaderRequestData(index uint64) (*rpc.BlockHeader
 	}, true, nil
 }
 
-func (p *PreparedData) GetRecursiveData(period uint64) (interface{}, bool, error) {
+func (p *Prepared) GetRecursiveData(period uint64) (interface{}, bool, error) {
 	genesisPeriod := p.filestore.GetGenesisPeriod()
 	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
@@ -223,7 +223,7 @@ func (p *PreparedData) GetRecursiveData(period uint64) (interface{}, bool, error
 	}, true, nil
 }
 
-func (p *PreparedData) getSlotByNumber(number uint64) (uint64, error) {
+func (p *Prepared) getSlotByNumber(number uint64) (uint64, error) {
 	slot, ok, err := ReadBeaconSlot(p.store, number)
 	if err != nil {
 		logger.Error("get slot error: %v %v", number, err)
@@ -235,7 +235,7 @@ func (p *PreparedData) getSlotByNumber(number uint64) (uint64, error) {
 	return slot, nil
 }
 
-func (p *PreparedData) GetRecursiveGenesisData(period uint64) (interface{}, bool, error) {
+func (p *Prepared) GetRecursiveGenesisData(period uint64) (interface{}, bool, error) {
 	genesisPeriod := p.filestore.GetGenesisPeriod()
 	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
@@ -302,7 +302,7 @@ func (p *PreparedData) GetRecursiveGenesisData(period uint64) (interface{}, bool
 
 }
 
-func (p *PreparedData) GetSyncComGenesisData() (*rpc.SyncCommGenesisRequest, bool, error) {
+func (p *Prepared) GetSyncComGenesisData() (*rpc.SyncCommGenesisRequest, bool, error) {
 	genesisPeriod := p.filestore.GetGenesisPeriod()
 	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
 	if err != nil {
@@ -374,7 +374,7 @@ func (p *PreparedData) GetSyncComGenesisData() (*rpc.SyncCommGenesisRequest, boo
 
 }
 
-func (p *PreparedData) GetSyncCommitRootId(period uint64) ([]byte, bool, error) {
+func (p *Prepared) GetSyncCommitRootId(period uint64) ([]byte, bool, error) {
 	update, ok, err := p.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("get %v Index update error: %v", period, err)
@@ -391,7 +391,7 @@ func (p *PreparedData) GetSyncCommitRootId(period uint64) ([]byte, bool, error) 
 	return syncCommitRoot, true, nil
 }
 
-func (p *PreparedData) GetSyncComUnitData(period uint64) (*rpc.SyncCommUnitsRequest, bool, error) {
+func (p *Prepared) GetSyncComUnitData(period uint64) (*rpc.SyncCommUnitsRequest, bool, error) {
 	update, ok, err := p.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("get %v Index update error: %v", period, err)
@@ -409,7 +409,7 @@ func (p *PreparedData) GetSyncComUnitData(period uint64) (*rpc.SyncCommUnitsRequ
 
 }
 
-func (p *PreparedData) GetReverseHash(height uint64) (string, error) {
+func (p *Prepared) GetReverseHash(height uint64) (string, error) {
 	hash, err := p.btcClient.GetBlockHash(int64(height))
 	if err != nil {
 		logger.Error("get block header error: %v %v", height, err)
@@ -422,7 +422,7 @@ func (p *PreparedData) GetReverseHash(height uint64) (string, error) {
 	}
 	return reverseHash, nil
 }
-func (p *PreparedData) GetBtcBulkRequestData(start, end uint64) (*rpc.BtcBulkRequest, error) {
+func (p *Prepared) GetBtcBulkRequestData(start, end uint64) (*rpc.BtcBulkRequest, error) {
 	proofData, err := blockDu.GetBlockBulkProofData(p.proverClient, uint32(start), uint32(end))
 	if err != nil {
 		logger.Error("btc bulk data error: %v", err)
@@ -434,7 +434,7 @@ func (p *PreparedData) GetBtcBulkRequestData(start, end uint64) (*rpc.BtcBulkReq
 
 }
 
-func (p *PreparedData) GetBtcPackRequestData(start, end uint64) (*rpc.BtcPackedRequest, error) {
+func (p *Prepared) GetBtcPackRequestData(start, end uint64) (*rpc.BtcPackedRequest, error) {
 	proofData, err := blockDu.GetPackedProofData(p.proverClient, uint32(start), uint32(end))
 	if err != nil {
 		logger.Error("btc bulk data error: %v", err)
@@ -446,7 +446,7 @@ func (p *PreparedData) GetBtcPackRequestData(start, end uint64) (*rpc.BtcPackedR
 
 }
 
-func (p *PreparedData) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeUpdate, bool, error) {
+func (p *Prepared) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeUpdate, bool, error) {
 	var currentPeriodUpdate structs.LightClientUpdateWithVersion
 	exists, err := p.filestore.GetUpdate(period, &currentPeriodUpdate)
 	if err != nil {
@@ -519,7 +519,7 @@ func (p *PreparedData) GetSyncCommitUpdate(period uint64) (*utils.SyncCommitteeU
 
 }
 
-func (p *PreparedData) GetBhfUpdateData(finalizedSlot, genesisPeriod uint64) (*rpc.BlockHeaderFinalityRequest, bool, error) {
+func (p *Prepared) GetBhfUpdateData(finalizedSlot, genesisPeriod uint64) (*rpc.BlockHeaderFinalityRequest, bool, error) {
 	logger.Debug("get bhf update data: %v", finalizedSlot)
 	var currentFinalityUpdate structs.LightClientFinalityUpdateEvent
 	exists, err := p.filestore.GetFinalityUpdate(finalizedSlot, &currentFinalityUpdate)
@@ -609,7 +609,7 @@ func (p *PreparedData) GetBhfUpdateData(finalizedSlot, genesisPeriod uint64) (*r
 	return &request, true, nil
 }
 
-func (p *PreparedData) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash string) (*rpc.RedeemRequest, bool, error) {
+func (p *Prepared) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash string) (*rpc.RedeemRequest, bool, error) {
 	txProof, ok, err := p.filestore.GetTxProof(txHash)
 	if err != nil {
 		logger.Error("get tx proof error: %v", err)
@@ -724,7 +724,7 @@ func (p *PreparedData) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash
 
 }
 
-func (p *PreparedData) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, error) {
+func (p *Prepared) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, error) {
 	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(start, end)
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
@@ -746,7 +746,7 @@ func (p *PreparedData) GetBeaconHeaderId(start, end uint64) ([]byte, []byte, err
 	return beginRoot, endRoot, nil
 }
 
-func (p *PreparedData) GetBtcDuperRecursiveRequest(index uint64) (*rpc.BtcDuperRecursiveRequest, bool, error) {
+func (p *Prepared) GetBtcDuperRecursiveRequest(index uint64) (*rpc.BtcDuperRecursiveRequest, bool, error) {
 	data, err := blockCu.GetRecursiveProofData(p.proverClient, uint32(index), uint32(p.btcGenesisHeight))
 	if err != nil {
 		logger.Error("get recursive proof data error: %v", err)
@@ -755,7 +755,7 @@ func (p *PreparedData) GetBtcDuperRecursiveRequest(index uint64) (*rpc.BtcDuperR
 	var firstProof *StoreProof
 	var ok bool
 	if index == p.btcGenesisHeight+2*common.BtcUpperDistance {
-		firstProof, ok, err = p.filestore.GetBtcGenesisProof()
+		firstProof, ok, err = p.filestore.GetBtcDuperGenesisProof()
 		if err != nil {
 			logger.Error("get btc genesis proof data error: %v %v", 0, err)
 			return nil, false, err
@@ -795,7 +795,7 @@ func (p *PreparedData) GetBtcDuperRecursiveRequest(index uint64) (*rpc.BtcDuperR
 	return &request, false, nil
 }
 
-func (p *PreparedData) GetBtcDepthRecursiveRequest(start, end uint64) (*rpc.BtcDepthRecursiveRequest, bool, error) {
+func (p *Prepared) GetBtcDepthRecursiveRequest(start, end uint64) (*rpc.BtcDepthRecursiveRequest, bool, error) {
 	// todo
 	proofData, err := blockDu.GetPackedProofData(p.proverClient, uint32(start), uint32(end))
 	if err != nil {
@@ -821,7 +821,7 @@ func (p *PreparedData) GetBtcDepthRecursiveRequest(start, end uint64) (*rpc.BtcD
 	return &request, false, nil
 }
 
-func (p *PreparedData) GetBtcChainData(start, end uint64) (*rpc.BtcChainRequest, bool, error) {
+func (p *Prepared) GetBtcChainData(start, end uint64) (*rpc.BtcChainRequest, bool, error) {
 	data, err := blockCu.GetBlockChainProofData(p.proverClient, uint32(start), uint32(end))
 	if err != nil {
 		logger.Error("get block chain proof data error: %v", err)
@@ -848,7 +848,7 @@ func (p *PreparedData) GetBtcChainData(start, end uint64) (*rpc.BtcChainRequest,
 	return &request, false, nil
 }
 
-func (p *PreparedData) GetBtcDeposit() (*rpc.BtcDepositRequest, bool, error) {
+func (p *Prepared) GetBtcDeposit() (*rpc.BtcDepositRequest, bool, error) {
 	data, err := grUtil.GetTxInChainProofData(p.proverClient, "", "", 0, 0, 0)
 	if err != nil {
 		logger.Error("get tx in chain proof data error: %v", err)
@@ -866,7 +866,7 @@ func (p *PreparedData) GetBtcDeposit() (*rpc.BtcDepositRequest, bool, error) {
 	return &request, false, nil
 }
 
-func (p *PreparedData) GetBtcChange() (*rpc.BtcChangeRequest, bool, error) {
+func (p *Prepared) GetBtcChange() (*rpc.BtcChangeRequest, bool, error) {
 	data, err := grUtil.GetTxInChainProofData(p.proverClient, "", "", 0, 0, 0)
 	if err != nil {
 		logger.Error("get tx in chain proof data error: %v", err)
@@ -885,7 +885,7 @@ func (p *PreparedData) GetBtcChange() (*rpc.BtcChangeRequest, bool, error) {
 	return &request, false, nil
 }
 
-func (p *PreparedData) GetBtcGenesisData() (*rpc.BtcDuperRecursiveRequest, bool, error) {
+func (p *Prepared) GetBtcDuperGenesisData() (*rpc.BtcDuperRecursiveRequest, bool, error) {
 	data, err := blockCu.GetRecursiveProofData(p.proverClient, uint32(p.btcGenesisHeight+common.BtcUpperDistance-1), uint32(p.btcGenesisHeight))
 	if err != nil {
 		logger.Error("get recursive proof data error: %v", err)
@@ -922,8 +922,8 @@ func (p *PreparedData) GetBtcGenesisData() (*rpc.BtcDuperRecursiveRequest, bool,
 }
 
 func NewPreparedData(filestore *FileStorage, store store.IStore, genesisPeriod, btcGenesisHeight uint64, proverClient *btcproverClient.Client, btcClient *btcrpc.Client,
-	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client) (*PreparedData, error) {
-	return &PreparedData{
+	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client) (*Prepared, error) {
+	return &Prepared{
 		filestore:        filestore,
 		store:            store,
 		proverClient:     proverClient,

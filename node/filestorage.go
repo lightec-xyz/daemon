@@ -23,11 +23,12 @@ type StoreProof struct {
 }
 
 const (
-	LatestPeriodKey   = "latestPeriod"
-	LatestSlotKey     = "latestFinalitySlot"
-	GenesisRawKey     = "genesisRaw"
-	SyncComGenesisKey = "syncComGenesisProof"
-	BtcGenesisKey     = "btcGenesisProof"
+	latestPeriodKey    = "latestPeriod"
+	latestSlotKey      = "latestFinalitySlot"
+	genesisRawKey      = "genesisRaw"
+	syncComGenesisKey  = "syncComGenesisProof"
+	btcDuperGenesisKey = "btcDuperGenesisProof"
+	btcCpGenesisKey    = "btcCpGenesisProof"
 )
 
 type Table string
@@ -105,12 +106,12 @@ func (fs *FileStorage) StoreRequest(req *common.ZkProofRequest) error {
 }
 
 func (fs *FileStorage) StoreLatestPeriod(period uint64) error {
-	return fs.StoreObj(IndexTable, LatestPeriodKey, period)
+	return fs.StoreObj(IndexTable, latestPeriodKey, period)
 }
 
 func (fs *FileStorage) GetLatestPeriod() (uint64, bool, error) {
 	var period uint64
-	exists, err := fs.GetObj(IndexTable, LatestPeriodKey, &period)
+	exists, err := fs.GetObj(IndexTable, latestPeriodKey, &period)
 	if err != nil {
 		logger.Error("get Index error:%v", err)
 		return 0, false, err
@@ -119,12 +120,12 @@ func (fs *FileStorage) GetLatestPeriod() (uint64, bool, error) {
 }
 
 func (fs *FileStorage) StoreLatestFinalizedSlot(slot uint64) error {
-	return fs.StoreObj(IndexTable, LatestSlotKey, slot)
+	return fs.StoreObj(IndexTable, latestSlotKey, slot)
 }
 
 func (fs *FileStorage) GetLatestFinalizedSlot() (uint64, bool, error) {
 	var slot uint64
-	exists, err := fs.GetObj(IndexTable, LatestSlotKey, &slot)
+	exists, err := fs.GetObj(IndexTable, latestSlotKey, &slot)
 	if err != nil {
 		logger.Error("get slot error:%v", err)
 		return 0, false, err
@@ -167,14 +168,14 @@ func (fs *FileStorage) CheckBootStrapBySlot(slot uint64) (bool, error) {
 }
 
 func (fs *FileStorage) StoreBootStrap(data interface{}) error {
-	return fs.StoreObj(GenesisTable, GenesisRawKey, data)
+	return fs.StoreObj(GenesisTable, genesisRawKey, data)
 }
 func (fs *FileStorage) GetBootstrap(value interface{}) (bool, error) {
-	return fs.GetObj(GenesisTable, GenesisRawKey, value)
+	return fs.GetObj(GenesisTable, genesisRawKey, value)
 }
 
 func (fs *FileStorage) CheckBootstrap() (bool, error) {
-	return fs.CheckObj(GenesisTable, GenesisRawKey)
+	return fs.CheckObj(GenesisTable, genesisRawKey)
 }
 
 func (fs *FileStorage) StoreOuterProof(period uint64, proof, witness []byte) error {
@@ -213,17 +214,17 @@ func (fs *FileStorage) GetUnitProof(period uint64) (*StoreProof, bool, error) {
 }
 
 func (fs *FileStorage) StoreGenesisProof(proof, witness []byte) error {
-	obj := newStoreProof(common.SyncComGenesisType, SyncComGenesisKey, proof, witness)
-	return fs.StoreObj(GenesisTable, SyncComGenesisKey, obj)
+	obj := newStoreProof(common.SyncComGenesisType, syncComGenesisKey, proof, witness)
+	return fs.StoreObj(GenesisTable, syncComGenesisKey, obj)
 }
 
 func (fs *FileStorage) CheckGenesisProof() (bool, error) {
-	return fs.CheckObj(GenesisTable, SyncComGenesisKey)
+	return fs.CheckObj(GenesisTable, syncComGenesisKey)
 }
 
 func (fs *FileStorage) GetGenesisProof() (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.GetObj(GenesisTable, SyncComGenesisKey, &storeProof)
+	exist, err := fs.GetObj(GenesisTable, syncComGenesisKey, &storeProof)
 	if err != nil {
 		logger.Error("get genesis proof error:%v", err)
 		return nil, false, err
@@ -231,18 +232,37 @@ func (fs *FileStorage) GetGenesisProof() (*StoreProof, bool, error) {
 	return &storeProof, exist, nil
 }
 
-func (fs *FileStorage) StoreBtcGenesisProof(proof, witness []byte) error {
-	obj := newStoreProof(common.BtcGenesisType, BtcGenesisKey, proof, witness)
-	return fs.StoreObj(BtcGenesisTable, BtcGenesisKey, obj)
+func (fs *FileStorage) StoreBtcDuperGenesisProof(proof, witness []byte) error {
+	obj := newStoreProof(common.BtcGenesisType, btcDuperGenesisKey, proof, witness)
+	return fs.StoreObj(BtcGenesisTable, btcDuperGenesisKey, obj)
 }
 
-func (fs *FileStorage) CheckBtcGenesisProof() (bool, error) {
-	return fs.CheckObj(BtcGenesisTable, BtcGenesisKey)
+func (fs *FileStorage) CheckBtcDuperGenesisProof() (bool, error) {
+	return fs.CheckObj(BtcGenesisTable, btcDuperGenesisKey)
 }
 
-func (fs *FileStorage) GetBtcGenesisProof() (*StoreProof, bool, error) {
+func (fs *FileStorage) GetBtcDuperGenesisProof() (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.GetObj(BtcGenesisTable, BtcGenesisKey, &storeProof)
+	exist, err := fs.GetObj(BtcGenesisTable, btcDuperGenesisKey, &storeProof)
+	if err != nil {
+		logger.Error("get genesis proof error:%v", err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcCpGenesisProof(proof, witness []byte) error {
+	obj := newStoreProof(common.BtcGenesisType, btcCpGenesisKey, proof, witness)
+	return fs.StoreObj(BtcGenesisTable, btcCpGenesisKey, obj)
+}
+
+func (fs *FileStorage) CheckBtcCpGenesisProof() (bool, error) {
+	return fs.CheckObj(BtcGenesisTable, btcCpGenesisKey)
+}
+
+func (fs *FileStorage) GetBtcCpGenesisProof() (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.GetObj(BtcGenesisTable, btcCpGenesisKey, &storeProof)
 	if err != nil {
 		logger.Error("get genesis proof error:%v", err)
 		return nil, false, err

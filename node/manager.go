@@ -25,12 +25,12 @@ type manager struct {
 	btcProofResp   chan *common.ZkProofResponse
 	ethProofResp   chan *common.ZkProofResponse
 	syncCommitResp chan *common.ZkProofResponse
-	preparedData   *PreparedData
+	preparedData   *Prepared
 	lock           sync.Mutex
 	state          *State
 }
 
-func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *PreparedData, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
+func NewManager(btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *Prepared, btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ZkProofResponse,
 	store, memory store.IStore, schedule *Schedule, fileStore *FileStorage, btcGenesisHeight, genesisPeriod, genesisSlot uint64, cache *Cache) (IManager, error) {
 	queue := NewArrayQueue()
 	state, err := NewState(queue, fileStore, store, cache, prep, btcGenesisHeight, genesisPeriod, genesisSlot, btcClient, ethClient)

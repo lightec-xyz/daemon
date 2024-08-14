@@ -44,7 +44,7 @@ type EthereumAgent struct {
 	genesisSlot      uint64
 	debug            bool
 	force            bool
-	prepareData      *PreparedData
+	prepareData      *Prepared
 }
 
 func NewEthereumAgent(cfg Config, genesisSlot uint64, fileStore *FileStorage, store, memoryStore store.IStore, beaClient *apiclient.Client,

@@ -27,7 +27,7 @@ type State struct {
 	ethClient        *ethereum.Client
 	store            store.IStore
 	cache            *Cache
-	preparedData     *PreparedData
+	preparedData     *Prepared
 	genesisPeriod    uint64
 	genesisSlot      uint64
 	btcGenesisHeight uint64 // start index
@@ -731,7 +731,7 @@ func (s *State) RemoveProofRequest(proofId string) error {
 	return nil
 }
 
-func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cache *Cache, preparedData *PreparedData,
+func NewState(queue *ArrayQueue, filestore *FileStorage, store store.IStore, cache *Cache, preparedData *Prepared,
 	btcGenesisHeight, genesisPeriod, genesisSlot uint64, btcClient *bitcoin.Client, ethClient *ethereum.Client) (*State, error) {
 	return &State{
 		proofQueue:       queue,

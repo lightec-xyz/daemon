@@ -229,7 +229,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	scheduler := NewSchedule(workers)
 	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisSyncPeriod, uint64(cfg.BtcGenesisHeight), btcProverClient, btcClient, ethClient, beaClient, beaconClient)
 	if err != nil {
-		logger.Error("new PreparedData error: %v", err)
+		logger.Error("new Prepared error: %v", err)
 		return nil, err
 	}
 
