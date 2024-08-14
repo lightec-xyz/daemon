@@ -16,7 +16,7 @@ var connCfg = &rpcclient.ConnConfig{
 	Pass: "123456",
 }
 
-func TestCalcGenesis(t *testing.T) {
+func Test_CalcSetupBh(t *testing.T) {
 	cl, err := client.NewClient(connCfg.Host, connCfg.User, connCfg.Pass)
 	assert.NoError(t, err)
 
@@ -24,7 +24,9 @@ func TestCalcGenesis(t *testing.T) {
 	assert.NoError(t, err)
 	log.Printf("lastest block height: %d", lastestBh)
 
-	genesisBlockheight := (uint32(lastestBh)/common.CapacityDifficultyBlock - 2) * common.CapacityDifficultyBlock
+	cpBlockHeight := lastestBh - common.MinPacked
+	log.Printf("cp block height: %d", cpBlockHeight)
 
+	genesisBlockheight := (lastestBh/common.CapacityDifficultyBlock - 2) * common.CapacityDifficultyBlock
 	log.Printf("genesis block height: %d", genesisBlockheight)
 }
