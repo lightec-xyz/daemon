@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/rpcclient"
-	"github.com/consensys/gnark/test"
 	"github.com/lightec-xyz/btc_provers/circuits/common"
 	"github.com/lightec-xyz/btc_provers/utils/client"
+	"github.com/stretchr/testify/assert"
 )
 
 var connCfg = &rpcclient.ConnConfig{
@@ -17,13 +17,11 @@ var connCfg = &rpcclient.ConnConfig{
 }
 
 func TestCalcGenesis(t *testing.T) {
-	assert := test.NewAssert(t)
-
 	cl, err := client.NewClient(connCfg.Host, connCfg.User, connCfg.Pass)
-	assert.NoError(err)
+	assert.NoError(t, err)
 
 	lastestBh, err := cl.GetBlockCount()
-	assert.NoError(err)
+	assert.NoError(t, err)
 	log.Printf("lastest block height: %d", lastestBh)
 
 	genesisBlockheight := (uint32(lastestBh)/common.CapacityDifficultyBlock - 2) * common.CapacityDifficultyBlock

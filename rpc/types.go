@@ -3,11 +3,11 @@ package rpc
 import (
 	"time"
 
-	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
 	btcbase "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcmiddle "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcupper "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	recursiveUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
 	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/common"
 	ethblock "github.com/lightec-xyz/provers/circuits/fabric/tx-in-eth2"
@@ -92,7 +92,7 @@ type BtcUpperRequest struct {
 }
 
 type BtcBulkRequest struct {
-	Data *btcprovertypes.BlockBulkProofData
+	Data *blockdepthUtil.BlockBulkProofData
 }
 
 type BtcBulkResponse struct {
@@ -101,7 +101,7 @@ type BtcBulkResponse struct {
 }
 
 type BtcPackedRequest struct {
-	Data *btcprovertypes.BlockBulkProofData
+	Data *blockdepthUtil.BulksProofData
 }
 
 type BtcPackResponse struct {
