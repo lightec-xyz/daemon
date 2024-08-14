@@ -1,9 +1,9 @@
 package node
 
 import (
+	"fmt"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
@@ -123,7 +123,7 @@ func (m *manager) CheckState() error {
 			logger.Error("request start time is zero: %v", request.RequestId())
 			return nil
 		}
-		timeout := time.Now().Sub(request.StartTime) >= request.ReqType.Timeout()
+		timeout := time.Now().Sub(request.StartTime) >= request.ProofType.Timeout()
 		if timeout {
 			logger.Debug("%v timeout,add proof queue again", request.RequestId())
 			m.pendingQueue.Delete(request.RequestId())
@@ -163,26 +163,27 @@ func (m *manager) GetProofRequest(proofTypes []common.ZkProofType) (*common.ZkPr
 	//})
 	var request *common.ZkProofRequest
 	var ok bool
+	var err error
 	if len(proofTypes) == 0 {
 		request, ok = m.proofQueue.Pop()
 	} else {
-		request, ok = m.proofQueue.PopFn(func(request *common.ZkProofRequest) bool {
+		request, ok, err = m.proofQueue.PopFn(func(request *common.ZkProofRequest) (bool, error) {
 			if len(proofTypes) == 0 {
-				return true
+				return true, nil
 			}
 			for _, req := range proofTypes {
-				if request.ReqType == req {
-					return true
+				if request.ProofType == req {
+					return true, nil
 				}
 			}
-			return false
+			return false, nil
 		})
 	}
 	if !ok {
 		logger.Warn("no find match proof task")
 		return nil, false, nil
 	}
-	exists, err := CheckProof(m.fileStore, request.ReqType, request.Index, request.SIndex, request.TxHash)
+	exists, err := CheckProof(m.fileStore, request.ProofType, request.Index, request.SIndex, request.Hash)
 	if err != nil {
 		logger.Error("check Proof error:%v %v", request.RequestId(), err)
 		return nil, false, err
@@ -204,7 +205,7 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	m.lock.Lock() // todo
 	defer m.lock.Unlock()
 	for _, response := range responses {
-		chanResponse, err := m.getChanResponse(response.ZkProofType)
+		chanResponse, err := m.getChanResponse(response.ProofType)
 		if err != nil {
 			logger.Error("get chan response error:%v", err)
 			return err
@@ -224,61 +225,55 @@ func (m *manager) SendProofResponse(responses []*common.ZkProofResponse) error {
 	return nil
 }
 
-// todo
 func (m *manager) DistributeRequest() error {
-	logger.Debug("start distribute request now")
-	request, ok, err := m.GetProofRequest(nil)
-	waitTime := 3 * time.Second
-	if err != nil {
-		logger.Error("get Proof request error:%v", err)
-		time.Sleep(waitTime)
-		return err
-	}
-	if !ok {
-		//logger.Warn("current queue is empty")
-		time.Sleep(waitTime)
-		return nil
-	}
-	proofSubmitted, err := m.CheckProofStatus(request)
-	if err != nil {
-		logger.Error("check Proof error:%v", err)
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
-		return err
-	}
-	if proofSubmitted {
-		logger.Info("Proof already submitted:%v", request.String())
-		return nil
-	}
-	chanResponse, err := m.getChanResponse(request.ReqType)
-	if err != nil {
-		logger.Error("get chan response error:%v", err)
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
-		return err
-	}
-	_, find, err := m.schedule.findBestWorker(func(worker rpc.IWorker) error {
+	_, find, err := m.proofQueue.PopFn(func(req *common.ZkProofRequest) (bool, error) {
+		proofSubmitted, err := m.CheckProofStatus(req)
+		if err != nil {
+			logger.Error("check Proof error:%v", err)
+			return false, err
+		}
+		if proofSubmitted {
+			logger.Info("Proof already submitted:%v", req.String())
+			return true, nil
+		}
+		worker, ok, err := m.schedule.findWorker(req.ProofType)
+		if err != nil {
+			logger.Error("find worker error:%v", err)
+			return false, err
+		}
+		if !ok {
+			return false, fmt.Errorf("no find worker") // skip proofQueue loop
+		}
+		chanResp, err := m.getChanResponse(req.ProofType)
+		if err != nil {
+			logger.Error("get chan response error:%v", err)
+			return false, err
+		}
 		worker.AddReqNum()
+		m.pendingQueue.Push(req.RequestId(), req)
 		go func(req *common.ZkProofRequest, chaResp chan *common.ZkProofResponse) {
-			defer worker.DelReqNum()
+			defer func() {
+				worker.DelReqNum()
+				m.pendingQueue.Delete(req.RequestId())
+			}()
 			logger.Debug("worker %v start generate Proof type: %v", worker.Id(), req.RequestId())
 			err := m.fileStore.StoreRequest(req)
 			if err != nil {
-				logger.Error("store Proof error:%v %v %v", req.ReqType.String(), req.Index, err)
+				logger.Error("store Proof error:%v %v %v", req.ProofType.String(), req.Index, err)
 				return
 			}
 			count := 0
 			for {
+				// todo
 				if count >= 1 {
-					// todo
-					logger.Error("gen Proof error:%v %v %v", req.ReqType.String(), req.Index, count)
-					//m.proofQueue.Push(request)
+					logger.Error("gen Proof error:%v %v %v", req.ProofType.String(), req.Index, count)
+					m.proofQueue.Push(req)
 					return
 				}
 				count++
 				zkProofResponse, err := WorkerGenProof(worker, req)
 				if err != nil {
-					logger.Error("worker %v gen Proof error:%v %v %v %v", worker.Id(), req.ReqType.String(), req.Index, count, err)
+					logger.Error("worker %v gen Proof error:%v %v %v %v", worker.Id(), req.ProofType.String(), req.Index, count, err)
 					continue
 				}
 				for _, item := range zkProofResponse {
@@ -287,31 +282,27 @@ func (m *manager) DistributeRequest() error {
 						chaResp <- item
 						logger.Debug("chan send -- %v", item.RespId())
 					}
-					err := StoreZkProof(m.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
+					err := StoreZkProof(m.fileStore, item.ProofType, item.Index, item.SIndex, item.Hash, item.Proof, item.Witness)
 					if err != nil {
 						logger.Error("store Proof error:%v %v", item.RespId(), err)
 						return
 					}
 				}
-				m.pendingQueue.Delete(req.RequestId())
 				return
 			}
-		}(request, chanResponse)
-		return nil
+		}(req, chanResp)
+		return true, nil
 	})
 	if err != nil {
-		logger.Error("find best worker error:%v", err)
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
+		logger.Warn("find worker error:%v", err)
+		time.Sleep(10 * time.Second)
 		return err
 	}
 	if !find {
-		logger.Warn(" no find best worker to gen Proof: %v", request.RequestId())
-		m.CacheRequest(request)
-		time.Sleep(waitTime)
+		logger.Warn("no find match proof task")
+		time.Sleep(10 * time.Second)
 		return nil
 	}
-	time.Sleep(waitTime)
 	return nil
 }
 
@@ -357,8 +348,8 @@ func (m *manager) Close() error {
 
 func (s *manager) UpdateProofStatus(req *common.ZkProofRequest, status common.ProofStatus) error {
 	// todo
-	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
-		err := UpdateProof(s.store, req.TxHash, "", req.ReqType, status)
+	if req.ProofType == common.DepositTxType || req.ProofType == common.RedeemTxType {
+		err := UpdateProof(s.store, req.Hash, "", req.ProofType, status)
 		if err != nil {
 			logger.Error("update Proof status error:%v %v", req.RequestId(), err)
 			return err

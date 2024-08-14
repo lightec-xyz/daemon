@@ -36,27 +36,18 @@ func (h *Handler) RemoveRequest(id string) error {
 }
 
 func (h *Handler) ProofTask(id string) (*rpc.ProofTaskInfo, error) {
-	queueTime, err := ReadTaskTime(h.store, id, common.ProofQueued)
+	taskInfo, err := ReadAllTaskTime(h.store, id)
 	if err != nil {
 		logger.Error("read queue time error: %v %v", id, err)
 		return nil, err
 	}
-	generatingTime, err := ReadTaskTime(h.store, id, common.ProofGenerating)
-	if err != nil {
-		//logger.Error("read generating time error: %v %v", id, err)
-		//return nil, err
-	}
-	end, err := ReadTaskTime(h.store, id, common.ProofSuccess)
-	if err != nil {
-		//logger.Error("read proof time error: %v %v", id, err)
-		//return nil, err
-	}
-	logger.Info("proof task: %v, queue time: %v, generating time: %v, proof time: %v", id, queueTime, generatingTime, end)
+	logger.Info("proof task: %v, queue time: %v, generating time: %v, proof time: %v", id,
+		taskInfo.QueueTime, taskInfo.GeneratingTime, taskInfo.EndTime)
 	return &rpc.ProofTaskInfo{
 		Id:             id,
-		QueueTime:      queueTime,
-		GeneratingTime: generatingTime,
-		EndTime:        end,
+		QueueTime:      taskInfo.QueueTime,
+		GeneratingTime: taskInfo.GeneratingTime,
+		EndTime:        taskInfo.EndTime,
 	}, nil
 }
 
@@ -132,7 +123,7 @@ func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
 	//}
 	for _, item := range req.Data {
 		logger.Info("workerId %v,submit proof %v", req.WorkerId, item.RespId())
-		err := StoreZkProof(h.fileStore, item.ZkProofType, item.Index, item.End, item.TxHash, item.Proof, item.Witness)
+		err := StoreZkProof(h.fileStore, item.ProofType, item.Index, item.SIndex, item.Hash, item.Proof, item.Witness)
 		if err != nil {
 			logger.Error("store zk proof error: %v %v", item.RespId(), err)
 			return "", err
@@ -193,15 +184,13 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 		logger.Error("read transaction error: %v %v", txHash, err)
 		return nil, err
 	}
-	destChainHash, err := ReadDestHash(h.store, txHash)
-	if err != nil {
-		//logger.Error("read dest chain hash error: %v %v", txHash, err)
-		//return nil, err
-	}
-	dbProof, err := ReadDbProof(h.store, txHash)
-	if err != nil {
-		//logger.Error("read dbProof error: %v %v", txHash, err)
-		//return nil, err
+	destChainHash, _ := ReadDestHash(h.store, txHash)
+	dbProof, _ := ReadDbProof(h.store, txHash)
+	var list []TaskTime
+	if tx.ChainType == common.EthereumChain && tx.TxType == common.RedeemTx {
+		list, _ = h.readRedeemTask(tx)
+	} else if tx.ChainType == common.BitcoinChain && tx.TxType == common.DepositTx {
+		list, _ = h.readDepositTask(tx)
 	}
 	transaction := rpc.Transaction{
 		Height:    tx.Height,
@@ -218,8 +207,62 @@ func (h *Handler) Transaction(txHash string) (*rpc.Transaction, error) {
 			Proof:  dbProof.Proof,
 			Status: dbProof.Status,
 		},
+		Tasks: list,
 	}
 	return &transaction, err
+}
+
+func (h *Handler) readDepositTask(tx DbTx) ([]TaskTime, error) {
+	var list []TaskTime
+	//txId := common.NewProofId(common.DepositTxType, 0, 0, tx.Hash)
+	//txInEth2Task, err := ReadAllTaskTime(h.store, txId)
+	//if err != nil {
+	//	logger.Error("read queue time error: %v %v", txId, err)
+	//	return nil, err
+	//}
+	//list = append(list, txInEth2Task)
+	return list, nil
+}
+
+func (h *Handler) readRedeemTask(tx DbTx) ([]TaskTime, error) {
+	txId := common.NewProofId(common.TxInEth2, 0, 0, tx.TxHash)
+	var list []TaskTime
+	txInEth2Task, err := ReadAllTaskTime(h.store, txId)
+	if err != nil {
+		logger.Error("read txInEth2 error: %v %v", txId, err)
+		return nil, err
+	}
+	list = append(list, txInEth2Task)
+	txSlot, ok, err := ReadBeaconSlot(h.store, tx.Height)
+	if err != nil {
+		logger.Error("read txSlot error: %v %v", txId, err)
+		return nil, err
+	}
+	if ok {
+		finalizedSlot, ok, err := FindFinalityUpdateNearestSlot(h.store, txSlot)
+		if err != nil {
+			logger.Error("read queue time error: %v %v", txId, err)
+			return nil, err
+		}
+		if ok {
+			bhId := common.NewProofId(common.BeaconHeaderType, txSlot, finalizedSlot, tx.TxHash)
+			bhTask, err := ReadAllTaskTime(h.store, bhId)
+			if err != nil {
+				logger.Error("read queue time error: %v %v", txId, err)
+				return nil, err
+			}
+			list = append(list, bhTask)
+			bhfId := common.NewProofId(common.BeaconHeaderFinalityType, finalizedSlot, 0, tx.TxHash)
+			bhfTask, err := ReadAllTaskTime(h.store, bhfId)
+			if err != nil {
+				logger.Error("read queue time error: %v %v", txId, err)
+				return nil, err
+			}
+			list = append(list, bhfTask)
+		}
+
+	}
+	return list, nil
 }
 
 func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {

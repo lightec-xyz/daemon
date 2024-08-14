@@ -184,35 +184,35 @@ func (e *EthereumAgent) CheckChainFork(height uint64) (bool, error) {
 func (e *EthereumAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info(" ethereumAgent receive proof response: %v proof,%x", resp.RespId(), resp.Proof)
 	e.stateCache.Delete(resp.RespId())
-	switch resp.ZkProofType {
+	switch resp.ProofType {
 	case common.RedeemTxType:
 		err := e.DeleteRedeemCacheTx(resp)
 		if err != nil {
-			logger.Error("delete redeem cache tx error:%v %v", resp.TxHash, err)
+			logger.Error("delete redeem cache tx error:%v %v", resp.Hash, err)
 		}
-		err = e.updateRedeemProof(resp.TxHash, hex.EncodeToString(resp.Proof), resp.Status)
+		err = e.updateRedeemProof(resp.Hash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
-			logger.Error("update Proof error:%v %v", resp.TxHash, err)
+			logger.Error("update Proof error:%v %v", resp.Hash, err)
 		}
-		btcHash, err := e.txManager.RedeemZkbtc(resp.TxHash, hex.EncodeToString(resp.Proof))
+		btcHash, err := e.txManager.RedeemZkbtc(resp.Hash, hex.EncodeToString(resp.Proof))
 		if err != nil {
-			logger.Error("redeem btc error:%v %v,save to db", resp.TxHash, err)
+			logger.Error("redeem btc error:%v %v,save to db", resp.Hash, err)
 			e.txManager.AddTask(resp)
 			return err
 		}
-		logger.Debug("success redeem btc ethHash: %v,btcHash: %v", resp.TxHash, btcHash)
+		logger.Debug("success redeem btc ethHash: %v,btcHash: %v", resp.Hash, btcHash)
 	default:
 	}
 	return nil
 }
 
 func (e *EthereumAgent) DeleteRedeemCacheTx(resp *common.ZkProofResponse) error {
-	err := DeleteTxSlot(e.store, resp.Index, resp.TxHash)
+	err := DeleteTxSlot(e.store, resp.Index, resp.Hash)
 	if err != nil {
-		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
+		logger.Error("delete tx slot error:%v %v", resp.Hash, err)
 		return err
 	}
-	logger.Debug("delete %v beaconHeader  cache", resp.TxHash)
+	logger.Debug("delete %v beaconHeader  cache", resp.Hash)
 	finalizedSlot, ok, err := e.fileStore.GetNearTxSlotFinalizedSlot(resp.Index)
 	if err != nil {
 		logger.Error("get latest slot error: %v", err)
@@ -222,12 +222,12 @@ func (e *EthereumAgent) DeleteRedeemCacheTx(resp *common.ZkProofResponse) error 
 		logger.Warn("no find latest slot: %v", resp.Index)
 		return nil
 	}
-	err = DeleteTxFinalizedSlot(e.store, finalizedSlot, resp.TxHash)
+	err = DeleteTxFinalizedSlot(e.store, finalizedSlot, resp.Hash)
 	if err != nil {
-		logger.Error("delete tx slot error:%v %v", resp.TxHash, err)
+		logger.Error("delete tx slot error:%v %v", resp.Hash, err)
 		return err
 	}
-	logger.Debug("delete %v beaconHeaderFinality  cache", resp.TxHash)
+	logger.Debug("delete %v beaconHeaderFinality  cache", resp.Hash)
 	return nil
 }
 

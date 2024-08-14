@@ -26,28 +26,28 @@ type SubmitProof struct {
 }
 
 type ZkProofRequest struct {
-	Id         string // todo
-	ReqType    ZkProofType
-	Data       interface{}
-	Index      uint64
-	SIndex     uint64
-	TxHash     string
-	Status     ProofStatus
-	Weight     ProofWeight // todo
-	ProvedNum  int
-	CreateTime time.Time
-	StartTime  time.Time
-	EndTime    time.Time
+	Id         string      `json:"id"`
+	ProofType  ZkProofType `json:"proofType"`
+	Data       interface{} `json:"data"`
+	Index      uint64      `json:"index"`
+	SIndex     uint64      `json:"sIndex"`
+	Hash       string      `json:"hash"`
+	Status     ProofStatus `json:"status"`
+	Weight     ProofWeight `json:"weight"`
+	ProvedNum  int         `json:"-"`
+	CreateTime time.Time   `json:"createTime"`
+	StartTime  time.Time   `json:"startTime"`
+	EndTime    time.Time   `json:"endTime"`
 }
 
 func NewZkProofRequest(reqType ZkProofType, data interface{}, fIndex, sIndex uint64, txHash string) *ZkProofRequest {
 	return &ZkProofRequest{
 		Id:         NewProofId(reqType, fIndex, sIndex, txHash), // todo
-		ReqType:    reqType,
+		ProofType:  reqType,
 		Data:       data,
 		Index:      fIndex,
 		SIndex:     sIndex,
-		TxHash:     txHash,
+		Hash:       txHash,
 		Weight:     reqType.Weight(),
 		Status:     ProofDefault,
 		CreateTime: time.Now(),
@@ -67,18 +67,18 @@ func (zk *ZkProofRequest) RequestId() string {
 }
 
 func (r *ZkProofRequest) String() string {
-	return fmt.Sprintf("ZkProofRequest{ReqType:%v,Index:%v,Data:%v}", r.ReqType, r.Index, r.Data)
+	return fmt.Sprintf("ZkProofRequest{ProofType:%v,Index:%v,Data:%v}", r.ProofType, r.Index, r.Data)
 }
 
 type ZkProofResponse struct {
-	Id          string
-	ZkProofType ZkProofType
-	Status      ProofStatus
-	Proof       []byte
-	Witness     []byte
-	Index       uint64
-	End         uint64
-	TxHash      string
+	Id        string      `json:"id"`
+	ProofType ZkProofType `json:"proofType"`
+	Status    ProofStatus `json:"status"`
+	Proof     []byte      `json:"proof"`
+	Witness   []byte      `json:"witness"`
+	Index     uint64      `json:"index"`
+	SIndex    uint64      `json:"sIndex"`
+	Hash      string      `json:"hash"`
 }
 
 func (zkp *ZkProofResponse) RespId() string {
@@ -86,7 +86,7 @@ func (zkp *ZkProofResponse) RespId() string {
 }
 
 func (zkResp *ZkProofResponse) String() string {
-	return fmt.Sprintf("ZkProofType:%v Index:%v Proof:%v", zkResp.ZkProofType, zkResp.Index, zkResp.Proof)
+	return fmt.Sprintf("ProofType:%v Index:%v Proof:%v", zkResp.ProofType, zkResp.Index, zkResp.Proof)
 }
 
 func NewProofId(reqType ZkProofType, fIndex, sIndex uint64, hash string) string {

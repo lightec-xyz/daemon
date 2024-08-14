@@ -592,9 +592,9 @@ func (s *State) CheckProofRequest(resp *common.ZkProofResponse) error {
 }
 
 func (s *State) findNewRequests(resp *common.ZkProofResponse) ([]*common.ZkProofRequest, error) {
-	switch resp.ZkProofType {
+	switch resp.ProofType {
 	case common.TxInEth2:
-		request, ok, err := s.checkRedeemRequest(resp.TxHash)
+		request, ok, err := s.checkRedeemRequest(resp.Hash)
 		if err != nil {
 			logger.Error("get redeem request error:%v %v", resp.RespId(), err)
 			return nil, err
@@ -667,8 +667,8 @@ func (s *State) checkRedeemRequest(txHash string) (*common.ZkProofRequest, bool,
 
 func (s *State) UpdateProofStatus(req *common.ZkProofRequest, status common.ProofStatus) error {
 	// todo
-	if req.ReqType == common.DepositTxType || req.ReqType == common.RedeemTxType {
-		err := UpdateProof(s.store, req.TxHash, "", req.ReqType, status)
+	if req.ProofType == common.DepositTxType || req.ProofType == common.RedeemTxType {
+		err := UpdateProof(s.store, req.Hash, "", req.ProofType, status)
 		if err != nil {
 			logger.Error("update Proof status error:%v %v", req.RequestId(), err)
 			return err

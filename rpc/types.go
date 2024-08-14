@@ -32,6 +32,7 @@ type Transaction struct {
 	Amount    int64         `json:"amount"`
 	DestChain DestChainInfo `json:"destChain"`
 	Proof     ProofInfo     `json:"proof"`
+	Tasks     interface{}   `json:"tasks"`
 }
 
 type DestChainInfo struct {
