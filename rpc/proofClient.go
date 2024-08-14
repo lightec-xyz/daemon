@@ -155,31 +155,31 @@ func (p *ProofClient) GenRedeemProof(req *RedeemRequest) (*RedeemResponse, error
 	return &response, nil
 }
 
-func (p *ProofClient) GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error) {
+func (p *ProofClient) GenSyncCommGenesisProof(req SyncCommGenesisRequest) (*SyncCommGenesisResponse, error) {
 	response := SyncCommGenesisResponse{}
 	err := p.call(&response, "zkbtc_genSyncCommGenesisProof", req)
 	if err != nil {
-		return response, err
+		return nil, err
 	}
-	return response, nil
+	return &response, nil
 }
 
-func (p *ProofClient) GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error) {
+func (p *ProofClient) GenSyncCommitUnitProof(req SyncCommUnitsRequest) (*SyncCommUnitsResponse, error) {
 	response := SyncCommUnitsResponse{}
 	err := p.call(&response, "zkbtc_genSyncCommitUnitProof", req)
 	if err != nil {
-		return response, err
+		return nil, err
 	}
-	return response, nil
+	return &response, nil
 }
 
-func (p *ProofClient) GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error) {
+func (p *ProofClient) GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (*SyncCommRecursiveResponse, error) {
 	response := SyncCommRecursiveResponse{}
 	err := p.call(&response, "zkbtc_genSyncCommRecursiveProof", req)
 	if err != nil {
-		return response, err
+		return nil, err
 	}
-	return response, nil
+	return &response, nil
 }
 
 func (p *ProofClient) ProofInfo(proofId string) (ProofInfo, error) {

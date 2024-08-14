@@ -286,8 +286,7 @@ func (f *Fetch) CheckFinalityUpdate(period uint64, finalityUpdate *structs.Light
 		return false, err
 	}
 	if exists {
-		//todo
-		logger.Warn("no find update :%v %v", period)
+		logger.Warn("no find update :%v", period)
 		return true, nil
 	}
 	ok, err := common.VerifyFinalityUpdateSignature(finalityUpdate, update.Data.NextSyncCommittee)

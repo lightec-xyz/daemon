@@ -164,12 +164,11 @@ type BlockHeaderResponse struct {
 	Witness []byte
 }
 type BlockHeaderFinalityRequest struct {
-	Index            uint64
-	GenesisSCSSZRoot string
-	RecursiveProof, RecursiveWitness, OuterProof,
-	OuterWitness string
-	FinalityUpdate *proverType.FinalityUpdate
-	ScUpdate       *proverType.SyncCommitteeUpdate
+	Index                      uint64
+	GenesisSCSSZRoot           string
+	RecursiveProof, OuterProof Proof
+	FinalityUpdate             *proverType.FinalityUpdate
+	ScUpdate                   *proverType.SyncCommitteeUpdate
 }
 
 type BlockHeaderFinalityResponse struct {
@@ -178,10 +177,11 @@ type BlockHeaderFinalityResponse struct {
 }
 
 type RedeemRequest struct {
-	TxHash                                                       string
-	Version                                                      string
-	TxProof, TxWitness, BhProof, BhWitness, BhfProof, BhfWitness string
-	BeginId, EndId, GenesisScRoot,
+	TxHash                     string
+	Version                    string
+	TxProof, BhProof, BhfProof Proof
+	BeginId, EndId             []byte
+	GenesisScRoot,
 	CurrentSCSSZRoot string
 	TxVar      []string
 	ReceiptVar []string
@@ -195,16 +195,13 @@ type RedeemResponse struct {
 }
 
 type SyncCommGenesisRequest struct {
-	Period  uint64 `json:"period"`
-	Version string `json:"version"`
-	FirstProof,
-	FirstWitness,
-	SecondProof,
-	SecondWitness string
-	GenesisID   []byte
-	FirstID     []byte
-	SecondID    []byte
-	RecursiveFp []byte
+	Period                  uint64 `json:"period"`
+	Version                 string `json:"version"`
+	FirstProof, SecondProof Proof
+	GenesisID               []byte
+	FirstID                 []byte
+	SecondID                []byte
+	RecursiveFp             []byte
 }
 
 type SyncCommGenesisResponse struct {
@@ -232,13 +229,10 @@ type SyncCommUnitsResponse struct {
 }
 
 type SyncCommRecursiveRequest struct {
-	Period  uint64
-	Version string
-	Choice  string `json:"choice"`
-	FirstProof,
-	FirstWitness,
-	SecondProof,
-	SecondWitness string
+	Period                  uint64
+	Version                 string
+	Choice                  string `json:"choice"`
+	FirstProof, SecondProof Proof
 	BeginId,
 	RelayId,
 	EndId,

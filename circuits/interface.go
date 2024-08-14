@@ -19,17 +19,18 @@ const (
 )
 
 type ICircuit interface {
-	BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recursiveProof, recursiveWitness, outerProof,
-		outerWitness string, finalityUpdate *proverType.FinalityUpdate, scUpdate *proverType.SyncCommitteeUpdate) (*common.Proof, error)
+	UnitProve(period uint64, update *utils.SyncCommitteeUpdate) (*common.Proof, *common.Proof, error)
+	GenesisProve(first, second *common.Proof,
+		genesisId, firstId, secondId []byte) (*common.Proof, error)
+	RecursiveProve(choice string, firstProof, secondProof *common.Proof,
+		beginId, relayId, endId []byte) (*common.Proof, error)
 	TxInEth2Prove(param *ethblock.TxInEth2ProofData) (*common.Proof, error)
 	BeaconHeaderProve(header proverType.BeaconHeaderChain) (*common.Proof, error)
-	RedeemProve(txProof, txWitness, bhProof, bhWitness, bhfProof, bhfWitness string, beginId, endId, genesisScRoot, currentSCSSZRoot string,
+	BeaconHeaderFinalityUpdateProve(genesisSCSSZRoot string, recursive, outer *common.Proof, finalityUpdate *proverType.FinalityUpdate,
+		scUpdate *proverType.SyncCommitteeUpdate) (*common.Proof, error)
+	RedeemProve(tx, bh, bhf *common.Proof, beginId, endId []byte, genesisScRoot, currentSCSSZRoot string,
 		txVar, receiptVar []string) (*common.Proof, error)
-	GenesisProve(firstProof, secondProof, firstWitness, secondWitness string,
-		genesisId, firstId, secondId []byte) (*common.Proof, error)
-	UnitProve(period uint64, update *utils.SyncCommitteeUpdate) (*common.Proof, *common.Proof, error)
-	RecursiveProve(choice string, firstProof, secondProof, firstWitness, secondWitness string,
-		beginId, relayId, endId []byte) (*common.Proof, error)
+
 	BtcBulkProve(data *blockDu.BlockBulkProofData) (*common.Proof, error)
 	BtcPackProve(data *blockDu.BulksProofData, recursive, bulk *common.Proof) (*common.Proof, error)
 	BtcDepthRecursiveProve(data *blockDu.BulksProofData, recursive, unit *common.Proof) (*common.Proof, error)

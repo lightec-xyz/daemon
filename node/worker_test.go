@@ -12,7 +12,7 @@ func TestLocalWorker_GenProof(t *testing.T) {
 		t.Fatal(err)
 	}
 	worker := NewWorker(client, 1)
-	proof, err := worker.GenDepositProof(rpc.DepositRequest{})
+	proof, err := worker.ProofInfo("")
 	if err != nil {
 		t.Fatal(err)
 	}

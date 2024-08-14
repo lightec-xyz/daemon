@@ -3,15 +3,11 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"testing"
-	"time"
-
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/ws"
+	"os"
+	"testing"
 )
 
 func init() {
@@ -60,27 +56,6 @@ func TestServer(t *testing.T) {
 		t.Logf("new connection: %v \n", opt.Id)
 		newConn := ws.NewConn(opt.Conn, nil, nil, true)
 		go newConn.Run()
-		go func() {
-			for {
-				time.Sleep(5 * time.Second)
-				client, err := rpc.NewCustomWsProofClient(newConn)
-				if err != nil {
-					t.Error(err)
-					continue
-				}
-				result, err := client.GenVerifyProof(rpc.VerifyRequest{
-					TxHash:    "testhash",
-					BlockHash: "blockHash",
-					Data: &grUtil.TxInChainProofData{
-						GenesisHash: &chainhash.Hash{},
-					}})
-				if err != nil {
-					t.Error(err)
-					continue
-				}
-				t.Log(result)
-			}
-		}()
 		return nil
 	})
 	if err != nil {

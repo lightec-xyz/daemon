@@ -22,9 +22,9 @@ type INode interface {
 
 // IProof api between node and proof
 type IProof interface {
-	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (SyncCommUnitsResponse, error)
-	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (SyncCommGenesisResponse, error)
-	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (SyncCommRecursiveResponse, error)
+	GenSyncCommitUnitProof(req SyncCommUnitsRequest) (*SyncCommUnitsResponse, error)
+	GenSyncCommGenesisProof(req SyncCommGenesisRequest) (*SyncCommGenesisResponse, error)
+	GenSyncCommRecursiveProof(req SyncCommRecursiveRequest) (*SyncCommRecursiveResponse, error)
 	TxInEth2Prove(req *TxInEth2ProveRequest) (*TxInEth2ProveResponse, error)
 	BlockHeaderProve(req *BlockHeaderRequest) (*BlockHeaderResponse, error)
 	BlockHeaderFinalityProve(req *BlockHeaderFinalityRequest) (*BlockHeaderFinalityResponse, error)

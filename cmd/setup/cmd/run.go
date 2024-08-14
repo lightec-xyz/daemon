@@ -7,9 +7,8 @@ import (
 )
 
 var setup = &cobra.Command{
-	Use:     "run",
-	Long:    "./setup  --datadir ./test --srsdir ./srs run --type beaconOuter --group all",
-	Example: "./setup  --datadir ./test --srsdir ./srs run --type beaconOuter --group all",
+	Use:  "run",
+	Long: "./setup  --datadir ./test --srsdir ./srs run --type beaconOuter --group all",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := check()
 		if err != nil {

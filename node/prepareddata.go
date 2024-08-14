@@ -250,14 +250,17 @@ func (p *PreparedData) GetRecursiveData(period uint64) (interface{}, bool, error
 		return nil, false, nil
 	}
 	return &rpc.SyncCommRecursiveRequest{
-		Choice:        circuits.SyncRecursive,
-		FirstProof:    firstProof.Proof,
-		FirstWitness:  firstProof.Witness,
-		SecondProof:   secondProof.Proof,
-		SecondWitness: secondProof.Witness,
-		BeginId:       genesisId,
-		RelayId:       relayId,
-		EndId:         endId,
+		Choice: circuits.SyncRecursive,
+		FirstProof: rpc.Proof{
+			Proof:   firstProof.Proof,
+			Witness: firstProof.Witness},
+		SecondProof: rpc.Proof{
+			Proof:   secondProof.Proof,
+			Witness: secondProof.Witness,
+		},
+		BeginId: genesisId,
+		RelayId: relayId,
+		EndId:   endId,
 	}, true, nil
 }
 
@@ -324,14 +327,18 @@ func (p *PreparedData) GetRecursiveGenesisData(period uint64) (interface{}, bool
 		return nil, false, nil
 	}
 	return &rpc.SyncCommRecursiveRequest{
-		Choice:        circuits.SyncGenesis,
-		FirstProof:    fistProof.Proof,
-		FirstWitness:  fistProof.Witness,
-		SecondProof:   secondProof.Proof,
-		SecondWitness: secondProof.Witness,
-		BeginId:       genesisId,
-		RelayId:       relayId,
-		EndId:         endId,
+		Choice: circuits.SyncGenesis,
+		FirstProof: rpc.Proof{
+			Proof:   fistProof.Proof,
+			Witness: fistProof.Witness,
+		},
+		SecondProof: rpc.Proof{
+			Proof:   secondProof.Proof,
+			Witness: secondProof.Witness,
+		},
+		BeginId: genesisId,
+		RelayId: relayId,
+		EndId:   endId,
 	}, true, nil
 
 }
@@ -392,13 +399,17 @@ func (p *PreparedData) GetSyncComGenesisData() (*rpc.SyncCommGenesisRequest, boo
 	}
 	logger.Info("get genesis second proof: %v", nextPeriod)
 	genesisProofParam := &rpc.SyncCommGenesisRequest{
-		FirstProof:    firstProof.Proof,
-		FirstWitness:  firstProof.Witness,
-		SecondProof:   secondProof.Proof,
-		SecondWitness: secondProof.Witness,
-		GenesisID:     genesisId,
-		FirstID:       firstId,
-		SecondID:      secondId,
+		FirstProof: rpc.Proof{
+			Proof:   firstProof.Proof,
+			Witness: firstProof.Witness,
+		},
+		SecondProof: rpc.Proof{
+			Proof:   secondProof.Proof,
+			Witness: secondProof.Witness,
+		},
+		GenesisID: genesisId,
+		FirstID:   firstId,
+		SecondID:  secondId,
 	}
 	return genesisProofParam, true, nil
 
@@ -625,12 +636,16 @@ func (p *PreparedData) GetBhfUpdateData(finalizedSlot, genesisPeriod uint64) (*r
 	request := rpc.BlockHeaderFinalityRequest{
 		Index:            finalizedSlot,
 		GenesisSCSSZRoot: fmt.Sprintf("%x", genesisId),
-		RecursiveProof:   recursiveProof.Proof,
-		RecursiveWitness: recursiveProof.Witness,
-		OuterProof:       outerProof.Proof,
-		OuterWitness:     outerProof.Witness,
-		FinalityUpdate:   &finalUpdate,
-		ScUpdate:         &scUpdate,
+		RecursiveProof: rpc.Proof{
+			Proof:   recursiveProof.Proof,
+			Witness: recursiveProof.Witness,
+		},
+		OuterProof: rpc.Proof{
+			Proof:   outerProof.Proof,
+			Witness: outerProof.Witness,
+		},
+		FinalityUpdate: &finalUpdate,
+		ScUpdate:       &scUpdate,
 	}
 	return &request, true, nil
 }
@@ -726,16 +741,22 @@ func (p *PreparedData) GetRedeemRequestData(genesisPeriod, txSlot uint64, txHash
 	}
 
 	redeemRequest := rpc.RedeemRequest{
-		TxHash:           txHash,
-		TxProof:          txProof.Proof,
-		TxWitness:        txProof.Witness,
-		BhProof:          blockHeaderProof.Proof,
-		BhWitness:        blockHeaderProof.Witness,
-		BhfProof:         bhfProof.Proof,
-		BhfWitness:       bhfProof.Witness,
+		TxHash: txHash,
+		TxProof: rpc.Proof{
+			Proof:   txProof.Proof,
+			Witness: txProof.Witness,
+		},
+		BhProof: rpc.Proof{
+			Proof:   blockHeaderProof.Proof,
+			Witness: blockHeaderProof.Witness,
+		},
+		BhfProof: rpc.Proof{
+			Proof:   bhfProof.Proof,
+			Witness: bhfProof.Witness,
+		},
 		GenesisScRoot:    hex.EncodeToString(genesisRoot),
-		BeginId:          hex.EncodeToString(beginID),
-		EndId:            hex.EncodeToString(endId),
+		BeginId:          beginID,
+		EndId:            endId,
 		CurrentSCSSZRoot: hex.EncodeToString(currentRoot),
 		TxVar:            txVarHex,
 		ReceiptVar:       receiptVarHex,
