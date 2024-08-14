@@ -921,6 +921,43 @@ func (p *Prepared) GetBtcDuperGenesisData() (*rpc.BtcDuperRecursiveRequest, bool
 	return &request, false, nil
 }
 
+func (p *Prepared) BtcDepthGenesis() (*rpc.BtcDepthRecursiveRequest, bool, error) {
+	data, err := blockDu.GetPackedProofData(p.proverClient, uint32(0), uint32(common.CapacityBulkUint))
+	if err != nil {
+		logger.Error("btc bulk data error: %v", err)
+		return nil, false, err
+	}
+	cpHeight := uint64(0)
+	firstProof, ok, err := p.filestore.GetBtcBulkProof(cpHeight, cpHeight+common.CapacityBulkUint)
+	if err != nil {
+		logger.Error("get btc bulk proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	secondProof, ok, err := p.filestore.GetBtcBulkProof(cpHeight+common.CapacityBulkUint, cpHeight+common.CapacityBulkUint*2)
+	if err != nil {
+		logger.Error("get btc bulk proof data error: %v %v", 0, err)
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	request := rpc.BtcDepthRecursiveRequest{
+		Data: data,
+		Recursive: rpc.Proof{
+			Proof:   firstProof.Proof,
+			Witness: firstProof.Witness,
+		},
+		Unit: rpc.Proof{
+			Proof:   secondProof.Proof,
+			Witness: secondProof.Witness,
+		},
+	}
+	return &request, true, nil
+}
+
 func NewPreparedData(filestore *FileStorage, store store.IStore, genesisPeriod, btcGenesisHeight uint64, proverClient *btcproverClient.Client, btcClient *btcrpc.Client,
 	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client) (*Prepared, error) {
 	return &Prepared{

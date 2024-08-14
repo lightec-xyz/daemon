@@ -233,7 +233,7 @@ func (fs *FileStorage) GetGenesisProof() (*StoreProof, bool, error) {
 }
 
 func (fs *FileStorage) StoreBtcDuperGenesisProof(proof, witness []byte) error {
-	obj := newStoreProof(common.BtcGenesisType, btcDuperGenesisKey, proof, witness)
+	obj := newStoreProof(common.BtcDuperGenesisType, btcDuperGenesisKey, proof, witness)
 	return fs.StoreObj(BtcGenesisTable, btcDuperGenesisKey, obj)
 }
 
@@ -252,7 +252,7 @@ func (fs *FileStorage) GetBtcDuperGenesisProof() (*StoreProof, bool, error) {
 }
 
 func (fs *FileStorage) StoreBtcCpGenesisProof(proof, witness []byte) error {
-	obj := newStoreProof(common.BtcGenesisType, btcCpGenesisKey, proof, witness)
+	obj := newStoreProof(common.BtcDuperGenesisType, btcCpGenesisKey, proof, witness)
 	return fs.StoreObj(BtcGenesisTable, btcCpGenesisKey, obj)
 }
 

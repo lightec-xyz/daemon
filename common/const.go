@@ -21,6 +21,11 @@ const (
 	BtcBaseDistance   = btcproverCommon.CapacityBaseLevel
 	BtcMiddleDistance = btcproverCommon.CapacityMidLevel * btcproverCommon.CapacityBaseLevel
 	BtcUpperDistance  = btcproverCommon.CapacityDifficultyBlock
+
+	CapacityBulkUint  = btcproverCommon.CapacityBulkUint
+	CapacityBlockBulk = btcproverCommon.CapacityBulkUint * 2
+	MinPacked         = btcproverCommon.CapacityBlockBulk + 1
+
 	//BtcBaseDistance   = 2
 	//BtcMiddleDistance = 2 * BtcBaseDistance
 	//BtcUpperDistance  = 2 * BtcMiddleDistance
@@ -161,8 +166,9 @@ const (
 	BtcBaseType
 	BtcMiddleType
 	BtcUpperType
-	BtcGenesisType
+	BtcDuperGenesisType
 	BtcDuperRecursive
+	BtcDepthGenesisType
 	BtcDepthRecursiveType
 	BtcChainType
 	BtcDepositType
@@ -197,10 +203,12 @@ func (z ZkProofType) String() string {
 		return "btcMiddleType"
 	case BtcUpperType:
 		return "btcUpperType"
-	case BtcGenesisType:
+	case BtcDuperGenesisType:
 		return "btcGenesisType"
 	case BtcDuperRecursive:
 		return "btcDuperRecursive"
+	case BtcDepthGenesisType:
+		return "btcDepthGenesisType"
 	case BtcDepthRecursiveType:
 		return "btcDepthRecursiveType"
 	case BtcChainType:
