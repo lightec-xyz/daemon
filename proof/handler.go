@@ -15,19 +15,46 @@ type Handler struct {
 	worker      rpc.IWorker
 }
 
-func (h *Handler) BtcGenesis(req *rpc.BtcGenesisRequest) (*rpc.ProofResponse, error) {
-	response, err := h.worker.BtcGenesis(req)
+func (h *Handler) BtcDuperRecursiveProve(req *rpc.BtcDuperRecursiveRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcDuperRecursiveProve(req)
 	if err != nil {
-		logger.Error("btc genesis error:%v", err)
+		logger.Error("btc duper recursive prove error:%v", err)
 		return nil, err
 	}
 	return response, nil
 }
 
-func (h *Handler) BtcRecursiveProve(req *rpc.BtcRecursiveRequest) (*rpc.ProofResponse, error) {
-	response, err := h.worker.BtcRecursiveProve(req)
+func (h *Handler) BtcDepthRecursiveProve(req *rpc.BtcDepthRecursiveRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcDepthRecursiveProve(req)
 	if err != nil {
-		logger.Error("btc recursive prove error:%v", err)
+		logger.Error("btc depth recursive prove error:%v", err)
+		return nil, err
+	}
+	return response, nil
+}
+
+func (h *Handler) BtcChainProve(req *rpc.BtcChainRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcChainProve(req)
+	if err != nil {
+		logger.Error("btc chain prove error:%v", err)
+		return nil, err
+	}
+	return response, nil
+}
+
+func (h *Handler) BtcDepositProve(req *rpc.BtcDepositRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcDepositProve(req)
+	if err != nil {
+		logger.Error("btc deposit prove error:%v", err)
+		return nil, err
+	}
+	return response, nil
+}
+
+func (h *Handler) BtcChangeProve(req *rpc.BtcChangeRequest) (*rpc.ProofResponse, error) {
+	response, err := h.worker.BtcChangeProve(req)
+	if err != nil {
+		logger.Error("btc change prove error:%v", err)
 		return nil, err
 	}
 	return response, nil
@@ -87,15 +114,6 @@ func (h *Handler) BtcPackedRequest(req *rpc.BtcPackedRequest) (*rpc.BtcPackRespo
 	return response, nil
 }
 
-func (h *Handler) BtcWrapProve(req *rpc.BtcWrapRequest) (*rpc.BtcWrapResponse, error) {
-	response, err := h.worker.BtcWrapProve(req)
-	if err != nil {
-		logger.Error("btc wrap prove error:%v", err)
-		return nil, err
-	}
-	return response, nil
-}
-
 func (h *Handler) TxInEth2Prove(req *rpc.TxInEth2ProveRequest) (*rpc.TxInEth2ProveResponse, error) {
 	response, err := h.worker.TxInEth2Prove(req)
 	if err != nil {
@@ -123,30 +141,11 @@ func (h *Handler) BlockHeaderFinalityProve(req *rpc.BlockHeaderFinalityRequest) 
 	return response, nil
 }
 
-func (h *Handler) GenDepositProof(req rpc.DepositRequest) (rpc.DepositResponse, error) {
-	response, err := h.worker.GenDepositProof(req)
-	if err != nil {
-		logger.Error("gen deposit proof error:%v", err)
-		return rpc.DepositResponse{}, err
-	}
-	return response, nil
-}
-
 func (h *Handler) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, error) {
 	response, err := h.worker.GenRedeemProof(req)
 	if err != nil {
 		logger.Error("gen redeem proof error:%v", err)
 		return nil, err
-	}
-	return response, nil
-}
-
-func (h *Handler) GenVerifyProof(req rpc.VerifyRequest) (rpc.VerifyResponse, error) {
-	logger.Debug("gen verify proof ")
-	response, err := h.worker.GenVerifyProof(req)
-	if err != nil {
-		logger.Error("gen verify proof error:%v", err)
-		return rpc.VerifyResponse{}, err
 	}
 	return response, nil
 }

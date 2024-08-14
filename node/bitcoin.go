@@ -7,10 +7,8 @@ import (
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
@@ -138,7 +136,7 @@ func (b *BitcoinAgent) ScanBlock() error {
 	}
 	for index := curHeight + 1; index <= blockCount; index++ {
 		logger.Debug("bitcoin parse block height:%d", index)
-		depositTxes, redeemTxes, proofRequests, err := b.parseBlock(uint64(index))
+		depositTxes, redeemTxes, err := b.parseBlock(uint64(index))
 		if err != nil {
 			logger.Error("bitcoin agent parse block error: %v %v", index, err)
 			return err
@@ -158,9 +156,6 @@ func (b *BitcoinAgent) ScanBlock() error {
 		if err != nil {
 			logger.Error("write btc height error: %v %v", index, err)
 			return err
-		}
-		if len(proofRequests) > 0 {
-			b.SendProofRequest(proofRequests...)
 		}
 
 	}
@@ -211,43 +206,30 @@ func (b *BitcoinAgent) saveData(height int64, txes []*Transaction) error {
 	return nil
 }
 
-func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction, []*common.ZkProofRequest, error) {
+func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction, error) {
 	blockHash, err := b.btcClient.GetBlockHash(int64(height))
 	if err != nil {
 		logger.Error("btcClient get block hash error: %v %v", height, err)
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	blockWithTx, err := b.btcClient.GetBlock(blockHash)
 	if err != nil {
 		logger.Error("btcClient get block error: %v %v", blockHash, err)
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	var depositTxes []*Transaction
 	var redeemTxes []*Transaction
-	var requests []*common.ZkProofRequest
 	for _, tx := range blockWithTx.Tx {
 		redeemTx, isRedeem := b.isRedeemTx(tx, height, blockHash)
 		if isRedeem {
-			proofed, err := b.CheckChainProof(common.VerifyTxType, tx.Txid)
+			proofed, err := b.CheckChainProof(common.BtcChangeType, tx.Txid)
 			if err != nil {
 				logger.Error("bitcoin check chain proof error: %v %v", tx.Txid, err)
-				return nil, nil, nil, err
+				return nil, nil, err
 			}
 			if proofed {
 				redeemTx.Proofed = true
 				logger.Debug("btc redeem tx proofed: %v", tx.Txid)
-			} else {
-				proofData, err := grUtil.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
-				if err != nil {
-					logger.Error("get verify proof data error: %v %v", tx.Txid, err)
-					return nil, nil, nil, err
-				}
-				data := rpc.VerifyRequest{
-					TxHash:    tx.Txid,
-					BlockHash: blockHash,
-					Data:      proofData,
-				}
-				requests = append(requests, common.NewZkProofRequest(common.VerifyTxType, data, 0, 0, tx.Txid))
 			}
 			redeemTxes = append(redeemTxes, redeemTx)
 			continue
@@ -255,46 +237,34 @@ func (b *BitcoinAgent) parseBlock(height uint64) ([]*Transaction, []*Transaction
 		depositTx, isDeposit, err := parseDepositTx(tx, b.operatorAddr, height, b.minDepositValue)
 		if err != nil {
 			logger.Error("check deposit tx error: %v %v", tx.Txid, err)
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		if isDeposit {
-			proofed, err := b.CheckChainProof(common.DepositTxType, depositTx.TxHash)
+			proofed, err := b.CheckChainProof(common.BtcDepositType, depositTx.TxHash)
 			if err != nil {
 				logger.Error("check deposit Proof error: %v %v", tx.Txid, err)
-				return nil, nil, nil, err
+				return nil, nil, err
 			}
 			if proofed {
 				depositTx.Proofed = true
 				logger.Debug("btc deposit tx proofed: %v", tx.Txid)
-			} else {
-				//proofData, err := btcproverUtils.GetDefaultGrandRollupProofData(b.btcProverClient, tx.Txid, blockHash)
-				//if err != nil {
-				//	logger.Error("get deposit proof data error: %v %v", tx.Txid, err)
-				//	return nil, nil, nil, err
-				//}
-				//data := rpc.DepositRequest{
-				//	Hash:    tx.Txid,
-				//	BlockHash: blockHash,
-				//	Data:      proofData,
-				//}
-				//requests = append(requests, common.NewZkProofRequest(common.DepositTxType, data, 0, 0, tx.Txid))
 			}
 			depositTxes = append(depositTxes, depositTx)
 		}
 	}
-	return depositTxes, redeemTxes, requests, nil
+	return depositTxes, redeemTxes, nil
 }
 
 func (b *BitcoinAgent) CheckChainProof(proofType common.ZkProofType, txHash string) (bool, error) {
 	switch proofType {
-	case common.VerifyTxType:
+	case common.BtcChainType:
 		utxo, err := b.ethClient.GetUtxo(txHash)
 		if err != nil {
 			logger.Error("check utxo error: %v %v", txHash, err)
 			return false, err
 		}
 		return utxo.IsChangeConfirmed, nil
-	case common.DepositTxType:
+	case common.BtcDepositType:
 		utxo, err := b.ethClient.GetUtxo(txHash)
 		if err != nil {
 			logger.Error("check tx error: %v %v", txHash, err)
@@ -313,13 +283,13 @@ func (b *BitcoinAgent) ProofResponse(resp *common.ZkProofResponse) error {
 	logger.Info("bitcoinAgent receive Proof resp: %v %x", resp.RespId(), resp.Proof)
 	b.cache.Delete(resp.RespId())
 	switch resp.ProofType {
-	case common.DepositTxType:
+	case common.BtcDepositType:
 		err := b.updateDepositProof(resp.Hash, hex.EncodeToString(resp.Proof), resp.Status)
 		if err != nil {
 			logger.Error("update Proof error: %v %v", resp.Hash, err)
 			return err
 		}
-	case common.VerifyTxType:
+	case common.BtcChangeType:
 		logger.Info("start update utxo change: %v", resp.Hash)
 		hash, err := b.txManager.UpdateUtxoChange(resp.Hash, hex.EncodeToString(resp.Proof))
 		if err != nil {
@@ -368,7 +338,7 @@ func (b *BitcoinAgent) isRedeemTx(tx types.Tx, height uint64, blockHash string) 
 
 func (b *BitcoinAgent) updateDepositProof(txId string, proof string, status common.ProofStatus) error {
 	logger.Debug("bitcoin update Proof status: %v %v %v", txId, proof, status)
-	err := UpdateProof(b.store, txId, proof, common.DepositTxType, status)
+	err := UpdateProof(b.store, txId, proof, common.BtcDepositType, status)
 	if err != nil {
 		logger.Error("update Proof error: %v %v", txId, err)
 		return err
@@ -465,7 +435,7 @@ func NewDepositBtcTx(height uint64, txId, ethAddr string, utxo []Utxo, amount in
 		TxType:    common.DepositTx,
 		ChainType: common.BitcoinChain,
 		EthAddr:   ethAddr,
-		ProofType: common.DepositTxType,
+		ProofType: common.BtcDepositType,
 		Utxo:      utxo,
 		Amount:    amount,
 	}
@@ -477,7 +447,7 @@ func NewRedeemBtcTx(height uint64, txId, blockHash string, inputs []Utxo, output
 		Height:    height,
 		TxType:    common.RedeemTx,
 		ChainType: common.BitcoinChain,
-		ProofType: common.VerifyTxType,
+		ProofType: common.BtcChangeType,
 		BlockHash: blockHash,
 	}
 }

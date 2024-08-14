@@ -92,7 +92,7 @@ func (f *Fetch) StoreLatestPeriod() error {
 		logger.Error("get latest Index error:%v", err)
 		return err
 	}
-	err = f.fileStore.StorePeriod(period)
+	err = f.fileStore.StoreLatestPeriod(period)
 	if err != nil {
 		logger.Error("store latest Index error:%v", err)
 		return err
@@ -286,8 +286,7 @@ func (f *Fetch) CheckFinalityUpdate(period uint64, finalityUpdate *structs.Light
 		return false, err
 	}
 	if exists {
-		//todo
-		logger.Warn("no find update :%v %v", period)
+		logger.Warn("no find update :%v", period)
 		return true, nil
 	}
 	ok, err := common.VerifyFinalityUpdateSignature(finalityUpdate, update.Data.NextSyncCommittee)

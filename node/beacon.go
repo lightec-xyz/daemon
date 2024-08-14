@@ -66,13 +66,13 @@ func (b *BeaconAgent) Init() error {
 	}
 	if !exists || latestPeriod < b.genesisPeriod {
 		logger.Warn("no find latest Index, store %v Index to db", b.genesisPeriod)
-		err := b.fileStore.StorePeriod(b.genesisPeriod)
+		err := b.fileStore.StoreLatestPeriod(b.genesisPeriod)
 		if err != nil {
 			logger.Error("store latest Index error: %v", err)
 			return err
 		}
 	}
-	latestSlot, exists, err := b.fileStore.GetFinalizedSlot()
+	latestSlot, exists, err := b.fileStore.GetLatestFinalizedSlot()
 	if err != nil {
 		logger.Error("check latest Slot error: %v", err)
 		return err
