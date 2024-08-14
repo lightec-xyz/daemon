@@ -50,7 +50,7 @@ var setup = &cobra.Command{
 }
 
 func init() {
-	setup.Flags().String("type", "", "setup circuit type value: beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive, btcBase, btcMiddle, btcUpper")
+	setup.Flags().String("type", "", "setup circuit type value: beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive,ethTxInEth2,ethBeaconHeader,ethFinalityHeader,ethRedeem, btcBase, btcMiddle, btcUpper")
 	setup.Flags().String("group", "", "batch setup circuit group value: all, bitcoin, beacon, ethereum")
 	rootCmd.AddCommand(setup)
 }
