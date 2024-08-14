@@ -3,9 +3,11 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
+
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -13,7 +15,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"strings"
 )
 
 type BitcoinAgent struct {

@@ -3,14 +3,15 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
-	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc"
-	"github.com/lightec-xyz/daemon/rpc/ws"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
+	"github.com/lightec-xyz/daemon/logger"
+	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/ws"
 )
 
 func init() {
@@ -70,7 +71,7 @@ func TestServer(t *testing.T) {
 				result, err := client.GenVerifyProof(rpc.VerifyRequest{
 					TxHash:    "testhash",
 					BlockHash: "blockHash",
-					Data: &grUtil.GrandRollupProofData{
+					Data: &grUtil.TxInChainProofData{
 						GenesisHash: &chainhash.Hash{},
 					}})
 				if err != nil {

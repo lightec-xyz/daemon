@@ -1,10 +1,14 @@
 {
-  "datadir": "/opt/testnet/",
-  "setupdir": "/opt/testnet/setup/",
-  "srsdir": "/opt/testnet/srs/",
-  "setup": true,
-  "isFromGenesis": false,
+  "isSetup": true,
+  "pubKeyInDfinity": "",
+  "srsDir": "/opt/testnet/srs/",
+  "redeemSetupDir": "/opt/testnet/setup/",
+  "setupDir": "/opt/testnet/setup/",
+  "proveDir": "/opt/testnet/",
   "btcHost": "18.116.118.39:18332",
   "btcUser": "lightec",
-  "btcPwd": "Abcd1234"
+  "btcPwd": "Abcd1234",
+  "genesisBlockHeight": 0,
+  "cpBlockHeight":0,
+  "endBlockHeight":0
 }

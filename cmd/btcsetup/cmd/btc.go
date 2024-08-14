@@ -1,30 +1,33 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 
-	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/baselevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/midlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/recursiveduper"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth/blockbulk"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth/recursivebulks"
 	"github.com/lightec-xyz/btc_provers/circuits/common"
-	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
-	"github.com/lightec-xyz/btc_provers/circuits/recursiveduper"
-	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
-	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
+	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
+	blockchainlUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
 	"github.com/lightec-xyz/btc_provers/utils/client"
-	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
-	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
-	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
 	reLight_common "github.com/lightec-xyz/reLight/circuits/common"
 )
 
 type BtcSetup struct {
-	cfg              *RunConfig
-	client           *client.Client
-	exit             chan os.Signal
-	fileStore        *FileStorage
-	startBlockheight uint32
+	cfg       *RunConfig
+	client    *client.Client
+	exit      chan os.Signal
+	fileStore *FileStorage
 }
 
 func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
@@ -44,46 +47,41 @@ func NewBtcSetup(cfg *RunConfig) (*BtcSetup, error) {
 		return nil, err
 	}
 
-	proofPath := fmt.Sprintf("%v/proof", cfg.DataDir)
-	fileStorage, err := NewFileStorage(proofPath)
+	fileStorage, err := NewFileStorage(cfg.ProveDir)
 	if err != nil {
-		logger.Error("new file storage error: %v %v", proofPath, err)
+		logger.Error("new file storage error: %v %v", cfg.ProveDir, err)
 		return nil, err
 	}
 
-	startBlockheight := uint32(0)
-	if !cfg.IsFromGenesis {
-		lastestBh, err := btcClient.GetBlockCount()
-		if err != nil {
-			logger.Error("get block height error: %v", err)
-			return nil, err
-		}
-		startBlockheight = (uint32(lastestBh)/common.CapacityDifficultyBlock - 3) * common.CapacityDifficultyBlock
-	}
-	logger.Info("start block height: %v", startBlockheight)
-
 	return &BtcSetup{
-		cfg:              cfg,
-		client:           btcClient,
-		exit:             make(chan os.Signal, 1),
-		fileStore:        fileStorage,
-		startBlockheight: startBlockheight,
+		cfg:       cfg,
+		client:    btcClient,
+		exit:      make(chan os.Signal, 1),
+		fileStore: fileStorage,
 	}, nil
 }
 
 func (bs *BtcSetup) Run() error {
-	if bs.cfg.Setup {
+	if bs.cfg.IsSetup {
 		err := bs.Setup()
 		if err != nil {
-			logger.Error("bs setup error: %v", err)
+			logger.Error("setup error: %v", err)
 			return err
 		}
 	}
-	err := bs.Prove()
+
+	err := bs.BlockChainProve()
 	if err != nil {
-		logger.Error("bs prove error: %v", err)
+		logger.Error("blockchain prove error: %v", err)
 		return err
 	}
+
+	err = bs.CpDepthProve()
+	if err != nil {
+		logger.Error("blockchain prove error: %v", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -92,44 +90,117 @@ func (bs *BtcSetup) Close() error {
 }
 
 func (bs *BtcSetup) Setup() error {
-	logger.Debug("start baselevel setup ...")
-
-	err := baselevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	logger.Debug("start blockchain setup ...")
+	err := blockchain.BlockChainSetup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup baselevel error: %v", err)
+		logger.Error("setup blockchain error: %v", err)
 		return err
 	}
 
-	logger.Debug("start midlevel setup ...")
-	err = midlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	logger.Debug("start blockdepth setup ...")
+	err = blockdepth.BlockDepthSetup(bs.cfg.SetupDir, bs.cfg.SrsDir)
 	if err != nil {
-		logger.Error("setup midlevel error: %v", err)
+		logger.Error("setup blockdepth error: %v", err)
 		return err
 	}
 
-	logger.Debug("start upperlevel setup ...")
-	err = upperlevel.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	logger.Debug("start txinchain setup ...")
+	pubKey, err := hex.DecodeString(bs.cfg.PubKeyInDfinity)
 	if err != nil {
-		logger.Error("setup upperlevel error: %v", err)
+		logger.Error("decode pubkey error: %v", err)
+		return err
+	}
+	if len(pubKey) != 33 {
+		logger.Error("pubkey length is not 33")
 		return err
 	}
 
-	logger.Debug("start recursiveduper setup ...")
-	err = recursiveduper.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir)
+	err = txinchain.Setup(bs.cfg.SetupDir, bs.cfg.SrsDir, bs.cfg.RedeemSetupDir, [33]byte(pubKey))
 	if err != nil {
-		logger.Error("setup recursiveduper error: %v", err)
+		logger.Error("setup txinchain error: %v", err)
 		return err
 	}
 
 	return nil
 }
 
-func (bs *BtcSetup) Prove() error {
-	duperProofs := make([]reLight_common.Proof, 3)
-	beginHeight := bs.startBlockheight
+func (bs *BtcSetup) CpDepthProve() error {
+	bulkProofs := make([]reLight_common.Proof, 2)
+	cpHeight := uint32(bs.cfg.CpBlockHeight)
 
-	for i := uint32(0); i < 3; i++ {
-		duperBeginHeight := beginHeight + i*common.CapacityDifficultyBlock
+	for i := uint32(0); i < 2; i++ {
+		bulkBeginHeight := cpHeight + i*common.CapacityBulkUint
+
+		bulkProof, err := bs.BulkProve(bulkBeginHeight)
+		if err != nil {
+			logger.Error("BulkProve(begin Height: %v) error: %v", bulkBeginHeight, err)
+			return err
+		}
+
+		bulkProofs[i] = *bulkProof
+	}
+
+	cpDepthEndHeight := cpHeight + common.CapacityBulkUint*2
+	logger.Info("start genesis recursivebulk prove: %v~%v", cpHeight, cpDepthEndHeight)
+
+	proofData, err := blockdepthUtil.GetRecursiveProofData(bs.client, cpHeight, cpDepthEndHeight)
+	if err != nil {
+		logger.Error("get recursivebulk data error: %v~%v %v", cpHeight, cpDepthEndHeight, err)
+		return err
+	}
+
+	genesisProof, err := recursivebulks.Prove(bs.cfg.SetupDir, &bulkProofs[0], &bulkProofs[1], proofData)
+	if err != nil {
+		logger.Error("genesis recursivebulk prove error: %v~%v %v", cpHeight, cpDepthEndHeight, err)
+		return err
+	}
+
+	err = bs.fileStore.StoreRecursiveBulk(genKey(string(recursiveBulkTable), cpHeight, cpDepthEndHeight), genesisProof)
+	if err != nil {
+		logger.Error("store recursivebulk proof error %v~%v %v", cpHeight, cpDepthEndHeight, err)
+		return err
+	}
+
+	recursivebulks.SaveProof(bs.cfg.ProveDir, genesisProof, cpHeight, cpDepthEndHeight)
+	logger.Info("complete genesis recursivebulk prove: %v~%v", cpHeight, cpDepthEndHeight)
+
+	return nil
+}
+
+func (bs *BtcSetup) BulkProve(beginHeight uint32) (*reLight_common.Proof, error) {
+	endHeight := beginHeight + common.CapacityBulkUint
+	logger.Info("start bulk prove: %v~%v", beginHeight, endHeight)
+
+	bulkData, err := blockdepthUtil.GetBlockBulkProofData(bs.client, beginHeight, endHeight)
+	if err != nil {
+		logger.Error("get bulk proof data error: %v~%v %v", beginHeight, endHeight, err)
+		return nil, err
+	}
+
+	bulkProof, err := blockbulk.Prove(bs.cfg.SetupDir, bulkData)
+	if err != nil {
+		logger.Error("blockbulk prove error: %v~%v %v", beginHeight, endHeight, err)
+		return nil, err
+	}
+
+	err = bs.fileStore.StoreBulk(genKey(string(bulkTable), beginHeight, endHeight), bulkProof)
+	if err != nil {
+		logger.Error("store blockbulk proof error %v~%v %v", beginHeight, endHeight, err)
+		return nil, err
+	}
+
+	blockbulk.SaveProof(bs.cfg.ProveDir, bulkProof, beginHeight, endHeight)
+	logger.Info("complete blockbulk prove: %v~%v", beginHeight, endHeight)
+
+	return bulkProof, nil
+}
+
+func (bs *BtcSetup) BlockChainProve() error {
+	duperProofs := make([]reLight_common.Proof, 2)
+	genesisHeight := uint32(bs.cfg.GenesisBlockHeight)
+
+	for i := uint32(0); i < 2; i++ {
+		duperBeginHeight := genesisHeight + i*common.CapacityDifficultyBlock
 
 		duperProof, err := bs.DuperProve(duperBeginHeight)
 		if err != nil {
@@ -140,63 +211,38 @@ func (bs *BtcSetup) Prove() error {
 		duperProofs[i] = *duperProof
 	}
 
-	endHeight1 := beginHeight + common.CapacityDifficultyBlock*2 - 1
-	logger.Info("start genesis recursiveduper prove: %v~%v", beginHeight, endHeight1)
+	chainEndHeight := genesisHeight + common.CapacityDifficultyBlock*2 - 1
+	logger.Info("start genesis recursiveduper prove: %v~%v", genesisHeight, chainEndHeight)
 
-	proofData1, err := recursiveduperUtil.GetRecursiveProofData(bs.client, endHeight1, beginHeight)
+	proofData, err := blockchainlUtil.GetRecursiveProofData(bs.client, chainEndHeight, genesisHeight)
 	if err != nil {
-		logger.Error("get recursiveduper data error: %v %v", endHeight1, err)
+		logger.Error("get recursiveduper data error: %v~%v %v", genesisHeight, chainEndHeight, err)
 		return err
 	}
 
-	genesisProof, err := recursiveduper.ProveGenesis(bs.cfg.SetupDir, &duperProofs[0], &duperProofs[1], proofData1)
+	genesisProof, err := recursiveduper.Prove(bs.cfg.SetupDir, &duperProofs[0], &duperProofs[1], proofData)
 	if err != nil {
-		logger.Error("genesis recursiveduper prove error: %v %v", endHeight1, err)
+		logger.Error("genesis recursiveduper prove error: %v~%v %v", genesisHeight, chainEndHeight, err)
 		return err
 	}
 
-	err = bs.fileStore.StoreRecursive(genKey(string(recursiveTable), beginHeight, endHeight1), genesisProof)
+	err = bs.fileStore.StoreRecursiveDuper(genKey(string(recursiveDuperTable), genesisHeight, chainEndHeight), genesisProof)
 	if err != nil {
-		logger.Error("store recursiveduper proof error %v %v", endHeight1, err)
+		logger.Error("store recursiveduper proof error %v~%v %v", genesisHeight, chainEndHeight, err)
 		return err
 	}
 
-	recursiveduper.SaveProof(bs.cfg.DataDir, genesisProof, endHeight1, beginHeight)
-	logger.Info("complete genesis recursiveduper prove: %v~%v", beginHeight, endHeight1)
+	recursiveduper.SaveProof(bs.cfg.ProveDir, genesisProof, chainEndHeight, genesisHeight)
+	logger.Info("complete genesis recursiveduper prove: %v~%v", genesisHeight, chainEndHeight)
 
-	endHeight2 := endHeight1 + common.CapacityDifficultyBlock
-	logger.Info("start recursiveduper prove: %v~%v", beginHeight, endHeight2)
-
-	proofData2, err := recursiveduperUtil.GetRecursiveProofData(bs.client, endHeight2, beginHeight)
-	if err != nil {
-		logger.Error("get recursiveduper data error: %v %v", endHeight2, err)
-		return err
-	}
-
-	recursiveProof, err := recursiveduper.ProveRecursive(
-		bs.cfg.SetupDir, genesisProof, &duperProofs[2], proofData2)
-	if err != nil {
-		logger.Error("recursiveduper prove error: %v %v", endHeight2, err)
-		return err
-	}
-
-	err = bs.fileStore.StoreRecursive(genKey(string(recursiveTable), beginHeight, endHeight2), recursiveProof)
-	if err != nil {
-		logger.Error("store recursiveduper proof error %v %v", endHeight2, err)
-		return err
-	}
-
-	recursiveduper.SaveProof(bs.cfg.DataDir, recursiveProof, endHeight2, beginHeight)
-	logger.Info("complete recursiveduper prove: %v~%v", beginHeight, endHeight2)
 	return nil
-
 }
 
 func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error) {
 	endHeight := beginHeight + common.CapacityBaseLevel - 1
 	logger.Info("start baseLevel prove: %v~%v", beginHeight, endHeight)
 
-	baseData, err := baselevelUtil.GetBaseLevelProofData(bs.client, endHeight)
+	baseData, err := blockchainlUtil.GetBaseLevelProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get baseLevel proof data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -214,8 +260,9 @@ func (bs *BtcSetup) BatchProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	baselevel.SaveProof(bs.cfg.DataDir, baseProof, endHeight)
+	baselevel.SaveProof(bs.cfg.ProveDir, baseProof, endHeight)
 	logger.Info("complete baseLevel prove: %v~%v", beginHeight, endHeight)
+
 	return baseProof, nil
 }
 
@@ -237,7 +284,7 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 	endHeight := beginHeight + common.CapacitySuperBatch - 1
 	logger.Info("start middLevel prove: %v~%v", beginHeight, endHeight)
 
-	middleData, err := midlevelUtil.GetMidLevelProofData(bs.client, endHeight)
+	middleData, err := blockchainlUtil.GetMidLevelProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get middLevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -255,8 +302,9 @@ func (bs *BtcSetup) SuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	midlevel.SaveProof(bs.cfg.DataDir, middleProof, endHeight)
+	midlevel.SaveProof(bs.cfg.ProveDir, middleProof, endHeight)
 	logger.Info("complete middLevel level proof: %v~%v", beginHeight, endHeight)
+
 	return middleProof, nil
 
 }
@@ -279,7 +327,7 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 	endHeight := beginHeight + common.CapacityDifficultyBlock - 1
 	logger.Info("start upperlevel prove: %v~%v", beginHeight, endHeight)
 
-	upData, err := upperlevelUtil.GetUpperLevelProofData(bs.client, endHeight)
+	upData, err := blockchainlUtil.GetUpperLevelProofData(bs.client, endHeight)
 	if err != nil {
 		logger.Error("get upperlevel data error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
@@ -291,41 +339,59 @@ func (bs *BtcSetup) DuperProve(beginHeight uint32) (*reLight_common.Proof, error
 		return nil, err
 	}
 
-	err = bs.fileStore.StoreUp(genKey(string(upTable), beginHeight, endHeight), upProof)
+	err = bs.fileStore.StoreUpper(genKey(string(upperTable), beginHeight, endHeight), upProof)
 	if err != nil {
 		logger.Error("store upperlevel proof error: %v~%v %v", beginHeight, endHeight, err)
 		return nil, err
 	}
 
-	upperlevel.SaveProof(bs.cfg.DataDir, upProof, endHeight)
+	upperlevel.SaveProof(bs.cfg.ProveDir, upProof, endHeight)
 	logger.Info("complete upperlevel prove: %v~%v", beginHeight, endHeight)
+
 	return upProof, nil
 }
 
 type RunConfig struct {
-	DataDir       string `json:"datadir"`
-	SetupDir      string `json:"setupdir"`
-	SrsDir        string `json:"srsdir"`
-	Setup         bool   `json:"setup"`
-	IsFromGenesis bool   `json:"isFromGenesis"`
-	BtcHost       string `json:"btcHost"`
-	BtcUser       string `json:"btcUser"`
-	BtcPwd        string `json:"btcPwd"`
+	IsSetup            bool   `json:"isSetup"`
+	PubKeyInDfinity    string `json:"pubKeyInDfinity"`
+	SrsDir             string `json:"srsDir"`
+	RedeemSetupDir     string `json:"redeemSetupDir"`
+	SetupDir           string `json:"setupDir"`
+	ProveDir           string `json:"proveDir"`
+	BtcHost            string `json:"btcHost"`
+	BtcUser            string `json:"btcUser"`
+	BtcPwd             string `json:"btcPwd"`
+	GenesisBlockHeight int    `json:"genesisBlockHeight"`
+	CpBlockHeight      int    `json:"cpBlockHeight"`
+	EndBlockHeight     int    `json:"endBlockHeight"`
 }
 
 func (rc *RunConfig) check() error {
-	if rc.BtcHost == "" {
-		return fmt.Errorf("host is empty")
+	if rc.PubKeyInDfinity == "" {
+		return fmt.Errorf("pubKeyInDfinity is empty")
 	}
-	if rc.DataDir == "" {
-		return fmt.Errorf("dataDir can not be empty")
+
+	if rc.SetupDir == "" || rc.ProveDir == "" || rc.SrsDir == "" || rc.RedeemSetupDir == "" {
+		return fmt.Errorf("dir is empty")
 	}
-	if rc.SetupDir == "" {
-		return fmt.Errorf("setupdir is empty")
+
+	if rc.BtcHost == "" || rc.BtcUser == "" || rc.BtcPwd == "" {
+		return fmt.Errorf("btc config is empty")
 	}
-	if rc.SrsDir == "" {
-		return fmt.Errorf("srsDir can not be empty")
+
+	if rc.GenesisBlockHeight > rc.CpBlockHeight || rc.GenesisBlockHeight >= rc.EndBlockHeight {
+		return fmt.Errorf("invalid genesisBlockHeight")
 	}
+
+	if rc.CpBlockHeight >= rc.EndBlockHeight {
+		return fmt.Errorf("invalid cpBlockHeight")
+	}
+
+	if rc.EndBlockHeight-rc.CpBlockHeight < common.CapacityBulkUint*2 ||
+		rc.EndBlockHeight-rc.GenesisBlockHeight+1 < common.CapacityDifficultyBlock*2 {
+		return fmt.Errorf("invalid endBlockHeight")
+	}
+
 	return nil
 }
 

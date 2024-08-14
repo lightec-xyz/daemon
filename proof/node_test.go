@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	grandrollupUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
+	txinchainUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -143,7 +143,7 @@ func TestRpcHandler(t *testing.T) {
 	request := rpc.VerifyRequest{
 		TxHash:    "testhash",
 		BlockHash: "blockHash",
-		Data: &grandrollupUtil.GrandRollupProofData{
+		Data: &txinchainUtil.TxInChainProofData{
 			GenesisHash: &chainhash.Hash{},
 		}}
 	param, err := json.Marshal([]interface{}{request})

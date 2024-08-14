@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"os"
+	"time"
+
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
@@ -19,9 +23,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
-	"math/big"
-	"os"
-	"time"
 )
 
 func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index, end uint64, hash string) (bool, error) {
@@ -549,7 +550,7 @@ func BeaconBlockHeaderToSlotAndRoot(header *structs.BeaconBlockHeader) (uint64, 
 
 }
 
-func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*btcprovertypes.BlockHeaderChain, error) {
+func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*btcprovertypes.BlockBulkProofData, error) {
 	startHash, err := GetReverseHash(client, start)
 	if err != nil {
 		logger.Error("get block header error: %v %v", start, err)
@@ -570,7 +571,7 @@ func GetBtcMidBlockHeader(client *bitcoin.Client, start, end uint64) (*btcprover
 		}
 		middleHeaders = append(middleHeaders, header)
 	}
-	data := &btcprovertypes.BlockHeaderChain{
+	data := &btcprovertypes.BlockBulkProofData{
 		BeginHeight:        start,
 		BeginHash:          startHash,
 		EndHeight:          end,

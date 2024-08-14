@@ -3,14 +3,16 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
+
 	btcprovercom "github.com/lightec-xyz/btc_provers/circuits/common"
 	btcprovertypes "github.com/lightec-xyz/btc_provers/circuits/types"
-	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/baselevel"
+	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
+	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	grUtil "github.com/lightec-xyz/btc_provers/utils/grandrollup"
-	midlevelUtil "github.com/lightec-xyz/btc_provers/utils/midlevel"
-	recursiveduperUtil "github.com/lightec-xyz/btc_provers/utils/recursiveduper"
-	upperlevelUtil "github.com/lightec-xyz/btc_provers/utils/upperlevel"
+	grUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -25,7 +27,6 @@ import (
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
 	"github.com/lightec-xyz/reLight/circuits/utils"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
-	"strconv"
 )
 
 type PreparedData struct {
@@ -153,7 +154,7 @@ func (p *PreparedData) GetBtcBaseData(endHeight uint64) (*rpc.BtcBaseRequest, bo
 }
 
 func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest, bool, error) {
-	data, err := midlevelUtil.GetMidLevelProofData(p.proverClient, uint32(endHeight-1))
+	data, err := midlevelUtil.GetBatchedProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
@@ -187,7 +188,7 @@ func (p *PreparedData) GetBtcMiddleData(endHeight uint64) (*rpc.BtcMiddleRequest
 }
 
 func (p *PreparedData) GetBtcUpperData(endHeight uint64) (*rpc.BtcUpperRequest, bool, error) {
-	data, err := upperlevelUtil.GetUpperLevelProofData(p.proverClient, uint32(endHeight-1))
+	data, err := upperlevelUtil.GetBatchedProofData(p.proverClient, uint32(endHeight-1))
 	if err != nil {
 		logger.Error("get base level proof data error: %v %v", endHeight, err)
 		return nil, false, err
@@ -558,7 +559,7 @@ func (p *PreparedData) GetReverseHash(height uint64) (string, error) {
 	}
 	return reverseHash, nil
 }
-func (p *PreparedData) GetBtcMidBlockHeader(start, end uint64) (*btcprovertypes.BlockHeaderChain, error) {
+func (p *PreparedData) GetBtcMidBlockHeader(start, end uint64) (*btcprovertypes.BlockBulkProofData, error) {
 	startHash, err := p.GetReverseHash(start)
 	if err != nil {
 		logger.Error("get block header error: %v %v", start, err)
@@ -579,7 +580,7 @@ func (p *PreparedData) GetBtcMidBlockHeader(start, end uint64) (*btcprovertypes.
 		}
 		middleHeaders = append(middleHeaders, header)
 	}
-	data := &btcprovertypes.BlockHeaderChain{
+	data := &btcprovertypes.BlockBulkProofData{
 		BeginHeight:        start,
 		BeginHash:          startHash,
 		EndHeight:          end,

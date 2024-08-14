@@ -21,7 +21,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/lightec-xyz/btc_provers v0.0.0-00010101000000-000000000000
 	github.com/lightec-xyz/chainark v0.2.1
-	github.com/lightec-xyz/provers v0.0.0-00010101000000-000000000000
+	github.com/lightec-xyz/provers v0.2.1
 	github.com/lightec-xyz/reLight v0.1.0
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v5 v5.0.0

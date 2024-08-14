@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/btc_provers/circuits/baselevel"
-	"github.com/lightec-xyz/btc_provers/circuits/midlevel"
-	"github.com/lightec-xyz/btc_provers/circuits/upperlevel"
+
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/baselevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/midlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
 	"github.com/lightec-xyz/daemon/logger"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
