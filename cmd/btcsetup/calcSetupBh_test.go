@@ -24,9 +24,10 @@ func Test_CalcSetupBh(t *testing.T) {
 	assert.NoError(t, err)
 	log.Printf("lastest block height: %d", lastestBh)
 
+	genesisBlockheight := (lastestBh - common.MinChain) / common.CapacityDifficultyBlock * common.CapacityDifficultyBlock
+	log.Printf("genesis block height: %d", genesisBlockheight)
+
 	cpBlockHeight := lastestBh - common.MinPacked
 	log.Printf("cp block height: %d", cpBlockHeight)
 
-	genesisBlockheight := (lastestBh/common.CapacityDifficultyBlock - 2) * common.CapacityDifficultyBlock
-	log.Printf("genesis block height: %d", genesisBlockheight)
 }
