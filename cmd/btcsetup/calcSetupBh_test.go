@@ -11,9 +11,9 @@ import (
 )
 
 var connCfg = &rpcclient.ConnConfig{
-	Host: "localhost:18332",
-	User: "test",
-	Pass: "123456",
+	Host: "18.116.118.39:18332",
+	User: "lightec",
+	Pass: "Abcd1234",
 }
 
 func Test_CalcSetupBh(t *testing.T) {
