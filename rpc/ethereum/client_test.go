@@ -52,14 +52,6 @@ func TestClient_Demo001(t *testing.T) {
 	t.Log(receipt.TransactionIndex)
 }
 
-func TestClient_ChainFork(t *testing.T) {
-	fork, err := client.ChainFork(596815)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(fork)
-}
-
 func TestClient_GetTxSender(t *testing.T) {
 	sender, err := client.GetTxSender("0xb19639d5c7c5804632f8ed92ca7e16d78cc1c6590a314b0aafee78793be223c6",
 		"0xf99ab49c39e77bd6274035cbc1d6db068e014d3dc8e8a6a4c988f327a9b417f1", 39)
@@ -267,7 +259,7 @@ func TestDepositeTransaction(t *testing.T) {
 }
 
 func TestUpdateUtxoChange(t *testing.T) {
-	privateKey := "c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49"
+	privateKey, _ := hex.DecodeString("c0781e4ca498e0ad693751bac014c0ab00c2841f28903e59cdfe1ab212438e49")
 	txId := "0xd32b0bc770512f49884b1e0e409c2010989c6fc7d76e4e495544a5cdb6cd9f49"
 	//ethAddr := "0x771815eFD58e8D6e66773DB0bc002899c00d5b0c"
 	proofBytes := []byte("test proof")
