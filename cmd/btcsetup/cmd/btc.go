@@ -379,7 +379,8 @@ func (rc *RunConfig) check() error {
 		return fmt.Errorf("btc config is empty")
 	}
 
-	if rc.GenesisBlockHeight > rc.CpBlockHeight || rc.GenesisBlockHeight >= rc.EndBlockHeight {
+	if rc.GenesisBlockHeight > rc.CpBlockHeight || rc.GenesisBlockHeight >= rc.EndBlockHeight ||
+		rc.GenesisBlockHeight%common.CapacityDifficultyBlock != 0 {
 		return fmt.Errorf("invalid genesisBlockHeight")
 	}
 
@@ -387,8 +388,8 @@ func (rc *RunConfig) check() error {
 		return fmt.Errorf("invalid cpBlockHeight")
 	}
 
-	if rc.EndBlockHeight-rc.CpBlockHeight < common.CapacityBulkUint*2 ||
-		rc.EndBlockHeight-rc.GenesisBlockHeight+1 < common.CapacityDifficultyBlock*2 {
+	if rc.EndBlockHeight-rc.CpBlockHeight < common.MinPacked ||
+		rc.EndBlockHeight-rc.GenesisBlockHeight < common.MinChain {
 		return fmt.Errorf("invalid endBlockHeight")
 	}
 

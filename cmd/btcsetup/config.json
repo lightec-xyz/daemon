@@ -1,14 +1,14 @@
 {
   "isSetup": true,
-  "pubKeyInDfinity": "",
+  "pubKeyInDfinity": "0205cf70ac69a6eae079d4d3112d78356a37da44780e18f377d70ac85601f46575",
   "srsDir": "/opt/testnet/srs/",
   "redeemSetupDir": "/opt/testnet/setup/",
   "setupDir": "/opt/testnet/setup/",
-  "proveDir": "/opt/testnet/",
+  "proveDir": "/opt/testnet/prove",
   "btcHost": "18.116.118.39:18332",
   "btcUser": "lightec",
   "btcPwd": "Abcd1234",
-  "genesisBlockHeight": 0,
-  "cpBlockHeight":0,
-  "endBlockHeight":0
+  "genesisBlockHeight": 2872584,
+  "cpBlockHeight":2873483,
+  "endBlockHeight":2873500
 }
