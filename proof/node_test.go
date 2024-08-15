@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	txinchainUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
@@ -93,7 +91,7 @@ func TestWsServer(t *testing.T) {
 			time.Sleep(10 * time.Second)
 			if proofClient != nil {
 				t.Log("send new req")
-				proof, err := proofClient.GenVerifyProof(rpc.VerifyRequest{})
+				proof, err := proofClient.TxInEth2Prove(&rpc.TxInEth2ProveRequest{})
 				if err != nil {
 					t.Log(err)
 					continue
@@ -102,7 +100,6 @@ func TestWsServer(t *testing.T) {
 			}
 		}
 	}()
-
 	err = server.Run()
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +110,7 @@ func TestWsServer(t *testing.T) {
 func TestWsClient(t *testing.T) {
 	conn, err := ws.NewClientConn("ws://127.0.0.1:8970/ws", func(req ws.Message) (ws.Message, error) {
 		t.Logf("clinet receive new req: %v \n", req)
-		response := rpc.VerifyResponse{
+		response := rpc.TxInEth2ProveRequest{
 			TxHash: "testVerifyResp",
 		}
 		data, err := json.Marshal(response)
@@ -140,12 +137,9 @@ func TestRpcHandler(t *testing.T) {
 	handler := NewHandler(nil, nil, worker)
 	service := ws.NewService(handler)
 	t.Log(service)
-	request := rpc.VerifyRequest{
-		TxHash:    "testhash",
-		BlockHash: "blockHash",
-		Data: &txinchainUtil.TxInChainProofData{
-			GenesisHash: &chainhash.Hash{},
-		}}
+	request := rpc.TxInEth2ProveRequest{
+		TxHash: "testhash",
+	}
 	param, err := json.Marshal([]interface{}{request})
 	if err != nil {
 		t.Fatal(err)

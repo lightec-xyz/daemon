@@ -70,11 +70,3 @@ func TestClient_BlockHeight(t *testing.T) {
 	t.Log(s)
 
 }
-
-func TestClient_BtcBalance(t *testing.T) {
-	balance, err := client.BtcBalance("tb1qn9fpljh5ggp407z02jx8x76pemzclgd6rla0qp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(balance)
-}
