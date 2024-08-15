@@ -150,29 +150,29 @@ func (h *Handler) GenRedeemProof(req *rpc.RedeemRequest) (*rpc.RedeemResponse, e
 	return response, nil
 }
 
-func (h *Handler) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (rpc.SyncCommGenesisResponse, error) {
+func (h *Handler) GenSyncCommGenesisProof(req rpc.SyncCommGenesisRequest) (*rpc.SyncCommGenesisResponse, error) {
 	response, err := h.worker.GenSyncCommGenesisProof(req)
 	if err != nil {
 		logger.Error("gen sync comm genesis proof error:%v", err)
-		return rpc.SyncCommGenesisResponse{}, err
+		return nil, err
 	}
 	return response, nil
 }
 
-func (h *Handler) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (rpc.SyncCommUnitsResponse, error) {
+func (h *Handler) GenSyncCommitUnitProof(req rpc.SyncCommUnitsRequest) (*rpc.SyncCommUnitsResponse, error) {
 	response, err := h.worker.GenSyncCommitUnitProof(req)
 	if err != nil {
 		logger.Error("gen sync comm unit proof error:%v", err)
-		return rpc.SyncCommUnitsResponse{}, err
+		return nil, err
 	}
 	return response, nil
 }
 
-func (h *Handler) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (rpc.SyncCommRecursiveResponse, error) {
+func (h *Handler) GenSyncCommRecursiveProof(req rpc.SyncCommRecursiveRequest) (*rpc.SyncCommRecursiveResponse, error) {
 	response, err := h.worker.GenSyncCommRecursiveProof(req)
 	if err != nil {
 		logger.Error("gen sync comm recursive proof error:%v", err)
-		return rpc.SyncCommRecursiveResponse{}, err
+		return nil, err
 	}
 	return response, nil
 }
