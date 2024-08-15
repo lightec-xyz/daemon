@@ -57,11 +57,18 @@ func TestClient_Sign(t *testing.T) {
 }
 
 func TestClient_BlockHeight(t *testing.T) {
-	height, err := client.BlockHeight()
+	height, err := client.BlockSignature()
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(height)
+	r, s, err := height.ToRS()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(r)
+	t.Log(s)
+
 }
 
 func TestClient_BtcBalance(t *testing.T) {

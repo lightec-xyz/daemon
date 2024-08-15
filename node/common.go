@@ -45,7 +45,7 @@ func CheckProof(fileStore *FileStorage, zkType common.ZkProofType, index, end ui
 	case common.BtcDuperRecursive:
 		return fileStore.CheckBtcDuperRecursiveProof(index, end)
 	case common.BtcDepthGenesisType:
-		return fileStore.CheckBtcCpGenesisProof()
+		return fileStore.CheckBtcDepthGenesisProof()
 	case common.BtcDepthRecursiveType:
 		return fileStore.CheckBtcDepthRecursiveProof(index, end)
 	case common.BtcChainType:
@@ -92,7 +92,7 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 	case common.BtcDuperRecursive:
 		return fileStore.StoreBtcDuperRecursiveProof(proof, witness, index, end)
 	case common.BtcDepthGenesisType:
-		return fileStore.StoreBtcCpGenesisProof(proof, witness)
+		return fileStore.StoreBtcDepthGenesisProof(proof, witness)
 	case common.BtcDepthRecursiveType:
 		return fileStore.StoreBtcDepthRecursiveProof(proof, witness, index, end)
 	case common.BtcChainType:
@@ -109,14 +109,14 @@ func StoreZkProof(fileStore *FileStorage, zkType common.ZkProofType, index, end 
 func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, hash string) (interface{}, bool, error) {
 	switch reqType {
 	case common.SyncComUnitType:
-		data, ok, err := p.GetSyncComUnitData(index)
+		data, ok, err := p.GetSyncComUnitRequest(index)
 		if err != nil {
 			logger.Error("get SyncComUnitData error:%v %v", index, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.SyncComGenesisType:
-		data, ok, err := p.GetSyncComGenesisData()
+		data, ok, err := p.GetSyncComGenesisRequest()
 		if err != nil {
 			logger.Error("get SyncComGenesisData error:%v", err)
 			return nil, false, err
@@ -125,14 +125,14 @@ func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, 
 
 	case common.SyncComRecursiveType:
 		if index == p.genesisPeriod+2 { // todo
-			data, ok, err := p.GetRecursiveGenesisData(index)
+			data, ok, err := p.GetRecursiveGenesisRequest(index)
 			if err != nil {
 				logger.Error("get SyncComRecursiveGenesisData error:%v %v", index, err)
 				return nil, false, err
 			}
 			return data, ok, nil
 		} else {
-			data, ok, err := p.GetRecursiveData(index)
+			data, ok, err := p.GetRecursiveRequest(index)
 			if err != nil {
 				logger.Error("get SyncComRecursiveData error:%v %v", index, err)
 				return nil, false, err
@@ -140,14 +140,14 @@ func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, 
 			return data, ok, nil
 		}
 	case common.TxInEth2:
-		data, ok, err := p.GetTxInEth2Data(hash, p.getSlotByNumber)
+		data, ok, err := p.GetTxInEth2Request(hash, p.getSlotByNumber)
 		if err != nil {
 			logger.Error("get tx in eth2 data error: %v %v", index, err)
 			return nil, false, err
 		}
 		return data, ok, err
 	case common.BeaconHeaderType:
-		data, ok, err := p.GetBlockHeaderRequestData(index)
+		data, ok, err := p.GetBlockHeaderRequest(index)
 		if err != nil {
 			logger.Error("get block header request data error:%v %v", index, err)
 			return nil, false, err
@@ -155,35 +155,35 @@ func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, 
 		return data, ok, nil
 
 	case common.BeaconHeaderFinalityType:
-		data, ok, err := p.GetBhfUpdateData(index, p.genesisPeriod)
+		data, ok, err := p.GetBhfUpdateRequest(index, p.genesisPeriod)
 		if err != nil {
 			logger.Error("get bhf update data error: %v %v", index, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.RedeemTxType:
-		data, ok, err := p.GetRedeemRequestData(p.genesisPeriod, index, hash)
+		data, ok, err := p.GetRedeemRequest(p.genesisPeriod, index, hash)
 		if err != nil {
 			logger.Error("get redeem request data error:%v %v", index, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BtcBulkType:
-		data, err := p.GetBtcBulkRequestData(index, end)
+		data, err := p.GetBtcBulkRequest(index, end)
 		if err != nil {
 			logger.Error("get mid block header error:%v %v %v", index, end, err)
 			return nil, false, err
 		}
 		return data, true, nil
 	case common.BtcPackedType:
-		data, err := p.GetBtcPackRequestData(index, end)
+		data, ok, err := p.GetBtcPackRequest(index, end)
 		if err != nil {
 			logger.Error("get mid block header error:%v %v %v", index, end, err)
 			return nil, false, err
 		}
-		return data, true, nil
+		return data, ok, nil
 	case common.BtcBaseType:
-		data, ok, err := p.GetBtcBaseData(end)
+		data, ok, err := p.GetBtcBaseRequest(end)
 		if err != nil {
 			logger.Error("get btc base data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -191,7 +191,7 @@ func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, 
 		return data, ok, nil
 
 	case common.BtcMiddleType:
-		data, ok, err := p.GetBtcMiddleData(end)
+		data, ok, err := p.GetBtcMiddleRequest(end)
 		if err != nil {
 			logger.Error("get btc middle data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -199,14 +199,14 @@ func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, 
 		return data, ok, nil
 
 	case common.BtcUpperType:
-		data, ok, err := p.GetBtcUpperData(end)
+		data, ok, err := p.GetBtcUpperRequest(end)
 		if err != nil {
 			logger.Error("get btc upper data error:%v %v %v", index, end, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BtcDuperGenesisType:
-		data, ok, err := p.GetBtcDuperGenesisData()
+		data, ok, err := p.GetBtcDuperGenesisRequest()
 		if err != nil {
 			logger.Error("get btc genesis data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -220,7 +220,7 @@ func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, 
 		}
 		return data, ok, nil
 	case common.BtcDepthGenesisType:
-		data, ok, err := p.BtcDepthGenesis()
+		data, ok, err := p.BtcDepthGenesisRequest()
 		if err != nil {
 			logger.Error("get btc depth genesis data error:%v %v %v", index, end, err)
 			return nil, false, err
@@ -234,21 +234,21 @@ func GenRequestData(p *Prepared, reqType common.ZkProofType, index, end uint64, 
 		}
 		return data, ok, nil
 	case common.BtcChainType:
-		data, ok, err := p.GetBtcChainData(index, end)
+		data, ok, err := p.GetBtcChainRequest(index, end)
 		if err != nil {
 			logger.Error("get btc chain data error:%v %v %v", index, end, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BtcDepositType:
-		data, ok, err := p.GetBtcDeposit()
+		data, ok, err := p.GetBtcDepositRequest(hash)
 		if err != nil {
 			logger.Error("get btc deposit data error:%v %v %v", index, end, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BtcChangeType:
-		data, ok, err := p.GetBtcChange()
+		data, ok, err := p.GetBtcChangeRequest(hash)
 		if err != nil {
 			logger.Error("get btc change data error:%v %v %v", index, end, err)
 			return nil, false, err

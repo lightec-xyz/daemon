@@ -28,7 +28,7 @@ const (
 	genesisRawKey      = "genesisRaw"
 	syncComGenesisKey  = "syncComGenesisProof"
 	btcDuperGenesisKey = "btcDuperGenesisProof"
-	btcCpGenesisKey    = "btcCpGenesisProof"
+	btcDepthGenesisKey = "btcDepthGenesisProof"
 )
 
 type Table string
@@ -251,18 +251,18 @@ func (fs *FileStorage) GetBtcDuperGenesisProof() (*StoreProof, bool, error) {
 	return &storeProof, exist, nil
 }
 
-func (fs *FileStorage) StoreBtcCpGenesisProof(proof, witness []byte) error {
-	obj := newStoreProof(common.BtcDuperGenesisType, btcCpGenesisKey, proof, witness)
-	return fs.StoreObj(BtcGenesisTable, btcCpGenesisKey, obj)
+func (fs *FileStorage) StoreBtcDepthGenesisProof(proof, witness []byte) error {
+	obj := newStoreProof(common.BtcDuperGenesisType, btcDepthGenesisKey, proof, witness)
+	return fs.StoreObj(BtcGenesisTable, btcDepthGenesisKey, obj)
 }
 
-func (fs *FileStorage) CheckBtcCpGenesisProof() (bool, error) {
-	return fs.CheckObj(BtcGenesisTable, btcCpGenesisKey)
+func (fs *FileStorage) CheckBtcDepthGenesisProof() (bool, error) {
+	return fs.CheckObj(BtcGenesisTable, btcDepthGenesisKey)
 }
 
-func (fs *FileStorage) GetBtcCpGenesisProof() (*StoreProof, bool, error) {
+func (fs *FileStorage) GetBtcDepthGenesisProof() (*StoreProof, bool, error) {
 	var storeProof StoreProof
-	exist, err := fs.GetObj(BtcGenesisTable, btcCpGenesisKey, &storeProof)
+	exist, err := fs.GetObj(BtcGenesisTable, btcDepthGenesisKey, &storeProof)
 	if err != nil {
 		logger.Error("get genesis proof error:%v", err)
 		return nil, false, err

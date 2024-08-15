@@ -51,16 +51,16 @@ func (c *Client) PlonkVerifierCanister() (string, error) {
 	return result, nil
 }
 
-func (c *Client) VerifyAndSign(txRaw, receiptRaw, proof string) (*Signature, error) {
-	signature := Signature{}
+func (c *Client) VerifyAndSign(txRaw, receiptRaw, proof string) (*TxSignature, error) {
+	signature := TxSignature{}
 	err := c.call(c.canisterId, "verify_and_sign", []any{txRaw, receiptRaw, proof}, []any{&signature.Signed, &signature.Signature})
 	if err != nil {
 		return nil, err
 	}
 	return &signature, nil
 }
-func (c *Client) BlockHeight() (*BlockHeight, error) {
-	height := BlockHeight{}
+func (c *Client) BlockSignature() (*BlockSignature, error) {
+	height := BlockSignature{}
 	err := c.call(c.canisterId, "block_height", []any{}, []any{&height.Hash, &height.Height, &height.Signature})
 	if err != nil {
 		return nil, err

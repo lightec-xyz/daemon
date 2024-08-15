@@ -635,7 +635,7 @@ func (s *State) checkRedeemRequest(txHash string) (*common.ZkProofRequest, bool,
 	if !ok {
 		return nil, false, nil
 	}
-	data, ok, err := s.preparedData.GetRedeemRequestData(s.genesisPeriod, txSlot, txHash)
+	data, ok, err := s.preparedData.GetRedeemRequest(s.genesisPeriod, txSlot, txHash)
 	if err != nil {
 		logger.Error("get redeem request data error: %v %v", txHash, err)
 		return nil, false, err
