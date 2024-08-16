@@ -49,6 +49,8 @@ const (
 	RedeemTable       Table = "redeem"
 
 	BtcBulkTable      Table = "btcBulk"
+	BtcTxDepthTable   Table = "btcTxDepth"
+	BtcCpDepthTable   Table = "btcCpDepth"
 	BtcPackedTable    Table = "btcPack"
 	BtcBaseTable      Table = "btcBase"
 	BtcMiddleTable    Table = "btcMiddle"
@@ -62,7 +64,7 @@ const (
 )
 
 var initStoreTables = []Table{IndexTable, UpdateTable, FinalityTable, RequestTable, OuterTable, UnitTable, GenesisTable, RecursiveTable,
-	TxesTable, BeaconHeaderTable, BhfTable, RedeemTable, BtcBulkTable, BtcPackedTable, BtcBaseTable, BtcMiddleTable, BtcUpperTable,
+	TxesTable, BeaconHeaderTable, BhfTable, RedeemTable, BtcBulkTable, BtcTxDepthTable, BtcCpDepthTable, BtcPackedTable, BtcBaseTable, BtcMiddleTable, BtcUpperTable,
 	BtcGenesisTable, BtcDuperRecursive, BtcDepthRecursive, BtcChainTable, BtcDepositTable, BtcChangeTable}
 
 type FileStorage struct {
@@ -376,6 +378,42 @@ func (fs *FileStorage) GetBtcBulkProof(index, end uint64) (*StoreProof, bool, er
 	return &storeProof, exist, nil
 }
 
+func (fs *FileStorage) StoreBtcTxDepthProof(index, end uint64, proof, witness []byte) error {
+	return fs.Store(BtcTxDepthTable, common.BtcBulkType, proof, witness, index, end)
+}
+
+func (fs *FileStorage) CheckBtcTxDepthProof(index, end uint64) (bool, error) {
+	return fs.Check(BtcTxDepthTable, index, end)
+}
+
+func (fs *FileStorage) GetBtcTxDepthProof(index, end uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcTxDepthTable, &storeProof, index, end)
+	if err != nil {
+		logger.Error("get btc bulk proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
+func (fs *FileStorage) StoreBtcCpDepthProof(index, end uint64, proof, witness []byte) error {
+	return fs.Store(BtcCpDepthTable, common.BtcBulkType, proof, witness, index, end)
+}
+
+func (fs *FileStorage) CheckBtcCpDepthProof(index, end uint64) (bool, error) {
+	return fs.Check(BtcCpDepthTable, index, end)
+}
+
+func (fs *FileStorage) GetBtcCpDepthProof(index, end uint64) (*StoreProof, bool, error) {
+	var storeProof StoreProof
+	exist, err := fs.Get(BtcCpDepthTable, &storeProof, index, end)
+	if err != nil {
+		logger.Error("get btc bulk proof error:%v %v", index, err)
+		return nil, false, err
+	}
+	return &storeProof, exist, nil
+}
+
 func (fs *FileStorage) StoreBtcPackedProof(index uint64, proof, witness []byte) error {
 	return fs.Store(BtcPackedTable, common.BtcPackedType, proof, witness, index)
 }
@@ -540,7 +578,45 @@ func newStoreProof(proofType common.ZkProofType, id string, proof, witness []byt
 	}
 }
 
-func (fs *FileStorage) NeedBtcUpEndIndexes(height uint64) ([]uint64, error) {
+func (fs *FileStorage) BtcBaseStartIndexes(height uint64) ([]uint64, error) {
+	fileStore, ok := fs.GetFileStore(BtcBaseTable)
+	if !ok {
+		return nil, fmt.Errorf("get file store error %v", BtcBaseTable)
+	}
+	indexes, err := fileStore.Indexes(getStartIndex)
+	if err != nil {
+		logger.Error("get update indexes error:%v", err)
+		return nil, err
+	}
+	var tmpIndexes []uint64
+	for index := fs.btcGenesisHeight; index <= height; index = index + common.BtcBaseDistance {
+		if _, ok := indexes[index]; !ok {
+			tmpIndexes = append(tmpIndexes, index)
+		}
+	}
+	return tmpIndexes, nil
+}
+
+func (fs *FileStorage) BtcMiddleStartIndexes(height uint64) ([]uint64, error) {
+	fileStore, ok := fs.GetFileStore(BtcMiddleTable)
+	if !ok {
+		return nil, fmt.Errorf("get file store error %v", BtcMiddleTable)
+	}
+	indexes, err := fileStore.Indexes(getStartIndex)
+	if err != nil {
+		logger.Error("get update indexes error:%v", err)
+		return nil, err
+	}
+	var tmpIndexes []uint64
+	for index := fs.btcGenesisHeight + common.BtcMiddleDistance; index <= height; index = index + common.BtcMiddleDistance {
+		if _, ok := indexes[index]; !ok {
+			tmpIndexes = append(tmpIndexes, index)
+		}
+	}
+	return tmpIndexes, nil
+}
+
+func (fs *FileStorage) BtcUpEndIndexes(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcUpperTable)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcUpperTable)
@@ -550,7 +626,6 @@ func (fs *FileStorage) NeedBtcUpEndIndexes(height uint64) ([]uint64, error) {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
 	}
-	// todo
 	var endIndexes []uint64
 	for index := fs.btcGenesisHeight + common.BtcUpperDistance; index <= height; index = index + common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
@@ -561,7 +636,7 @@ func (fs *FileStorage) NeedBtcUpEndIndexes(height uint64) ([]uint64, error) {
 
 }
 
-func (fs *FileStorage) NeedBtcRecursiveEndIndex(height uint64) ([]uint64, error) {
+func (fs *FileStorage) BtcDuperRecursiveEndIndex(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcDuperRecursive)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcDuperRecursive)
@@ -588,9 +663,27 @@ func (fs *FileStorage) NeedBtcRecursiveEndIndex(height uint64) ([]uint64, error)
 	}
 	return endIndexes, nil
 }
+func (fs *FileStorage) BtcCpRecursiveIndexes(height uint64) ([]uint64, error) {
+	fileStore, ok := fs.GetFileStore(BtcDepthRecursive)
+	if !ok {
+		return nil, fmt.Errorf("get file store error %v", BtcDepthRecursive)
+	}
+	indexes, err := fileStore.Indexes(getStartIndex)
+	if err != nil {
+		logger.Error("get update indexes error:%v", err)
+		return nil, err
+	}
+	var tmpIndexes []uint64
+	for index := fs.btcGenesisHeight + common.BtcUpperDistance*3; index <= height; index = index + common.BtcUpperDistance {
+		if _, ok := indexes[index]; !ok {
+			tmpIndexes = append(tmpIndexes, index)
+		}
+	}
+	return tmpIndexes, nil
+}
 
 func (fs *FileStorage) GetNearTxSlotFinalizedSlot(txSlot uint64) (uint64, bool, error) {
-	// todo  more efficient
+	// todo
 	finalizedStore, ok := fs.GetFileStore(FinalityTable)
 	if !ok {
 		logger.Error("get file store error %v", FinalityTable)
