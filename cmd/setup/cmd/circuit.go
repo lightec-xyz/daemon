@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
-
+	"github.com/lightec-xyz/btc_provers/circuits/blockchain"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/baselevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/midlevel"
 	"github.com/lightec-xyz/btc_provers/circuits/blockchain/upperlevel"
+	"github.com/lightec-xyz/btc_provers/circuits/blockdepth"
+	"github.com/lightec-xyz/btc_provers/circuits/txinchain"
 	"github.com/lightec-xyz/daemon/logger"
 	beacon_header "github.com/lightec-xyz/provers/circuits/beacon-header"
 	beacon_header_finality "github.com/lightec-xyz/provers/circuits/beacon-header-finality"
@@ -34,6 +37,9 @@ const (
 	btcBase           CircuitType = "btcBase"
 	btcMiddle         CircuitType = "btcMiddle"
 	btcUpper          CircuitType = "btcUpper"
+	btcBlockChain     CircuitType = "btcBlockChain"
+	btcBlockDepth     CircuitType = "btcBlockDepth"
+	btcTxInChain      CircuitType = "btcTxInChain"
 	beaconInner       CircuitType = "beaconInner"
 	beaconOuter       CircuitType = "beaconOuter"
 	beaconUnit        CircuitType = "beaconUnit"
@@ -45,7 +51,7 @@ const (
 	ethRedeem         CircuitType = "ethRedeem"
 )
 
-var btcGroups = []CircuitType{btcBase, btcMiddle, btcUpper}
+var btcGroups = []CircuitType{btcBase, btcMiddle, btcUpper, btcBlockChain, btcBlockDepth, btcTxInChain}
 var beaconGroups = []CircuitType{beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive}
 var ethGroups = []CircuitType{ethTxInEth2, ethBeaconHeader, ethFinalityHeader, ethRedeem}
 
@@ -106,6 +112,12 @@ func (cs *CircuitSetup) Setup(circuitType CircuitType) error {
 		return cs.BtcMiddle()
 	case btcUpper:
 		return cs.BtcUpleve()
+	case btcBlockChain:
+		return cs.BtcBlockChain()
+	case btcBlockDepth:
+		return cs.BtcBlockDepth()
+	case btcTxInChain:
+		return cs.BtcTxInChain()
 	default:
 		return fmt.Errorf("invalid circuitType: %s", circuitType)
 	}
@@ -257,4 +269,37 @@ func (cs *CircuitSetup) BtcUpleve() error {
 		return err
 	}
 	return nil
+}
+
+func (cs *CircuitSetup) BtcTxInChain() error {
+	//todo
+	publicKey, err := hex.DecodeString("0205cf70ac69a6eae079d4d3112d78356a37da44780e18f377d70ac85601f46575")
+	if err != nil {
+		logger.Error("decode public key error: %v", err)
+		return err
+	}
+	err = txinchain.Setup(cs.datadir, cs.srsdir, cs.datadir, [33]byte(publicKey))
+	if err != nil {
+		logger.Error("setup txinchain error: %v", err)
+		return err
+	}
+	return err
+}
+
+func (cs *CircuitSetup) BtcBlockChain() error {
+	err := blockchain.BlockChainSetup(cs.datadir, cs.srsdir)
+	if err != nil {
+		logger.Error("setup blockchain error: %v", err)
+		return err
+	}
+	return err
+}
+
+func (cs *CircuitSetup) BtcBlockDepth() error {
+	err := blockdepth.BlockDepthSetup(cs.datadir, cs.srsdir)
+	if err != nil {
+		logger.Error("setup blockdepth error: %v", err)
+		return err
+	}
+	return err
 }
