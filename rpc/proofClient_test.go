@@ -22,7 +22,7 @@ func TestProofClient_GenZkProof(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(proofInfo)
-	depositProof, err := client.GenDepositProof(DepositRequest{})
+	depositProof, err := client.TxInEth2Prove(&TxInEth2ProveRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestProofClient_GenZkProof(t *testing.T) {
 	}
 	t.Log(redeemProof)
 
-	verifyProof, err := client.GenVerifyProof(VerifyRequest{})
+	verifyProof, err := client.TxInEth2Prove(&TxInEth2ProveRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
