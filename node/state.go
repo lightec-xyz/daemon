@@ -36,17 +36,17 @@ type State struct {
 
 func (s *State) CheckBtcState() error {
 	logger.Debug("start check btc state ....")
-	//blockCount, err := s.btcClient.GetBlockCount()
+	//blockHeight, err := s.btcClient.GetBlockCount()
 	//if err != nil {
 	//	logger.Error("get block count error:%v", err)
 	//	return err
 	//}
 	//// todo
 	//if s.debug {
-	//	blockCount = 2871700 + 8*4
+	//	blockHeight = 2871700 + 8*4
 	//}
-	blockCount := uint64(2870784)
-
+	cpBlockHeight := uint64(0)
+	blockHeight := uint64(2870784)
 	exists, err := CheckProof(s.fileStore, common.BtcDuperGenesisType, 0, 0, "")
 	if err != nil {
 		logger.Error("check btc genesis proof error:%v", err)
@@ -71,61 +71,66 @@ func (s *State) CheckBtcState() error {
 			return err
 		}
 	}
-	baseIndexes, err := s.fileStore.BtcBaseStartIndexes(blockCount)
+	baseIndexes, err := s.fileStore.BtcBaseStartIndexes(blockHeight)
 	if err != nil {
 		logger.Error("get need btc base index error:%v", err)
 		return err
 	}
 	for _, index := range baseIndexes {
-		err := s.tryProofRequest(common.BtcBaseType, index, 0, "")
+		endIndex := index + common.BtcBaseDistance
+		err := s.tryProofRequest(common.BtcBaseType, index, endIndex, "")
 		if err != nil {
-			logger.Error("try btc base proof error:%v", err)
+			logger.Error("try btc base proof error:%v %v %v", index, endIndex, err)
 			return err
 		}
 	}
-	baseIndexes, err = s.fileStore.BtcMiddleStartIndexes(blockCount)
+	baseIndexes, err = s.fileStore.BtcMiddleStartIndexes(blockHeight)
 	if err != nil {
 		logger.Error("get need btc middle index error:%v", err)
 		return err
 	}
 	for _, index := range baseIndexes {
-		err := s.tryProofRequest(common.BtcMiddleType, index, 0, "")
+		endIndex := index + common.BtcMiddleDistance
+		err := s.tryProofRequest(common.BtcMiddleType, index, endIndex, "")
 		if err != nil {
 			logger.Error("try btc middle proof error:%v", err)
 			return err
 		}
 	}
-	upperIndexes, err := s.fileStore.BtcUpEndIndexes(blockCount)
+	upperIndexes, err := s.fileStore.BtcUpStartIndexes(blockHeight)
 	if err != nil {
 		logger.Error("get need btc up index error:%v", err)
 		return err
 	}
 	for _, index := range upperIndexes {
-		err := s.tryProofRequest(common.BtcUpperType, index, 0, "")
+		endIndex := index + common.BtcUpperDistance
+		err := s.tryProofRequest(common.BtcUpperType, index, endIndex, "")
 		if err != nil {
 			logger.Error("try btc upper proof error:%v", err)
 			return err
 		}
 	}
-	duperIndexes, err := s.fileStore.BtcDuperRecursiveEndIndex(blockCount)
+	duperIndexes, err := s.fileStore.BtcDuperRecursiveStartIndexes(blockHeight)
 	if err != nil {
 		logger.Error("get need btc duper index error:%v", err)
 		return err
 	}
 	for _, index := range duperIndexes {
-		err := s.tryProofRequest(common.BtcDuperRecursive, index, 0, "")
+		endIndex := index + common.BtcUpperDistance
+		err := s.tryProofRequest(common.BtcDuperRecursive, index, endIndex, "")
 		if err != nil {
 			logger.Error("try btc duper proof error:%v", err)
 			return err
 		}
 	}
-	cpIndexes, err := s.fileStore.BtcCpRecursiveIndexes(blockCount)
+	cpIndexes, err := s.fileStore.BtcCpRecursiveStartIndexes(cpBlockHeight)
 	if err != nil {
 		logger.Error("get need btc cp index error:%v", err)
 		return err
 	}
 	for _, index := range cpIndexes {
-		err := s.tryProofRequest(common.BtcDepthRecursiveType, index, 0, "")
+		endIndex := index + common.CapacityBulkUint
+		err := s.tryProofRequest(common.BtcDepthRecursiveType, index, endIndex, "")
 		if err != nil {
 			logger.Error("try btc cp proof error:%v", err)
 			return err
@@ -147,43 +152,49 @@ func (s *State) CheckBtcState() error {
 			}
 			continue
 		}
-		switch tx.ProofType {
-		case common.BtcDepositType:
-			err := s.checkDepositRequest(tx)
-			if err != nil {
-				logger.Error("check deposit request error:%v %v", tx.TxHash, err)
-				continue
-			}
-		case common.BtcChangeType:
-			err := s.tryProofRequest(common.BtcChangeType, 0, 0, tx.TxHash)
-			if err != nil {
-				logger.Error("try proof request error:%v %v", tx.TxHash, err)
-				continue
-			}
-		default:
-			logger.Error("unknown proof type: %v", tx.ProofType.String())
+		err := s.checkBtcTxRequest(tx)
+		if err != nil {
+			logger.Error("check btc tx request error:%v %v", tx.TxHash, err)
+			return err
 		}
 	}
 	return nil
 }
 
-func (s *State) checkDepositRequest(tx *DbUnGenProof) error {
-	exists, err := CheckProof(s.fileStore, common.BtcDepositType, 0, 0, tx.TxHash)
-	if err != nil {
-		logger.Error("check proof error:%v %v", tx.TxHash, err)
-		return err
-	}
-	if exists {
-		logger.Debug("%v %v proof exists ,delete ungen proof now", tx.ProofType.String(), tx.TxHash)
-		err = DeleteUnGenProof(s.store, common.BitcoinChain, tx.TxHash)
+func (s *State) checkBtcTxRequest(tx *DbUnGenProof) error {
+	isDepositTx := tx.ProofType == common.BtcDepositType
+	if isDepositTx {
+		exists, err := CheckProof(s.fileStore, common.BtcDepositType, 0, 0, tx.TxHash)
 		if err != nil {
-			logger.Error("delete ungen proof error:%v %v", tx.TxHash, err)
+			logger.Error("check proof error:%v %v", tx.TxHash, err)
 			return err
 		}
-		return nil
+		if exists {
+			logger.Debug("%v %v proof exists ,delete ungen proof now", tx.ProofType.String(), tx.TxHash)
+			err = DeleteUnGenProof(s.store, common.BitcoinChain, tx.TxHash)
+			if err != nil {
+				logger.Error("delete ungen proof error:%v %v", tx.TxHash, err)
+				return err
+			}
+			return nil
+		}
+	} else {
+		exists, err := CheckProof(s.fileStore, common.BtcChangeType, 0, 0, tx.TxHash)
+		if err != nil {
+			logger.Error("check proof error:%v %v", tx.TxHash, err)
+			return err
+		}
+		if exists {
+			logger.Debug("%v %v proof exists ,delete ungen proof now", tx.ProofType.String(), tx.TxHash)
+			err = DeleteUnGenProof(s.store, common.BitcoinChain, tx.TxHash)
+			if err != nil {
+				logger.Error("delete ungen proof error:%v %v", tx.TxHash, err)
+				return err
+			}
+			return nil
+		}
 	}
-
-	exists, err = CheckProof(s.fileStore, common.BtcChainType, 0, 0, "")
+	exists, err := CheckProof(s.fileStore, common.BtcChainType, 0, 0, "")
 	if err != nil {
 		logger.Error("check proof error:%v %v", tx.TxHash, err)
 		return err
@@ -219,10 +230,30 @@ func (s *State) checkDepositRequest(tx *DbUnGenProof) error {
 			return err
 		}
 	}
-	err = s.tryProofRequest(common.BtcDepositType, 0, 0, "")
-	if err != nil {
-		logger.Error("try proof request error:%v %v", tx.TxHash, err)
-		return err
+	if !isDepositTx {
+		err = s.tryProofRequest(common.BtcDepositType, 0, 0, "")
+		if err != nil {
+			logger.Error("try proof request error:%v %v", tx.TxHash, err)
+			return err
+		}
+	} else {
+		exists, err = CheckProof(s.fileStore, common.RedeemTxType, 0, 0, tx.TxHash)
+		if err != nil {
+			logger.Error("check exists error:%v %v", tx.TxHash, err)
+			return err
+		}
+		if !exists {
+			err := s.tryProofRequest(common.RedeemTxType, 0, 0, tx.TxHash)
+			if err != nil {
+				logger.Error("try proof request error:%v %v", tx.TxHash, err)
+				return err
+			}
+		}
+		err := s.tryProofRequest(common.BtcChangeType, 0, 0, tx.TxHash)
+		if err != nil {
+			logger.Error("try proof request error:%v %v", tx.TxHash, err)
+			return err
+		}
 	}
 	return nil
 }

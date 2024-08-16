@@ -589,7 +589,7 @@ func (fs *FileStorage) BtcBaseStartIndexes(height uint64) ([]uint64, error) {
 		return nil, err
 	}
 	var tmpIndexes []uint64
-	for index := fs.btcGenesisHeight; index <= height; index = index + common.BtcBaseDistance {
+	for index := fs.btcGenesisHeight; index <= height-common.BtcBaseDistance; index = index + common.BtcBaseDistance {
 		if _, ok := indexes[index]; !ok {
 			tmpIndexes = append(tmpIndexes, index)
 		}
@@ -608,7 +608,7 @@ func (fs *FileStorage) BtcMiddleStartIndexes(height uint64) ([]uint64, error) {
 		return nil, err
 	}
 	var tmpIndexes []uint64
-	for index := fs.btcGenesisHeight + common.BtcMiddleDistance; index <= height; index = index + common.BtcMiddleDistance {
+	for index := fs.btcGenesisHeight; index <= height-common.BtcMiddleDistance; index = index + common.BtcMiddleDistance {
 		if _, ok := indexes[index]; !ok {
 			tmpIndexes = append(tmpIndexes, index)
 		}
@@ -616,32 +616,32 @@ func (fs *FileStorage) BtcMiddleStartIndexes(height uint64) ([]uint64, error) {
 	return tmpIndexes, nil
 }
 
-func (fs *FileStorage) BtcUpEndIndexes(height uint64) ([]uint64, error) {
+func (fs *FileStorage) BtcUpStartIndexes(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcUpperTable)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcUpperTable)
 	}
-	indexes, err := fileStore.Indexes(getEndIndex)
+	indexes, err := fileStore.Indexes(getStartIndex)
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
 	}
-	var endIndexes []uint64
-	for index := fs.btcGenesisHeight + common.BtcUpperDistance; index <= height; index = index + common.BtcUpperDistance {
+	var tmpIndexes []uint64
+	for index := fs.btcGenesisHeight; index <= height-common.BtcUpperDistance; index = index + common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
-			endIndexes = append(endIndexes, index)
+			tmpIndexes = append(tmpIndexes, index)
 		}
 	}
-	return endIndexes, nil
+	return tmpIndexes, nil
 
 }
 
-func (fs *FileStorage) BtcDuperRecursiveEndIndex(height uint64) ([]uint64, error) {
+func (fs *FileStorage) BtcDuperRecursiveStartIndexes(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcDuperRecursive)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcDuperRecursive)
 	}
-	indexes, err := fileStore.Indexes(getEndIndex)
+	indexes, err := fileStore.Indexes(getStartIndex)
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil, err
@@ -655,15 +655,16 @@ func (fs *FileStorage) BtcDuperRecursiveEndIndex(height uint64) ([]uint64, error
 			    ....
 		 we are record startIndex,not endIndex
 	*/
-	var endIndexes []uint64
-	for index := fs.btcGenesisHeight + common.BtcUpperDistance*3; index <= height; index = index + common.BtcUpperDistance {
+	var tmpIndexes []uint64
+	//todo
+	for index := fs.btcGenesisHeight + common.BtcUpperDistance*2; index <= height-common.BtcUpperDistance; index = index + common.BtcUpperDistance {
 		if _, ok := indexes[index]; !ok {
-			endIndexes = append(endIndexes, index)
+			tmpIndexes = append(tmpIndexes, index)
 		}
 	}
-	return endIndexes, nil
+	return tmpIndexes, nil
 }
-func (fs *FileStorage) BtcCpRecursiveIndexes(height uint64) ([]uint64, error) {
+func (fs *FileStorage) BtcCpRecursiveStartIndexes(height uint64) ([]uint64, error) {
 	fileStore, ok := fs.GetFileStore(BtcDepthRecursive)
 	if !ok {
 		return nil, fmt.Errorf("get file store error %v", BtcDepthRecursive)
@@ -674,7 +675,7 @@ func (fs *FileStorage) BtcCpRecursiveIndexes(height uint64) ([]uint64, error) {
 		return nil, err
 	}
 	var tmpIndexes []uint64
-	for index := fs.btcGenesisHeight + common.BtcUpperDistance*3; index <= height; index = index + common.BtcUpperDistance {
+	for index := fs.btcGenesisHeight + common.CapacityBulkUint*2; index <= height-common.CapacityBulkUint; index = index + common.CapacityBulkUint {
 		if _, ok := indexes[index]; !ok {
 			tmpIndexes = append(tmpIndexes, index)
 		}
