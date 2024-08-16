@@ -51,7 +51,7 @@ const (
 	ethRedeem         CircuitType = "ethRedeem"
 )
 
-var btcGroups = []CircuitType{btcBase, btcMiddle, btcUpper, btcBlockChain, btcBlockDepth, btcTxInChain}
+var btcGroups = []CircuitType{btcBlockChain, btcBlockDepth, btcTxInChain}
 var beaconGroups = []CircuitType{beaconInner, beaconOuter, beaconUnit, beaconGenesis, beaconRecursive}
 var ethGroups = []CircuitType{ethTxInEth2, ethBeaconHeader, ethFinalityHeader, ethRedeem}
 
