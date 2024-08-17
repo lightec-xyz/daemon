@@ -88,7 +88,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/herumi/bls-eth-go-binary v0.0.0-20210917013441-d37c07cfda4e // indirect
-	github.com/herumi/bls-go-binary v1.34.0 // indirect
 	github.com/holiman/uint256 v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -178,6 +177,7 @@ require (
 )
 
 replace (
+	github.com/aviate-labs/agent-go => github.com/lightec-xyz/agent-go v0.0.0-20240817014254-0c382556365c
 	github.com/consensys/gnark => github.com/lightec-xyz/gnark v0.0.0-20240314143013-a200efabb849
 	github.com/consensys/gnark-crypto => github.com/lightec-xyz/gnark-crypto v0.0.0-20240314062713-0c4d1f3833df
 

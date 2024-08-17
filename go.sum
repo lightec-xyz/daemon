@@ -60,8 +60,6 @@ github.com/allegro/bigcache v1.2.1-0.20190218064605-e24eb225f156 h1:eMwmnE/GDgah
 github.com/allegro/bigcache v1.2.1-0.20190218064605-e24eb225f156/go.mod h1:Cb/ax3seSYIx7SuZdm2G2xzfwmv3TPSk2ucNfQESPXM=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
-github.com/aviate-labs/agent-go v0.5.0 h1:qJpCBqRPIOgtCGgTYh0N2QH0v4hjFYu9SYJzz+4YDxU=
-github.com/aviate-labs/agent-go v0.5.0/go.mod h1:GDXxQeob0bBy5Vfb4bnAfJR22S/sj4ApHpDUtg1LZtE=
 github.com/aviate-labs/leb128 v0.3.0 h1:s9htRv3OYk8nuHqJu9PiVFJxv1jIUTIcpEeiURa91uQ=
 github.com/aviate-labs/leb128 v0.3.0/go.mod h1:GclhBOjhIKmcDlgHKhj0AEZollzERfZUbcRUKiQVqgY=
 github.com/aviate-labs/secp256k1 v0.0.0-5e6736a h1:aQkG/D+l8Y7tr809l8pN+KebH2jzacWReSFQmeEKFgM=
@@ -344,8 +342,6 @@ github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/herumi/bls-eth-go-binary v0.0.0-20210917013441-d37c07cfda4e h1:wCMygKUQhmcQAjlk2Gquzq6dLmyMv2kF+llRspoRgrk=
 github.com/herumi/bls-eth-go-binary v0.0.0-20210917013441-d37c07cfda4e/go.mod h1:luAnRm3OsMQeokhGzpYmc0ZKwawY7o87PUEP11Z7r7U=
-github.com/herumi/bls-go-binary v1.34.0 h1:x1sKp8zzx+alvlifB+vbA0KkY0Pz4Br31cZ/saDkiFE=
-github.com/herumi/bls-go-binary v1.34.0/go.mod h1:O4Vp1AfR4raRGwFeQpr9X/PQtncEicMoOe6BQt1oX0Y=
 github.com/holiman/billy v0.0.0-20240216141850-2abb0c79d3c4 h1:X4egAf/gcS1zATw6wn4Ej8vjuVGxeHdan+bRb2ebyv4=
 github.com/holiman/billy v0.0.0-20240216141850-2abb0c79d3c4/go.mod h1:5GuXa7vkL8u9FkFuWdVvfR5ix8hRB7DbOAaYULamFpc=
 github.com/holiman/bloomfilter/v2 v2.0.3 h1:73e0e/V0tCydx14a0SCYS/EWCxgwLZ18CZcZKVu0fao=
@@ -399,6 +395,8 @@ github.com/leanovate/gopter v0.2.9 h1:fQjYxZaynp97ozCzfOyOuAGOU4aU/z37zf/tOujFk7
 github.com/leanovate/gopter v0.2.9/go.mod h1:U2L/78B+KVFIx2VmW6onHJQzXtFb+p5y3y2Sh+Jxxv8=
 github.com/leodido/go-urn v1.2.4 h1:XlAE/cm/ms7TE/VMVoduSpNBoyc2dOxHs5MZSwAN63Q=
 github.com/leodido/go-urn v1.2.4/go.mod h1:7ZrI8mTSeBSHl/UaRyKQW1qZeMgak41ANeCNaVckg+4=
+github.com/lightec-xyz/agent-go v0.0.0-20240817014254-0c382556365c h1:m5VOjvpiFaaBFuZU4zEaTv2hlvaarHvhKqNtSO8PWfU=
+github.com/lightec-xyz/agent-go v0.0.0-20240817014254-0c382556365c/go.mod h1:AmyGIOGI9SJLHga4938/+lNGZFRE7nedJwVtz7urcpc=
 github.com/lightec-xyz/chainark v0.2.1 h1:a7UairxXgGzvDH5Z/3YwcfRU8H24tpO5Uq5m36ptceQ=
 github.com/lightec-xyz/chainark v0.2.1/go.mod h1:VM+Em4k3zshPD2RYJ+TJCc5mfJaPfeYa2lKAvPFHLjM=
 github.com/lightec-xyz/gnark v0.0.0-20240314143013-a200efabb849 h1:wCYK6ly248m0tnby4JTcMc1nuwWuCH7eLp2vNdr4BrU=

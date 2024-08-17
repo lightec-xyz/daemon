@@ -216,7 +216,7 @@ func (c *Circuit) RedeemProve(tx, bh, bhf *reLightCom.Proof, beginId, endId []by
 		logger.Warn("current zk circuit redeemProve prove is debug,skip prove")
 		return debugProof()
 	}
-	genesisSCSSZRoot, err := GetGenesisSCSSZRoot(genesisScRoot)
+	genesisSCSSZRootBytes, err := HexToBytes(genesisScRoot)
 	if err != nil {
 		logger.Error("get genesis scssz root error:%v", err)
 		return nil, err
@@ -237,7 +237,7 @@ func (c *Circuit) RedeemProve(tx, bh, bhf *reLightCom.Proof, beginId, endId []by
 		return nil, err
 	}
 	proof, err := redeem.Prove(c.Cfg.DataDir, tx.Proof, tx.Wit, bh.Proof, bh.Wit, bhf.Proof, bhf.Wit, beginId, endId,
-		genesisSCSSZRoot, curScRootBytes, *txValue, *hexToReceiptVar)
+		genesisSCSSZRootBytes, curScRootBytes, *txValue, *hexToReceiptVar, true)
 	if err != nil {
 		logger.Error("redeem prove error:%v", err)
 		return nil, err
