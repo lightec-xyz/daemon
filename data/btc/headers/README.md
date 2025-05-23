@@ -23,7 +23,7 @@ Since the initial data collection has been completed, below listed are instructi
 - Retrieve the hash of last block before this update with this command
   ` tail -1 headers.txt | head -c 160| xxd -r -p | openssl sha256 -binary | openssl sha256 -hex `.
 - Use the `convert.sh sorted.txt new_headers.txt $last_hash` to convert the entries. It then appends the newly converted
-  entries to the `headers.txt` file.
+  entries to the `headers.txt` file. Remember to remove the `new_headers.txt` file behand if it already exists.
 - Run `go test` to quickly verify if all the entries in the file `headers.txt` links correctly. It also tries to fix any
   missing header or wrong headers. Fixed file is save in `headers.txt.fixed`. You may rename it to `headers.txt` and run
   `go test` again. If no error is reported, the file is good to use.
