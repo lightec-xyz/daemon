@@ -630,7 +630,7 @@ func (p *Prepared) GetSyncCommitUpdate(period uint64) (*rpc.WrapSyncCommitteeUpd
 		}
 		update.CurrentSyncCommitteeBranch = preUpdateData.Data.NextSyncCommitteeBranch
 	}
-	ok, err := common.VerifyLightClientUpdate(update.SyncCommitteeUpdate)
+	ok, err := update.SyncCommitteeUpdate.Verify()
 	if err != nil {
 		logger.Error("verify light client update error: %v %v", period, err)
 		return nil, false, err

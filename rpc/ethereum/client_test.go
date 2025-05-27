@@ -21,7 +21,7 @@ import (
 var err error
 var client *Client
 
-var endpoint = "http://127.0.0.1:9899"
+var endpoint = "http://127.0.0.1:9002"
 var zkBridgeAddr = "0x184341Ad1d0B3862a511a2E23e9461405ccEa97f"
 var utxoManager = "0xD2f892d4Ece281C91Fd5D9f28658F8d445878239"
 var btcTxVerifyAddr = "0x9361af189FC03f9c340b9A7536e61647299308E5"

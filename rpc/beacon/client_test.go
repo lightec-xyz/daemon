@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var endpoint = "http://127.0.0.1:8365"
+var endpoint = "http://127.0.0.1:9003"
 
 var err error
 var client *Client
@@ -62,7 +62,7 @@ func TestClient_Bootstrap(t *testing.T) {
 }
 
 func TestClient_GetLightClientUpdates(t *testing.T) {
-	updates, err := client.GetLightClientUpdates(890, 1)
+	updates, err := client.GetLightClientUpdates(938, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

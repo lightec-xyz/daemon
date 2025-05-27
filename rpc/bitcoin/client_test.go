@@ -17,7 +17,7 @@ var client *Client
 var err error
 
 func init() {
-	url := "http://127.0.0.1:9935"
+	url := "http://127.0.0.1:9001"
 	user := ""
 	pwd := ""
 	client, err = NewClient(url, user, pwd)

@@ -6,7 +6,7 @@ var client *Client
 var err error
 
 func init() {
-	client = NewClient("http://127.0.0.1:8989")
+	client = NewClient("http://127.0.0.1:9004")
 }
 func TestClient_SgxKeyInfo(t *testing.T) {
 	keyInfo, err := client.SgxKeyInfo()

@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,14 @@ import (
 
 	"github.com/google/uuid"
 )
+
+func Md5(data []byte) []byte {
+	ret := md5.Sum(data)
+	return ret[:]
+}
+func HexMd5(data []byte) string {
+	return hex.EncodeToString(Md5(data))
+}
 
 func ReadObj(path string, obj interface{}) error {
 	bytes, err := os.ReadFile(path)
