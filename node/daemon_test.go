@@ -19,7 +19,7 @@ func init() {
 }
 
 func TestLocalDevDaemon(t *testing.T) {
-	cfgBytes, err := os.ReadFile("/Users/red/lworkspace/lightec/audit/daemon/cmd/node/local.json")
+	cfgBytes, err := os.ReadFile("/Users/red/lworkspace/lightec/audit/daemon/cmd/node/devnet.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,6 +48,10 @@ func TestLocalDevDaemon(t *testing.T) {
 	}
 }
 
-func TestServer(t *testing.T) {
-
+func Test_depositScript(t *testing.T) {
+	ethAddr, err := getEthAddrFromScript("6a14e96af29bb5bb124c705c69034262fbc9fbb2d5f3ddd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(ethAddr)
 }

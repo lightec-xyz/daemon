@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,6 +43,48 @@ func NewClient(rawurl string) (*Client, error) {
 		debug:      false,
 		httpClient: client,
 	}, nil
+}
+
+func (c *Client) GetBlindedBlock(slot uint64) (types.BindBlockResp, error) {
+	var result types.BindBlockResp
+	path := fmt.Sprintf("/eth/v1/beacon/blinded_blocks/%d", slot)
+	err := c.get(path, nil, &result)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (c *Client) Eth1MapToEth2(slot uint64) (*Eth1MapToEth2, error) {
+	blindedBlock, err := c.GetBlindedBlock(slot)
+	if err != nil {
+		return nil, err
+	}
+	blockNumber, err := strconv.ParseUint(blindedBlock.Data.Message.Body.ExecutionPayloadHeader.BlockNumber, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	slot, err = strconv.ParseUint(blindedBlock.Data.Message.Slot, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	slotMapInfo := Eth1MapToEth2{
+		BlockNumber: blockNumber,
+		BlockHash:   blindedBlock.Data.Message.Body.ExecutionPayloadHeader.BlockHash,
+		BlockSlot:   slot,
+		BlockRoot:   blindedBlock.Data.Message.StateRoot,
+	}
+	return &slotMapInfo, nil
+}
+
+func (c *Client) Version() (types.BeaconNodeVersion, error) {
+	var result types.BeaconNodeVersion
+	err := c.get("/eth/v1/node/version", nil, &result)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (c *Client) Bootstrap(slot uint64) (*types.BootstrapResp, error) {

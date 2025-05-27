@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var endpoint = "http://127.0.0.1:8365"
+var endpoint = "https://rpc.ankr.com/premium-http/eth_beacon/8c933202fbe8dbe6d63377a319b6020f4a4c35bb4424f6368f630b676b4fcc2e"
 
 var err error
 var client *Client
@@ -15,6 +15,38 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_Eth1MapToEth2(t *testing.T) {
+	result, err := client.Eth1MapToEth2(12086551)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(result)
+}
+
+func TestClient_GetBlindedBlock(t *testing.T) {
+	block, err := client.GetBlindedBlock(12086551)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(block)
+}
+
+func TestClient_Version(t *testing.T) {
+	version, err := client.Version()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(version)
+}
+
+func TestClient_GetLatestFinalizedSlot(t *testing.T) {
+	latestSlot, err := client.GetLatestFinalizedSlot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(latestSlot)
 }
 
 func TestClient(t *testing.T) {
@@ -62,7 +94,7 @@ func TestClient_Bootstrap(t *testing.T) {
 }
 
 func TestClient_GetLightClientUpdates(t *testing.T) {
-	updates, err := client.GetLightClientUpdates(890, 1)
+	updates, err := client.GetLightClientUpdates(938, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

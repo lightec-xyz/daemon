@@ -225,6 +225,25 @@
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "oldDepth",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "newDepth",
+          "type": "uint8"
+        }
+      ],
+      "name": "UpdatedExtraDepth",
+      "type": "event"
+    },
+    {
       "inputs": [],
       "name": "ADD_CP_DEPTH_THRESHOLDS",
       "outputs": [
@@ -526,6 +545,16 @@
           "internalType": "bytes",
           "name": "toScript",
           "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "opData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bool",
+          "name": "chainFlag",
+          "type": "bool"
         }
       ],
       "stateMutability": "pure",
@@ -924,6 +953,25 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "isCandidateExist",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "juniorCP",
       "outputs": [
@@ -1100,6 +1148,19 @@
         }
       ],
       "name": "updateDepositVerifier",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "depth",
+          "type": "uint8"
+        }
+      ],
+      "name": "updateExtraDepth",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

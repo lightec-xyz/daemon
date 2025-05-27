@@ -7,7 +7,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"os"
 )
+
+func GetTestSecret() string {
+	return os.Getenv("EthTestSecret")
+}
 
 func Fix32Bytes(data []byte) [32]byte {
 	var fixCp [32]byte

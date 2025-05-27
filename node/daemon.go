@@ -5,15 +5,16 @@ import (
 	"github.com/aviate-labs/agent-go/identity"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/node/p2p"
+	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	"github.com/lightec-xyz/daemon/rpc/sgx"
+	prysmClient "github.com/prysmaticlabs/prysm/v5/api/client"
+	"github.com/prysmaticlabs/prysm/v5/config/params"
 	"github.com/ybbus/jsonrpc/v3"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/lightec-xyz/daemon/rpc/dfinity"
 
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -24,8 +25,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
-
-	"github.com/prysmaticlabs/prysm/v5/config/params"
 )
 
 type IAgent interface {
@@ -98,6 +97,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new store error:%v,dbPath:%s", err, dbPath)
 		return nil, err
 	}
+	params.UseSepoliaNetworkConfig()
+	params.OverrideBeaconConfig(params.SepoliaConfig())
 	proverClient := btcproverClient.NewJsonRpcClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, &jsonrpc.RPCClientOpts{
 		HTTPClient: &http.Client{
 			Timeout: 1 * time.Minute,
@@ -110,7 +111,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new beacon client error:%v", err)
 		return nil, err
 	}
-	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.UtxoManagerAddr, cfg.BtcTxVerifyAddr)
+	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.UtxoManagerAddr, cfg.BtcTxVerifyAddr, cfg.ZkBtcAddr)
 	if err != nil {
 		logger.Error("new eth client error:%v", err)
 		return nil, err
@@ -121,20 +122,23 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new oasis client error:%v", err)
 		return nil, err
 	}
-	params.UseHoleskyNetworkConfig()
-	params.OverrideBeaconConfig(params.HoleskyConfig())
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(cfg.BeaconUrl)))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
 		return nil, err
 	}
-	icpIdentity, err := identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(cfg.IcpPrivateKey))
-	if err != nil {
-		logger.Error("new icp identity error: %v", err)
-		return nil, err
+
+	var secp256k1Identity identity.Identity
+	if cfg.IcpPrivateKey != "" && cfg.IcpWalletAddress != "" {
+		secp256k1Identity, err = identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(cfg.IcpPrivateKey))
+		if err != nil {
+			logger.Warn("new icp secp256k1Identity error: %v", err)
+			return nil, err
+		}
+		logger.Info("dfinity client use wallet agent sender: %v,publicKey: %x", secp256k1Identity.Sender().String(), secp256k1Identity.PublicKey())
 	}
-	dfinityClient, err := dfinity.NewClientWithIdentity(cfg.IcpSingerAddress, cfg.IcpWalletAddress,
-		cfg.IcpSingerUrl, icpIdentity)
+	icpClientOption := dfinity.NewOption(cfg.IcpWalletAddress, cfg.IcpTxSingerAddress, cfg.IcpBlockSignerAddress, secp256k1Identity)
+	dfinityClient, err := dfinity.NewClient(icpClientOption)
 	if err != nil {
 		logger.Error("new dfinity client error: %v", err)
 		return nil, err
@@ -170,7 +174,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		cfg.MinerAddr = keyStore.address
 	}
 	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisBeaconSlot, cfg.BtcGenesisHeight,
-		btcProverClient, btcClient, ethClient, beaClient, beaconClient, cfg.MinerAddr)
+		btcProverClient, btcClient, ethClient, beaClient, beaconClient, cfg.MinerAddr, cfg.ScNewRecursive)
 	if err != nil {
 		logger.Error("new proof Prepared data error: %v", err)
 		return nil, err
@@ -181,7 +185,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new tx manager error: %v", err)
 		return nil, err
 	}
-	cache := NewCacheState()
 	var agents []*WrapperAgent
 	if !cfg.DisableBeaconAgent {
 		beaconAgent, err := NewBeaconAgent(cfg.BeaconReScan, storeDb, beaconClient, beaClient, fileStore, cfg.BeaconInitSlot)
@@ -192,7 +195,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, nil, syncCommitResp))
 	}
 	if !cfg.DisableBtcAgent {
-		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, taskManager, chainFork)
+		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, taskManager, chainFork, fileStore)
 		if err != nil {
 			logger.Error("new bitcoin agent error:%v", err)
 			return nil, err
@@ -234,7 +237,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 
 	manager, err := NewManager(cfg.MinerAddr, libp2p, dfinityClient, btcClient, ethClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
-		storeDb, fileStore, cache, btcNotify, ethNotify, beaconNotify)
+		storeDb, fileStore, btcNotify, ethNotify, beaconNotify)
 	if err != nil {
 		logger.Error("new manager error: %v", err)
 		return nil, err
@@ -334,8 +337,8 @@ func (d *Daemon) Run() error {
 	if !d.cfg.DisableBtcAgent {
 		go DoTimerTask("manager-checkBtcState", 2*time.Minute, d.manager.CheckBtcState, d.exitSignal, d.manager.BtcNotify())
 		go DoTimerTask("manager-checkPreBtcState", 3*time.Minute, d.manager.CheckPreBtcState, d.exitSignal)
-		go DoTimerTask("manager-icpSignature", 3*time.Minute, d.manager.BlockSignature, d.exitSignal)
-		go DoTimerTask("manager-updateBtcCp", 1*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
+		go DoTimerTask("manager-icpSignature", 1*time.Minute, d.manager.BlockSignature, d.exitSignal)
+		go DoTimerTask("manager-updateBtcCp", 24*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
 	}
 	if !d.cfg.DisableEthAgent {
 		go DoTimerTask("manager-checkEthState", 1*time.Minute, d.manager.CheckEthState, d.exitSignal, d.manager.EthNotify())

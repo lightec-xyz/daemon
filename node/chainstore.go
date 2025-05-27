@@ -22,6 +22,19 @@ func NewChainStore(store store.IStore) *ChainStore {
 	return &ChainStore{store: store}
 }
 
+func (cs *ChainStore) ReadRedeemTx(txId string) (*DbTx, bool, error) {
+	dbTxes, err := cs.ReadDbTxes(txId)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, tx := range dbTxes {
+		if tx.TxType == common.RedeemTx {
+			return tx, true, nil
+		}
+	}
+	return nil, false, nil
+}
+
 func (cs *ChainStore) WriteDepositCount(height, count uint64) error {
 	return cs.store.PutObj(height, count)
 }
@@ -449,7 +462,7 @@ func (cs *ChainStore) BtcSaveData(height uint64, depositTxs, redeemTxes []*DbTx)
 	}
 	return cs.store.WrapBatch(func(batch store.IBatch) error {
 		if len(depositTxs) > 0 {
-			err := batch.BatchPutObj(latestUpdateCpKey, depositTxs[0])
+			err := batch.BatchPutObj(latestUpdateCpKey, depositTxs[len(depositTxs)-1])
 			if err != nil {
 				return err
 			}
@@ -528,6 +541,7 @@ func (cs *ChainStore) BtcDeleteData(height uint64) error {
 	if !ok {
 		logger.Error("btc hash not exist: %v", height)
 	}
+	logger.Debug("remove btc rollback block height:%v hash:%v", height, hash)
 	return cs.store.WrapBatch(func(batch store.IBatch) error {
 		err = batch.BatchDeleteObj(dbBtcBlockHashKey(height))
 		if err != nil {
@@ -748,17 +762,6 @@ func (cs *ChainStore) DeleteDbProof(txIds []string) error {
 	})
 }
 
-func (cs *ChainStore) DeleteDbBtcTxes(txId []string) error {
-	batch := cs.store.Batch()
-	for _, id := range txId {
-		err := batch.BatchDeleteObj(dbBtcTxId(id))
-		if err != nil {
-			return err
-		}
-	}
-	return batch.BatchWrite()
-}
-
 func (cs *ChainStore) DeleteAddrTxesPrefix(txIds []string) error {
 	for _, txId := range txIds {
 		dbTx, err := cs.ReadDbTxes(txId)
@@ -937,20 +940,16 @@ func (cs *ChainStore) ReadEthereumHeight() (uint64, bool, error) {
 }
 
 func (cs *ChainStore) WriteUnSubmitTx(txes ...DbUnSubmitTx) error {
-	batch := cs.store.Batch()
-	for _, tx := range txes {
-		err := batch.BatchPutObj(dbUnSubmitTxId(tx.Hash), tx)
-		if err != nil {
-			logger.Error("put unsubmit tx error:%v", err)
-			return err
+	return cs.store.WrapBatch(func(batch store.IBatch) error {
+		for _, tx := range txes {
+			err := batch.BatchPutObj(dbUnSubmitTxId(tx.Hash), tx)
+			if err != nil {
+				logger.Error("put unsubmit tx error:%v", err)
+				return err
+			}
 		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put unsubmit tx batch error:%v", err)
-		return err
-	}
-	return nil
+		return nil
+	})
 }
 
 func (cs *ChainStore) ReadUnSubmitTxs() ([]DbUnSubmitTx, error) {
@@ -1303,12 +1302,12 @@ func (cs *ChainStore) WriteZkParamVerify(verify bool) error {
 }
 
 func (cs *ChainStore) WriteNonce(network, addr string, nonce uint64) error {
-	return cs.store.PutObj(dbAddrNonceId(network, addr), nonce)
+	return cs.store.PutObj(dbAddrNonceId(network, DbValue(addr)), nonce)
 
 }
 
 func (cs *ChainStore) ReadNonce(network, addr string) (uint64, bool, error) {
-	id := dbAddrNonceId(network, addr)
+	id := dbAddrNonceId(network, DbValue(addr))
 	exists, err := cs.store.HasObj(id)
 	if err != nil {
 		return 0, false, err

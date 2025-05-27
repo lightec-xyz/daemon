@@ -27,6 +27,8 @@ type StoreKey struct {
 	FIndex, SIndex uint64
 	Prefix         uint64
 	isCp           bool
+	BlockTime      uint64
+	TxIndex        uint32
 }
 
 func (sk *StoreKey) FileKey() store.FileKey {
@@ -51,6 +53,9 @@ type FileStorage struct {
 }
 
 func NewFileStorage(path string, genesisSlot, btcGenesisHeight uint64, tables ...store.Table) (*FileStorage, error) {
+	if btcGenesisHeight%common.BtcUpperDistance != 0 {
+		return nil, fmt.Errorf("btcGenesisHeight must be a multiple of %d", common.BtcUpperDistance)
+	}
 	fileStoreMap := new(sync.Map)
 	rootPath := fmt.Sprintf("%s/proofData", path)
 	logger.Info("fileStorage path: %v", rootPath)
@@ -84,8 +89,12 @@ func NewFileStorage(path string, genesisSlot, btcGenesisHeight uint64, tables ..
 func (fs *FileStorage) GetGenesisPeriod() uint64 {
 	return fs.genesisPeriod
 }
-func (fs *FileStorage) StoreRequest(req *common.ProofRequest) error {
-	return fs.StoreObj(common.RequestTable, store.FileKey(req.ProofId()), req)
+func (fs *FileStorage) StoreRequest(req *common.ProofRequest, extraIds ...string) error {
+	proofId := req.ProofId()
+	for _, id := range extraIds {
+		proofId = proofId + "_" + id
+	}
+	return fs.StoreObj(common.RequestTable, store.FileKey(proofId), req)
 }
 
 func (fs *FileStorage) StoreLatestPeriod(period uint64) error {
@@ -144,17 +153,17 @@ func (fs *FileStorage) GetUpdate(period uint64, value interface{}) (bool, error)
 	return fs.GetObj(common.UpdateTable, store.GenFileKey(common.UpdateTable, period), value)
 }
 
-func (fs *FileStorage) StoreBootStrapBySlot(slot uint64, data interface{}) error {
-	return fs.StoreObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), data)
-}
-
-func (fs *FileStorage) GetBootStrapBySlot(slot uint64, value interface{}) (bool, error) {
-	return fs.GetObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), value)
-}
-
-func (fs *FileStorage) CheckBootStrapBySlot(slot uint64) (bool, error) {
-	return fs.CheckObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot))
-}
+//func (fs *FileStorage) StoreBootStrapBySlot(slot uint64, data interface{}) error {
+//	return fs.StoreObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), data)
+//}
+//
+//func (fs *FileStorage) GetBootStrapBySlot(slot uint64, value interface{}) (bool, error) {
+//	return fs.GetObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), value)
+//}
+//
+//func (fs *FileStorage) CheckBootStrapBySlot(slot uint64) (bool, error) {
+//	return fs.CheckObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot))
+//}
 
 func (fs *FileStorage) GetOuterProof(period uint64) (*StoreProof, bool, error) {
 	var storeProof StoreProof
@@ -501,7 +510,8 @@ func (fs *FileStorage) SyncComInnerIndexes() ([]Index, error) {
 		return nil, fmt.Errorf("get latest period error")
 	}
 	var tmpIndexes []Index
-	for period := fs.genesisPeriod; period <= latestPeriod; period++ {
+	sIndex := fs.getUnitStartIndex()
+	for period := sIndex; period <= latestPeriod; period++ {
 		fileStore, ok := fs.getSubFileStore(common.SyncComInnerType, prefixToTable(period), false)
 		if !ok {
 			for index := 0; index < common.SyncInnerNum; index++ {
@@ -551,8 +561,13 @@ func (fs *FileStorage) NeedUpdateIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
+	//sIndex := fs.getUnitStartIndex() - 1
+	//if sIndex < 0 {
+	//	sIndex = 0
+	//}
+	sIndex := fs.genesisPeriod - 1
 	var needUpdateIndex []uint64
-	for index := fs.genesisPeriod; index <= latestPeriod; index++ {
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.UpdateTable, index))
 		if err != nil {
 			return nil, err
@@ -578,8 +593,9 @@ func (fs *FileStorage) GenOuterIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
+	sIndex := fs.getUnitStartIndex()
 	var indexes []uint64
-	for index := fs.genesisPeriod; index <= latestPeriod; index++ {
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.OuterTable, index))
 		if err != nil {
 			return nil, err
@@ -605,8 +621,9 @@ func (fs *FileStorage) NeedGenUnitProofIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
+	sIndex := fs.getUnitStartIndex()
 	var needUpdateIndex []uint64
-	for index := fs.genesisPeriod; index <= latestPeriod; index++ {
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.UnitTable, index))
 		if err != nil {
 			return nil, err
@@ -616,6 +633,36 @@ func (fs *FileStorage) NeedGenUnitProofIndexes() ([]uint64, error) {
 		}
 	}
 	return needUpdateIndex, nil
+}
+
+func (fs *FileStorage) getRecursiveStartIndex() uint64 {
+	fileStore, ok := fs.GetFileStore(common.RecursiveTable)
+	if !ok {
+		return fs.genesisPeriod + 1
+	}
+	key, _ := fileStore.MaxIndex()
+	if key != nil {
+		index, ok := key.(uint64)
+		if ok {
+			return index + 1
+		}
+	}
+	return fs.genesisPeriod + 1
+}
+
+func (fs *FileStorage) getUnitStartIndex() uint64 {
+	fileStore, ok := fs.GetFileStore(common.RecursiveTable)
+	if !ok {
+		return fs.genesisPeriod
+	}
+	key, _ := fileStore.MaxIndex()
+	if key != nil {
+		index, ok := key.(uint64)
+		if ok {
+			return index + 1
+		}
+	}
+	return fs.genesisPeriod
 }
 
 func (fs *FileStorage) NeedDutyIndexes() ([]uint64, error) {
@@ -633,7 +680,8 @@ func (fs *FileStorage) NeedDutyIndexes() ([]uint64, error) {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
 	var indexes []uint64
-	for index := fs.genesisPeriod + 1; index <= latestPeriod; index++ {
+	sIndex := fs.getRecursiveStartIndex()
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.DutyTable, index))
 		if err != nil {
 			return nil, err
@@ -808,31 +856,35 @@ type Index struct {
 }
 
 func (fs *FileStorage) RemoveBtcProof(height uint64) error {
+	logger.Warn("remove btc proof height <= %v", height)
 	tables := []store.Table{common.BtcBaseTable, common.BtcTimestampTable, common.BtcMiddleTable, common.BtcUpperTable, common.BtcDuperRecursiveTable, common.BtcBulkTable}
 	for _, table := range tables {
 		fileStore, ok := fs.GetFileStore(table)
 		if !ok {
+			logger.Error("no find table %v", fileStore.RootPath())
 			return fmt.Errorf("get file store error %v", table)
 		}
 		err := fs.removeFiles(fileStore, height)
 		if err != nil {
-			logger.Error("%v", err)
-			return err
+			logger.Error("remove btc proof %v fileStore error %v", fileStore.RootPath(), err)
+			continue
 		}
 	}
 	depthStore, ok := fs.GetFileStore(common.BtcDepthRecursiveTable)
 	if !ok {
+		logger.Error("no find depth table")
 		return fmt.Errorf("no find table")
 	}
 	subFileStores, err := depthStore.SubFileStores()
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error("get all subFileStores error %v", err)
 		return err
 	}
 	for _, fileStore := range subFileStores {
 		err := fs.removeFiles(fileStore, height)
 		if err != nil {
-			return err
+			logger.Error("remove btc depth %v fileStore error %v", fileStore.RootPath(), err)
+			continue
 		}
 	}
 	return nil
@@ -842,13 +894,11 @@ func (fs *FileStorage) removeFiles(fileStore store.IFileStore, height uint64) er
 	indexes := fileStore.Keys()
 	for _, index := range indexes {
 		if index.(uint64) >= height {
-			key, ok := fileStore.GetValue(index)
-			if !ok {
-				return fmt.Errorf("no find value")
-			}
-			logger.Warn("delete fileStore proof: %v", key)
-			err := fileStore.Del(key.(store.FileKey))
+			logger.Warn("delete fileStore %v : >=%v proof", fileStore.RootPath(), index.(uint64))
+			pattern := fmt.Sprintf("*_%v", index.(uint64))
+			err := fileStore.DelMatch(pattern, index.(uint64))
 			if err != nil {
+				logger.Error("del match error %v", err)
 				return err
 			}
 		}
@@ -868,12 +918,9 @@ func newStoreProof(proofType common.ProofType, id string, proof, witness []byte)
 func prefixToTable(prefix interface{}) store.Table {
 	return store.Table(fmt.Sprintf("%v", prefix))
 }
+
 func NewStoreKey(proofType common.ProofType, hash string, prefix, fIndex, sIndex uint64) StoreKey {
 	return StoreKey{PType: proofType, Hash: hash, Prefix: prefix, FIndex: fIndex, SIndex: sIndex}
-}
-
-func NewBtcStoreKey(proofType common.ProofType, height, latestHeight uint64, hash string) StoreKey {
-	return StoreKey{PType: proofType, FIndex: height, SIndex: latestHeight, Hash: hash}
 }
 
 func NewHashStoreKey(proofType common.ProofType, hash string) StoreKey {
@@ -891,10 +938,6 @@ func NewPrefixStoreKey(proofType common.ProofType, prefix, fIndex, sIndex uint64
 	return StoreKey{PType: proofType, Prefix: prefix, FIndex: fIndex, SIndex: sIndex, isCp: true}
 }
 
-func NewTxDepthStoreKey(proofType common.ProofType, prefix, fIndex, sIndex uint64) StoreKey {
-	return StoreKey{PType: proofType, Prefix: prefix, FIndex: fIndex, SIndex: sIndex, isCp: false}
-}
-
 func FileKeyToIndex(fileKey store.FileKey) (uint64, uint64, uint64, error) {
 	ids := strings.Split(fileKey.String(), "_")
 	if len(ids) == 2 { //btcchain_3195552
@@ -902,7 +945,7 @@ func FileKeyToIndex(fileKey store.FileKey) (uint64, uint64, uint64, error) {
 		if err != nil {
 			return 0, 0, 0, err
 		}
-		return 0, 0, height, nil
+		return 0, height, height, nil
 	} else if len(ids) == 3 { //btcbase_3192280_3192336
 		start, err := strconv.ParseUint(ids[1], 10, 64)
 		if err != nil {

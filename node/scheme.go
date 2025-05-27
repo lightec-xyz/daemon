@@ -54,24 +54,18 @@ var (
 	beaconLatestKey = []byte("beaconLatest")
 )
 
-type ChainPlan struct {
-	AssignmentHeight uint64
-	ProvedHeight     uint64
-	Height           uint64
-	Status           int
-}
-
 type DbTx struct {
-	Height    uint64
-	TxIndex   uint
-	Hash      string
-	BlockHash string
-	BlockTime uint64
-	TxType    common.TxType
-	ChainType common.ChainType
-	ProofType common.ProofType
-	Proved    bool
-	Amount    int64
+	Height       uint64
+	TxIndex      uint
+	Hash         string
+	BlockHash    string
+	BlockTime    uint64
+	TxType       common.TxType
+	ChainType    common.ChainType
+	ProofType    common.ProofType
+	Proved       bool
+	Amount       int64
+	GenProofNums int
 	// bitcoin chain
 	EthAddr string
 	// ethereum chain
@@ -84,6 +78,7 @@ type DbTx struct {
 	CheckPointHeight uint64
 	LatestHeight     uint64
 	CpMinDepth       uint64
+	SigSigned        bool // flag: if icp block hash signed
 }
 
 type DbProof struct {
@@ -108,6 +103,7 @@ type DbUnSubmitTx struct {
 	Proof       string
 	Timestamp   int64
 	ConfirmHash string //
+	Status      int
 }
 
 type DbMiner struct {

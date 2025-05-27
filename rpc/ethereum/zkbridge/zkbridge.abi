@@ -178,6 +178,19 @@
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RetrievedData",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "bytes32",
           "name": "role",
@@ -265,7 +278,7 @@
           "type": "address"
         }
       ],
-      "name": "TxVerifierAddressChanged",
+      "name": "UpdateReserveInterface",
       "type": "event"
     },
     {
@@ -487,6 +500,11 @@
           "internalType": "bytes32",
           "name": "txBlockHash",
           "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "amount",
+          "type": "uint64"
         }
       ],
       "name": "getRaiseIf",
@@ -678,6 +696,45 @@
     {
       "inputs": [
         {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "provenDatas",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "index",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "blockHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "associatedAmount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bool",
+          "name": "retrieved",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "uint64",
           "name": "redeemAmount",
           "type": "uint64"
@@ -712,6 +769,32 @@
         }
       ],
       "name": "renounceRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "reserveInterface",
+      "outputs": [
+        {
+          "internalType": "contract ReserveInterface",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "txid",
+          "type": "bytes32"
+        }
+      ],
+      "name": "retrieve",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -884,12 +967,12 @@
     {
       "inputs": [
         {
-          "internalType": "contract IBtcTxVerifier",
-          "name": "_newVerifier",
+          "internalType": "contract ReserveInterface",
+          "name": "newInterface",
           "type": "address"
         }
       ],
-      "name": "updateTxVerifier",
+      "name": "updateReserveInterface",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

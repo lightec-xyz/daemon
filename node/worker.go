@@ -499,7 +499,7 @@ func (w *LocalWorker) redeem(req *rpc.RedeemRequest, front bool) (*rpc.RedeemRes
 }
 
 func (w *LocalWorker) SyncCommitUnitProve(req rpc.SyncCommUnitsRequest) (*rpc.SyncCommUnitsResponse, error) {
-	ok, err := common.VerifyLightClientUpdate(req.Data)
+	ok, err := req.Data.SyncCommitteeUpdate.Verify()
 	if err != nil {
 		logger.Error("verify light client update error %v", err)
 		return nil, err

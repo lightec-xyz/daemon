@@ -177,7 +177,10 @@ func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
 }
 
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
-	zkProofRequest, ok, err := h.manager.GetProofRequest(request.ProofType)
+	if request.Version < GeneratorVersion {
+		return nil, fmt.Errorf("generator version %v, less than node version %v,please upgrade generator", request.Version, GeneratorVersion)
+	}
+	zkReq, ok, err := h.manager.GetProofRequest(request.ProofType)
 	if err != nil {
 		logger.Error("get proof request error: %v %v", request.Id, err)
 		return nil, err
@@ -187,22 +190,25 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 		response.CanGen = false
 		return &response, nil
 	}
-	reqData, err := json.Marshal(zkProofRequest)
+	reqData, err := json.Marshal(zkReq)
 	if err != nil {
-		logger.Error("marshal zk proof request error: workerId:%v,zkRequest:%v ,error:%v", request.Id, zkProofRequest, err)
+		logger.Error("marshal zk proof request error: workerId:%v,zkRequest:%v ,error:%v", request.Id, zkReq, err)
 		return nil, err
 	}
 	response.CanGen = true
 	response.Data = string(reqData)
-	err = h.fileStore.StoreRequest(zkProofRequest)
+	err = h.fileStore.StoreRequest(zkReq)
 	if err != nil {
 		logger.Error("store zk proof request error: %v %v", request.Id, err)
 	}
-	logger.Info("worker: %v get zk proof task: %v", request.Id, zkProofRequest.ProofId())
+	logger.Info("worker: %v get zk proof task proofId: %v, timestamp :%v txIndex:%v", request.Id, zkReq.ProofId(), zkReq.BlockTime, zkReq.TxIndex)
 	return &response, nil
 }
 
 func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
+	if req.Version < GeneratorVersion {
+		return "", fmt.Errorf("generator version %v, less than node version %v,please upgrade generator", req.Version, GeneratorVersion)
+	}
 	for _, item := range req.Responses {
 		logger.Debug("worker: %v submit proof: %v", req.WorkerId, item.ProofId())
 	}

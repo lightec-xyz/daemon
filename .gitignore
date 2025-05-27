@@ -33,3 +33,4 @@ data/btc/headers/tmp
 data/btc/headers/headers.txt
 data/btc/headers/.git*
 cmd/ethsetup/ethsetup
+/testdata/

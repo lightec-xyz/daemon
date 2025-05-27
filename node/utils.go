@@ -7,12 +7,12 @@ import (
 	btccdEcdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"math/big"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -44,10 +44,6 @@ func RsToSignature(sig string) ([]byte, error) {
 	return signature.Serialize(), nil
 }
 
-func EIP55Addr(addr string) string {
-	return ethCommon.HexToAddress(addr).Hex()
-}
-
 func TxIdIsEmpty(txId [32]byte) bool {
 	for _, b := range txId {
 		if b != 0 {
@@ -65,14 +61,7 @@ func UUID() string {
 	return newV7.String()
 }
 func BtcToSat(value float64) int64 {
-	valueRat := NewRat().Mul(NewRat().SetFloat64(value), NewRat().SetUint64(100000000))
-	floatStr := valueRat.FloatString(1)
-	valuesStr := strings.Split(floatStr, ".")
-	amountBig, ok := big.NewInt(0).SetString(valuesStr[0], 10)
-	if !ok {
-		panic(fmt.Sprintf("never should happen:%v", value))
-	}
-	return amountBig.Int64()
+	return int64(value * 100000000)
 }
 
 func privateKeyToEthAddr(secret string) (string, error) {
@@ -90,7 +79,7 @@ func privateKeyToEthAddr(secret string) (string, error) {
 }
 
 func trimOx(id string) string {
-	if strings.HasPrefix(id, "0x") || strings.HasPrefix(id, "0X") {
+	if strings.HasPrefix(strings.ToLower(id), "0x") {
 		return id[2:]
 	}
 	return id
@@ -210,4 +199,14 @@ func PrintPanicStack(extras ...interface{}) {
 			logger.Error("EXRAS#%v DATA:%v\n", k, spew.Sdump(extras[k]))
 		}
 	}
+}
+
+func getUrlToken(url string) string {
+	pattern := `^https?://[^/]+/.+/([0-9a-fA-F]{64})$`
+	re := regexp.MustCompile(pattern)
+	match := re.FindStringSubmatch(url)
+	if len(match) > 1 {
+		return match[1]
+	}
+	return ""
 }

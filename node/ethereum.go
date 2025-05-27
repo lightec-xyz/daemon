@@ -32,7 +32,6 @@ type ethereumAgent struct {
 	chainForkSignal chan<- *ChainFork
 	curHeight       uint64
 	reScan          bool
-	txMode          common.TxMode
 }
 
 func NewEthereumAgent(cfg Config, fileStore *FileStorage, store store.IStore, btcClient *bitcoin.Client,
@@ -47,7 +46,6 @@ func NewEthereumAgent(cfg Config, fileStore *FileStorage, store store.IStore, bt
 		chainStore:      NewChainStore(store),
 		chainForkSignal: chainFork,
 		reScan:          cfg.EthReScan,
-		txMode:          cfg.TxMode,
 	}, nil
 }
 
@@ -75,6 +73,38 @@ func (e *ethereumAgent) Init() error {
 		logger.Error("ethClient json rpc error:%v", err)
 		return err
 	}
+	err = e.GetCheckpointHeight()
+	if err != nil {
+		logger.Error("get checkpoint height error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func (b *ethereumAgent) GetCheckpointHeight() error {
+	hash, err := b.ethClient.SuggestedCP()
+	if err != nil {
+		logger.Error("ethClient get checkpoint hash error:%v", err)
+		return err
+	}
+	littleHash := hex.EncodeToString(common.ReverseBytes(hash))
+	header, err := b.btcClient.GetBlockHeader(littleHash)
+	if err != nil {
+		logger.Error("btcClient checkpoint height  error:%v %v", err, hash)
+		return err
+	}
+	checkpointHeight := uint64(header.Height)
+	err = b.chainStore.WriteCheckpoint(checkpointHeight, hex.EncodeToString(hash))
+	if err != nil {
+		logger.Error("write checkpoint error:%v", err)
+		return err
+	}
+	err = b.chainStore.WriteLatestCheckpoint(checkpointHeight)
+	if err != nil {
+		logger.Error("write latest checkpoint error:%v", err)
+		return err
+	}
+	logger.Debug("checkpointHeight: %v, checkpointHash: %v", checkpointHeight, littleHash)
 	return nil
 }
 
@@ -98,6 +128,12 @@ func (e *ethereumAgent) ScanBlock() error {
 		logger.Debug("eth currentHeight:%d >= blockNumber:%d", currentHeight, blockNumber)
 		return nil
 	}
+	err = e.GetCheckpointHeight()
+	if err != nil {
+		logger.Error("get checkpoint height error:%v", err)
+		return err
+	}
+
 	for index := uint64(currentHeight) + 1; index <= blockNumber; index++ {
 		logger.Debug("ethereum parse block:%d", index)
 		preHeight := index - 1
@@ -164,7 +200,7 @@ func (e *ethereumAgent) rollback(height uint64) error {
 		return err
 	}
 	logger.Debug("find eth chain startForkHeight: %v", startForkHeight)
-	for index := height; index > startForkHeight; index-- {
+	for index := height; index >= startForkHeight; index-- {
 		logger.Debug("eth rollback data height: %v", index)
 		err := e.chainStore.EthDeleteData(index)
 		if err != nil {
@@ -188,7 +224,6 @@ func (e *ethereumAgent) rollback(height uint64) error {
 
 func (e *ethereumAgent) findChainForkHeight(height uint64) (uint64, error) {
 	for index := height; index >= e.initHeight; index = index - 1 {
-		//logger.Warn("check rollback height: %v", index)
 		localBlockHash, exists, err := e.chainStore.ReadEthHash(index)
 		if err != nil {
 			logger.Error("get eth localHash error: %v %v", index, err)
@@ -205,7 +240,7 @@ func (e *ethereumAgent) findChainForkHeight(height uint64) (uint64, error) {
 		}
 		if common.StrEqual(localBlockHash, chainBlockHash.Hash().String()) {
 			logger.Info("find eth startForkHeight: %v", index)
-			return index, nil
+			return index + 1, nil
 		}
 	}
 	return e.initHeight, nil
@@ -286,6 +321,7 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, []
 		logger.Error("ethereum rpc get block error:%v", err)
 		return nil, nil, nil, nil, nil, err
 	}
+	blockTime := block.Time()
 	blockHash := block.Hash().String()
 	err = e.chainStore.WriteEthHash(height, blockHash)
 	if err != nil {
@@ -304,7 +340,7 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, []
 	var depositRewards []*DbTx
 	var redeemRewards []*DbTx
 	for _, log := range logs {
-		depositTx, isDeposit, err := e.depositTx(log)
+		depositTx, isDeposit, err := e.depositTx(log, blockTime)
 		if err != nil {
 			logger.Error("check is deposit tx error:%v", err)
 			return nil, nil, nil, nil, nil, err
@@ -313,7 +349,7 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, []
 			depositTxes = append(depositTxes, depositTx)
 			continue
 		}
-		depositReward, isDepositReward, err := e.depositReward(log)
+		depositReward, isDepositReward, err := e.depositReward(log, blockTime)
 		if err != nil {
 			logger.Error("check deposit reward:%v", err)
 			return nil, nil, nil, nil, nil, err
@@ -322,7 +358,7 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, []
 			depositRewards = append(depositRewards, depositReward)
 			continue
 		}
-		updateUtxoTx, isUpdateUtxo, err := e.updateUtxo(log)
+		updateUtxoTx, isUpdateUtxo, err := e.updateUtxo(log, blockTime)
 		if err != nil {
 			logger.Error("check is update utxo tx error:%v", err)
 			return nil, nil, nil, nil, nil, err
@@ -331,7 +367,7 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, []
 			updateUtxoTxes = append(updateUtxoTxes, updateUtxoTx)
 			continue
 		}
-		redeemReward, isRedeemReward, err := e.redeemReward(log)
+		redeemReward, isRedeemReward, err := e.redeemReward(log, blockTime)
 		if err != nil {
 			logger.Error("check is Redeem reward tx error:%v", err)
 			return nil, nil, nil, nil, nil, err
@@ -340,7 +376,7 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, []
 			redeemRewards = append(redeemRewards, redeemReward)
 			continue
 		}
-		redeemTx, isRedeem, err := e.redeemTx(log)
+		redeemTx, isRedeem, err := e.redeemTx(log, blockTime)
 		if err != nil {
 			logger.Error("check is Redeem tx error:%v", err)
 			return nil, nil, nil, nil, nil, err
@@ -369,7 +405,7 @@ func (e *ethereumAgent) checkRedeemTxProved(btxTxId string) (bool, error) {
 	if exists {
 		return true, nil
 	}
-	exists, err = e.btcClient.CheckTx(btxTxId)
+	exists, err = e.btcClient.CheckTxOnChain(btxTxId)
 	if err != nil {
 		logger.Error("check btc txId error: %v", btxTxId)
 		return false, err
@@ -377,7 +413,7 @@ func (e *ethereumAgent) checkRedeemTxProved(btxTxId string) (bool, error) {
 	return exists, nil
 }
 
-func (e *ethereumAgent) redeemReward(log types.Log) (*DbTx, bool, error) {
+func (e *ethereumAgent) redeemReward(log types.Log, blockTime uint64) (*DbTx, bool, error) {
 	if log.Removed {
 		return nil, false, nil
 	}
@@ -397,12 +433,12 @@ func (e *ethereumAgent) redeemReward(log types.Log) (*DbTx, bool, error) {
 		logger.Error("get tx sender error:%v", err)
 		return nil, false, err
 	}
-	rewardTx := NewRedeemRewardTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), sender, minerAddr, reward)
+	rewardTx := NewRedeemRewardTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), sender, minerAddr, reward, blockTime)
 	return rewardTx, true, nil
 
 }
 
-func (e *ethereumAgent) updateUtxo(log types.Log) (*DbTx, bool, error) {
+func (e *ethereumAgent) updateUtxo(log types.Log, blockTime uint64) (*DbTx, bool, error) {
 	if log.Removed {
 		return nil, false, nil
 	}
@@ -422,12 +458,12 @@ func (e *ethereumAgent) updateUtxo(log types.Log) (*DbTx, bool, error) {
 	}
 	logger.Info("ethereum agent find update utxo  ethHash:%v,utxoId:%v,index: %v,amount:%v,height:%v,sender:%v",
 		log.TxHash.String(), utxoId, utxoIndex, amount, log.BlockNumber, sender)
-	updateUtxoTx := NewUpdateUtxoTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), utxoId, utxoIndex, amount)
+	updateUtxoTx := NewUpdateUtxoTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), utxoId, utxoIndex, amount, blockTime)
 	return updateUtxoTx, true, nil
 
 }
 
-func (e *ethereumAgent) depositReward(log types.Log) (*DbTx, bool, error) {
+func (e *ethereumAgent) depositReward(log types.Log, blockTime uint64) (*DbTx, bool, error) {
 	if log.Removed {
 		return nil, false, nil
 	}
@@ -446,12 +482,12 @@ func (e *ethereumAgent) depositReward(log types.Log) (*DbTx, bool, error) {
 	}
 	logger.Info("ethereum agent find deposit reward height:%v ethTxHash:%v,miner:%v,amount:%v,sender:%v",
 		log.BlockNumber, log.TxHash, minerAddr, amount, sender)
-	rewardTx := NewDepositRewardTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), sender, minerAddr, amount)
+	rewardTx := NewDepositRewardTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), sender, minerAddr, amount, blockTime)
 	return rewardTx, true, nil
 
 }
 
-func (e *ethereumAgent) depositTx(log types.Log) (*DbTx, bool, error) {
+func (e *ethereumAgent) depositTx(log types.Log, blockTime uint64) (*DbTx, bool, error) {
 	if log.Removed {
 		return nil, false, nil
 	}
@@ -471,12 +507,12 @@ func (e *ethereumAgent) depositTx(log types.Log) (*DbTx, bool, error) {
 	}
 	logger.Info("ethereum agent find deposit zkbtc height:%v ethHash:%v,utxoId:%v,utxoIndex:%v,logIndex:%v,amount:%v,sender:%v",
 		log.BlockNumber, log.TxHash.String(), utxoId, utxoIndex, log.Index, amount, sender)
-	depositTx := NewDepositEthTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), sender, utxoId, utxoIndex, amount)
+	depositTx := NewDepositEthTx(log.BlockNumber, log.TxIndex, log.Index, log.TxHash.String(), sender, utxoId, utxoIndex, amount, blockTime)
 	return depositTx, true, nil
 
 }
 
-func (e *ethereumAgent) redeemTx(log types.Log) (*DbTx, bool, error) {
+func (e *ethereumAgent) redeemTx(log types.Log, blockTime uint64) (*DbTx, bool, error) {
 	if log.Removed {
 		return nil, false, nil
 	}
@@ -509,8 +545,8 @@ func (e *ethereumAgent) redeemTx(log types.Log) (*DbTx, bool, error) {
 		return nil, false, err
 	}
 	txHash := log.TxHash.String()
-	if !e.checkTxMode(btcTx) {
-		logger.Warn("check tx mode not match skip it,current mode %v ethHash:%v,btcHash:%v", e.txMode, log.TxHash.String(), btcTx.TxHash().String())
+	if !e.ethFilter.MigrateTx(btcTx.TxOut) {
+		logger.Warn("check redeem status error,current  ethHash:%v,btcHash:%v", log.TxHash.String(), btcTx.TxHash().String())
 		return nil, false, nil
 	}
 	if strings.TrimPrefix(btcTx.TxHash().String(), "0x") != strings.TrimPrefix(btcTxId, "0x") {
@@ -528,18 +564,9 @@ func (e *ethereumAgent) redeemTx(log types.Log) (*DbTx, bool, error) {
 	logger.Info("ethereum agent find Redeem zkbtc height:%v, index: %v,ethTxHash:%v,sender:%v,btcTxId:%v,minerReward:%v,"+
 		"amount:%v,input:%v,output:%v", blockNumber, log.TxIndex, txHash, txSender, btcTxId, minerReward.String(), amount,
 		getInputString(btcTx.TxIn), getOutputString(btcTx.TxOut))
-	redeemTx := NewRedeemEthTx(blockNumber, log.TxIndex, log.Index, txHash, txSender, btcTxId, amount)
+	redeemTx := NewRedeemEthTx(blockNumber, log.TxIndex, log.Index, txHash, txSender, btcTxId, amount, blockTime)
 	return redeemTx, true, nil
 
-}
-
-func (e *ethereumAgent) checkTxMode(tx *btctx.Transaction) bool {
-	for _, out := range tx.TxOut {
-		if common.StrEqual(hex.EncodeToString(out.PkScript), TestnetMigrateProto) {
-			return e.txMode == common.OnlyMigrateTx
-		}
-	}
-	return e.txMode == common.NormalTx
 }
 
 func (e *ethereumAgent) getTxSender(txHash, blockHash string, index uint) (string, error) {
@@ -584,7 +611,7 @@ func (e *ethereumAgent) Name() string {
 	return EthereumAgentName
 }
 
-func NewDepositEthTx(height uint64, txIndex, logIndex uint, txHash, sender, utxoId string, utxoIndex, amount int64) *DbTx {
+func NewDepositEthTx(height uint64, txIndex, logIndex uint, txHash, sender, utxoId string, utxoIndex, amount int64, blockTime uint64) *DbTx {
 	return &DbTx{
 		Hash:      DbValue(txHash),
 		TxIndex:   txIndex,
@@ -596,10 +623,11 @@ func NewDepositEthTx(height uint64, txIndex, logIndex uint, txHash, sender, utxo
 		UtxoIndex: utxoIndex,
 		Amount:    amount,
 		Sender:    sender,
+		BlockTime: blockTime,
 	}
 }
 
-func NewRedeemEthTx(height uint64, txIndex, logIndex uint, txHash, sender, btcTxId string, amount int64) *DbTx {
+func NewRedeemEthTx(height uint64, txIndex, logIndex uint, txHash, sender, btcTxId string, amount int64, blockTime uint64) *DbTx {
 	return &DbTx{
 		Height:    height,
 		TxIndex:   txIndex,
@@ -611,9 +639,10 @@ func NewRedeemEthTx(height uint64, txIndex, logIndex uint, txHash, sender, btcTx
 		UtxoId:    DbValue(btcTxId),
 		Sender:    DbValue(sender),
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
-func NewUpdateUtxoTx(height uint64, txIndex, logIndex uint, txHash, utxoId string, utxoIndex, amount int64) *DbTx {
+func NewUpdateUtxoTx(height uint64, txIndex, logIndex uint, txHash, utxoId string, utxoIndex, amount int64, blockTime uint64) *DbTx {
 	return &DbTx{
 		Height:    height,
 		TxIndex:   txIndex,
@@ -624,10 +653,11 @@ func NewUpdateUtxoTx(height uint64, txIndex, logIndex uint, txHash, utxoId strin
 		UtxoId:    utxoId,
 		UtxoIndex: utxoIndex,
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
 
-func NewDepositRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, minerAddr string, amount int64) *DbTx {
+func NewDepositRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, minerAddr string, amount int64, blockTime uint64) *DbTx {
 	return &DbTx{
 		Height:    height,
 		TxIndex:   txIndex,
@@ -638,10 +668,11 @@ func NewDepositRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, m
 		Sender:    DbValue(sender),
 		Receiver:  DbValue(minerAddr),
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
 
-func NewRedeemRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, minerAddr string, amount int64) *DbTx {
+func NewRedeemRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, minerAddr string, amount int64, blockTime uint64) *DbTx {
 	return &DbTx{
 		Height:    height,
 		TxIndex:   txIndex,
@@ -652,6 +683,7 @@ func NewRedeemRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, mi
 		Sender:    DbValue(sender),
 		Receiver:  DbValue(minerAddr),
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
 

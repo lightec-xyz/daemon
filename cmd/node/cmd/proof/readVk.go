@@ -1,9 +1,10 @@
-package cmd
+package proof
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/lightec-xyz/common/operations"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +14,11 @@ var readVkCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		err := logger.InitLogger(nil)
+		if err != nil {
+			fmt.Printf("init logger error: %v \n", err)
+			return
+		}
 		path, err := cmd.Flags().GetString("file")
 		if err != nil {
 			fmt.Printf("get path error: %v \n", err)
@@ -42,6 +48,5 @@ var readVkCmd = &cobra.Command{
 
 func init() {
 	readVkCmd.Flags().String("file", "", "vk file")
-	rootCmd.AddCommand(readVkCmd)
 
 }

@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/store"
 	"time"
 
 	btcproverCommon "github.com/lightec-xyz/btc_provers/circuits/common"
@@ -32,7 +33,8 @@ const (
 const (
 	SlotPerPeriod         = 8192
 	MaxDiffTxFinalitySlot = 32
-	BtcLatestBlockMaxDiff = 24 // todo
+	BtcLatestBlockMaxDiff = 13 // todo
+	GenMaxRetryNums       = 1000
 )
 
 type TxMode int
@@ -343,42 +345,42 @@ func (p ProofType) ConstraintQuantity() uint64 {
 }
 
 func ToZkProofType(str string) (ProofType, error) {
-	switch str {
-	case "syncComInner":
+	switch store.Table(str) {
+	case InnerTable:
 		return SyncComInnerType, nil
-	case "syncComUnitType":
+	case OuterTable:
+		return SyncComOuterType, nil
+	case UnitTable:
 		return SyncComUnitType, nil
-	case "syncComGenesisType":
+	case RecursiveTable:
 		return SyncComRecursiveType, nil
-	case "syncComDutyType":
+	case DutyTable:
 		return SyncComDutyType, nil
-	case "txInEth2":
+	case TxesTable:
 		return TxInEth2Type, nil
-	case "beaconHeaderType":
+	case BeaconHeaderTable:
 		return BeaconHeaderType, nil
-	case "beaconHeaderFinalityType":
+	case BhfTable:
 		return BeaconHeaderFinalityType, nil
-	case "redeemTxType":
+	case RedeemTable:
 		return RedeemTxType, nil
-	case "btcBulkType":
+	case BtcBulkTable:
 		return BtcBulkType, nil
-	case "btcBaseType":
+	case BtcBaseTable:
 		return BtcBaseType, nil
-	case "btcMiddleType":
+	case BtcMiddleTable:
 		return BtcMiddleType, nil
-	case "btcUpperType":
+	case BtcUpperTable:
 		return BtcUpperType, nil
-	case "btcDuperRecursive":
+	case BtcDuperRecursiveTable:
 		return BtcDuperRecursiveType, nil
-	case "btcDepthRecursiveType":
+	case BtcDepthRecursiveTable:
 		return BtcDepthRecursiveType, nil
-	case "btcDepositType":
+	case BtcDepositTable:
 		return BtcDepositType, nil
-	case "btcChangeType":
+	case BtcChangeTable:
 		return BtcChangeType, nil
-	case "btcUpdateCpType":
-		return BtcUpdateCpType, nil
-	case "btcTimestampType":
+	case BtcTimestampTable:
 		return BtcTimestampType, nil
 	default:
 		return 0, fmt.Errorf("uKnown zk proof type %v", str)
@@ -386,9 +388,21 @@ func ToZkProofType(str string) (ProofType, error) {
 }
 
 func IsBtcProofType(proofType ProofType) bool {
+	return IsBtcExternalProofType(proofType) || IsBtcInternalProofType(proofType)
+}
+
+func IsBtcExternalProofType(proofType ProofType) bool {
 	switch proofType {
-	case BtcBulkType, BtcTimestampType, BtcBaseType, BtcMiddleType, BtcUpperType, BtcDuperRecursiveType, BtcDepthRecursiveType,
-		BtcDepositType, BtcChangeType, BtcUpdateCpType:
+	case BtcDepositType, BtcChangeType, BtcUpdateCpType:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsBtcInternalProofType(proofType ProofType) bool {
+	switch proofType {
+	case BtcBulkType, BtcBaseType, BtcTimestampType, BtcMiddleType, BtcUpperType, BtcDuperRecursiveType, BtcDepthRecursiveType:
 		return true
 	default:
 		return false

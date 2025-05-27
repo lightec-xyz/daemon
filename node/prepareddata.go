@@ -37,6 +37,7 @@ type Prepared struct {
 	beaconClient     *beacon.Client
 	genesisPeriod    uint64
 	genesisSlot      uint64
+	scNewRecursive   bool
 	minerAddr        string
 	btcGenesisHeight uint64 // startIndex
 }
@@ -319,15 +320,15 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 	if period < genesisPeriod+1 {
 		return nil, false, fmt.Errorf(" recursive less than %v", genesisPeriod+1)
 	}
-	genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
-	if err != nil {
-		logger.Error("get genesis id error: %v", err)
-		return nil, false, err
-	}
-	if !ok {
-		logger.Warn("get %v FIndex genesis commitId no find", genesisPeriod)
-		return nil, false, nil
-	}
+	//genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
+	//if err != nil {
+	//	logger.Error("get genesis id error: %v", err)
+	//	return nil, false, err
+	//}
+	//if !ok {
+	//	logger.Warn("get %v FIndex genesis commitId no find", genesisPeriod)
+	//	return nil, false, nil
+	//}
 	relayId, ok, err := p.GetSyncCommitRootId(period)
 	if err != nil {
 		logger.Error("get relay id error: %v", err)
@@ -340,7 +341,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 	var firstProof *StoreProof
 	var exists bool
 	var choice string
-	if period == genesisPeriod+1 {
+	if period == genesisPeriod+1 && p.scNewRecursive { //todo
 		firstProof, exists, err = p.filestore.GetUnitProof(p.genesisPeriod)
 		choice = circuits.SyncCommitteeGenesis
 	} else {
@@ -403,7 +404,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 			Proof:   outerProof.Proof,
 			Witness: outerProof.Witness,
 		},
-		BeginId: hex.EncodeToString(genesisId),
+		BeginId: GenesisRoot,
 		RelayId: hex.EncodeToString(relayId),
 		EndId:   hex.EncodeToString(endId),
 		ScIndex: int(period), //todo
@@ -537,42 +538,26 @@ func (p *Prepared) GetBtcBulkRequest(start, end, prefix uint64) (*rpc.BtcBulkReq
 }
 
 func (p *Prepared) GetSyncCommittee(period uint64) (*WrapSyncCommittee, bool, error) {
-	if period == p.genesisPeriod {
-		var bootstrap common.BootstrapResponse
-		exists, err := p.filestore.GetBootStrapBySlot(p.genesisSlot, &bootstrap)
-		if err != nil {
-			logger.Error("get bootstrap error: %v", err)
-			return nil, false, err
-		}
-		if !exists {
-			return nil, false, nil
-		}
-		return &WrapSyncCommittee{
-			SyncCommittee: &proverType.SyncCommittee{
-				PubKeys:         bootstrap.Data.CurrentSyncCommittee.Pubkeys,
-				AggregatePubKey: bootstrap.Data.CurrentSyncCommittee.AggregatePubkey,
-			},
-			Version: bootstrap.Version,
-		}, true, nil
-
-	} else {
-		var lightClientUpdate common.LightClientUpdateResponse
-		exists, err := p.filestore.GetUpdate(period-1, &lightClientUpdate)
-		if err != nil {
-			logger.Error("get %v index update error: %v", period, err)
-			return nil, false, err
-		}
-		if !exists {
-			return nil, false, nil
-		}
-		return &WrapSyncCommittee{
-			SyncCommittee: &proverType.SyncCommittee{
-				PubKeys:         lightClientUpdate.Data.NextSyncCommittee.Pubkeys,
-				AggregatePubKey: lightClientUpdate.Data.NextSyncCommittee.AggregatePubkey,
-			},
-			Version: lightClientUpdate.Version,
-		}, true, nil
+	var lightClientUpdate common.LightClientUpdateResponse
+	prePeriod := period - 1
+	if prePeriod < 0 { // todo
+		prePeriod = 0
 	}
+	exists, err := p.filestore.GetUpdate(prePeriod, &lightClientUpdate)
+	if err != nil {
+		logger.Error("get %v index update error: %v", period, err)
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	return &WrapSyncCommittee{
+		SyncCommittee: &proverType.SyncCommittee{
+			PubKeys:         lightClientUpdate.Data.NextSyncCommittee.Pubkeys,
+			AggregatePubKey: lightClientUpdate.Data.NextSyncCommittee.AggregatePubkey,
+		},
+		Version: lightClientUpdate.Version,
+	}, true, nil
 
 }
 
@@ -592,45 +577,27 @@ func (p *Prepared) GetSyncCommitUpdate(period uint64) (*rpc.WrapSyncCommitteeUpd
 		logger.Error("parse obj error: %v %v", period, err)
 		return nil, false, err
 	}
-	if p.genesisPeriod == period {
-		var bootstrap common.BootstrapResponse
-		genesisExists, err := p.filestore.GetBootStrapBySlot(p.genesisSlot, &bootstrap)
-		if err != nil {
-			logger.Error("get genesis update error: %v %v", period, err)
-			return nil, false, err
-		}
-		if !genesisExists {
-			logger.Warn("no find genesis update Responses,%v", period)
-			return nil, false, nil
-		}
-		update.CurrentSyncCommittee = &proverType.SyncCommittee{
-			PubKeys:         bootstrap.Data.CurrentSyncCommittee.Pubkeys,
-			AggregatePubKey: bootstrap.Data.CurrentSyncCommittee.AggregatePubkey,
-		}
-		update.CurrentSyncCommitteeBranch = bootstrap.Data.CurrentSyncCommitteeBranch
-	} else {
-		prePeriod := period - 1
-		if prePeriod < p.filestore.GetGenesisPeriod() {
-			logger.Error("should never happen: %v", prePeriod)
-			return nil, false, nil
-		}
-		var preUpdateData common.LightClientUpdateResponse
-		preUpdateExists, err := p.filestore.GetUpdate(prePeriod, &preUpdateData)
-		if err != nil {
-			logger.Error("get %v index update error: %v", prePeriod, err)
-			return nil, false, err
-		}
-		if !preUpdateExists {
-			logger.Warn("get unit Responses,no find %v FIndex update Responses", prePeriod)
-			return nil, false, nil
-		}
-		update.CurrentSyncCommittee = &proverType.SyncCommittee{
-			PubKeys:         preUpdateData.Data.NextSyncCommittee.Pubkeys,
-			AggregatePubKey: preUpdateData.Data.NextSyncCommittee.AggregatePubkey,
-		}
-		update.CurrentSyncCommitteeBranch = preUpdateData.Data.NextSyncCommitteeBranch
+	prePeriod := period - 1
+	if prePeriod < p.filestore.GetGenesisPeriod()-1 {
+		logger.Error("should never happen: %v", prePeriod)
+		return nil, false, nil
 	}
-	ok, err := common.VerifyLightClientUpdate(update.SyncCommitteeUpdate)
+	var preUpdateData common.LightClientUpdateResponse
+	preUpdateExists, err := p.filestore.GetUpdate(prePeriod, &preUpdateData)
+	if err != nil {
+		logger.Error("get %v index update error: %v", prePeriod, err)
+		return nil, false, err
+	}
+	if !preUpdateExists {
+		logger.Warn("get unit Responses,no find %v FIndex update Responses", prePeriod)
+		return nil, false, nil
+	}
+	update.CurrentSyncCommittee = &proverType.SyncCommittee{
+		PubKeys:         preUpdateData.Data.NextSyncCommittee.Pubkeys,
+		AggregatePubKey: preUpdateData.Data.NextSyncCommittee.AggregatePubkey,
+	}
+	update.CurrentSyncCommitteeBranch = preUpdateData.Data.NextSyncCommitteeBranch
+	ok, err := update.SyncCommitteeUpdate.Verify()
 	if err != nil {
 		logger.Error("verify light client update error: %v %v", period, err)
 		return nil, false, err
@@ -660,9 +627,7 @@ func (p *Prepared) GetBhfUpdateRequest(finalizedSlot uint64) (*rpc.BlockHeaderFi
 		logger.Error("parse big error %v %v", currentFinalityUpdate.Data.AttestedHeader.Slot, err)
 		return nil, false, err
 	}
-	// todo
-	period := (attestedSlot / common.SlotPerPeriod)
-	//outerPeriod := period + 1
+	period := attestedSlot / common.SlotPerPeriod
 	syncCommittee, exists, err := p.GetSyncCommittee(period)
 	if err != nil {
 		logger.Error("get %v syncCommittee: %v", period, err)
@@ -730,15 +695,15 @@ func (p *Prepared) GetRedeemRequest(txHash string) (*rpc.RedeemRequest, bool, er
 		logger.Warn("no find bhf update %v", finalizedSlot)
 		return nil, false, nil
 	}
-	genesisRoot, ok, err := p.GetSyncCommitRootId(p.genesisPeriod)
-	if err != nil {
-		logger.Error("get genesis root error: %v", err)
-		return nil, false, err
-	}
-	if !ok {
-		logger.Warn("no find genesis root %v", p.genesisPeriod)
-		return nil, false, nil
-	}
+	//genesisRoot, ok, err := p.GetSyncCommitRootId(p.genesisPeriod)
+	//if err != nil {
+	//	logger.Error("get genesis root error: %v", err)
+	//	return nil, false, err
+	//}
+	//if !ok {
+	//	logger.Warn("no find genesis root %v", p.genesisPeriod)
+	//	return nil, false, nil
+	//}
 
 	var finalityUpdate common.LightClientFinalityUpdateEvent
 	ok, err = p.filestore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)
@@ -817,7 +782,7 @@ func (p *Prepared) GetRedeemRequest(txHash string) (*rpc.RedeemRequest, bool, er
 			Proof:   dutyProof.Proof,
 			Witness: dutyProof.Witness,
 		},
-		GenesisScRoot:    hex.EncodeToString(genesisRoot),
+		GenesisScRoot:    GenesisRoot,
 		CurrentSCSSZRoot: hex.EncodeToString(currentRoot),
 		SigHashes:        common.BytesArrayToHex(sigHashes),
 		NbBeaconHeaders:  len(beaconHeaders) - 1,
@@ -988,6 +953,8 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 		// no work,just placeholder
 		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
 		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"
+	} else {
+		logger.Debug("%v icp signature: %v %v %v", dbTx.Hash, icpSignature.Height, icpSignature.Hash, icpSignature.Signature)
 	}
 	blockHash, err := p.btcClient.GetBlockHash(int64(dbTx.Height))
 	if err != nil {
@@ -1016,9 +983,9 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 	}
 
 	sigVerifyData, err := blockdepthUtil.GetSigVerifProofData(
-		ethcommon.FromHex(icpSignature.Hash),
+		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(TestnetIcpPublicKey))
+		ethcommon.FromHex(IcpPublicKey))
 	if err != nil {
 		logger.Error("get sig verif proof data error: %v", err)
 		return nil, false, err
@@ -1157,7 +1124,7 @@ func (p *Prepared) GetBtcTimestampRequest(fIndex uint64, sIndex uint64) (*rpc.Bt
 }
 
 func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, btcGenesisHeight uint64, proverClient btcproverClient.IClient, btcClient *btcrpc.Client,
-	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr string) (*Prepared, error) {
+	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr string, scNewRecursive bool) (*Prepared, error) {
 	return &Prepared{
 		filestore:        filestore,
 		chainStore:       NewChainStore(store),
@@ -1170,6 +1137,7 @@ func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, bt
 		genesisPeriod:    genesisSlot / common.SlotPerPeriod,
 		btcGenesisHeight: btcGenesisHeight,
 		minerAddr:        minerAddr,
+		scNewRecursive:   scNewRecursive,
 	}, nil
 }
 

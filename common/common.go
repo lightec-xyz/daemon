@@ -2,10 +2,12 @@ package common
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	native_plonk "github.com/consensys/gnark/backend/plonk"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +17,14 @@ import (
 
 	"github.com/google/uuid"
 )
+
+func Md5(data []byte) []byte {
+	ret := md5.Sum(data)
+	return ret[:]
+}
+func HexMd5(data []byte) string {
+	return hex.EncodeToString(Md5(data))
+}
 
 func ReadObj(path string, obj interface{}) error {
 	bytes, err := os.ReadFile(path)
@@ -42,6 +52,12 @@ func TrimOx(value string) string {
 	return value
 }
 
+func ReverseHex(value string) string {
+	hexValue := ethCommon.FromHex(value)
+	reversed := ReverseBytes(hexValue)
+	return ethCommon.Bytes2Hex(reversed)
+}
+
 func ReverseU32(input []uint32) []uint32 {
 	b := make([]uint32, len(input))
 	copy(b, input)
@@ -52,10 +68,19 @@ func ReverseU32(input []uint32) []uint32 {
 }
 
 func ReverseBytes(data []byte) []byte {
-	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
-		data[i], data[j] = data[j], data[i]
+	res := make([]byte, len(data))
+	copy(res, data)
+	for i, j := 0, len(res)-1; i < j; i, j = i+1, j-1 {
+		res[i], res[j] = res[j], res[i]
 	}
-	return data
+	return res
+}
+func ReverseStr(value string) string {
+	runes := []rune(value)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
 }
 
 func MustUUID() string {
@@ -193,4 +218,20 @@ func OverwriteFile(file string) (*os.File, error) {
 		return nil, err
 	}
 	return fFile, nil
+}
+
+func GetBtcPwd() string {
+	return os.Getenv("btcPwd")
+}
+
+func GetBtcUser() string {
+	return os.Getenv("btcUser")
+}
+
+func GetBtcUrl() string {
+	return os.Getenv("btcUrl")
+}
+
+func SetUpDir() string {
+	return os.Getenv("setupDir")
 }

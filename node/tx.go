@@ -4,15 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
-	"math/big"
-	"sync"
-	"time"
-
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -20,10 +16,16 @@ import (
 	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/rpc/sgx"
 	"github.com/lightec-xyz/daemon/store"
 	redeemUtils "github.com/lightec-xyz/provers/utils/redeem-tx"
+	"math/big"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 //todo record tx hash to check status
@@ -43,6 +45,7 @@ type TxManager struct {
 	keyStore     *KeyStore
 	lock         sync.Mutex
 	icpSigMap    map[string][][]byte
+	randCount    int
 }
 
 func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client,
@@ -65,6 +68,17 @@ func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared
 }
 
 func (t *TxManager) init() error {
+	nonce, err := t.ethClient.GetNonce(t.submitAddr)
+	if err != nil {
+		return err
+	}
+	if nonce > 0 {
+		err = t.chainStore.WriteNonce(common.ETH.String(), t.submitAddr, nonce-1)
+		if err != nil {
+			return err
+		}
+	}
+	logger.Debug("current miner %v chaiNonce:%v", t.submitAddr, nonce)
 	return nil
 }
 
@@ -85,31 +99,51 @@ func (t *TxManager) Check() error {
 		return err
 	}
 	for _, tx := range unSubmitTxs {
-		switch tx.ProofType {
-		case common.BtcDepositType, common.BtcUpdateCpType:
-			hash, err := t.DepositBtc(tx.Hash, tx.Proof)
+		if tx.ConfirmHash != "" { // deposit and updateUtxo tx
+			receipt, err := t.ethClient.TransactionReceipt(context.Background(), ethcommon.HexToHash(tx.ConfirmHash))
 			if err != nil {
-				logger.Error("update deposit error: %v %v", tx.ProofType.Name(), tx.Hash)
+				logger.Error("get eth tx receipt error:%v %v %v", tx.Hash, tx.ConfirmHash, err)
 				continue
 			}
-			logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
-		case common.BtcChangeType:
-			hash, err := t.UpdateUtxoChange(tx.Hash, tx.Proof)
+			err = t.chainStore.DeleteUnSubmitTx(tx.Hash)
 			if err != nil {
-				logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
-				return err
+				logger.Error("delete unsubmit tx error:%v %v", tx.Hash, err)
 			}
-			logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
-		case common.RedeemTxType:
-			hash, err := t.RedeemZkbtc(tx.Hash, tx.Proof)
-			if err != nil {
-				logger.Error("Redeem btx tx error: %v %v", tx.ProofType.Name(), tx.Hash)
+			if receipt.Status != ethTypes.ReceiptStatusSuccessful {
+				err = t.addBtcUnGenProof(tx.Hash)
+				if err != nil {
+					logger.Error("add btc un gen proof error:%v %v", tx.Hash, err)
+				}
 				continue
 			}
-			logger.Debug("success Redeem btc ethHash: %v,btcHash: %v", tx.Hash, hash)
-		default:
-			logger.Warn("never should happen: %v %v", tx.ProofType.Name(), tx.Hash)
+		} else {
+			switch tx.ProofType {
+			case common.BtcDepositType, common.BtcUpdateCpType:
+				hash, err := t.DepositBtc(tx)
+				if err != nil {
+					logger.Error("update deposit error: %v %v", tx.ProofType.Name(), tx.Hash)
+					continue
+				}
+				logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
+			case common.BtcChangeType:
+				hash, err := t.UpdateUtxoChange(tx)
+				if err != nil {
+					logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
+					continue
+				}
+				logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
+			case common.RedeemTxType:
+				hash, err := t.RedeemZkbtc(tx.Hash, tx.Proof)
+				if err != nil {
+					logger.Error("Redeem btx tx error: %v %v", tx.ProofType.Name(), tx.Hash)
+					continue
+				}
+				logger.Debug("success Redeem btc ethHash: %v,btcHash: %v", tx.Hash, hash)
+			default:
+				logger.Warn("never should happen: %v %v", tx.ProofType.Name(), tx.Hash)
+			}
 		}
+
 	}
 	return nil
 }
@@ -128,15 +162,18 @@ func (t *TxManager) getEthAddrNonce(addr string) (uint64, error) {
 	if !exists {
 		return chainNonce, nil
 	}
-	if chainNonce <= dbNonce {
+	if chainNonce <= dbNonce+1 {
 		return dbNonce + 1, nil
 	}
 	return chainNonce, nil
 }
 
-func (t *TxManager) DepositBtc(txId, proof string) (string, error) {
+func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	proofType := tx.ProofType
+	txId := tx.Hash
+	proof := tx.Proof
 	exists, err := t.ethClient.CheckUtxo(txId)
 	if err != nil {
 		logger.Error("check utxo error: %v %v", txId, err)
@@ -184,24 +221,40 @@ func (t *TxManager) DepositBtc(txId, proof string) (string, error) {
 	}
 	logger.Debug("submit deposit tx:%v cpDepth:%v,txDepth:%v,checkPoint:%x,blockHash:%x,blockTime:%v,flag:%v,smoothedTimestamp: %v,minerAddr:%v,gasPrice:%v,btcTxRaw:%x,proof:%v",
 		txId, params.CpDepth, params.TxDepth, params.Checkpoint, params.TxBlockHash, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, t.minerAddr, gasPrice, btcRawTx, proof)
-	gasLimit, err := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
-	if err != nil {
-		logger.Error("estimate deposit gas limit error:%v %v", txId, err)
-		if proofExpired(err) {
-			logger.Warn("deposit tx expired now,delete it: %v", txId)
+	gasLimit, mockErr := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
+	if mockErr != nil {
+		switch proofType {
+		case common.BtcUpdateCpType:
+			logger.Warn("mock updateCp error:%v %v", txId, mockErr)
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			err = t.addBtcUnGenProof(txId)
-			if err != nil {
-				logger.Error("add btc ungen proof error: %v", err)
-				return "", err
-			}
 			return "", nil
+		case common.BtcDepositType:
+			logger.Error("deposit zkbtc error:%v %v", txId, mockErr)
+			if strings.Contains(mockErr.Error(), "execution reverted") {
+				err := t.chainStore.DeleteUnSubmitTx(txId)
+				if err != nil {
+					logger.Error("delete unSubmit tx error: %v", err)
+					return "", err
+				}
+				if !proofFailed(mockErr) {
+					logger.Warn("deposit tx expired now try again: %v", txId)
+					err = t.addBtcUnGenProof(txId)
+					if err != nil {
+						logger.Error("add btc ungen proof error: %v", err)
+						return "", err
+					}
+				}
+				return "", nil
+			}
+			return "", mockErr
+		default:
+			logger.Warn("never should happen: %v %v", txId, mockErr)
+			return "", mockErr
 		}
-		return "", err
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
@@ -218,21 +271,29 @@ func (t *TxManager) DepositBtc(txId, proof string) (string, error) {
 	}
 
 	txHash, err := t.ethClient.Deposit(privateKey, params, nonce, gasLimit, chainId, gasPrice, btcRawTx, proofBytes)
+	if err != nil {
+		logger.Error("deposit zkbtc error:%v %v", txId, err)
+		return "", err
+	}
 	logger.Debug("deposit zkbtc info address: %v ethTxHash: %v, btcTxId: %v,nonce: %v", ethAddress, txHash, txId, nonce)
 	err = t.chainStore.WriteNonce(common.ETH.String(), ethAddress, nonce)
 	if err != nil {
 		logger.Error("write nonce error: %v %v", ethAddress, err)
 		return "", err
 	}
-	err = t.chainStore.DeleteUnSubmitTx(txId)
+	tx.ConfirmHash = txHash
+	err = t.chainStore.WriteUnSubmitTx(tx)
 	if err != nil {
-		logger.Error("delete unsubmit tx error: %v %v", txId, err)
+		logger.Error("write unsubmit tx error: %v %v", txId, err)
 		return "", err
 	}
 	return txHash, nil
 }
 
 func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
+	defer func() {
+		t.randCount = t.randCount + 1
+	}()
 	ethTxHash := ethcommon.HexToHash(hash)
 	ethTx, _, err := t.ethClient.TransactionByHash(context.Background(), ethTxHash)
 	if err != nil {
@@ -270,35 +331,6 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 	for index, vin := range transaction.MsgTx.TxIn {
 		logger.Debug("%v vin: %v", index, vin)
 	}
-
-	scRoot, err := t.getTxScRoot(hash)
-	if err != nil {
-		logger.Error("get tx sc root error: %v %v", hash, err)
-		return "", err
-	}
-
-	//currentScRoot, ethTxHash, ethUrl, btcTxId, proof string, sigHashes []string, minerReward *big.Int
-	btcTxSignatures, err := t.SignerBtc(scRoot, hash, hex.EncodeToString(btcTxId[:]), proof, common.BytesArrayToHex(sigHashes), minerReward)
-	if err != nil {
-		logger.Error("sign btc tx error: %v %v", hash, err)
-		return "", err
-	}
-	multiSigScriptBytes := ethcommon.FromHex(TestnetMultiSig)
-	err = transaction.AddMultiScript(multiSigScriptBytes, 2, 3)
-	if err != nil {
-		logger.Error("add multi script error: %v %v", hash, err)
-		return "", err
-	}
-	err = transaction.MergeSignature(btcTxSignatures)
-	if err != nil {
-		logger.Error("merge signature error: %v %v", hash, err)
-		return "", err
-	}
-	btcTxBytes, err := transaction.Serialize()
-	if err != nil {
-		logger.Error("serialize btc tx error:%v %v", hash, err)
-		return "", err
-	}
 	btcTxHash := transaction.TxHash()
 	exists, err := t.btcTxOnChain(btcTxHash)
 	if err != nil {
@@ -314,6 +346,36 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 		}
 		return "", nil
 	}
+
+	scRoot, err := t.getTxScRoot(hash)
+	if err != nil {
+		logger.Error("get tx sc root error: %v %v", hash, err)
+		return "", err
+	}
+
+	//currentScRoot, ethTxHash, ethUrl, btcTxId, proof string, sigHashes []string, minerReward *big.Int
+	btcTxSignatures, err := t.SignerBtc(scRoot, hash, hex.EncodeToString(btcTxId[:]), proof, common.BytesArrayToHex(sigHashes), minerReward)
+	if err != nil {
+		logger.Error("sign btc tx error: %v %v", hash, err)
+		return "", err
+	}
+	multiSigScriptBytes := ethcommon.FromHex(BtcMultiSig)
+	err = transaction.AddMultiScript(multiSigScriptBytes, 2, 3)
+	if err != nil {
+		logger.Error("add multi script error: %v %v", hash, err)
+		return "", err
+	}
+	err = transaction.MergeSignature(btcTxSignatures)
+	if err != nil {
+		logger.Error("merge signature error: %v %v", hash, err)
+		return "", err
+	}
+	btcTxBytes, err := transaction.Serialize()
+	if err != nil {
+		logger.Error("serialize btc tx error:%v %v", hash, err)
+		return "", err
+	}
+
 	btcTxHex := hex.EncodeToString(btcTxBytes)
 	logger.Info("Redeem btc: %v %v", btcTxHash, btcTxHex)
 	txHash, err := t.btcClient.Sendrawtransaction(btcTxHex)
@@ -343,9 +405,11 @@ func (t *TxManager) btcTxOnChain(hash string) (bool, error) {
 	return false, nil
 }
 
-func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
+func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	txId := tx.Hash
+	proof := tx.Proof
 	confirmed, err := t.ethClient.UtxoConfirm(txId)
 	if err != nil {
 		logger.Error("utxo confirm error: %v %v", txId, err)
@@ -406,26 +470,28 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 		logger.Error("get params %v error %v", txId, err)
 		return "", err
 	}
-	logger.Debug("submit updateUtxo txId:%x, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
-		txIdBytes, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
-
-	gasLimit, err := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
-	if err != nil {
-		if proofExpired(err) {
-			logger.Warn("update utxo expired now,delete it: %v", txId)
+	logger.Debug("submit updateUtxo txId:%v, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
+		txId, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
+	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
+	if mockErr != nil {
+		logger.Error("estimate update utxo gas limit error:%v %v", txId, mockErr)
+		if strings.Contains(mockErr.Error(), "execution reverted") {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			err = t.addBtcUnGenProof(txId)
-			if err != nil {
-				logger.Error("add btc ungen proof error: %v", err)
-				return "", err
+			if !proofFailed(mockErr) {
+				logger.Warn("update utxo tx expired now,try again: %v", txId)
+				err = t.addBtcUnGenProof(txId)
+				if err != nil {
+					logger.Error("add btc ungen proof error: %v", mockErr)
+					return "", err
+				}
 			}
 			return "", nil
 		}
-		return "", err
+		return "", mockErr
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	balOk, err := t.CheckEthBalance(t.submitAddr, gasPrice, gasLimit)
@@ -447,60 +513,110 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 		logger.Error("write nonce error: %v %v", fromAddress, err)
 		return "", err
 	}
-	err = t.chainStore.DeleteUnSubmitTx(txId)
+	tx.ConfirmHash = txHash
+	err = t.chainStore.WriteUnSubmitTx(tx)
 	if err != nil {
-		logger.Error("delete unsubmit tx error: %v %v", txId, err)
+		logger.Error("write unsubmit tx error: %v %v", txId, err)
 		return "", err
 	}
 	return txHash, nil
+}
+
+func (t *TxManager) signBtc(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int,
+	signFns ...func(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error)) ([][][]byte, error) {
+	var signatures [][][]byte
+	for _, signFn := range signFns {
+		signature, err := signFn(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward)
+		if err != nil {
+			logger.Error("sign btc tx error: %v %v", btcTxId, err)
+			continue
+		}
+		signatures = append(signatures, signature)
+		if len(signatures) >= 2 {
+			return signatures, nil
+		}
+	}
+	return nil, fmt.Errorf("sign btc tx error: %v", btcTxId)
+
 }
 
 func (t *TxManager) SignerBtc(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][][]byte, error) {
 	logger.Debug("signer btc tx currentScRoot:%v,ethTxHash:%v,btcTxId:%v,proof:%v,minerReward:%v,sigHashes:%v",
 		currentScRoot, ethTxHash, btcTxId, proof, minerReward.Uint64(), sigHashes)
 	var signatures [][][]byte
-	oasisSignature, err := t.oasisClient.SignBtcTx(btcTxId, currentScRoot, proof, sigHashes, minerReward)
+	var err error
+	if t.randCount%5 == 0 {
+		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward,
+			t.sgxSign, t.icpSign, t.oasisSign)
+	} else {
+		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward,
+			t.sgxSign, t.oasisSign, t.icpSign)
+	}
+	if err != nil {
+		logger.Error("sign btc tx error: %v %v", btcTxId, err)
+		return nil, err
+	}
+	return signatures, nil
+
+}
+
+func (t *TxManager) oasisSign(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error) {
+	oasisSignatures, err := t.oasisClient.SignBtcTx(btcTxId, currentScRoot, proof, sigHashes, minerReward)
 	if err != nil {
 		logger.Error("oasis sign btc tx error: %v %v", btcTxId, err)
-	} else {
-		logger.Debug("txId:%v,oasis signature:%x", btcTxId, oasisSignature)
-		signatures = append(signatures, oasisSignature...)
+		return nil, err
+	}
+	logger.Debug("txId:%v,oasis signature:%x", btcTxId, oasisSignatures)
+	if len(oasisSignatures) > 0 {
+		return oasisSignatures[0], nil
+	}
+	return nil, fmt.Errorf("oasis sign btc tx error: %v", btcTxId)
+}
+
+func (t *TxManager) icpSign(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error) {
+	redeemProof, ok, err := t.fileStore.GetSgxRedeemProof(ethTxHash)
+	if err != nil {
+		logger.Error("get sgx redeem proof error: %v %v", ethTxHash, err)
+		return nil, err
+	}
+	if !ok {
+		logger.Error("get sgx redeem proof error: %v", ethTxHash)
+		return nil, fmt.Errorf("get sgx redeem proof error: %v", ethTxHash)
 	}
 	if icpSignatures, ok := t.icpSigMap[btcTxId]; ok {
 		logger.Debug("txId:%v,use cache icp signature:%x", btcTxId, icpSignatures)
-		signatures = append(signatures, icpSignatures)
+		return icpSignatures, nil
 	} else {
-		//currentScRoot, ethTxHash, ethUrl, btcTxId, proof string, minerReward uint64, sigHashes []string
-		icpTxSignatures, err := t.icpClient.BtcTxSign(currentScRoot, ethTxHash, btcTxId, proof, minerReward.String(), sigHashes)
+		icpTxSignatures, err := t.icpClient.BtcTxSignWithCycle(currentScRoot, ethTxHash, btcTxId, redeemProof.Proof, minerReward.String(), sigHashes)
 		if err != nil {
 			logger.Error("sign btc tx error: %v %v", btcTxId, err)
+			return nil, err
 		} else {
-			logger.Debug("txId:%v,icp signature:%v", btcTxId, icpTxSignatures)
-			if icpTxSignatures.Signed {
-				logger.Debug("txId:%v,icp signature:%v", btcTxId, icpTxSignatures.Signature)
-				icpSignaturesBytes, err := icpSigToBytes(icpTxSignatures.Signature)
-				if err != nil {
-					logger.Error("sign btc tx error: %v %v", btcTxId, err)
-					return nil, err
-				}
-				t.icpSigMap[btcTxId] = icpSignaturesBytes
-				signatures = append(signatures, icpSignaturesBytes)
+			if !icpTxSignatures.Signed {
+				return nil, fmt.Errorf("icp signer faile: %v", ethTxHash)
+
 			}
+			logger.Debug("txId:%v,icp signature:%v", btcTxId, icpTxSignatures.Signature)
+			icpSignaturesBytes, err := icpSigToBytes(icpTxSignatures.Signature)
+			if err != nil {
+				logger.Error("sign btc tx error: %v %v", btcTxId, err)
+				return nil, err
+			}
+			t.icpSigMap[btcTxId] = icpSignaturesBytes
+			return icpSignaturesBytes, nil
 		}
 	}
-	if len(signatures) == 0 {
-		return nil, fmt.Errorf("signer faile: %v", btcTxId)
-	}
-	if len(signatures) == 2 {
-		return signatures, nil
-	}
-	sgxRedeemProof, exists, err := t.fileStore.GetSgxRedeemProof(ethTxHash)
+}
+
+func (t *TxManager) sgxSign(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error) {
+	sgxRedeemProof, ok, err := t.fileStore.GetSgxRedeemProof(ethTxHash)
 	if err != nil {
-		logger.Error("get sgx Redeem proof error: %v %v", ethTxHash, err)
+		logger.Error("get sgx redeem proof error: %v %v", ethTxHash, err)
 		return nil, err
 	}
-	if !exists {
-		return nil, fmt.Errorf("get sgx Redeem proof error: %v", ethTxHash)
+	if !ok {
+		logger.Error("get sgx redeem proof error: %v", ethTxHash)
+		return nil, fmt.Errorf("get sgx redeem proof error: %v", ethTxHash)
 	}
 	sgxSignatures, err := t.sgxClient.BtcTxSignature(currentScRoot, minerReward.String(), btcTxId, sgxRedeemProof.Proof, sigHashes)
 	if err != nil {
@@ -513,8 +629,7 @@ func (t *TxManager) SignerBtc(currentScRoot, ethTxHash, btcTxId, proof string, s
 		logger.Error("sign btc tx error: %v %v", btcTxId, err)
 		return nil, err
 	}
-	signatures = append(signatures, sgxSignaturesBytes)
-	return signatures, nil
+	return sgxSignaturesBytes, nil
 }
 
 func (t *TxManager) getTxScRoot(hash string) (string, error) {
@@ -525,7 +640,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if len(txes) != 1 {
 		logger.Warn("read db tx error:%v", err)
-		return "", err
+		return "", fmt.Errorf("read db tx error:%v", err)
 	}
 	slot, ok, err := t.chainStore.ReadSlotByHeight(txes[0].Height)
 	if err != nil {
@@ -534,16 +649,42 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if !ok {
 		logger.Warn("read beacon slot error:%v", err)
+		return "", fmt.Errorf("read beacon slot error:%v", err)
+	}
+	finalizedSlot, ok, err := t.fileStore.GetTxFinalizedSlot(slot)
+	if err != nil {
+		logger.Error("get tx finalized slot error: %v %v", slot, err)
 		return "", err
 	}
-	update, ok, err := t.prepared.GetSyncCommitUpdate(slot / common.SlotPerPeriod)
+	if !ok {
+		logger.Warn("no find tx finalized slot: %v", slot)
+		return "", fmt.Errorf("no find tx finalized slot: %v", slot)
+	}
+
+	var currentFinalityUpdate common.LightClientFinalityUpdateEvent
+	exists, err := t.fileStore.GetFinalityUpdate(finalizedSlot, &currentFinalityUpdate)
+	if err != nil {
+		logger.Error("get finality update error: %v %v", finalizedSlot, err)
+		return "", err
+	}
+	if !exists {
+		logger.Warn("no find finality update: %v", finalizedSlot)
+		return "", fmt.Errorf("no find finality update: %v", finalizedSlot)
+	}
+	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
+	if err != nil {
+		logger.Error("parse big error %v %v", currentFinalityUpdate.Data.AttestedHeader.Slot, err)
+		return "", err
+	}
+	period := attestedSlot / common.SlotPerPeriod
+	update, ok, err := t.prepared.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("read update error:%v", err)
 		return "", err
 	}
 	if !ok {
 		logger.Warn("read update error:%v", err)
-		return "", err
+		return "", fmt.Errorf("read update error:%v", err)
 	}
 	syncCommitRoot, err := circuits.SyncCommitRoot(update.CurrentSyncCommittee)
 	if err != nil {
@@ -588,6 +729,8 @@ func (t *TxManager) getParams(txId string) (*zkbridge.IBtcTxVerifierPublicWitnes
 		// no work,just placeholder
 		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
 		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"
+	} else {
+		logger.Debug("%v icp signature: %v %v %v", txId, icpSignature.Height, icpSignature.Hash, icpSignature.Signature)
 	}
 	smoothedTimestamp, err := blockdepthUtil.GetSmoothedTimestampProofData(t.proverClient, uint32(dbTx.LatestHeight))
 	if err != nil {
@@ -600,9 +743,9 @@ func (t *TxManager) getParams(txId string) (*zkbridge.IBtcTxVerifierPublicWitnes
 		return nil, err
 	}
 	sigVerif, err := blockdepthUtil.GetSigVerifProofData(
-		ethcommon.FromHex(icpSignature.Hash),
+		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(TestnetIcpPublicKey))
+		ethcommon.FromHex(IcpPublicKey))
 	if err != nil {
 		logger.Error("%v", err.Error())
 		return nil, err
@@ -649,6 +792,16 @@ func (t *TxManager) addBtcUnGenProof(txId string) error {
 	err = t.fileStore.DelProof(NewHashStoreKey(tx.ProofType, txId))
 	if err != nil {
 		logger.Error("del proof error: %v", err)
+		//return err
+	}
+	// re select latest height to gen proof
+	tx.LatestHeight = 0
+	tx.CheckPointHeight = 0
+	tx.GenProofNums = tx.GenProofNums + 1
+	tx.SigSigned = false
+	err = t.chainStore.WriteDbTxes(tx)
+	if err != nil {
+		logger.Error("write db tx error: %v", err)
 		return err
 	}
 	err = t.chainStore.WriteUnGenProof(common.BitcoinChain, &DbUnGenProof{
@@ -718,17 +871,30 @@ func getSuggestGasPrice(value *big.Int) *big.Int {
 	return gasPrice
 }
 
-func proofExpired(err error) bool {
-	// todo not much match now
+func proofFailed(err error) bool {
+	//todo
 	switch err.Error() {
-	case "execution reverted: cpDepth check failed":
-		return true
 	case "execution reverted: no practical use operation":
-		return true
-	case "execution reverted: deposit proof verification failed":
 		return true
 	default:
 		return false
-
 	}
+}
+
+func proofExpired(err error) bool {
+	// todo
+	switch err.Error() {
+	case "execution reverted: error pairing":
+		return true
+	case "execution reverted: txDepth check failed":
+		return true
+	case "execution reverted: cpDepth check failed":
+		return true
+	case "execution reverted: deposit proof verification failed":
+		return true
+	case "execution reverted: deposit to previous need role":
+		return true
+	}
+	return false
+
 }

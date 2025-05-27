@@ -23,16 +23,15 @@ type manager struct {
 	ethNotify      chan *Notify
 	btcNotify      chan *Notify
 	beaconNotify   chan *Notify
-	preparedData   *Prepared
 	minerPower     *MinerPower
 	btcForks       []*ChainFork
+	appStartTime   time.Time
 }
 
 func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *Prepared,
-	btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ProofResponse, store store.IStore, fileStore *FileStorage, cache *cache,
+	btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ProofResponse, store store.IStore, fileStore *FileStorage,
 	btcNotify, ethNotify, beaconNotify chan *Notify) (IManager, error) {
-	scheduler, err := NewScheduler(NewArrayQueue(sortRequest), NewPendingQueue(), fileStore, store, cache, prep,
-		icpClient, btcClient, ethClient)
+	scheduler, err := NewScheduler(fileStore, store, prep, icpClient, btcClient, ethClient)
 	if err != nil {
 		logger.Error("new scheduler error:%v", err)
 		return nil, err
@@ -48,6 +47,7 @@ func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client,
 		btcNotify:      btcNotify,
 		ethNotify:      ethNotify,
 		beaconNotify:   beaconNotify,
+		appStartTime:   time.Now(),
 		minerPower:     NewMinerPower(minerAddr, 0, time.Now()),
 	}, nil
 }
@@ -118,15 +118,15 @@ func (m *manager) LibP2pMessage(msg *p2p.Msg) error {
 }
 
 func (m *manager) GetProofRequest(proofTypes []common.ProofType) (*common.ProofRequest, bool, error) {
-	if m.scheduler.proofQueue.Len() == 0 {
+	if m.scheduler.queueManager.RequestLen() == 0 {
 		return nil, false, nil
 	}
 	var request *common.ProofRequest
 	var ok bool
 	if len(proofTypes) == 0 {
-		request, ok = m.scheduler.proofQueue.Pop()
+		request, ok = m.scheduler.queueManager.PopRequest()
 	} else {
-		request, ok = m.scheduler.proofQueue.PopFn(func(request *common.ProofRequest) bool {
+		request, ok = m.scheduler.queueManager.PopFnRequest(func(request *common.ProofRequest) bool {
 			for _, req := range proofTypes {
 				if request.ProofType == req {
 					return true
@@ -164,48 +164,52 @@ func (m *manager) ReceiveProofs(res *common.SubmitProof) error {
 	if res.Status {
 		go m.storeProof(res.Responses)
 	} else {
-		//todo
-		//go m.tryRequestAgain(res.Requests)
+		for _, req := range res.Requests {
+			m.scheduler.removeRequest(req.ProofId())
+		}
 	}
 	return nil
 }
 
 func (m *manager) CheckState() error {
-	logger.Debug("check pending request now")
-	m.scheduler.IterPendingRequest(func(request *common.ProofRequest) error {
-		if request == nil {
-			return nil
+	logger.Debug("check pending req now")
+	pendingRequest := m.scheduler.PendingRequest()
+	for _, req := range pendingRequest {
+		if req == nil {
+			continue
 		}
-		if request.StartTime.IsZero() {
-			logger.Error("never should happen,request start time is zero: %v", request.ProofId())
-			m.scheduler.removeRequest(request.ProofId())
-			return nil
+		if req.StartTime.IsZero() {
+			logger.Error("never should happen,req start time is zero: %v", req.ProofId())
+			m.scheduler.removeRequest(req.ProofId())
+			continue
 		}
-		timeout := time.Now().Sub(request.StartTime) >= request.ProofType.ProveTime()
+		timeout := time.Now().Sub(req.StartTime) >= req.ProofType.ProveTime()
 		if timeout {
-			storeKey := NewStoreKey(request.ProofType, request.Hash, request.Prefix, request.FIndex, request.SIndex)
+			storeKey := NewStoreKey(req.ProofType, req.Hash, req.Prefix, req.FIndex, req.SIndex)
 			proofId := storeKey.ProofId()
 			exists, err := m.fileStore.CheckProof(storeKey)
 			if err != nil {
 				logger.Error("check proof error:%v %v", proofId, err)
-				return err
+				continue
 			}
 			m.scheduler.removeRequest(proofId)
 			if !exists {
 				logger.Debug("%v timeout,add proof queue again", proofId)
-				//_, err := m.scheduler.tryProofRequest(storeKey)
-				//if err != nil {
-				//	logger.Error("try proof request error:%v", err)
-				//}
 			}
 		}
 		return nil
-	})
+	}
 	return nil
 }
 
 func (m *manager) storeProof(responses []*common.ProofResponse) {
+	unLocks := m.scheduler.Locks()
+	defer unLocks()
 	for _, item := range responses {
+		//todo
+		if common.IsBtcProofType(item.ProofType) && item.ReqCreateTime.Before(m.appStartTime) {
+			continue
+		}
 		m.minerPower.AddConstant(item.ProofType.ConstraintQuantity())
 		forked := m.checkForkedProof(item)
 		storeKey := NewStoreKey(item.ProofType, item.Hash, item.Prefix, item.FIndex, item.SIndex)
@@ -213,10 +217,6 @@ func (m *manager) storeProof(responses []*common.ProofResponse) {
 		if forked {
 			logger.Warn("success receive proof,%v but it's forked proof,try again", proofId)
 			m.scheduler.removeRequest(proofId)
-			//_, err := m.scheduler.tryProofRequest(storeKey)
-			//if err != nil {
-			//	logger.Error("try proof request error: %v %v", proofId, err)
-			//}
 			continue
 		}
 		// first btcUpper proof,store it to btcDuperProof
@@ -274,16 +274,17 @@ func (m *manager) getChanResponse(reqType common.ProofType) chan *common.ProofRe
 
 func (m *manager) Close() error {
 	logger.Debug("manager start  cache cache now ...")
-	m.scheduler.IterPendingRequest(func(value *common.ProofRequest) error {
-		proofId := value.ProofId()
+	pendingRequest := m.scheduler.PendingRequest()
+	for _, req := range pendingRequest {
+		proofId := req.ProofId()
 		logger.Debug("write pending request to db :%v", proofId)
-		err := m.chainStore.WritePendingRequest(proofId, value)
+		err := m.chainStore.WritePendingRequest(proofId, req)
 		if err != nil {
 			logger.Error("write pending request error:%v %v", proofId, err)
 			return err
 		}
 		return nil
-	})
+	}
 	return nil
 
 }
@@ -335,7 +336,7 @@ func (m *manager) ChainFork(info *ChainFork) error {
 		err := m.fileStore.RemoveBtcProof(info.ForkHeight)
 		if err != nil {
 			logger.Error("remove btc proof error:%v %v", info, err)
-			return err
+			//return err
 		}
 		err = m.scheduler.btcStateRollback(info.ForkHeight)
 		if err != nil {

@@ -2,12 +2,10 @@ package bitcoin
 
 import (
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/common"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	bitcoin "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"github.com/stretchr/testify/require"
@@ -17,13 +15,35 @@ var client *Client
 var err error
 
 func init() {
-	url := "http://127.0.0.1:9935"
-	user := ""
-	pwd := ""
-	client, err = NewClient(url, user, pwd)
+	url := "https://rpc.ankr.com/btc/8c933202fbe8dbe6d63377a319b6020f4a4c35bb4424f6368f630b676b4fcc2e"
+	client, err = NewClient(url, "", "")
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_CheckTxOnChain(t *testing.T) {
+	exists, err := client.CheckTxOnChain("0edef4c17568ee3f6dfdd275c684572a05ffc22283acddc10f84d1b74bc39f82")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(exists)
+}
+
+func TestClient_GetRawTransaction(t *testing.T) {
+	tx, err := client.GetRawTransaction("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(tx)
+}
+
+func TestClient_Estimatesmartfee(t *testing.T) {
+	fee, err := client.Estimatesmartfee(50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(fee.Feerate)
 }
 
 func TestClient_GetBlockHeaderByHeight(t *testing.T) {
@@ -43,10 +63,11 @@ func TestClient_Getmempoolentry(t *testing.T) {
 }
 
 func TestClient_GetBlock(t *testing.T) {
-	block, err := client.GetBlock("00000000cb5a6a6f3f2dda8ac1c597d307dedaa80a6f131d70cf235d49c78a36")
+	block, err := client.GetBlock("000000007f1e11a0deb802c7a9df1908e70f349faa38ffd09656fd2b2bde1528")
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log(block.Time)
 	for _, tx := range block.Tx {
 		if tx.Txid == "8067f979ca7c23baab0e00311550b8e096a5ec097eb96ff29fdb6e23bfc777e3" {
 			t.Log(tx)
@@ -62,7 +83,7 @@ func TestClient_GetBlockStr(t *testing.T) {
 }
 
 func TestClient_CheckTx(t *testing.T) {
-	tx, err := client.CheckTx("abd134879e9acd79cdae361ad986b2c1e5832aa28b33bdd4e488a5a01f6e5f05")
+	tx, err := client.CheckTxOnChain("abd134879e9acd79cdae361ad986b2c1e5832aa28b33bdd4e488a5a01f6e5f05")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +103,7 @@ func TestClient_GetBlockHeader(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(header)
+	fmt.Println(header.Hash)
 }
 
 func TestClient_GetHexBlockHeader(t *testing.T) {
@@ -102,7 +123,7 @@ func TestClient_GetBlockCount1(t *testing.T) {
 }
 
 func TestClient_GetBlockHash(t *testing.T) {
-	hash, err := client.GetBlockHash(66674)
+	hash, err := client.GetBlockHash(904399)
 	if err != nil {
 		panic(err)
 	}
@@ -116,7 +137,7 @@ func TestClient_GetBlockHash(t *testing.T) {
 }
 
 func TestClient_GetBlockTx(t *testing.T) {
-	hash, err := client.GetBlockHash(3397399)
+	hash, err := client.GetBlockHash(84073)
 	if err != nil {
 		panic(err)
 	}
@@ -125,8 +146,8 @@ func TestClient_GetBlockTx(t *testing.T) {
 		panic(err)
 	}
 	for _, tx := range blockWithTx.Tx {
-		if tx.Txid == "e946bcee3b6ac0e39fbddc285a0c5b4790dfb154fcee0edb9766753ff1874808" {
-			t.Log(tx)
+		if tx.Txid == "7d8fa15a1368d0fa36952472843d6bbf78dd3376baf1108b9e9555da38d739f0" {
+			t.Logf("find tx: %v", tx)
 		}
 	}
 	fmt.Println(blockWithTx.Hash)
@@ -145,52 +166,4 @@ func Test_GetMultiSigScriptRelateds(t *testing.T) {
 	fmt.Printf("MultiSig Script: %v\n", hexutil.Encode(multiSigScript))
 	fmt.Printf("Wallet Address: %v\n", walletAddr.EncodeAddress())
 	fmt.Printf("Lock Script: %v\n", hexutil.Encode(lockScript))
-}
-
-func TestDepositTransaction(t *testing.T) {
-	utxoSet, err := client.Scantxoutset("tb1qn9fpljh5ggp407z02jx8x76pemzclgd6rla0qp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(utxoSet.Unspents) == 0 {
-		t.Fatal("no utxo found")
-	}
-	t.Logf("utxoSet: %v\n", len(utxoSet.Unspents))
-	amount := big.NewInt(1000000)
-	minerFee := big.NewInt(100000)
-	total := big.NewInt(0)
-	var inputs []bitcoin.TxIn
-	for _, tUtxo := range utxoSet.Unspents {
-		fmt.Printf("utxoId:%v index:%v scriptPubKey:%v\n", tUtxo.Txid, tUtxo.Vout, tUtxo.ScriptPubKey)
-		inputs = append(inputs, bitcoin.TxIn{
-			Hash:     tUtxo.Txid,
-			VOut:     uint32(tUtxo.Vout),
-			PkScript: tUtxo.ScriptPubKey,
-			//Amount:   floatBig.Sign(),
-		})
-		total = total.Add(total, big.NewInt(int64(tUtxo.Amount*100000000)))
-	}
-	findChange := total.Sub(total, amount).Sub(total, minerFee)
-	outputs := []bitcoin.TxOut{
-		{
-			Address: "tb1q4sxzxjxuz8lgx0s4g0hspn8v6g8pvx6juj0lgraglq4q6lnn649suxs3ws",
-			Amount:  amount.Int64(),
-		},
-		{
-			Address: "tb1qn9fpljh5ggp407z02jx8x76pemzclgd6rla0qp",
-			Amount:  findChange.Int64(),
-		},
-	}
-	secret := ethCommon.FromHex("0x084243403ea5c01337388b2068f98d90a845a9f8926fa16631b07dae4e64a5cd")
-	ethAddr := ethCommon.FromHex("0x2A6443B5838f9524970c471289AB22f399395Ff6")
-	result, err := bitcoin.CreateDepositTransaction(secret, ethAddr, inputs, outputs, bitcoin.TestNet)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rawByres := ethCommon.Bytes2Hex(result)
-	txHash, err := client.Sendrawtransaction(rawByres)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(txHash)
 }

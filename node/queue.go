@@ -7,6 +7,71 @@ import (
 	"sync"
 )
 
+type QueueManager struct {
+	requests *ArrayQueue
+	pending  *PendingQueue
+	cache    *cache
+}
+
+func NewQueueManager() *QueueManager {
+	return &QueueManager{
+		requests: NewArrayQueue(sortRequest),
+		pending:  NewPendingQueue(),
+		cache:    NewCacheState(),
+	}
+}
+
+func (q *QueueManager) CheckId(proofId string) bool {
+	return q.cache.Check(proofId)
+}
+
+func (q *QueueManager) StoreId(proofId string) {
+	q.cache.Store(proofId, nil)
+}
+
+func (q *QueueManager) DeleteId(proofId string) {
+	q.cache.Delete(proofId)
+}
+
+func (q *QueueManager) PushRequest(req *common.ProofRequest) {
+	q.requests.Push(req)
+}
+
+func (q *QueueManager) PopRequest() (*common.ProofRequest, bool) {
+	return q.requests.Pop()
+}
+
+func (q *QueueManager) PopFnRequest(fn func(req *common.ProofRequest) bool) (*common.ProofRequest, bool) {
+	return q.requests.PopFn(fn)
+}
+
+func (q *QueueManager) FilterRequest(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
+	return q.requests.Filter(fn)
+}
+func (q *QueueManager) RequestLen() int {
+	return q.requests.Len()
+}
+
+func (q *QueueManager) RemoveRequest(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
+	return q.requests.Remove(fn)
+}
+
+func (q *QueueManager) ListRequest() []*common.ProofRequest {
+	return q.requests.List()
+}
+
+func (q *QueueManager) AddPending(key string, value *common.ProofRequest) {
+	q.pending.Add(key, value)
+}
+
+func (q *QueueManager) DeletePending(key string) {
+	q.pending.Delete(key)
+}
+
+func (q *QueueManager) FilterPending(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
+	return q.pending.Iterator(fn)
+}
+
 type PendingQueue struct {
 	list *sync.Map
 }
@@ -25,53 +90,51 @@ func (q *PendingQueue) Delete(key string) {
 	q.list.Delete(key)
 }
 
-func (q *PendingQueue) Get(key string) (*common.ProofRequest, error) {
-	value, ok := q.list.Load(key)
-	if !ok {
-		return nil, fmt.Errorf("not found")
-	}
-	req, ok := value.(*common.ProofRequest)
-	if !ok {
-		return nil, fmt.Errorf("parse error")
-	}
-	return req, nil
-}
-
-func (q *PendingQueue) Check(key string) bool {
-	_, ok := q.list.Load(key)
-	return ok
-}
-
-func (q *PendingQueue) Iterator(fn func(value *common.ProofRequest) error) {
+func (q *PendingQueue) Iterator(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
+	var filters []*common.ProofRequest
 	q.list.Range(func(key, value interface{}) bool {
 		req, ok := value.(*common.ProofRequest)
 		if !ok {
 			return true
 		}
-		err := fn(req)
-		if err != nil {
-			return true //continue to check next item
+		if fn != nil {
+			match := fn(req)
+			if match {
+				filters = append(filters, req)
+			}
 		}
+
 		return true
 	})
+	return filters
 }
 
 func sortRequest(a, b *common.ProofRequest) bool {
-	if a.Weight == b.Weight {
-		if a.ProofType == b.ProofType { // todo more rule
-			if a.ProofType == common.SyncComInnerType {
-				if a.Prefix == b.Prefix {
-					return a.FIndex < b.FIndex
-				}
-				return a.Prefix < b.Prefix
-			}
-			return a.FIndex < b.FIndex
+	if a.BlockTime != 0 && b.BlockTime != 0 {
+		if a.BlockTime == b.BlockTime {
+			return a.TxIndex < b.TxIndex
 		}
-		return false
+		return a.BlockTime < b.BlockTime
+	} else if (a.BlockTime == 0) != (b.BlockTime == 0) {
+		return a.BlockTime < b.BlockTime
+	} else {
+		if a.Weight == b.Weight {
+			if a.ProofType == b.ProofType {
+				if a.ProofType == common.SyncComInnerType {
+					if a.Prefix == b.Prefix {
+						return a.FIndex < b.FIndex
+					}
+					return a.Prefix < b.Prefix
+				}
+				return a.FIndex < b.FIndex
+			}
+			return false
+		}
+		return a.Weight > b.Weight
 	}
-	return a.Weight > b.Weight
 }
 
+// todo
 type ArrayQueue struct {
 	list   []*common.ProofRequest
 	lock   sync.Mutex
@@ -85,11 +148,6 @@ func NewArrayQueue(sortFn func(a, b *common.ProofRequest) bool) *ArrayQueue {
 	}
 }
 
-func (q *ArrayQueue) AddFirst(value *common.ProofRequest) {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-	q.list = append([]*common.ProofRequest{value}, q.list...)
-}
 func (q *ArrayQueue) Push(value *common.ProofRequest) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
@@ -115,6 +173,9 @@ func (q *ArrayQueue) PopFn(fn func(req *common.ProofRequest) bool) (*common.Proo
 	}
 	var newList []*common.ProofRequest
 	for index, value := range q.list {
+		if fn == nil {
+			return nil, false
+		}
 		ok := fn(value)
 		if ok {
 			newList = append(newList, q.list[0:index]...)
@@ -145,33 +206,20 @@ func (q *ArrayQueue) sortList() {
 	})
 }
 
-func (q *ArrayQueue) Iterator(fn func(index int, value *common.ProofRequest) error) {
-	// todo
+func (q *ArrayQueue) Filter(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	for index, value := range q.list {
-		err := fn(index, value)
-		if err != nil {
-			return
-		}
-	}
-}
-
-func (q *ArrayQueue) Filter(fn func(value *common.ProofRequest) (bool, error)) error {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-	var newList []*common.ProofRequest
+	var filtersReq []*common.ProofRequest
 	for _, value := range q.list {
-		ok, err := fn(value)
-		if err != nil {
-			return err
+		if fn == nil {
+			return filtersReq
 		}
+		ok := fn(value)
 		if ok {
-			newList = append(newList, value)
+			filtersReq = append(filtersReq, value)
 		}
 	}
-	q.list = newList
-	return nil
+	return filtersReq
 }
 
 func (q *ArrayQueue) Len() int {
@@ -180,15 +228,24 @@ func (q *ArrayQueue) Len() int {
 	return len(q.list)
 }
 
-func (q *ArrayQueue) Remove(id string) {
+func (q *ArrayQueue) Remove(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	for index, value := range q.list {
-		if value.ProofId() == id {
-			q.list = append(q.list[:index], q.list[index+1:]...)
-			return
+	var filters []*common.ProofRequest
+	var newList []*common.ProofRequest
+	for _, value := range q.list {
+		if fn == nil {
+			return filters
+		}
+		ok := fn(value)
+		if ok {
+			filters = append(filters, value)
+		} else {
+			newList = append(newList, value)
 		}
 	}
+	q.list = newList
+	return filters
 }
 
 func (q *ArrayQueue) List() []*common.ProofRequest {

@@ -171,7 +171,7 @@ func (mb *MultiTransactionBuilder) Sign(signFn func(hash []byte) ([][]byte, erro
 }
 
 func (mb *MultiTransactionBuilder) MergeSignature(signatures [][][]byte) error {
-	if len(signatures) != mb.nRequired {
+	if len(signatures) < mb.nRequired || len(signatures) > mb.nTotal {
 		return fmt.Errorf("the number of signatures is too much or too little")
 	}
 	nTxin := len(mb.MsgTx.TxIn)

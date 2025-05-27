@@ -12,7 +12,7 @@ type TaskRequest struct {
 	Id        string
 	MaxNums   int
 	ProofType []ProofType
-	Version   string
+	Version   int
 }
 
 type TaskResponse struct {
@@ -38,7 +38,7 @@ type SubmitProof struct {
 	Status    bool
 	WorkerId  string
 	Id        string
-	Version   string
+	Version   int
 }
 
 type ProofRequest struct {
@@ -54,9 +54,11 @@ type ProofRequest struct {
 	CreateTime time.Time     `json:"createTime"`
 	StartTime  time.Time     `json:"startTime"`
 	EndTime    time.Time     `json:"endTime"`
+	BlockTime  uint64        `json:"-"`
+	TxIndex    uint32        `json:"-"`
 }
 
-func NewProofRequest(reqType ProofType, data interface{}, prefix, fIndex, sIndex uint64, hash string) *ProofRequest {
+func NewProofRequest(reqType ProofType, data interface{}, prefix, fIndex, sIndex uint64, hash string, blockTime uint64, txIndex uint32) *ProofRequest {
 	return &ProofRequest{
 		FileKey:    GenKey(reqType, prefix, fIndex, sIndex, hash),
 		ProofType:  reqType,
@@ -67,6 +69,8 @@ func NewProofRequest(reqType ProofType, data interface{}, prefix, fIndex, sIndex
 		Weight:     reqType.Weight(),
 		Prefix:     prefix,
 		Status:     ProofDefault,
+		BlockTime:  blockTime,
+		TxIndex:    txIndex,
 		CreateTime: time.Now(),
 	}
 }

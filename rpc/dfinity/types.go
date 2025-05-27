@@ -3,8 +3,25 @@ package dfinity
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/aviate-labs/agent-go/identity"
 	"github.com/aviate-labs/agent-go/principal"
 )
+
+type Options struct {
+	WalletCanisterId string
+	TxCanisterId     string
+	BlockCanisterId  string
+	identity         identity.Identity
+}
+
+func NewOption(walletCanisterId, txCanisterId, blockCanisterId string, identity identity.Identity) *Options {
+	return &Options{
+		WalletCanisterId: walletCanisterId,
+		TxCanisterId:     txCanisterId,
+		BlockCanisterId:  blockCanisterId,
+		identity:         identity,
+	}
+}
 
 type WalletCallArg struct {
 	Canister   principal.Principal `ic:"canister" json:"canister"`

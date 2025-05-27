@@ -31,7 +31,6 @@ type Fetch struct {
 
 func (f *Fetch) Init() error {
 	logger.Debug("init fetch now")
-	go f.Bootstrap()
 	return nil
 }
 
@@ -47,31 +46,31 @@ func (f *Fetch) Bootstrap() {
 	}
 }
 func (f *Fetch) bootstrap() error {
-	exists, err := f.fileStore.CheckBootStrapBySlot(f.genesisSlot)
-	if err != nil {
-		logger.Error("check bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	if exists {
-		return nil
-	}
-	logger.Debug("start get bootstrap: %v", f.genesisSlot)
-	bootstrap, err := f.client.Bootstrap(f.genesisSlot)
-	if err != nil {
-		logger.Error("get bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	dbBootstrap, err := parseBootstrapToDbBootstrap(bootstrap)
-	if err != nil {
-		logger.Error("parse bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	err = f.fileStore.StoreBootStrapBySlot(f.genesisSlot, dbBootstrap)
-	if err != nil {
-		logger.Error("store bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	logger.Debug("success store bootstrap Responses:%v", f.genesisSlot)
+	//exists, err := f.fileStore.CheckBootStrapBySlot(f.genesisSlot)
+	//if err != nil {
+	//	logger.Error("check bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//if exists {
+	//	return nil
+	//}
+	//logger.Debug("start get bootstrap: %v", f.genesisSlot)
+	//bootstrap, err := f.client.Bootstrap(f.genesisSlot)
+	//if err != nil {
+	//	logger.Error("get bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//dbBootstrap, err := parseBootstrapToDbBootstrap(bootstrap)
+	//if err != nil {
+	//	logger.Error("parse bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//err = f.fileStore.StoreBootStrapBySlot(f.genesisSlot, dbBootstrap)
+	//if err != nil {
+	//	logger.Error("store bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//logger.Debug("success store bootstrap Responses:%v", f.genesisSlot)
 	return nil
 }
 
@@ -273,7 +272,9 @@ func (f *Fetch) CheckFinalityUpdate(period uint64, finalityUpdate *common.LightC
 		logger.Warn("no find light finality update :%v", prePeriod)
 		return true, nil
 	}
-	ok, err := common.VerifyFinalityUpdateSignature(finalityUpdate, update.Data.NextSyncCommittee)
+	proversTypeUpdate := parseUpdateToProversUpdate(update)
+	proversTypeFinalityUpdate := parseFinalityUpdateToProversFinalityUpdate(finalityUpdate)
+	ok, err := proversTypeFinalityUpdate.Verify(proversTypeUpdate.NextSyncCommittee)
 	if err != nil {
 		logger.Error("verify finality update signature error:%v %v", period, err)
 		return false, nil
@@ -305,12 +306,12 @@ func (f *Fetch) CheckLightClientUpdate(period uint64, update *common.LightClient
 				return false, err
 			}
 			syncUpdate.CurrentSyncCommittee = &currentSyncCommittee
-			ok, err := common.VerifyLightClientUpdate(syncUpdate)
+			verify, err := syncUpdate.Verify()
 			if err != nil {
 				logger.Error("verify sync update error:%v %v", period, err)
 				return false, err
 			}
-			if !ok {
+			if !verify {
 				logger.Error("verify sync update error:%v %v", period, err)
 				return false, nil
 			}
@@ -342,6 +343,64 @@ func NewFetch(client *beacon.Client, store store.IStore, fileStore *FileStorage,
 		state:          NewCacheState(),
 		chainStore:     NewChainStore(store),
 	}, nil
+}
+
+func parseUpdateToProversUpdate(update common.LightClientUpdateResponse) *proverType.SyncCommitteeUpdate {
+	return &proverType.SyncCommitteeUpdate{
+		Version: update.Version,
+		AttestedHeader: &proverType.BeaconHeader{
+			Slot:          update.Data.AttestedHeader.Slot,
+			ProposerIndex: update.Data.AttestedHeader.ProposerIndex,
+			ParentRoot:    update.Data.AttestedHeader.ParentRoot,
+			StateRoot:     update.Data.AttestedHeader.StateRoot,
+			BodyRoot:      update.Data.AttestedHeader.BodyRoot,
+		},
+		NextSyncCommittee: &proverType.SyncCommittee{
+			PubKeys:         update.Data.NextSyncCommittee.Pubkeys,
+			AggregatePubKey: update.Data.NextSyncCommittee.AggregatePubkey,
+		},
+		FinalizedHeader: &proverType.BeaconHeader{
+			Slot:          update.Data.FinalizedHeader.Slot,
+			ProposerIndex: update.Data.FinalizedHeader.ProposerIndex,
+			ParentRoot:    update.Data.FinalizedHeader.ParentRoot,
+			StateRoot:     update.Data.FinalizedHeader.StateRoot,
+			BodyRoot:      update.Data.FinalizedHeader.BodyRoot,
+		},
+		SyncAggregate: &proverType.SyncAggregate{
+			SyncCommitteeBits:      update.Data.SyncAggregate.SyncCommitteeBits,
+			SyncCommitteeSignature: update.Data.SyncAggregate.SyncCommitteeSignature,
+		},
+		NextSyncCommitteeBranch: update.Data.NextSyncCommitteeBranch,
+		FinalityBranch:          update.Data.FinalityBranch,
+		SignatureSlot:           update.Data.SignatureSlot,
+	}
+}
+
+func parseFinalityUpdateToProversFinalityUpdate(update *common.LightClientFinalityUpdateEvent) *proverType.FinalityUpdate {
+	return &proverType.FinalityUpdate{
+		Version: update.Version,
+		AttestedHeader: &proverType.BeaconHeader{
+			Slot:          update.Data.AttestedHeader.Slot,
+			ProposerIndex: update.Data.AttestedHeader.ProposerIndex,
+			ParentRoot:    update.Data.AttestedHeader.ParentRoot,
+			StateRoot:     update.Data.AttestedHeader.StateRoot,
+			BodyRoot:      update.Data.AttestedHeader.BodyRoot,
+		},
+		FinalizedHeader: &proverType.BeaconHeader{
+			Slot:          update.Data.FinalizedHeader.Slot,
+			ProposerIndex: update.Data.FinalizedHeader.ProposerIndex,
+			ParentRoot:    update.Data.FinalizedHeader.ParentRoot,
+			StateRoot:     update.Data.FinalizedHeader.StateRoot,
+			BodyRoot:      update.Data.FinalizedHeader.BodyRoot,
+		},
+		SyncAggregate: &proverType.SyncAggregate{
+			SyncCommitteeBits:      update.Data.SyncAggregate.SyncCommitteeBits,
+			SyncCommitteeSignature: update.Data.SyncAggregate.SyncCommitteeSignature,
+		},
+		FinalityBranch: update.Data.FinalityBranch,
+		SignatureSlot:  update.Data.SignatureSlot,
+	}
+
 }
 
 func parseBootstrapToDbBootstrap(bootstrap *beaconTypes.BootstrapResp) (*common.BootstrapResponse, error) {

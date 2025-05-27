@@ -6,6 +6,7 @@ import (
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
+	"time"
 )
 
 type Local struct {
@@ -101,7 +102,11 @@ func (l *Local) polling() error {
 		proofs, err := node.WorkerGenProof(l.worker, request)
 		if err != nil {
 			logger.Error("worker gen proof error:%v %v", request.ProofId(), err)
-			_, err := l.client.SubmitProof(NewSubmitProof(l.workerId, false, nil, []*common.ProofRequest{request}))
+			err := l.fileStore.StoreRequest(request, "error", time.Now().Format("20060102150405"))
+			if err != nil {
+				logger.Error("store request error:%v %v", request.ProofId(), err)
+			}
+			_, err = l.client.SubmitProof(NewSubmitProof(l.workerId, false, nil, []*common.ProofRequest{request}))
 			if err != nil {
 				logger.Error("submit proof error:%v %v", request.ProofId(), err)
 			}
@@ -132,12 +137,10 @@ func (l *Local) polling() error {
 func (l *Local) CheckState() error {
 	l.cacheProofs.Iterator(func(value *common.SubmitProof) error {
 		_, err := l.client.SubmitProof(value)
-		if err != nil {
-			logger.Error("submit proof error again:%v %v ", value.Id, err)
-			return err
-		}
-		for _, resp := range value.Responses {
-			logger.Info("success submit proof again:%v,proofId: %v", value.Id, resp.ProofId())
+		if err == nil {
+			for _, resp := range value.Responses {
+				logger.Info("success submit proof again:%v,proofId: %v", value.Id, resp.ProofId())
+			}
 		}
 		l.cacheProofs.Delete(value.Id)
 		return nil

@@ -29,11 +29,6 @@ var (
 	_ = abi.ConvertType
 )
 
-// BtcTxLibTxOut is an auto generated low-level Go binding around an user-defined struct.
-//type BtcTxLibTxOut struct {
-//	Value    uint64
-//	PkScript []byte
-//}
 
 // BtcTxVerifierPublicWitnessParams is an auto generated low-level Go binding around an user-defined struct.
 type BtcTxVerifierPublicWitnessParams struct {
@@ -49,7 +44,7 @@ type BtcTxVerifierPublicWitnessParams struct {
 
 // BtcTxVerifyMetaData contains all meta data concerning the BtcTxVerify contract.
 var BtcTxVerifyMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"_depositVerifier\",\"type\":\"address\"},{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"_redeemVerifier\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_genesisBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"_checkpointBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"_checkpointTimestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"signed\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"switchState\",\"type\":\"bool\"}],\"name\":\"UnsignedProtectionStateError\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"oldCp\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"newCp\",\"type\":\"bytes32\"}],\"name\":\"CheckPointRotated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"old\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"now\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"reservedHours\",\"type\":\"uint32\"}],\"name\":\"DepositVerifierUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"old\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"now\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"reservedHours\",\"type\":\"uint32\"}],\"name\":\"RedeemVerifierUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"now\",\"type\":\"bool\"}],\"name\":\"UnsignedProtectionChanged\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"ADD_CP_DEPTH_THRESHOLDS\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"AVERTING_THRESHOLD\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"BRIDGE_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_CP_ADD_INTERVAL\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_CP_DEPTH\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_CP_MATURITY\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ROTATION_THRESHOLD\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"}],\"name\":\"addNewCP\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"uint32\",\"name\":\"allowance\",\"type\":\"uint32\"}],\"name\":\"checkCpDepth\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"cpCandidates\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cpLatestAddedTime\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"rawBtcTx\",\"type\":\"bytes\"}],\"name\":\"decodeTx\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"receiveAddress\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"txID\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"toScript\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositCompatibleDeadline\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"enableUnsignedProtection\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"genesisBlockHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"}],\"name\":\"getDepositPublicWitness\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bool\",\"name\":\"raiseIf\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"blockSigned\",\"type\":\"bool\"}],\"name\":\"getDepthByAmount\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"}],\"name\":\"getRedeemPublicWitness\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMembers\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"userAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"changeAmount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"}],\"name\":\"getTxOuts\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"pkScript\",\"type\":\"bytes\"}],\"internalType\":\"structBtcTxLib.TxOut[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"juniorCP\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"previousDepositVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"previousRedeemVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"redeemCompatibleDeadline\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"redeemVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"seniorCP\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"suggestedCP\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"tryRotateCP\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"reserveHours\",\"type\":\"uint32\"}],\"name\":\"updateDepositVerifier\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"reserveHours\",\"type\":\"uint32\"}],\"name\":\"updateRedeemVerifier\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"flag\",\"type\":\"bool\"}],\"name\":\"updateUnsignedProtection\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"raiseIf\",\"type\":\"bool\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"}],\"name\":\"verifyDepositTx\",\"outputs\":[],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"changeAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"raiseIf\",\"type\":\"bool\"}],\"name\":\"verifyRedeemTx\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"_depositVerifier\",\"type\":\"address\"},{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"_redeemVerifier\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_genesisBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"_checkpointBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"_checkpointTimestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"signed\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"switchState\",\"type\":\"bool\"}],\"name\":\"UnsignedProtectionStateError\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"oldCp\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"newCp\",\"type\":\"bytes32\"}],\"name\":\"CheckPointRotated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"old\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"now\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"reservedHours\",\"type\":\"uint32\"}],\"name\":\"DepositVerifierUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"old\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"now\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"reservedHours\",\"type\":\"uint32\"}],\"name\":\"RedeemVerifierUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"now\",\"type\":\"bool\"}],\"name\":\"UnsignedProtectionChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"oldDepth\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"newDepth\",\"type\":\"uint8\"}],\"name\":\"UpdatedExtraDepth\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"ADD_CP_DEPTH_THRESHOLDS\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"AVERTING_THRESHOLD\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"BRIDGE_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_CP_ADD_INTERVAL\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_CP_DEPTH\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_CP_MATURITY\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ROTATION_THRESHOLD\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"}],\"name\":\"addNewCP\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"uint32\",\"name\":\"allowance\",\"type\":\"uint32\"}],\"name\":\"checkCpDepth\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"cpCandidates\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cpLatestAddedTime\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"rawBtcTx\",\"type\":\"bytes\"}],\"name\":\"decodeTx\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"receiveAddress\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"txID\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"toScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"opData\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"chainFlag\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositCompatibleDeadline\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"enableUnsignedProtection\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"genesisBlockHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"}],\"name\":\"getDepositPublicWitness\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bool\",\"name\":\"raiseIf\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"blockSigned\",\"type\":\"bool\"}],\"name\":\"getDepthByAmount\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"}],\"name\":\"getRedeemPublicWitness\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMembers\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"userAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"changeAmount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"receiveLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"}],\"name\":\"getTxOuts\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"pkScript\",\"type\":\"bytes\"}],\"internalType\":\"structBtcTxLib.TxOut[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"}],\"name\":\"isCandidateExist\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"juniorCP\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"previousDepositVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"previousRedeemVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"redeemCompatibleDeadline\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"redeemVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"seniorCP\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"timestamp\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"suggestedCP\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"tryRotateCP\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"reserveHours\",\"type\":\"uint32\"}],\"name\":\"updateDepositVerifier\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"depth\",\"type\":\"uint8\"}],\"name\":\"updateExtraDepth\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIBtcZkpVerifier\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"reserveHours\",\"type\":\"uint32\"}],\"name\":\"updateRedeemVerifier\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"flag\",\"type\":\"bool\"}],\"name\":\"updateUnsignedProtection\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"raiseIf\",\"type\":\"bool\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"}],\"name\":\"verifyDepositTx\",\"outputs\":[],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"changeAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"raiseIf\",\"type\":\"bool\"}],\"name\":\"verifyRedeemTx\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // BtcTxVerifyABI is the input ABI used to generate the binding from.
@@ -555,13 +550,15 @@ func (_BtcTxVerify *BtcTxVerifyCallerSession) CpLatestAddedTime() (uint64, error
 
 // DecodeTx is a free data retrieval call binding the contract method 0xdae029d3.
 //
-// Solidity: function decodeTx(bytes rawBtcTx) pure returns(uint32 index, uint64 amount, address receiveAddress, bytes32 txID, bytes toScript)
+// Solidity: function decodeTx(bytes rawBtcTx) pure returns(uint32 index, uint64 amount, address receiveAddress, bytes32 txID, bytes toScript, bytes opData, bool chainFlag)
 func (_BtcTxVerify *BtcTxVerifyCaller) DecodeTx(opts *bind.CallOpts, rawBtcTx []byte) (struct {
 	Index          uint32
 	Amount         uint64
 	ReceiveAddress common.Address
 	TxID           [32]byte
 	ToScript       []byte
+	OpData         []byte
+	ChainFlag      bool
 }, error) {
 	var out []interface{}
 	err := _BtcTxVerify.contract.Call(opts, &out, "decodeTx", rawBtcTx)
@@ -572,6 +569,8 @@ func (_BtcTxVerify *BtcTxVerifyCaller) DecodeTx(opts *bind.CallOpts, rawBtcTx []
 		ReceiveAddress common.Address
 		TxID           [32]byte
 		ToScript       []byte
+		OpData         []byte
+		ChainFlag      bool
 	})
 	if err != nil {
 		return *outstruct, err
@@ -582,6 +581,8 @@ func (_BtcTxVerify *BtcTxVerifyCaller) DecodeTx(opts *bind.CallOpts, rawBtcTx []
 	outstruct.ReceiveAddress = *abi.ConvertType(out[2], new(common.Address)).(*common.Address)
 	outstruct.TxID = *abi.ConvertType(out[3], new([32]byte)).(*[32]byte)
 	outstruct.ToScript = *abi.ConvertType(out[4], new([]byte)).(*[]byte)
+	outstruct.OpData = *abi.ConvertType(out[5], new([]byte)).(*[]byte)
+	outstruct.ChainFlag = *abi.ConvertType(out[6], new(bool)).(*bool)
 
 	return *outstruct, err
 
@@ -589,26 +590,30 @@ func (_BtcTxVerify *BtcTxVerifyCaller) DecodeTx(opts *bind.CallOpts, rawBtcTx []
 
 // DecodeTx is a free data retrieval call binding the contract method 0xdae029d3.
 //
-// Solidity: function decodeTx(bytes rawBtcTx) pure returns(uint32 index, uint64 amount, address receiveAddress, bytes32 txID, bytes toScript)
+// Solidity: function decodeTx(bytes rawBtcTx) pure returns(uint32 index, uint64 amount, address receiveAddress, bytes32 txID, bytes toScript, bytes opData, bool chainFlag)
 func (_BtcTxVerify *BtcTxVerifySession) DecodeTx(rawBtcTx []byte) (struct {
 	Index          uint32
 	Amount         uint64
 	ReceiveAddress common.Address
 	TxID           [32]byte
 	ToScript       []byte
+	OpData         []byte
+	ChainFlag      bool
 }, error) {
 	return _BtcTxVerify.Contract.DecodeTx(&_BtcTxVerify.CallOpts, rawBtcTx)
 }
 
 // DecodeTx is a free data retrieval call binding the contract method 0xdae029d3.
 //
-// Solidity: function decodeTx(bytes rawBtcTx) pure returns(uint32 index, uint64 amount, address receiveAddress, bytes32 txID, bytes toScript)
+// Solidity: function decodeTx(bytes rawBtcTx) pure returns(uint32 index, uint64 amount, address receiveAddress, bytes32 txID, bytes toScript, bytes opData, bool chainFlag)
 func (_BtcTxVerify *BtcTxVerifyCallerSession) DecodeTx(rawBtcTx []byte) (struct {
 	Index          uint32
 	Amount         uint64
 	ReceiveAddress common.Address
 	TxID           [32]byte
 	ToScript       []byte
+	OpData         []byte
+	ChainFlag      bool
 }, error) {
 	return _BtcTxVerify.Contract.DecodeTx(&_BtcTxVerify.CallOpts, rawBtcTx)
 }
@@ -1015,6 +1020,37 @@ func (_BtcTxVerify *BtcTxVerifySession) HasRole(role [32]byte, account common.Ad
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
 func (_BtcTxVerify *BtcTxVerifyCallerSession) HasRole(role [32]byte, account common.Address) (bool, error) {
 	return _BtcTxVerify.Contract.HasRole(&_BtcTxVerify.CallOpts, role, account)
+}
+
+// IsCandidateExist is a free data retrieval call binding the contract method 0x526f083e.
+//
+// Solidity: function isCandidateExist(bytes32 blockHash) view returns(bool)
+func (_BtcTxVerify *BtcTxVerifyCaller) IsCandidateExist(opts *bind.CallOpts, blockHash [32]byte) (bool, error) {
+	var out []interface{}
+	err := _BtcTxVerify.contract.Call(opts, &out, "isCandidateExist", blockHash)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsCandidateExist is a free data retrieval call binding the contract method 0x526f083e.
+//
+// Solidity: function isCandidateExist(bytes32 blockHash) view returns(bool)
+func (_BtcTxVerify *BtcTxVerifySession) IsCandidateExist(blockHash [32]byte) (bool, error) {
+	return _BtcTxVerify.Contract.IsCandidateExist(&_BtcTxVerify.CallOpts, blockHash)
+}
+
+// IsCandidateExist is a free data retrieval call binding the contract method 0x526f083e.
+//
+// Solidity: function isCandidateExist(bytes32 blockHash) view returns(bool)
+func (_BtcTxVerify *BtcTxVerifyCallerSession) IsCandidateExist(blockHash [32]byte) (bool, error) {
+	return _BtcTxVerify.Contract.IsCandidateExist(&_BtcTxVerify.CallOpts, blockHash)
 }
 
 // JuniorCP is a free data retrieval call binding the contract method 0x6fe20155.
@@ -1477,6 +1513,27 @@ func (_BtcTxVerify *BtcTxVerifySession) UpdateDepositVerifier(addr common.Addres
 // Solidity: function updateDepositVerifier(address addr, uint32 reserveHours) returns()
 func (_BtcTxVerify *BtcTxVerifyTransactorSession) UpdateDepositVerifier(addr common.Address, reserveHours uint32) (*types.Transaction, error) {
 	return _BtcTxVerify.Contract.UpdateDepositVerifier(&_BtcTxVerify.TransactOpts, addr, reserveHours)
+}
+
+// UpdateExtraDepth is a paid mutator transaction binding the contract method 0xbbdec9ef.
+//
+// Solidity: function updateExtraDepth(uint8 depth) returns()
+func (_BtcTxVerify *BtcTxVerifyTransactor) UpdateExtraDepth(opts *bind.TransactOpts, depth uint8) (*types.Transaction, error) {
+	return _BtcTxVerify.contract.Transact(opts, "updateExtraDepth", depth)
+}
+
+// UpdateExtraDepth is a paid mutator transaction binding the contract method 0xbbdec9ef.
+//
+// Solidity: function updateExtraDepth(uint8 depth) returns()
+func (_BtcTxVerify *BtcTxVerifySession) UpdateExtraDepth(depth uint8) (*types.Transaction, error) {
+	return _BtcTxVerify.Contract.UpdateExtraDepth(&_BtcTxVerify.TransactOpts, depth)
+}
+
+// UpdateExtraDepth is a paid mutator transaction binding the contract method 0xbbdec9ef.
+//
+// Solidity: function updateExtraDepth(uint8 depth) returns()
+func (_BtcTxVerify *BtcTxVerifyTransactorSession) UpdateExtraDepth(depth uint8) (*types.Transaction, error) {
+	return _BtcTxVerify.Contract.UpdateExtraDepth(&_BtcTxVerify.TransactOpts, depth)
 }
 
 // UpdateRedeemVerifier is a paid mutator transaction binding the contract method 0x4cb9eb8b.
@@ -2542,6 +2599,141 @@ func (_BtcTxVerify *BtcTxVerifyFilterer) WatchUnsignedProtectionChanged(opts *bi
 func (_BtcTxVerify *BtcTxVerifyFilterer) ParseUnsignedProtectionChanged(log types.Log) (*BtcTxVerifyUnsignedProtectionChanged, error) {
 	event := new(BtcTxVerifyUnsignedProtectionChanged)
 	if err := _BtcTxVerify.contract.UnpackLog(event, "UnsignedProtectionChanged", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// BtcTxVerifyUpdatedExtraDepthIterator is returned from FilterUpdatedExtraDepth and is used to iterate over the raw logs and unpacked data for UpdatedExtraDepth events raised by the BtcTxVerify contract.
+type BtcTxVerifyUpdatedExtraDepthIterator struct {
+	Event *BtcTxVerifyUpdatedExtraDepth // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *BtcTxVerifyUpdatedExtraDepthIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(BtcTxVerifyUpdatedExtraDepth)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(BtcTxVerifyUpdatedExtraDepth)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *BtcTxVerifyUpdatedExtraDepthIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *BtcTxVerifyUpdatedExtraDepthIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// BtcTxVerifyUpdatedExtraDepth represents a UpdatedExtraDepth event raised by the BtcTxVerify contract.
+type BtcTxVerifyUpdatedExtraDepth struct {
+	OldDepth uint8
+	NewDepth uint8
+	Raw      types.Log // Blockchain specific contextual infos
+}
+
+// FilterUpdatedExtraDepth is a free log retrieval operation binding the contract event 0x3ae1f9c67c8e41f945172b52a888ffec38d938786f2338406f04afe05e21869b.
+//
+// Solidity: event UpdatedExtraDepth(uint8 oldDepth, uint8 newDepth)
+func (_BtcTxVerify *BtcTxVerifyFilterer) FilterUpdatedExtraDepth(opts *bind.FilterOpts) (*BtcTxVerifyUpdatedExtraDepthIterator, error) {
+
+	logs, sub, err := _BtcTxVerify.contract.FilterLogs(opts, "UpdatedExtraDepth")
+	if err != nil {
+		return nil, err
+	}
+	return &BtcTxVerifyUpdatedExtraDepthIterator{contract: _BtcTxVerify.contract, event: "UpdatedExtraDepth", logs: logs, sub: sub}, nil
+}
+
+// WatchUpdatedExtraDepth is a free log subscription operation binding the contract event 0x3ae1f9c67c8e41f945172b52a888ffec38d938786f2338406f04afe05e21869b.
+//
+// Solidity: event UpdatedExtraDepth(uint8 oldDepth, uint8 newDepth)
+func (_BtcTxVerify *BtcTxVerifyFilterer) WatchUpdatedExtraDepth(opts *bind.WatchOpts, sink chan<- *BtcTxVerifyUpdatedExtraDepth) (event.Subscription, error) {
+
+	logs, sub, err := _BtcTxVerify.contract.WatchLogs(opts, "UpdatedExtraDepth")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(BtcTxVerifyUpdatedExtraDepth)
+				if err := _BtcTxVerify.contract.UnpackLog(event, "UpdatedExtraDepth", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseUpdatedExtraDepth is a log parse operation binding the contract event 0x3ae1f9c67c8e41f945172b52a888ffec38d938786f2338406f04afe05e21869b.
+//
+// Solidity: event UpdatedExtraDepth(uint8 oldDepth, uint8 newDepth)
+func (_BtcTxVerify *BtcTxVerifyFilterer) ParseUpdatedExtraDepth(log types.Log) (*BtcTxVerifyUpdatedExtraDepth, error) {
+	event := new(BtcTxVerifyUpdatedExtraDepth)
+	if err := _BtcTxVerify.contract.UnpackLog(event, "UpdatedExtraDepth", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

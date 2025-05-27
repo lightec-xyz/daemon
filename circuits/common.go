@@ -216,10 +216,12 @@ func printProof(proof *operations.Proof, names ...string) {
 
 }
 func ReverseBytes(data []byte) []byte {
-	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
-		data[i], data[j] = data[j], data[i]
+	res := make([]byte, len(data))
+	copy(res, data)
+	for i, j := 0, len(res)-1; i < j; i, j = i+1, j-1 {
+		res[i], res[j] = res[j], res[i]
 	}
-	return data
+	return res
 }
 
 func getLinkedIdHash[FR emulated.FieldParams](elems []emulated.Element[FR]) []byte {
