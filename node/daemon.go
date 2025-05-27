@@ -128,17 +128,27 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new provers api client error: %v", err)
 		return nil, err
 	}
-	icpIdentity, err := identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(cfg.IcpPrivateKey))
-	if err != nil {
-		logger.Error("new icp identity error: %v", err)
-		return nil, err
+	var dfinityClient *dfinity.Client
+	if cfg.IcpPrivateKey != "" {
+		icpIdentity, err := identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(cfg.IcpPrivateKey))
+		if err != nil {
+			logger.Error("new icp identity error: %v", err)
+			return nil, err
+		}
+		dfinityClient, err = dfinity.NewClientWithIdentity(cfg.IcpSingerAddress, cfg.IcpWalletAddress,
+			cfg.IcpSingerUrl, icpIdentity)
+		if err != nil {
+			logger.Error("new dfinity client error: %v", err)
+			return nil, err
+		}
+	} else {
+		dfinityClient, err = dfinity.NewClient(cfg.IcpSingerAddress)
+		if err != nil {
+			logger.Error("new dfinity client error: %v", err)
+			return nil, err
+		}
 	}
-	dfinityClient, err := dfinity.NewClientWithIdentity(cfg.IcpSingerAddress, cfg.IcpWalletAddress,
-		cfg.IcpSingerUrl, icpIdentity)
-	if err != nil {
-		logger.Error("new dfinity client error: %v", err)
-		return nil, err
-	}
+
 	logger.Debug("beaconGenesisSlot: %v, beaconGenesisPeriod: %v,ethInitHeight: %v,btcGenesisHeight: %v, btcInitHeight: %v",
 		cfg.GenesisBeaconSlot, cfg.GenesisSyncPeriod, cfg.EthInitHeight, cfg.BtcGenesisHeight, cfg.BtcInitHeight)
 

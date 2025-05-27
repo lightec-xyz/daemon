@@ -157,15 +157,10 @@ func NewClient(canId string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	walletAgent, err := wallet.NewAgent(canisterId, config)
-	if err != nil {
-		return nil, err
-	}
 	return &Client{
-		agent:       icpAgent,
-		walletAgent: walletAgent,
-		canisterId:  canisterId,
-		timeout:     timeout,
+		agent:      icpAgent,
+		canisterId: canisterId,
+		timeout:    timeout,
 	}, nil
 }
 
