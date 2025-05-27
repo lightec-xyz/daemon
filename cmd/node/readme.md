@@ -4,7 +4,7 @@
 
     ./node --config ./local.json jwt
 
-    ./node --config testnet.json  scRoot --period 504 --genesisSlot 4055040
+    ./node --config devnet.json  scRoot --period 939 --genesisSlot 7692288
 
     ./node readVk --file /opt/lightec/opt2/circuitsetup/audit/redeem.vk
 
