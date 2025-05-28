@@ -6,7 +6,7 @@
 
     ./node --config devnet.json  scRoot --period 939 --genesisSlot 7692288
 
-    ./node readVk --file /opt/lightec/opt2/circuitsetup/audit/redeem.vk
+    ./node readVk --file /opt/lightec/opt2/circuitsetup/devnet/redeem.vk
 
 ## Config
 

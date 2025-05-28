@@ -50,7 +50,7 @@ type ZkBTCBridgeOperator struct {
 
 // ZkbridgeMetaData contains all meta data concerning the Zkbridge contract.
 var ZkbridgeMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"contractIFeePool\",\"name\":\"_feeAccount\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"_multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"_utxoAddress\",\"type\":\"address\"},{\"internalType\":\"contractIBtcTxVerifier\",\"name\":\"_txVerifier\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"depositAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"minDepositAmount\",\"type\":\"uint64\"}],\"name\":\"InvalidDepositAmount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"lockScriptLength\",\"type\":\"uint256\"}],\"name\":\"InvalidLockScriptLength\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"InvalidRedeemOrProof\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"lockScript\",\"type\":\"bytes\"}],\"name\":\"LockScriptIsChange\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"sourceLockingScript\",\"type\":\"bytes\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"destinationLockingScript\",\"type\":\"bytes\"}],\"name\":\"BeginMigration\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32[]\",\"name\":\"sigHashs\",\"type\":\"bytes32[]\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"rawTx\",\"type\":\"bytes\"}],\"name\":\"CreateRedeemUnsignedTx\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"old\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"now\",\"type\":\"uint64\"}],\"name\":\"DustThresholdsUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"old\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"now\",\"type\":\"address\"}],\"name\":\"TxVerifierAddressChanged\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_DEPOSIT_AMOUNT\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"internalType\":\"structzkBTCBridge.Operator\",\"name\":\"destinationOperator\",\"type\":\"tuple\"}],\"name\":\"beginMigration\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"rawBtcTx\",\"type\":\"bytes\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structIBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dustThresholds\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeAccount\",\"outputs\":[{\"internalType\":\"contractIFeePool\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLatestOperator\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"internalType\":\"structzkBTCBridge.Operator\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"script\",\"type\":\"bytes\"}],\"name\":\"getOperator\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"internalType\":\"structzkBTCBridge.Operator\",\"name\":\"op\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"}],\"name\":\"getRaiseIf\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMembers\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"redeemAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"btcMinerFee\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"sourceScript\",\"type\":\"bytes\"}],\"name\":\"migrate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"migrationList\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"redeemAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"btcMinerFee\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"recipientLockScript\",\"type\":\"bytes\"}],\"name\":\"redeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"suggestPrice\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"txCounts\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"txVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcTxVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"newThresholds\",\"type\":\"uint64\"}],\"name\":\"updateDustThresholds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structIBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"updateRedeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractIBtcTxVerifier\",\"name\":\"_newVerifier\",\"type\":\"address\"}],\"name\":\"updateTxVerifier\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"contractIFeePool\",\"name\":\"_feeAccount\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"_multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"_utxoAddress\",\"type\":\"address\"},{\"internalType\":\"contractIBtcTxVerifier\",\"name\":\"_txVerifier\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"depositAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"minDepositAmount\",\"type\":\"uint64\"}],\"name\":\"InvalidDepositAmount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"lockScriptLength\",\"type\":\"uint256\"}],\"name\":\"InvalidLockScriptLength\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"InvalidRedeemOrProof\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"lockScript\",\"type\":\"bytes\"}],\"name\":\"LockScriptIsChange\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"sourceLockingScript\",\"type\":\"bytes\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"destinationLockingScript\",\"type\":\"bytes\"}],\"name\":\"BeginMigration\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32[]\",\"name\":\"sigHashs\",\"type\":\"bytes32[]\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"rawTx\",\"type\":\"bytes\"}],\"name\":\"CreateRedeemUnsignedTx\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"old\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"now\",\"type\":\"uint64\"}],\"name\":\"DustThresholdsUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"}],\"name\":\"RetrievedData\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"old\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"now\",\"type\":\"address\"}],\"name\":\"UpdateReserveInterface\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MIN_DEPOSIT_AMOUNT\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"internalType\":\"structzkBTCBridge.Operator\",\"name\":\"destinationOperator\",\"type\":\"tuple\"}],\"name\":\"beginMigration\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"rawBtcTx\",\"type\":\"bytes\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structIBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"dustThresholds\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeAccount\",\"outputs\":[{\"internalType\":\"contractIFeePool\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLatestOperator\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"internalType\":\"structzkBTCBridge.Operator\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"script\",\"type\":\"bytes\"}],\"name\":\"getOperator\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"internalType\":\"structzkBTCBridge.Operator\",\"name\":\"op\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"}],\"name\":\"getRaiseIf\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMembers\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"redeemAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"btcMinerFee\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"sourceScript\",\"type\":\"bytes\"}],\"name\":\"migrate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"migrationList\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"changeLockScript\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"multiSigScript\",\"type\":\"bytes\"},{\"internalType\":\"contractUTXOManagerInterface\",\"name\":\"utxoManager\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"provenDatas\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"blockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"associatedAmount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"retrieved\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"redeemAmount\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"btcMinerFee\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"recipientLockScript\",\"type\":\"bytes\"}],\"name\":\"redeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"reserveInterface\",\"outputs\":[{\"internalType\":\"contractReserveInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"}],\"name\":\"retrieve\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"suggestPrice\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"txCounts\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"txVerifier\",\"outputs\":[{\"internalType\":\"contractIBtcTxVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"newThresholds\",\"type\":\"uint64\"}],\"name\":\"updateDustThresholds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"checkpoint\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"cpDepth\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txDepth\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txBlockHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"txTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"zkpMiner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"flag\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"smoothedTimestamp\",\"type\":\"uint32\"}],\"internalType\":\"structIBtcTxVerifier.PublicWitnessParams\",\"name\":\"params\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"txid\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minerReward\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"proofData\",\"type\":\"bytes\"}],\"name\":\"updateRedeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractReserveInterface\",\"name\":\"newInterface\",\"type\":\"address\"}],\"name\":\"updateReserveInterface\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ZkbridgeABI is the input ABI used to generate the binding from.
@@ -385,12 +385,12 @@ func (_Zkbridge *ZkbridgeCallerSession) GetOperator(script []byte) (ZkBTCBridgeO
 	return _Zkbridge.Contract.GetOperator(&_Zkbridge.CallOpts, script)
 }
 
-// GetRaiseIf is a free data retrieval call binding the contract method 0x90bf2242.
+// GetRaiseIf is a free data retrieval call binding the contract method 0x964dc667.
 //
-// Solidity: function getRaiseIf(bytes32 txBlockHash) view returns(bool)
-func (_Zkbridge *ZkbridgeCaller) GetRaiseIf(opts *bind.CallOpts, txBlockHash [32]byte) (bool, error) {
+// Solidity: function getRaiseIf(bytes32 txBlockHash, uint64 amount) view returns(bool)
+func (_Zkbridge *ZkbridgeCaller) GetRaiseIf(opts *bind.CallOpts, txBlockHash [32]byte, amount uint64) (bool, error) {
 	var out []interface{}
-	err := _Zkbridge.contract.Call(opts, &out, "getRaiseIf", txBlockHash)
+	err := _Zkbridge.contract.Call(opts, &out, "getRaiseIf", txBlockHash, amount)
 
 	if err != nil {
 		return *new(bool), err
@@ -402,18 +402,18 @@ func (_Zkbridge *ZkbridgeCaller) GetRaiseIf(opts *bind.CallOpts, txBlockHash [32
 
 }
 
-// GetRaiseIf is a free data retrieval call binding the contract method 0x90bf2242.
+// GetRaiseIf is a free data retrieval call binding the contract method 0x964dc667.
 //
-// Solidity: function getRaiseIf(bytes32 txBlockHash) view returns(bool)
-func (_Zkbridge *ZkbridgeSession) GetRaiseIf(txBlockHash [32]byte) (bool, error) {
-	return _Zkbridge.Contract.GetRaiseIf(&_Zkbridge.CallOpts, txBlockHash)
+// Solidity: function getRaiseIf(bytes32 txBlockHash, uint64 amount) view returns(bool)
+func (_Zkbridge *ZkbridgeSession) GetRaiseIf(txBlockHash [32]byte, amount uint64) (bool, error) {
+	return _Zkbridge.Contract.GetRaiseIf(&_Zkbridge.CallOpts, txBlockHash, amount)
 }
 
-// GetRaiseIf is a free data retrieval call binding the contract method 0x90bf2242.
+// GetRaiseIf is a free data retrieval call binding the contract method 0x964dc667.
 //
-// Solidity: function getRaiseIf(bytes32 txBlockHash) view returns(bool)
-func (_Zkbridge *ZkbridgeCallerSession) GetRaiseIf(txBlockHash [32]byte) (bool, error) {
-	return _Zkbridge.Contract.GetRaiseIf(&_Zkbridge.CallOpts, txBlockHash)
+// Solidity: function getRaiseIf(bytes32 txBlockHash, uint64 amount) view returns(bool)
+func (_Zkbridge *ZkbridgeCallerSession) GetRaiseIf(txBlockHash [32]byte, amount uint64) (bool, error) {
+	return _Zkbridge.Contract.GetRaiseIf(&_Zkbridge.CallOpts, txBlockHash, amount)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
@@ -619,6 +619,97 @@ func (_Zkbridge *ZkbridgeCallerSession) MigrationList(arg0 *big.Int) (struct {
 	UtxoManager      common.Address
 }, error) {
 	return _Zkbridge.Contract.MigrationList(&_Zkbridge.CallOpts, arg0)
+}
+
+// ProvenDatas is a free data retrieval call binding the contract method 0xa67dca44.
+//
+// Solidity: function provenDatas(bytes32 ) view returns(uint32 index, bytes32 blockHash, uint64 associatedAmount, bytes data, bool retrieved)
+func (_Zkbridge *ZkbridgeCaller) ProvenDatas(opts *bind.CallOpts, arg0 [32]byte) (struct {
+	Index            uint32
+	BlockHash        [32]byte
+	AssociatedAmount uint64
+	Data             []byte
+	Retrieved        bool
+}, error) {
+	var out []interface{}
+	err := _Zkbridge.contract.Call(opts, &out, "provenDatas", arg0)
+
+	outstruct := new(struct {
+		Index            uint32
+		BlockHash        [32]byte
+		AssociatedAmount uint64
+		Data             []byte
+		Retrieved        bool
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Index = *abi.ConvertType(out[0], new(uint32)).(*uint32)
+	outstruct.BlockHash = *abi.ConvertType(out[1], new([32]byte)).(*[32]byte)
+	outstruct.AssociatedAmount = *abi.ConvertType(out[2], new(uint64)).(*uint64)
+	outstruct.Data = *abi.ConvertType(out[3], new([]byte)).(*[]byte)
+	outstruct.Retrieved = *abi.ConvertType(out[4], new(bool)).(*bool)
+
+	return *outstruct, err
+
+}
+
+// ProvenDatas is a free data retrieval call binding the contract method 0xa67dca44.
+//
+// Solidity: function provenDatas(bytes32 ) view returns(uint32 index, bytes32 blockHash, uint64 associatedAmount, bytes data, bool retrieved)
+func (_Zkbridge *ZkbridgeSession) ProvenDatas(arg0 [32]byte) (struct {
+	Index            uint32
+	BlockHash        [32]byte
+	AssociatedAmount uint64
+	Data             []byte
+	Retrieved        bool
+}, error) {
+	return _Zkbridge.Contract.ProvenDatas(&_Zkbridge.CallOpts, arg0)
+}
+
+// ProvenDatas is a free data retrieval call binding the contract method 0xa67dca44.
+//
+// Solidity: function provenDatas(bytes32 ) view returns(uint32 index, bytes32 blockHash, uint64 associatedAmount, bytes data, bool retrieved)
+func (_Zkbridge *ZkbridgeCallerSession) ProvenDatas(arg0 [32]byte) (struct {
+	Index            uint32
+	BlockHash        [32]byte
+	AssociatedAmount uint64
+	Data             []byte
+	Retrieved        bool
+}, error) {
+	return _Zkbridge.Contract.ProvenDatas(&_Zkbridge.CallOpts, arg0)
+}
+
+// ReserveInterface is a free data retrieval call binding the contract method 0xe6ea61ba.
+//
+// Solidity: function reserveInterface() view returns(address)
+func (_Zkbridge *ZkbridgeCaller) ReserveInterface(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _Zkbridge.contract.Call(opts, &out, "reserveInterface")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// ReserveInterface is a free data retrieval call binding the contract method 0xe6ea61ba.
+//
+// Solidity: function reserveInterface() view returns(address)
+func (_Zkbridge *ZkbridgeSession) ReserveInterface() (common.Address, error) {
+	return _Zkbridge.Contract.ReserveInterface(&_Zkbridge.CallOpts)
+}
+
+// ReserveInterface is a free data retrieval call binding the contract method 0xe6ea61ba.
+//
+// Solidity: function reserveInterface() view returns(address)
+func (_Zkbridge *ZkbridgeCallerSession) ReserveInterface() (common.Address, error) {
+	return _Zkbridge.Contract.ReserveInterface(&_Zkbridge.CallOpts)
 }
 
 // SuggestPrice is a free data retrieval call binding the contract method 0x7e354628.
@@ -871,6 +962,27 @@ func (_Zkbridge *ZkbridgeTransactorSession) RenounceRole(role [32]byte, callerCo
 	return _Zkbridge.Contract.RenounceRole(&_Zkbridge.TransactOpts, role, callerConfirmation)
 }
 
+// Retrieve is a paid mutator transaction binding the contract method 0xd1ed74ad.
+//
+// Solidity: function retrieve(bytes32 txid) returns()
+func (_Zkbridge *ZkbridgeTransactor) Retrieve(opts *bind.TransactOpts, txid [32]byte) (*types.Transaction, error) {
+	return _Zkbridge.contract.Transact(opts, "retrieve", txid)
+}
+
+// Retrieve is a paid mutator transaction binding the contract method 0xd1ed74ad.
+//
+// Solidity: function retrieve(bytes32 txid) returns()
+func (_Zkbridge *ZkbridgeSession) Retrieve(txid [32]byte) (*types.Transaction, error) {
+	return _Zkbridge.Contract.Retrieve(&_Zkbridge.TransactOpts, txid)
+}
+
+// Retrieve is a paid mutator transaction binding the contract method 0xd1ed74ad.
+//
+// Solidity: function retrieve(bytes32 txid) returns()
+func (_Zkbridge *ZkbridgeTransactorSession) Retrieve(txid [32]byte) (*types.Transaction, error) {
+	return _Zkbridge.Contract.Retrieve(&_Zkbridge.TransactOpts, txid)
+}
+
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
@@ -934,25 +1046,25 @@ func (_Zkbridge *ZkbridgeTransactorSession) UpdateRedeem(params IBtcTxVerifierPu
 	return _Zkbridge.Contract.UpdateRedeem(&_Zkbridge.TransactOpts, params, txid, minerReward, proofData)
 }
 
-// UpdateTxVerifier is a paid mutator transaction binding the contract method 0x4ffea15f.
+// UpdateReserveInterface is a paid mutator transaction binding the contract method 0x4f2f3df7.
 //
-// Solidity: function updateTxVerifier(address _newVerifier) returns()
-func (_Zkbridge *ZkbridgeTransactor) UpdateTxVerifier(opts *bind.TransactOpts, _newVerifier common.Address) (*types.Transaction, error) {
-	return _Zkbridge.contract.Transact(opts, "updateTxVerifier", _newVerifier)
+// Solidity: function updateReserveInterface(address newInterface) returns()
+func (_Zkbridge *ZkbridgeTransactor) UpdateReserveInterface(opts *bind.TransactOpts, newInterface common.Address) (*types.Transaction, error) {
+	return _Zkbridge.contract.Transact(opts, "updateReserveInterface", newInterface)
 }
 
-// UpdateTxVerifier is a paid mutator transaction binding the contract method 0x4ffea15f.
+// UpdateReserveInterface is a paid mutator transaction binding the contract method 0x4f2f3df7.
 //
-// Solidity: function updateTxVerifier(address _newVerifier) returns()
-func (_Zkbridge *ZkbridgeSession) UpdateTxVerifier(_newVerifier common.Address) (*types.Transaction, error) {
-	return _Zkbridge.Contract.UpdateTxVerifier(&_Zkbridge.TransactOpts, _newVerifier)
+// Solidity: function updateReserveInterface(address newInterface) returns()
+func (_Zkbridge *ZkbridgeSession) UpdateReserveInterface(newInterface common.Address) (*types.Transaction, error) {
+	return _Zkbridge.Contract.UpdateReserveInterface(&_Zkbridge.TransactOpts, newInterface)
 }
 
-// UpdateTxVerifier is a paid mutator transaction binding the contract method 0x4ffea15f.
+// UpdateReserveInterface is a paid mutator transaction binding the contract method 0x4f2f3df7.
 //
-// Solidity: function updateTxVerifier(address _newVerifier) returns()
-func (_Zkbridge *ZkbridgeTransactorSession) UpdateTxVerifier(_newVerifier common.Address) (*types.Transaction, error) {
-	return _Zkbridge.Contract.UpdateTxVerifier(&_Zkbridge.TransactOpts, _newVerifier)
+// Solidity: function updateReserveInterface(address newInterface) returns()
+func (_Zkbridge *ZkbridgeTransactorSession) UpdateReserveInterface(newInterface common.Address) (*types.Transaction, error) {
+	return _Zkbridge.Contract.UpdateReserveInterface(&_Zkbridge.TransactOpts, newInterface)
 }
 
 // ZkbridgeBeginMigrationIterator is returned from FilterBeginMigration and is used to iterate over the raw logs and unpacked data for BeginMigration events raised by the Zkbridge contract.
@@ -1392,6 +1504,140 @@ func (_Zkbridge *ZkbridgeFilterer) WatchDustThresholdsUpdated(opts *bind.WatchOp
 func (_Zkbridge *ZkbridgeFilterer) ParseDustThresholdsUpdated(log types.Log) (*ZkbridgeDustThresholdsUpdated, error) {
 	event := new(ZkbridgeDustThresholdsUpdated)
 	if err := _Zkbridge.contract.UnpackLog(event, "DustThresholdsUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ZkbridgeRetrievedDataIterator is returned from FilterRetrievedData and is used to iterate over the raw logs and unpacked data for RetrievedData events raised by the Zkbridge contract.
+type ZkbridgeRetrievedDataIterator struct {
+	Event *ZkbridgeRetrievedData // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ZkbridgeRetrievedDataIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ZkbridgeRetrievedData)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ZkbridgeRetrievedData)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ZkbridgeRetrievedDataIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ZkbridgeRetrievedDataIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ZkbridgeRetrievedData represents a RetrievedData event raised by the Zkbridge contract.
+type ZkbridgeRetrievedData struct {
+	Txid [32]byte
+	Raw  types.Log // Blockchain specific contextual infos
+}
+
+// FilterRetrievedData is a free log retrieval operation binding the contract event 0x7d78d94c375a6d97295caa73300d4a88e21294e9eeacec2aac8b34add3bc5fd0.
+//
+// Solidity: event RetrievedData(bytes32 txid)
+func (_Zkbridge *ZkbridgeFilterer) FilterRetrievedData(opts *bind.FilterOpts) (*ZkbridgeRetrievedDataIterator, error) {
+
+	logs, sub, err := _Zkbridge.contract.FilterLogs(opts, "RetrievedData")
+	if err != nil {
+		return nil, err
+	}
+	return &ZkbridgeRetrievedDataIterator{contract: _Zkbridge.contract, event: "RetrievedData", logs: logs, sub: sub}, nil
+}
+
+// WatchRetrievedData is a free log subscription operation binding the contract event 0x7d78d94c375a6d97295caa73300d4a88e21294e9eeacec2aac8b34add3bc5fd0.
+//
+// Solidity: event RetrievedData(bytes32 txid)
+func (_Zkbridge *ZkbridgeFilterer) WatchRetrievedData(opts *bind.WatchOpts, sink chan<- *ZkbridgeRetrievedData) (event.Subscription, error) {
+
+	logs, sub, err := _Zkbridge.contract.WatchLogs(opts, "RetrievedData")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ZkbridgeRetrievedData)
+				if err := _Zkbridge.contract.UnpackLog(event, "RetrievedData", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRetrievedData is a log parse operation binding the contract event 0x7d78d94c375a6d97295caa73300d4a88e21294e9eeacec2aac8b34add3bc5fd0.
+//
+// Solidity: event RetrievedData(bytes32 txid)
+func (_Zkbridge *ZkbridgeFilterer) ParseRetrievedData(log types.Log) (*ZkbridgeRetrievedData, error) {
+	event := new(ZkbridgeRetrievedData)
+	if err := _Zkbridge.contract.UnpackLog(event, "RetrievedData", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -1884,9 +2130,9 @@ func (_Zkbridge *ZkbridgeFilterer) ParseRoleRevoked(log types.Log) (*ZkbridgeRol
 	return event, nil
 }
 
-// ZkbridgeTxVerifierAddressChangedIterator is returned from FilterTxVerifierAddressChanged and is used to iterate over the raw logs and unpacked data for TxVerifierAddressChanged events raised by the Zkbridge contract.
-type ZkbridgeTxVerifierAddressChangedIterator struct {
-	Event *ZkbridgeTxVerifierAddressChanged // Event containing the contract specifics and raw log
+// ZkbridgeUpdateReserveInterfaceIterator is returned from FilterUpdateReserveInterface and is used to iterate over the raw logs and unpacked data for UpdateReserveInterface events raised by the Zkbridge contract.
+type ZkbridgeUpdateReserveInterfaceIterator struct {
+	Event *ZkbridgeUpdateReserveInterface // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1900,7 +2146,7 @@ type ZkbridgeTxVerifierAddressChangedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ZkbridgeTxVerifierAddressChangedIterator) Next() bool {
+func (it *ZkbridgeUpdateReserveInterfaceIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1909,7 +2155,7 @@ func (it *ZkbridgeTxVerifierAddressChangedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ZkbridgeTxVerifierAddressChanged)
+			it.Event = new(ZkbridgeUpdateReserveInterface)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1924,7 +2170,7 @@ func (it *ZkbridgeTxVerifierAddressChangedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ZkbridgeTxVerifierAddressChanged)
+		it.Event = new(ZkbridgeUpdateReserveInterface)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1940,42 +2186,42 @@ func (it *ZkbridgeTxVerifierAddressChangedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ZkbridgeTxVerifierAddressChangedIterator) Error() error {
+func (it *ZkbridgeUpdateReserveInterfaceIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ZkbridgeTxVerifierAddressChangedIterator) Close() error {
+func (it *ZkbridgeUpdateReserveInterfaceIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ZkbridgeTxVerifierAddressChanged represents a TxVerifierAddressChanged event raised by the Zkbridge contract.
-type ZkbridgeTxVerifierAddressChanged struct {
+// ZkbridgeUpdateReserveInterface represents a UpdateReserveInterface event raised by the Zkbridge contract.
+type ZkbridgeUpdateReserveInterface struct {
 	Old common.Address
 	Now common.Address
 	Raw types.Log // Blockchain specific contextual infos
 }
 
-// FilterTxVerifierAddressChanged is a free log retrieval operation binding the contract event 0x5a63dfaa374961bd4570b09d0987d483ec47d1586039a059387e42d7919d6f6a.
+// FilterUpdateReserveInterface is a free log retrieval operation binding the contract event 0xb2b5c6f91bbee84404bdb28b8bb2483ebf2872b6255f0bb366a8a228ed7da536.
 //
-// Solidity: event TxVerifierAddressChanged(address old, address now)
-func (_Zkbridge *ZkbridgeFilterer) FilterTxVerifierAddressChanged(opts *bind.FilterOpts) (*ZkbridgeTxVerifierAddressChangedIterator, error) {
+// Solidity: event UpdateReserveInterface(address old, address now)
+func (_Zkbridge *ZkbridgeFilterer) FilterUpdateReserveInterface(opts *bind.FilterOpts) (*ZkbridgeUpdateReserveInterfaceIterator, error) {
 
-	logs, sub, err := _Zkbridge.contract.FilterLogs(opts, "TxVerifierAddressChanged")
+	logs, sub, err := _Zkbridge.contract.FilterLogs(opts, "UpdateReserveInterface")
 	if err != nil {
 		return nil, err
 	}
-	return &ZkbridgeTxVerifierAddressChangedIterator{contract: _Zkbridge.contract, event: "TxVerifierAddressChanged", logs: logs, sub: sub}, nil
+	return &ZkbridgeUpdateReserveInterfaceIterator{contract: _Zkbridge.contract, event: "UpdateReserveInterface", logs: logs, sub: sub}, nil
 }
 
-// WatchTxVerifierAddressChanged is a free log subscription operation binding the contract event 0x5a63dfaa374961bd4570b09d0987d483ec47d1586039a059387e42d7919d6f6a.
+// WatchUpdateReserveInterface is a free log subscription operation binding the contract event 0xb2b5c6f91bbee84404bdb28b8bb2483ebf2872b6255f0bb366a8a228ed7da536.
 //
-// Solidity: event TxVerifierAddressChanged(address old, address now)
-func (_Zkbridge *ZkbridgeFilterer) WatchTxVerifierAddressChanged(opts *bind.WatchOpts, sink chan<- *ZkbridgeTxVerifierAddressChanged) (event.Subscription, error) {
+// Solidity: event UpdateReserveInterface(address old, address now)
+func (_Zkbridge *ZkbridgeFilterer) WatchUpdateReserveInterface(opts *bind.WatchOpts, sink chan<- *ZkbridgeUpdateReserveInterface) (event.Subscription, error) {
 
-	logs, sub, err := _Zkbridge.contract.WatchLogs(opts, "TxVerifierAddressChanged")
+	logs, sub, err := _Zkbridge.contract.WatchLogs(opts, "UpdateReserveInterface")
 	if err != nil {
 		return nil, err
 	}
@@ -1985,8 +2231,8 @@ func (_Zkbridge *ZkbridgeFilterer) WatchTxVerifierAddressChanged(opts *bind.Watc
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ZkbridgeTxVerifierAddressChanged)
-				if err := _Zkbridge.contract.UnpackLog(event, "TxVerifierAddressChanged", log); err != nil {
+				event := new(ZkbridgeUpdateReserveInterface)
+				if err := _Zkbridge.contract.UnpackLog(event, "UpdateReserveInterface", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2007,12 +2253,12 @@ func (_Zkbridge *ZkbridgeFilterer) WatchTxVerifierAddressChanged(opts *bind.Watc
 	}), nil
 }
 
-// ParseTxVerifierAddressChanged is a log parse operation binding the contract event 0x5a63dfaa374961bd4570b09d0987d483ec47d1586039a059387e42d7919d6f6a.
+// ParseUpdateReserveInterface is a log parse operation binding the contract event 0xb2b5c6f91bbee84404bdb28b8bb2483ebf2872b6255f0bb366a8a228ed7da536.
 //
-// Solidity: event TxVerifierAddressChanged(address old, address now)
-func (_Zkbridge *ZkbridgeFilterer) ParseTxVerifierAddressChanged(log types.Log) (*ZkbridgeTxVerifierAddressChanged, error) {
-	event := new(ZkbridgeTxVerifierAddressChanged)
-	if err := _Zkbridge.contract.UnpackLog(event, "TxVerifierAddressChanged", log); err != nil {
+// Solidity: event UpdateReserveInterface(address old, address now)
+func (_Zkbridge *ZkbridgeFilterer) ParseUpdateReserveInterface(log types.Log) (*ZkbridgeUpdateReserveInterface, error) {
+	event := new(ZkbridgeUpdateReserveInterface)
+	if err := _Zkbridge.contract.UnpackLog(event, "UpdateReserveInterface", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

@@ -184,7 +184,9 @@ func (t *TxManager) DepositBtc(txId, proof string) (string, error) {
 	}
 	logger.Debug("submit deposit tx:%v cpDepth:%v,txDepth:%v,checkPoint:%x,blockHash:%x,blockTime:%v,flag:%v,smoothedTimestamp: %v,minerAddr:%v,gasPrice:%v,btcTxRaw:%x,proof:%v",
 		txId, params.CpDepth, params.TxDepth, params.Checkpoint, params.TxBlockHash, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, t.minerAddr, gasPrice, btcRawTx, proof)
-	gasLimit, err := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
+	//gasLimit, err := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
+	gasLimit := uint64(1000000)
+
 	if err != nil {
 		logger.Error("estimate deposit gas limit error:%v %v", txId, err)
 		if proofExpired(err) {
@@ -409,7 +411,8 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 	logger.Debug("submit updateUtxo txId:%x, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
 		txIdBytes, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
 
-	gasLimit, err := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
+	//gasLimit, err := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
+	gasLimit := uint64(1000000)
 	if err != nil {
 		if proofExpired(err) {
 			logger.Warn("update utxo expired now,delete it: %v", txId)
