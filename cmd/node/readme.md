@@ -1,12 +1,26 @@
 ## Command
 
+run
+
     ./node --config ./node.json run
+
+jwt
 
     ./node --config ./local.json jwt
 
+scRoot
+
     ./node --config devnet.json  scRoot --period 939 --genesisSlot 7692288
 
+readVk
+
     ./node readVk --file /opt/lightec/opt2/circuitsetup/devnet/redeem.vk
+
+export proof
+
+    //example ./node exportProof --name btcduperrecursive_84010_84024 --datadir ./daemon --proof btcduperrecursive_84010_84024.proof --witness btcduperrecursive_84010_84024.witness 
+    
+    ./node exportProof --proof <path> --witness <path> --name <name> --datadir <path>
 
 ## Config
 
