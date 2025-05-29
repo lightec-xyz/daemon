@@ -19,7 +19,7 @@ func init() {
 }
 
 func TestLocalDevDaemon(t *testing.T) {
-	cfgBytes, err := os.ReadFile("/Users/red/lworkspace/lightec/audit/daemon/cmd/node/local.json")
+	cfgBytes, err := os.ReadFile("/Users/red/lworkspace/lightec/audit/daemon/cmd/node/devnet.json")
 	if err != nil {
 		t.Fatal(err)
 	}
