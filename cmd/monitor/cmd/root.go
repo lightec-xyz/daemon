@@ -132,7 +132,7 @@ type EthNode struct {
 }
 
 func NewEthNode(url string) (*EthNode, error) {
-	client, err := ethereum.NewClient(url, "", "", "")
+	client, err := ethereum.NewClient(url, "", "", "", "")
 	if err != nil {
 		return nil, err
 	}

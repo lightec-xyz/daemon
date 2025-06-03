@@ -3,18 +3,14 @@ package ethereum
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
-	"log"
 	"math/big"
 	"testing"
 	"time"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 )
 
@@ -24,11 +20,12 @@ var client *Client
 var endpoint = "http://127.0.0.1:9002"
 var zkBridgeAddr = "0x184341Ad1d0B3862a511a2E23e9461405ccEa97f"
 var utxoManager = "0xD2f892d4Ece281C91Fd5D9f28658F8d445878239"
-var btcTxVerifyAddr = "0x9361af189FC03f9c340b9A7536e61647299308E5"
+var btcTxVerifyAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
+var zkbtcAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
 
 func init() {
 	//https://sepolia.publicgoods.network
-	client, err = NewClient(endpoint, zkBridgeAddr, utxoManager, btcTxVerifyAddr)
+	client, err = NewClient(endpoint, zkBridgeAddr, utxoManager, btcTxVerifyAddr, zkbtcAddr)
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +56,7 @@ func TestClient_SuggestedCP(t *testing.T) {
 }
 
 func TestClient_GetMinTxDepth(t *testing.T) {
-	depth, err := client.GetDepthByAmount(731904, false, false)
+	depth, err := client.GetDepthByAmount(87392, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,18 +133,6 @@ func TestClient_GetLogs2(t *testing.T) {
 	}
 }
 
-func TestClient_BlockNumber(t *testing.T) {
-	//0xd936a94eabfe6a9cb84382515a99684170271e06c676c1b89c2eed4baf953d08
-	//0xd936a94eabfe6a9cb84382515a99684170271e06c676c1b89c2eed4baf953d08
-	result, err := client.GetBlock(3559930)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(result.Hash().String())
-	t.Log(result.ParentHash().String())
-
-}
-
 func TestClient_GetLogs(t *testing.T) {
 	//563180
 	//563166
@@ -185,24 +170,8 @@ func TestClient_GetLogs(t *testing.T) {
 	}
 }
 
-func TestPrivateKey(t *testing.T) {
-	privateKey, err := crypto.GenerateKey()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("%x \n", privateKey.D.Bytes())
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Fatal("fail")
-	}
-	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
-	t.Log(address)
-
-}
-
 func TestRedeemTx(t *testing.T) {
-	privateKey := "084243403ea5c01337388b2068f98d90a845a9f8926fa16631b07dae4e64a5cd"
+	privateKey := ""
 	redeemAmount := uint64(1000)
 	minerFee := uint64(3000)
 	fromAddr, err := privateKeyToAddr(privateKey)
@@ -288,39 +257,12 @@ func TestClient_EstimateUpdateUtxoGasLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(gasLimit)
-
 }
 
-func TestUpdateUtxoChange(t *testing.T) {
-
-}
-
-func TestClient_Demo(t *testing.T) {
-	ids := TxIdsToFixedIds([]string{"adddd", "dsdsfsd"})
-	t.Log(ids)
-
-}
-
-func TestGetTrancaction(t *testing.T) {
-	hash := ethcommon.HexToHash("0x9bd7ff0aa08611a2077189fcefb5095eda2e5d28d175cde410540ecc4ec2283b")
-	tx, err := client.TransactionReceipt(context.Background(), hash)
+func TestEthTransfer(t *testing.T) {
+	txHash, err := client.EthTransfer("", "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(tx.BlockNumber)
-}
-
-func TestClient_Verify(t *testing.T) {
-	receipt, err := client.Client.TransactionReceipt(context.Background(), ethcommon.HexToHash("0x291ee31eb6b8cef1ebc571fd090a1e7c96ddac5a1552dae47501581ed7d66641"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(receipt)
-}
-
-func ReverseBytes(data []byte) []byte {
-	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
-		data[i], data[j] = data[j], data[i]
-	}
-	return data
+	t.Log(txHash)
 }

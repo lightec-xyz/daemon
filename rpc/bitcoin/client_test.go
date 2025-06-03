@@ -116,7 +116,7 @@ func TestClient_GetBlockHash(t *testing.T) {
 }
 
 func TestClient_GetBlockTx(t *testing.T) {
-	hash, err := client.GetBlockHash(3397399)
+	hash, err := client.GetBlockHash(84073)
 	if err != nil {
 		panic(err)
 	}
@@ -125,8 +125,8 @@ func TestClient_GetBlockTx(t *testing.T) {
 		panic(err)
 	}
 	for _, tx := range blockWithTx.Tx {
-		if tx.Txid == "e946bcee3b6ac0e39fbddc285a0c5b4790dfb154fcee0edb9766753ff1874808" {
-			t.Log(tx)
+		if tx.Txid == "7d8fa15a1368d0fa36952472843d6bbf78dd3376baf1108b9e9555da38d739f0" {
+			t.Logf("find tx: %v", tx)
 		}
 	}
 	fmt.Println(blockWithTx.Hash)
@@ -181,7 +181,7 @@ func TestDepositTransaction(t *testing.T) {
 			Amount:  findChange.Int64(),
 		},
 	}
-	secret := ethCommon.FromHex("0x084243403ea5c01337388b2068f98d90a845a9f8926fa16631b07dae4e64a5cd")
+	secret := ethCommon.FromHex("0x")
 	ethAddr := ethCommon.FromHex("0x2A6443B5838f9524970c471289AB22f399395Ff6")
 	result, err := bitcoin.CreateDepositTransaction(secret, ethAddr, inputs, outputs, bitcoin.TestNet)
 	if err != nil {

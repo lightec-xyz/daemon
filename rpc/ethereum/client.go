@@ -3,6 +3,7 @@ package ethereum
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -25,12 +26,13 @@ type Client struct {
 	zkBridgeCall    *zkbridge.Zkbridge
 	utxoCall        *zkbridge.Utxo
 	btcTxVerifyCall *zkbridge.BtcTxVerify
+	zkbtcCall       *zkbridge.Zkbtc
 	zkbtcBridgeAbi  abi.ABI
 	zkbtcBridgeAddr string
 	timeout         time.Duration
 }
 
-func NewClient(endpoint string, zkBridgeAddr, utxoManager, txVerify string) (*Client, error) {
+func NewClient(endpoint string, zkBridgeAddr, utxoManager, txVerify, zkbtc string) (*Client, error) {
 	client, err := ethclient.Dial(endpoint)
 	if err != nil {
 		return nil, err
@@ -47,6 +49,11 @@ func NewClient(endpoint string, zkBridgeAddr, utxoManager, txVerify string) (*Cl
 	if err != nil {
 		return nil, err
 	}
+	zkbtcCall, err := zkbridge.NewZkbtc(ethcommon.HexToAddress(zkbtc), client)
+	if err != nil {
+		return nil, err
+	}
+
 	zkbtcBridgeAbi, err := abi.JSON(bytes.NewReader([]byte(zkbtcBridgeAbiConst)))
 	if err != nil {
 		return nil, err
@@ -56,6 +63,7 @@ func NewClient(endpoint string, zkBridgeAddr, utxoManager, txVerify string) (*Cl
 		zkBridgeCall:    zkBridgeCall,
 		utxoCall:        utxo,
 		btcTxVerifyCall: btcTxVerify,
+		zkbtcCall:       zkbtcCall,
 		timeout:         15 * time.Second,
 		zkbtcBridgeAbi:  zkbtcBridgeAbi,
 		zkbtcBridgeAddr: zkBridgeAddr,
@@ -65,7 +73,13 @@ func NewClient(endpoint string, zkBridgeAddr, utxoManager, txVerify string) (*Cl
 func (c *Client) GetRaised(hash string) (bool, error) {
 	return false, nil
 }
-
+func (c *Client) ZkbtcBalance(addr string) (*big.Int, error) {
+	balance, err := c.zkbtcCall.BalanceOf(nil, ethcommon.HexToAddress(addr))
+	if err != nil {
+		return nil, err
+	}
+	return balance, nil
+}
 func (c *Client) EthBalance(addr string) (*big.Int, error) {
 	balance, err := c.Client.BalanceAt(context.Background(), ethcommon.HexToAddress(addr), nil)
 	if err != nil {
@@ -168,11 +182,6 @@ func (c *Client) GetTxSender(txHash, blockHash string, index uint) (string, erro
 	}
 	return sender.Hex(), nil
 
-}
-
-func (c *Client) CheckDepositProof(txId string) (bool, error) {
-	//todo
-	return false, nil
 }
 
 func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]types.Log, error) {
@@ -369,4 +378,57 @@ func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice
 		return "", err
 	}
 	return transaction.Hash().Hex(), nil
+}
+
+func (c *Client) EthTransfer(secret, to string, value *big.Int) (string, error) {
+	privateKey, err := crypto.ToECDSA(ethcommon.FromHex(secret))
+	if err != nil {
+		return "", err
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return "", err
+	}
+	chainID, err := c.ChainID(context.Background())
+	if err != nil {
+		return "", err
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := c.Client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		return "", err
+	}
+	toAddress := ethcommon.HexToAddress(to)
+	gasLimit := uint64(22000) //todo
+	tipCap, err := c.Client.SuggestGasTipCap(context.Background())
+	if err != nil {
+		return "", err
+	}
+	latestHeader, err := c.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return "", err
+	}
+	baseFee := latestHeader.BaseFee
+	feeCap := new(big.Int).Add(baseFee, tipCap)
+	tx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   chainID,
+		Nonce:     nonce,
+		GasTipCap: tipCap,
+		GasFeeCap: feeCap,
+		Gas:       gasLimit,
+		To:        &toAddress,
+		Value:     value,
+		Data:      nil,
+	})
+	signer := types.NewLondonSigner(chainID)
+	signedTx, err := types.SignTx(tx, signer, privateKey)
+	if err != nil {
+		return "", err
+	}
+	err = c.Client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return "", err
+	}
+	return signedTx.Hash().Hex(), nil
 }
