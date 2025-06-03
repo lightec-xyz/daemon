@@ -51,6 +51,9 @@ type FileStorage struct {
 }
 
 func NewFileStorage(path string, genesisSlot, btcGenesisHeight uint64, tables ...store.Table) (*FileStorage, error) {
+	if btcGenesisHeight%common.BtcUpperDistance != 0 {
+		return nil, fmt.Errorf("btcGenesisHeight must be a multiple of %d", common.BtcUpperDistance)
+	}
 	fileStoreMap := new(sync.Map)
 	rootPath := fmt.Sprintf("%s/proofData", path)
 	logger.Info("fileStorage path: %v", rootPath)
