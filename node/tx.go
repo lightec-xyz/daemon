@@ -88,7 +88,7 @@ func (t *TxManager) Check() error {
 	for _, tx := range unSubmitTxs {
 		switch tx.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType:
-			hash, err := t.DepositBtc(tx.Hash, tx.Proof)
+			hash, err := t.DepositBtc(tx.ProofType, tx.Hash, tx.Proof)
 			if err != nil {
 				logger.Error("update deposit error: %v %v", tx.ProofType.Name(), tx.Hash)
 				continue
@@ -135,7 +135,7 @@ func (t *TxManager) getEthAddrNonce(addr string) (uint64, error) {
 	return chainNonce, nil
 }
 
-func (t *TxManager) DepositBtc(txId, proof string) (string, error) {
+func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (string, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	exists, err := t.ethClient.CheckUtxo(txId)
@@ -187,8 +187,15 @@ func (t *TxManager) DepositBtc(txId, proof string) (string, error) {
 		txId, params.CpDepth, params.TxDepth, params.Checkpoint, params.TxBlockHash, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, t.minerAddr, gasPrice, btcRawTx, proof)
 	gasLimit, err := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
 	if err != nil {
-		logger.Error("estimate deposit gas limit error:%v %v", txId, err)
-		if proofExpired(err) {
+		logger.Error("estimate %v gas limit error:%v %v", proofType.Name(), txId, err)
+		if proofType == common.BtcUpdateCpType {
+			logger.Warn("deposit tx expired now,delete it: %v", txId)
+			err := t.chainStore.DeleteUnSubmitTx(txId)
+			if err != nil {
+				logger.Error("delete unSubmit tx error: %v", err)
+				return "", err
+			}
+		} else if proofExpired(err) && proofType == common.BtcDepositType {
 			logger.Warn("deposit tx expired now,delete it: %v", txId)
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
@@ -201,8 +208,9 @@ func (t *TxManager) DepositBtc(txId, proof string) (string, error) {
 				return "", err
 			}
 			return "", nil
+		} else {
+			return "", err
 		}
-		return "", err
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
