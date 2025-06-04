@@ -282,6 +282,9 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 }
 
 func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised bool, tx *DbTx) (bool, error) {
+	if tx.LatestHeight > curHeight {
+		return false, nil
+	}
 	if tx.CheckPointHeight == 0 || tx.CheckPointHeight < cpHeight {
 		tx.CheckPointHeight = cpHeight
 		err := s.chainStore.WriteDbTxes(tx)
@@ -290,7 +293,7 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 			return false, err
 		}
 	}
-	if tx.LatestHeight == 0 || curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff || tx.LatestHeight > curHeight { // the latestHeight on 24hour maybe expired
+	if tx.LatestHeight == 0 || curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff { // the latestHeight on 24hour maybe expired
 		tx.LatestHeight = curHeight
 		err := s.chainStore.WriteDbTxes(tx)
 		if err != nil {
