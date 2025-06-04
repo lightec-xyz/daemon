@@ -195,6 +195,7 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
+			return "", nil
 		} else if proofExpired(err) && proofType == common.BtcDepositType {
 			logger.Warn("deposit tx expired now,delete it: %v", txId)
 			err := t.chainStore.DeleteUnSubmitTx(txId)
