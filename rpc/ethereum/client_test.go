@@ -3,22 +3,19 @@ package ethereum
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"fmt"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	"math/big"
 	"testing"
-	"time"
-
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 )
 
 var err error
 var client *Client
 
 var endpoint = "http://127.0.0.1:9002"
-var zkBridgeAddr = "0x184341Ad1d0B3862a511a2E23e9461405ccEa97f"
+var zkBridgeAddr = "0x21098979Fc10BBC754C6359E657eA28c52ea1acf"
 var utxoManager = "0xD2f892d4Ece281C91Fd5D9f28658F8d445878239"
 var btcTxVerifyAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
 var zkbtcAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
@@ -29,6 +26,22 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_SuggestBtcMinerFee(t *testing.T) {
+	fee, err := client.SuggestBtcMinerFee()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(fee)
+}
+
+func TestClient_GetRaised(t *testing.T) {
+	raised, err := client.GetRaised("0000000000000001e7a798ae790a9df0befa97d78816d8da1ae46f17b27547ed", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(raised)
 }
 
 func TestClient_GetCpLatestAddedTime(t *testing.T) {
@@ -134,8 +147,6 @@ func TestClient_GetLogs2(t *testing.T) {
 }
 
 func TestClient_GetLogs(t *testing.T) {
-	//563180
-	//563166
 	block, err := client.GetBlock(1545882)
 	if err != nil {
 		t.Fatal(err)
@@ -170,37 +181,29 @@ func TestClient_GetLogs(t *testing.T) {
 	}
 }
 
-func TestRedeemTx(t *testing.T) {
-	privateKey := ""
+func TestClient_Redeem(t *testing.T) {
+	privateKey := GetTestSecret()
 	redeemAmount := uint64(1000)
 	minerFee := uint64(3000)
-	fromAddr, err := privateKeyToAddr(privateKey)
+	gasLimit := uint64(500000)
+	from, err := privateKeyToAddr(privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("fromAddress:%v\n", fromAddr)
-	redeemLockScript, err := hex.DecodeString("001499521fcaf4420357f84f548c737b41cec58fa1ba")
+	redeemLockScript := ethcommon.FromHex("")
+	gasPrice, err := client.GetGasPrice()
 	if err != nil {
 		t.Fatal(err)
 	}
-	from := ethcommon.HexToAddress(fromAddr)
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	gasLimit := 500000
-	gasPrice, err := client.SuggestGasPrice(ctx)
+	chainID, err := client.GetChainId()
 	if err != nil {
 		t.Fatal(err)
 	}
-	gasPrice = big.NewInt(0).Mul(big.NewInt(2), gasPrice)
-	chainID, err := client.ChainID(ctx)
+	nonce, err := client.GetNonce(from)
 	if err != nil {
 		t.Fatal(err)
 	}
-	nonce, err := client.NonceAt(ctx, from, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	txhash, err := client.Redeem(privateKey, uint64(gasLimit), chainID, big.NewInt(int64(nonce)), gasPrice, redeemAmount, minerFee, redeemLockScript)
+	txhash, err := client.Redeem(privateKey, gasLimit, chainID, big.NewInt(int64(nonce)), gasPrice, redeemAmount, minerFee, redeemLockScript)
 	if err != nil {
 		t.Fatal(err)
 	}

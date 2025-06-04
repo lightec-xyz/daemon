@@ -45,6 +45,23 @@ func (s *Scheduler) updateBtcCp() error {
 		logger.Warn("no find cpTx")
 		return nil
 	}
+	hash, exists, err := s.chainStore.ReadBitcoinHash(cpTx.Height)
+	if err != nil {
+		logger.Error("get btc hash error: %v %v", cpTx.Height, err)
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	exist, err := s.ethClient.IsCandidateExist(hash)
+	if err != nil {
+		logger.Error("check candidate exist error: %v %v", hash, err)
+		return err
+	}
+	if exist {
+		logger.Warn("update cp tx is exist,skip now blockHash:%v", hash)
+		return nil
+	}
 	// update cp when the tx time more than 24h
 	latestAddedTime, err := s.ethClient.GetCpLatestAddedTime()
 	if err != nil {
@@ -55,7 +72,7 @@ func (s *Scheduler) updateBtcCp() error {
 		logger.Warn("update cp tx is too new,skip now:%v", cpTx.Hash)
 		return nil
 	}
-	exists, err := s.fileStore.CheckProof(NewHashStoreKey(common.BtcDepositType, cpTx.Hash))
+	exists, err = s.fileStore.CheckProof(NewHashStoreKey(common.BtcDepositType, cpTx.Hash))
 	if err != nil {
 		logger.Error("%v %v", cpTx.Hash, err)
 		return err
@@ -268,7 +285,7 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 		logger.Error("read latest icp sig error:%v", err)
 		return false, err
 	}
-	raised, err := s.getTxRaised(tx.Height)
+	raised, err := s.getTxRaised(tx.Height, uint64(tx.Amount))
 	if err != nil {
 		logger.Error("get tx raised error:%v", err)
 		return false, err
@@ -282,6 +299,9 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 }
 
 func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised bool, tx *DbTx) (bool, error) {
+	if tx.LatestHeight > curHeight {
+		return false, nil
+	}
 	if tx.CheckPointHeight == 0 || tx.CheckPointHeight < cpHeight {
 		tx.CheckPointHeight = cpHeight
 		err := s.chainStore.WriteDbTxes(tx)
@@ -290,7 +310,7 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 			return false, err
 		}
 	}
-	if tx.LatestHeight == 0 || curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff || tx.LatestHeight > curHeight { // the latestHeight on 24hour maybe expired
+	if tx.LatestHeight == 0 || curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff { // the latestHeight on 24hour maybe expired
 		tx.LatestHeight = curHeight
 		err := s.chainStore.WriteDbTxes(tx)
 		if err != nil {
@@ -978,7 +998,7 @@ func (s *Scheduler) BlockSignature() error {
 	}
 	return nil
 }
-func (s *Scheduler) getTxRaised(height uint64) (bool, error) {
+func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 	hash, ok, err := s.chainStore.ReadBitcoinHash(height)
 	if err != nil {
 		logger.Error("read bitcoin hash error:%v", err)
@@ -988,7 +1008,7 @@ func (s *Scheduler) getTxRaised(height uint64) (bool, error) {
 		fmt.Errorf("no find bitcoin hash")
 		return false, nil
 	}
-	raised, err := s.ethClient.GetRaised(hash)
+	raised, err := s.ethClient.GetRaised(hash, amount)
 	if err != nil {
 		logger.Error("get raised error:%v", err)
 		return false, err
