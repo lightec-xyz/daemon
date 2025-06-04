@@ -652,6 +652,13 @@ func (t *TxManager) addBtcUnGenProof(txId string) error {
 		logger.Error("del proof error: %v", err)
 		return err
 	}
+	// re select latest height to gen proof
+	tx.LatestHeight = 0
+	err = t.chainStore.WriteDbTxes(tx)
+	if err != nil {
+		logger.Error("write db tx error: %v", err)
+		return err
+	}
 	err = t.chainStore.WriteUnGenProof(common.BitcoinChain, &DbUnGenProof{
 		ChainType: tx.ChainType,
 		ProofType: tx.ProofType,
