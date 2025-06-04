@@ -45,6 +45,23 @@ func (s *Scheduler) updateBtcCp() error {
 		logger.Warn("no find cpTx")
 		return nil
 	}
+	hash, exists, err := s.chainStore.ReadBitcoinHash(cpTx.Height)
+	if err != nil {
+		logger.Error("get btc hash error: %v %v", cpTx.Height, err)
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	exist, err := s.ethClient.IsCandidateExist(hash)
+	if err != nil {
+		logger.Error("check candidate exist error: %v %v", hash, err)
+		return err
+	}
+	if exist {
+		logger.Warn("update cp tx is exist,skip now blockHash:%v", hash)
+		return nil
+	}
 	// update cp when the tx time more than 24h
 	latestAddedTime, err := s.ethClient.GetCpLatestAddedTime()
 	if err != nil {
@@ -55,7 +72,7 @@ func (s *Scheduler) updateBtcCp() error {
 		logger.Warn("update cp tx is too new,skip now:%v", cpTx.Hash)
 		return nil
 	}
-	exists, err := s.fileStore.CheckProof(NewHashStoreKey(common.BtcDepositType, cpTx.Hash))
+	exists, err = s.fileStore.CheckProof(NewHashStoreKey(common.BtcDepositType, cpTx.Hash))
 	if err != nil {
 		logger.Error("%v %v", cpTx.Hash, err)
 		return err
