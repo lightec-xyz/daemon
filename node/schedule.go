@@ -268,7 +268,7 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 		logger.Error("read latest icp sig error:%v", err)
 		return false, err
 	}
-	raised, err := s.getTxRaised(tx.Height)
+	raised, err := s.getTxRaised(tx.Height, uint64(tx.Amount))
 	if err != nil {
 		logger.Error("get tx raised error:%v", err)
 		return false, err
@@ -981,7 +981,7 @@ func (s *Scheduler) BlockSignature() error {
 	}
 	return nil
 }
-func (s *Scheduler) getTxRaised(height uint64) (bool, error) {
+func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 	hash, ok, err := s.chainStore.ReadBitcoinHash(height)
 	if err != nil {
 		logger.Error("read bitcoin hash error:%v", err)
@@ -991,7 +991,7 @@ func (s *Scheduler) getTxRaised(height uint64) (bool, error) {
 		fmt.Errorf("no find bitcoin hash")
 		return false, nil
 	}
-	raised, err := s.ethClient.GetRaised(hash)
+	raised, err := s.ethClient.GetRaised(hash, amount)
 	if err != nil {
 		logger.Error("get raised error:%v", err)
 		return false, err

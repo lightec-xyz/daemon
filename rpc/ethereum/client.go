@@ -70,8 +70,20 @@ func NewClient(endpoint string, zkBridgeAddr, utxoManager, txVerify, zkbtc strin
 	}, nil
 }
 
-func (c *Client) GetRaised(hash string) (bool, error) {
-	return false, nil
+func (c *Client) SuggestBtcMinerFee() (uint64, error) {
+	btcMinerFee, err := c.zkBridgeCall.SuggestPrice(nil)
+	if err != nil {
+		return 0, err
+	}
+	return btcMinerFee, nil
+}
+
+func (c *Client) GetRaised(hash string, amount uint64) (bool, error) {
+	raiseIf, err := c.zkBridgeCall.GetRaiseIf(nil, [32]byte(ethcommon.FromHex(hash)), amount)
+	if err != nil {
+		return false, err
+	}
+	return raiseIf, nil
 }
 func (c *Client) ZkbtcBalance(addr string) (*big.Int, error) {
 	balance, err := c.zkbtcCall.BalanceOf(nil, ethcommon.HexToAddress(addr))
