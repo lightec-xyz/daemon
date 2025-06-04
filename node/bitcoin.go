@@ -142,7 +142,7 @@ func (b *bitcoinAgent) ScanBlock() error {
 		logger.Debug("btc current height:%d,node block count:%d", currentHeight, blockCount)
 		return nil
 	}
-	
+
 	for index := currentHeight + 1; index <= blockCount; index++ {
 		preHeight := index - 1
 		chainFork, err := b.checkChainFork(preHeight)
@@ -396,7 +396,7 @@ func (b *bitcoinAgent) ProofResponse(resp *common.ProofResponse) error {
 			logger.Error("update Proof error: %v %v", resp.Hash, err)
 			return err
 		}
-		hash, err := b.txManager.DepositBtc(resp.Hash, hex.EncodeToString(resp.Proof))
+		hash, err := b.txManager.DepositBtc(common.BtcDepositType, resp.Hash, hex.EncodeToString(resp.Proof))
 		if err != nil {
 			logger.Error("update deposit error: %v %v,save to db", resp.Hash, err)
 			b.txManager.AddTask(resp)
@@ -406,7 +406,7 @@ func (b *bitcoinAgent) ProofResponse(resp *common.ProofResponse) error {
 
 	case common.BtcUpdateCpType:
 		logger.Info("find deposit proof: %v %v %v", resp.ProofId(), resp.Hash, hex.EncodeToString(resp.Proof))
-		hash, err := b.txManager.DepositBtc(resp.Hash, hex.EncodeToString(resp.Proof))
+		hash, err := b.txManager.DepositBtc(common.BtcUpdateCpType, resp.Hash, hex.EncodeToString(resp.Proof))
 		if err != nil {
 			logger.Error("update deposit error: %v %v,save to db", resp.Hash, err)
 			b.txManager.AddTask(resp)
