@@ -33,15 +33,15 @@ const (
 // ********************* testnet ************************
 const (
 	LightecTestnet            = "testnet"
-	TestnetBtcOperatorAddress = "tb1qqnj9cxvhgm9d6yqdrv2v4axv7hafjhrfgnarxfxen0j88nyy3xgqtptt97"
-	TestnetBtcLockScript      = "0x002004e45c199746cadd100d1b14caf4ccf5fa995c6944fa3324d99be473cc848990"
-	TestnetMultiSig           = "0x5221038b6ce7e785f30c0eee59deda56c132a291d81800d2040bfb1e7b367c0e01f16d2102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
+	TestnetBtcOperatorAddress = "tb1q0f5vkz9a3vjsven9g2t5l00vwjputyhhepqq2v2qsk7cgxd20gysse2vuy"
+	TestnetBtcLockScript      = "00207a68cb08bd8b2506666542974fbdec7483c592f7c84005314085bd8419aa7a09"
+	TestnetMultiSig           = "522102b768198b024edf6e330df36d857dd1bc6a0340f3c6bde6cc3e0991e163524bfb2102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
 	TestnetEthZkBridgeAddress = "0x21098979Fc10BBC754C6359E657eA28c52ea1acf"
 	TestnetEthZkBtcAddress    = "0x8f254bed38F9849950Aa78496d95526c445a29e4"
-	TestEthUtxoManagerAddress = "0x2880732395cDeB0Fe27B45976B9aC159A03f2A8B"
+	TestEthUtxoManagerAddress = "0x1358F8b1FE8E609263A17fb991741498a147DA93"
 	TestEthBtcTxVerifyAddress = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
 	TestnetFeePoolAddr        = "0xfFe6AB09195352c899089E8155AEADE76d1902C5"
-	TestnetOasisSignerAddr    = "0x5286d6EF240C09c0Fbd85DA530dcAB712f8Fa5C8"
+	TestnetOasisSignerAddr    = "0x9cb8c785b950C5914070EC37f945abE41A54eCdc"
 	TestnetMigrateProto       = "6a141234560000000000000000000000000000000000"
 	TestnetIcpPublicKey       = "0x02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b"
 	TestnetBtcScanTime        = 1 * time.Minute
