@@ -735,6 +735,14 @@ func getSuggestGasPrice(value *big.Int) *big.Int {
 	return gasPrice
 }
 
+func isMigrating(err error) bool {
+	//todo
+	if strings.Contains(err.Error(), "execution reverted: deposit to previous need role") {
+		return true
+	}
+	return false
+}
+
 func proofExpired(err error) bool {
 	// todo
 	//execution reverted: cpDepth check failed":
