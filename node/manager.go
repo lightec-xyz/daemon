@@ -26,6 +26,7 @@ type manager struct {
 	preparedData   *Prepared
 	minerPower     *MinerPower
 	btcForks       []*ChainFork
+	appStartTime   time.Time
 }
 
 func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *Prepared,
@@ -48,6 +49,7 @@ func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client,
 		btcNotify:      btcNotify,
 		ethNotify:      ethNotify,
 		beaconNotify:   beaconNotify,
+		appStartTime:   time.Now(),
 		minerPower:     NewMinerPower(minerAddr, 0, time.Now()),
 	}, nil
 }
@@ -206,6 +208,10 @@ func (m *manager) CheckState() error {
 
 func (m *manager) storeProof(responses []*common.ProofResponse) {
 	for _, item := range responses {
+		//todo
+		if common.IsBtcProofType(item.ProofType) && item.ReqCreateTime.Before(m.appStartTime) {
+			continue
+		}
 		m.minerPower.AddConstant(item.ProofType.ConstraintQuantity())
 		forked := m.checkForkedProof(item)
 		storeKey := NewStoreKey(item.ProofType, item.Hash, item.Prefix, item.FIndex, item.SIndex)
