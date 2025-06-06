@@ -403,7 +403,7 @@ func (s *Scheduler) checkBtcChainRequest(latestHeight uint64) (bool, error) {
 	if exists {
 		return true, nil
 	}
-	chainIndex, ok, err := s.fileStore.CurrentBtcChainIndex()
+	chainIndex, ok, err := s.fileStore.BtcChainIndex(latestHeight)
 	if err != nil {
 		logger.Error("get current btc chainIndex error:%v", err)
 		return false, err
@@ -412,11 +412,11 @@ func (s *Scheduler) checkBtcChainRequest(latestHeight uint64) (bool, error) {
 		logger.Warn("no find current btc chainIndex")
 		return false, nil
 	}
-	if chainIndex.End == latestHeight {
+	if chainIndex == latestHeight {
 		return true, nil
 	}
 	//currentIndex := s.upperRoundStartIndex(chainIndex.End)
-	chainIndexes := BlockChainPlan(chainIndex.End, latestHeight)
+	chainIndexes := BlockChainPlan(chainIndex, latestHeight)
 	if len(chainIndexes) == 0 {
 		logger.Error("never get btc chain currentIndex")
 		return false, nil
