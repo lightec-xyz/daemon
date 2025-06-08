@@ -98,7 +98,7 @@ func (t *TxManager) Check() error {
 			hash, err := t.UpdateUtxoChange(tx.Hash, tx.Proof)
 			if err != nil {
 				logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
-				return err
+				continue
 			}
 			logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
 		case common.RedeemTxType:
@@ -196,13 +196,13 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 				return "", err
 			}
 		} else if strings.Contains(err.Error(), "execution reverted:") && proofType == common.BtcDepositType {
-			logger.Warn("deposit tx expired now,delete it: %v", txId)
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
 			if proofExpired(err) {
+				logger.Warn("deposit tx expired now,try to ungen it: %v", txId)
 				err = t.addBtcUnGenProof(txId)
 				if err != nil {
 					logger.Error("add btc ungen proof error: %v", err)
@@ -422,17 +422,20 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 
 	gasLimit, err := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
 	if err != nil {
-		if proofExpired(err) {
-			logger.Warn("update utxo expired now,delete it: %v", txId)
+		logger.Error("estimate update utxo gas limit error:%v %v", txId, err)
+		if strings.Contains(err.Error(), "execution reverted:") {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			err = t.addBtcUnGenProof(txId)
-			if err != nil {
-				logger.Error("add btc ungen proof error: %v", err)
-				return "", err
+			if proofExpired(err) {
+				logger.Warn("update utxo tx expired now,try again: %v", txId)
+				err = t.addBtcUnGenProof(txId)
+				if err != nil {
+					logger.Error("add btc ungen proof error: %v", err)
+					return "", err
+				}
 			}
 			return "", nil
 		}
