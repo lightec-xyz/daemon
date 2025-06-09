@@ -98,7 +98,7 @@ func (t *TxManager) Check() error {
 			hash, err := t.UpdateUtxoChange(tx.Hash, tx.Proof)
 			if err != nil {
 				logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
-				return err
+				continue
 			}
 			logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
 		case common.RedeemTxType:
@@ -188,30 +188,31 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 	gasLimit, err := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
 	if err != nil {
 		logger.Error("estimate %v gas limit error:%v %v", proofType.Name(), txId, err)
+		logger.Warn("deposit tx expired now,delete it: %v", txId)
 		if proofType == common.BtcUpdateCpType {
-			logger.Warn("deposit tx expired now,delete it: %v", txId)
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			return "", nil
-		} else if proofExpired(err) && proofType == common.BtcDepositType {
-			logger.Warn("deposit tx expired now,delete it: %v", txId)
+		} else if strings.Contains(err.Error(), "execution reverted:") && proofType == common.BtcDepositType {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			err = t.addBtcUnGenProof(txId)
-			if err != nil {
-				logger.Error("add btc ungen proof error: %v", err)
-				return "", err
+			if proofExpired(err) {
+				logger.Warn("deposit tx expired now,try to ungen it: %v", txId)
+				err = t.addBtcUnGenProof(txId)
+				if err != nil {
+					logger.Error("add btc ungen proof error: %v", err)
+					return "", err
+				}
 			}
 			return "", nil
-		} else {
-			return "", err
 		}
+		return "", err
+
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
@@ -421,17 +422,20 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 
 	gasLimit, err := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
 	if err != nil {
-		if proofExpired(err) {
-			logger.Warn("update utxo expired now,delete it: %v", txId)
+		logger.Error("estimate update utxo gas limit error:%v %v", txId, err)
+		if strings.Contains(err.Error(), "execution reverted:") {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			err = t.addBtcUnGenProof(txId)
-			if err != nil {
-				logger.Error("add btc ungen proof error: %v", err)
-				return "", err
+			if proofExpired(err) {
+				logger.Warn("update utxo tx expired now,try again: %v", txId)
+				err = t.addBtcUnGenProof(txId)
+				if err != nil {
+					logger.Error("add btc ungen proof error: %v", err)
+					return "", err
+				}
 			}
 			return "", nil
 		}
@@ -735,12 +739,24 @@ func getSuggestGasPrice(value *big.Int) *big.Int {
 	return gasPrice
 }
 
+func proofFailed(err error) bool {
+	//todo
+	switch err.Error() {
+	case "execution reverted: no practical use operation":
+		return true
+	default:
+		return false
+	}
+}
+
 func proofExpired(err error) bool {
 	// todo
-	//execution reverted: cpDepth check failed":
-	//execution reverted: no practical use operation
-	//execution reverted: deposit proof verification failed
-	if strings.Contains(err.Error(), "execution reverted") {
+	switch err.Error() {
+	case "execution reverted: cpDepth check failed":
+		return true
+	case "execution reverted: deposit proof verification failed":
+		return true
+	case "execution reverted: deposit to previous need role":
 		return true
 	}
 	return false
