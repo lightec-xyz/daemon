@@ -203,3 +203,15 @@ func OverwriteFile(file string) (*os.File, error) {
 	}
 	return fFile, nil
 }
+
+func GetBtcPwd() string {
+	return os.Getenv("btcPwd")
+}
+
+func GetBtcUser() string {
+	return os.Getenv("btcUser")
+}
+
+func GetBtcUrl() string {
+	return os.Getenv("btcUrl")
+}
