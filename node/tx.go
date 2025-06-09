@@ -421,7 +421,7 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 		txIdBytes, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
 
 	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
-	if err != nil {
+	if mockErr != nil {
 		logger.Error("estimate update utxo gas limit error:%v %v", txId, mockErr)
 		if strings.Contains(mockErr.Error(), "execution reverted:") {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
