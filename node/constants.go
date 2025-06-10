@@ -42,7 +42,6 @@ const (
 	TestEthBtcTxVerifyAddress = "0x2EAda3FE674DaF7968FA95E8ea83971b322F86A5"
 	TestnetFeePoolAddr        = "0xE9507Ecfc12b13213aA4094FbDE9A49F7031244F"
 	TestnetOasisSignerAddr    = "0xbaa175e4286bB735265FecAD25c60e329359D8bF"
-	TestnetMigrateProto       = "6a141234560000000000000000000000000000000000"
 	TestnetIcpPublicKey       = "0x02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b"
 	TestnetBtcScanTime        = 1 * time.Minute
 	TestnetEthScanTime        = 30 * time.Second
