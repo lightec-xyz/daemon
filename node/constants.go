@@ -42,7 +42,6 @@ const (
 	TestEthBtcTxVerifyAddress = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
 	TestnetFeePoolAddr        = "0xfFe6AB09195352c899089E8155AEADE76d1902C5"
 	TestnetOasisSignerAddr    = "0x5286d6EF240C09c0Fbd85DA530dcAB712f8Fa5C8"
-	TestnetMigrateProto       = "6a141234560000000000000000000000000000000000"
 	TestnetIcpPublicKey       = "0x02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b"
 	TestnetBtcScanTime        = 1 * time.Minute
 	TestnetEthScanTime        = 30 * time.Second
@@ -65,6 +64,7 @@ const (
 // *********************Other**************************************
 
 const (
+	MigrateProto      = "6a141234560000000000000000000000000000000000"
 	GeneratorVersion  = "1.0.0"
 	NodeVersion       = "1.0.0"
 	RpcRegisterName   = "zkbtc"

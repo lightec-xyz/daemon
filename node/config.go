@@ -1,7 +1,9 @@
 package node
 
 import (
+	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/lightec-xyz/daemon/common"
 	btctypes "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"os"
@@ -155,9 +157,10 @@ func getTestnetConfig(cfg RunConfig) (Config, error) {
 		EthScanTime:        TestnetEthScanTime,
 		BtcTxVerifyAddr:    TestEthBtcTxVerifyAddress,
 		OasisSignerAddress: TestnetOasisSignerAddr,
-		BtcFilter:          NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, 0),
+		BtcFilter:          NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, 0, cfg.TxMode),
 		EthAddrFilter: NewEthAddrFilter(TestnetBtcLockScript, TestEthUtxoManagerAddress, TestnetEthZkBridgeAddress, TestnetFeePoolAddr,
-			TestnetDepositTopic, TestnetRedeemTopic, TestnetUpdateUtxoTopic, TestnetDepositRewardTopic, TestnetRedeemRewardTopic),
+			TestnetDepositTopic, TestnetRedeemTopic, TestnetUpdateUtxoTopic, TestnetDepositRewardTopic, TestnetRedeemRewardTopic,
+			cfg.TxMode),
 		Debug: common.GetEnvDebugMode(),
 	}, nil
 }
@@ -166,17 +169,22 @@ type BtcFilter struct {
 	OperatorAddr    string
 	LockScript      string
 	minDepositValue float64
+	txMode          common.TxMode
 }
 
-func NewBtcAddrFilter(operator, lockScript string, minDepositValue float64) *BtcFilter {
+func NewBtcAddrFilter(operator, lockScript string, minDepositValue float64, txMode common.TxMode) *BtcFilter {
 	return &BtcFilter{
 		OperatorAddr:    operator,
 		LockScript:      lockScript,
 		minDepositValue: minDepositValue,
+		txMode:          txMode,
 	}
 }
 
 func (b *BtcFilter) Redeem(inputs []btctypes.TxVin) bool {
+	if b.txMode != common.NormalTx {
+		return false
+	}
 	for _, vin := range inputs {
 		if vin.Prevout.ScriptPubKey.Address == b.OperatorAddr {
 			return true
@@ -186,9 +194,12 @@ func (b *BtcFilter) Redeem(inputs []btctypes.TxVin) bool {
 }
 
 func (b *BtcFilter) Migrate(outputs []btctypes.TxVout) bool {
+	if b.txMode != common.OnlyMigrateTx {
+		return false
+	}
 	var migrate bool
 	for _, out := range outputs {
-		if out.ScriptPubKey.Type == "nulldata" && common.StrEqual(out.ScriptPubKey.Hex, TestnetMigrateProto) {
+		if out.ScriptPubKey.Type == "nulldata" && common.StrEqual(out.ScriptPubKey.Hex, MigrateProto) {
 			migrate = true
 		}
 	}
@@ -215,6 +226,7 @@ type EthFilter struct {
 	DepositRewardTopic string `json:"depositRewardTopic"`
 	RedeemRewardTopic  string `json:"redeemRewardTopic"`
 	BtcLockScript      string `json:"btcLockScript"`
+	txMode             common.TxMode
 }
 
 func (e *EthFilter) DepositTx(addr, topic string) bool {
@@ -234,8 +246,23 @@ func (e *EthFilter) UpdateUtxo(addr, topic string) bool {
 	return common.StrEqual(e.UtxoManagerAddr, addr) && common.StrEqual(e.UpdateUtxoTopic, topic)
 }
 
+func (e *EthFilter) MigrateTx(outs []*wire.TxOut) bool {
+	migrate := false
+	for _, out := range outs {
+		if common.StrEqual(hex.EncodeToString(out.PkScript), MigrateProto) {
+			migrate = true
+		}
+	}
+	if (migrate && e.txMode == common.OnlyMigrateTx) ||
+		(!migrate && e.txMode == common.NormalTx) {
+		return true
+	}
+
+	return false
+}
+
 func NewEthAddrFilter(btcLockScript, utxoManagerAddr, zkbtcBridgeAddr, feePoolAddr string, depositTxTopic, redeemTxTopic, updateUtxoTopic,
-	depositRewardTopic, redeemRewardTopic string) *EthFilter {
+	depositRewardTopic, redeemRewardTopic string, txMode common.TxMode) *EthFilter {
 	return &EthFilter{
 		BtcLockScript:      btcLockScript,
 		UtxoManagerAddr:    utxoManagerAddr,
@@ -246,6 +273,7 @@ func NewEthAddrFilter(btcLockScript, utxoManagerAddr, zkbtcBridgeAddr, feePoolAd
 		UpdateUtxoTopic:    updateUtxoTopic,
 		DepositRewardTopic: depositRewardTopic,
 		RedeemRewardTopic:  redeemRewardTopic,
+		txMode:             txMode,
 	}
 }
 

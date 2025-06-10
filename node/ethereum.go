@@ -32,7 +32,6 @@ type ethereumAgent struct {
 	chainForkSignal chan<- *ChainFork
 	curHeight       uint64
 	reScan          bool
-	txMode          common.TxMode
 }
 
 func NewEthereumAgent(cfg Config, fileStore *FileStorage, store store.IStore, btcClient *bitcoin.Client,
@@ -47,7 +46,6 @@ func NewEthereumAgent(cfg Config, fileStore *FileStorage, store store.IStore, bt
 		chainStore:      NewChainStore(store),
 		chainForkSignal: chainFork,
 		reScan:          cfg.EthReScan,
-		txMode:          cfg.TxMode,
 	}, nil
 }
 
@@ -509,8 +507,8 @@ func (e *ethereumAgent) redeemTx(log types.Log) (*DbTx, bool, error) {
 		return nil, false, err
 	}
 	txHash := log.TxHash.String()
-	if !e.checkTxMode(btcTx) {
-		logger.Warn("check tx mode not match skip it,current mode %v ethHash:%v,btcHash:%v", e.txMode, log.TxHash.String(), btcTx.TxHash().String())
+	if !e.ethFilter.MigrateTx(btcTx.TxOut) {
+		logger.Warn("check redeem status error,current  ethHash:%v,btcHash:%v", log.TxHash.String(), btcTx.TxHash().String())
 		return nil, false, nil
 	}
 	if strings.TrimPrefix(btcTx.TxHash().String(), "0x") != strings.TrimPrefix(btcTxId, "0x") {
@@ -531,15 +529,6 @@ func (e *ethereumAgent) redeemTx(log types.Log) (*DbTx, bool, error) {
 	redeemTx := NewRedeemEthTx(blockNumber, log.TxIndex, log.Index, txHash, txSender, btcTxId, amount)
 	return redeemTx, true, nil
 
-}
-
-func (e *ethereumAgent) checkTxMode(tx *btctx.Transaction) bool {
-	for _, out := range tx.TxOut {
-		if common.StrEqual(hex.EncodeToString(out.PkScript), TestnetMigrateProto) {
-			return e.txMode == common.OnlyMigrateTx
-		}
-	}
-	return e.txMode == common.NormalTx
 }
 
 func (e *ethereumAgent) getTxSender(txHash, blockHash string, index uint) (string, error) {

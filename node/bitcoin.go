@@ -276,7 +276,6 @@ func (b *bitcoinAgent) parseBlock(hash string, height uint64) ([]*DbTx, []*DbTx,
 			depositTxes = append(depositTxes, migrateTx)
 			continue
 		}
-
 		redeemTx, isRedeem, err := b.redeemTx(tx, height, uint64(txIndex), uint64(block.Time))
 		if err != nil {
 			logger.Error("check btc Redeem tx error: %v %v", tx.Txid, err)
