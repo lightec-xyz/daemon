@@ -123,7 +123,7 @@ func newLogger(cfg *LogCfg) (*Logger, error) {
 	lg := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	if cfg.DiscordHookUrl != "" {
 		discord := NewDiscord(cfg.DiscordHookUrl)
-		_, err := discord.Call(newDisMsg("discord log monitor running ...."))
+		_, err := discord.Call(newDisMsg("discord monitor running ...."))
 		if err != nil {
 			return nil, err
 		}
