@@ -194,9 +194,6 @@ func (b *BtcFilter) Redeem(inputs []btctypes.TxVin) bool {
 }
 
 func (b *BtcFilter) Migrate(outputs []btctypes.TxVout) bool {
-	if b.txMode != common.OnlyMigrateTx {
-		return false
-	}
 	var migrate bool
 	for _, out := range outputs {
 		if out.ScriptPubKey.Type == "nulldata" && common.StrEqual(out.ScriptPubKey.Hex, MigrateProto) {
