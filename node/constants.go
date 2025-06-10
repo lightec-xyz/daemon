@@ -65,6 +65,7 @@ const (
 // *********************Other**************************************
 
 const (
+	MigrateProto      = "6a141234560000000000000000000000000000000000"
 	GeneratorVersion  = "1.0.0"
 	NodeVersion       = "1.0.0"
 	RpcRegisterName   = "zkbtc"

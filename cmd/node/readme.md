@@ -21,6 +21,11 @@ export proof
     //example ./node exportProof --name btcduperrecursive_84010_84024 --datadir ./daemon --proof btcduperrecursive_84010_84024.proof --witness btcduperrecursive_84010_84024.witness 
     
     ./node exportProof --proof <path> --witness <path> --name <name> --datadir <path>
+nonce
+
+    ./node --config ./node.json miner --miner <0x> --nonce 1000
+
+
 
 ## Config
 
