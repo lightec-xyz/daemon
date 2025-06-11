@@ -845,12 +845,8 @@ func (fs *FileStorage) removeFiles(fileStore store.IFileStore, height uint64) er
 	indexes := fileStore.Keys()
 	for _, index := range indexes {
 		if index.(uint64) >= height {
-			key, ok := fileStore.GetValue(index)
-			if !ok {
-				return fmt.Errorf("no find value")
-			}
-			logger.Warn("delete fileStore proof: %v", key)
-			err := fileStore.Del(key.(store.FileKey))
+			logger.Warn("delete fileStore %v : >=%v proof", fileStore.RootPath(), index.(uint64))
+			err := fileStore.DelMatch(fmt.Sprintf("*_%v", index.(uint64)))
 			if err != nil {
 				return err
 			}
