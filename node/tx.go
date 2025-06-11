@@ -8,6 +8,7 @@ import (
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -554,7 +555,30 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 		logger.Warn("read beacon slot error:%v", err)
 		return "", err
 	}
-	update, ok, err := t.prepared.GetSyncCommitUpdate(slot / common.SlotPerPeriod)
+	var currentFinalityUpdate common.LightClientFinalityUpdateEvent
+	exists, err := t.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
+	if err != nil {
+		logger.Error("get finality update error: %v %v", slot, err)
+		return "", err
+	}
+	if !exists {
+		logger.Warn("no find finality update: %v", slot)
+		return "", err
+	}
+	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
+	if err != nil {
+		logger.Error("parse big error %v %v", currentFinalityUpdate.Data.AttestedHeader.Slot, err)
+		return "", err
+	}
+	period := attestedSlot / common.SlotPerPeriod
+
+	//todo [-64,0]
+	periodEndSlot := (period + 1) * common.SlotPerPeriod
+	if attestedSlot >= periodEndSlot-64 && attestedSlot < periodEndSlot {
+		period = period + 1
+		logger.Warn("find slot boundary[-64,64]: finalizedSlot: %v,attestedSlot: %v,use next period sc %v", slot, attestedSlot, period)
+	}
+	update, ok, err := t.prepared.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("read update error:%v", err)
 		return "", err
