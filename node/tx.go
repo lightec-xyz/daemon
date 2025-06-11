@@ -581,13 +581,6 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 		return "", err
 	}
 	period := attestedSlot / common.SlotPerPeriod
-
-	//todo [-64,0]
-	periodEndSlot := (period + 1) * common.SlotPerPeriod
-	if attestedSlot >= periodEndSlot-64 && attestedSlot < periodEndSlot {
-		period = period + 1
-		logger.Warn("find slot boundary[-64,64]: finalizedSlot: %v,attestedSlot: %v,use next period sc %v", finalizedSlot, attestedSlot, period)
-	}
 	update, ok, err := t.prepared.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("read update error:%v", err)

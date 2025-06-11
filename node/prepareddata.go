@@ -661,13 +661,6 @@ func (p *Prepared) GetBhfUpdateRequest(finalizedSlot uint64) (*rpc.BlockHeaderFi
 		return nil, false, err
 	}
 	period := attestedSlot / common.SlotPerPeriod
-
-	//todo [-64,0]
-	periodEndSlot := (period + 1) * common.SlotPerPeriod
-	if attestedSlot >= periodEndSlot-64 && attestedSlot < periodEndSlot {
-		period = period + 1
-		logger.Warn("find slot boundary[-64,64]: finalizedSlot: %v,attestedSlot: %v,use next period sc %v", finalizedSlot, attestedSlot, period)
-	}
 	syncCommittee, exists, err := p.GetSyncCommittee(period)
 	if err != nil {
 		logger.Error("get %v syncCommittee: %v", period, err)
