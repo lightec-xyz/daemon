@@ -8,6 +8,7 @@ import (
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -543,7 +544,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if len(txes) != 1 {
 		logger.Warn("read db tx error:%v", err)
-		return "", err
+		return "", fmt.Errorf("read db tx error:%v", err)
 	}
 	slot, ok, err := t.chainStore.ReadSlotByHeight(txes[0].Height)
 	if err != nil {
@@ -552,16 +553,42 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if !ok {
 		logger.Warn("read beacon slot error:%v", err)
+		return "", fmt.Errorf("read beacon slot error:%v", err)
+	}
+	finalizedSlot, ok, err := t.fileStore.GetTxFinalizedSlot(slot)
+	if err != nil {
+		logger.Error("get tx finalized slot error: %v %v", slot, err)
 		return "", err
 	}
-	update, ok, err := t.prepared.GetSyncCommitUpdate(slot / common.SlotPerPeriod)
+	if !ok {
+		logger.Warn("no find tx finalized slot: %v", slot)
+		return "", fmt.Errorf("no find tx finalized slot: %v", slot)
+	}
+
+	var currentFinalityUpdate common.LightClientFinalityUpdateEvent
+	exists, err := t.fileStore.GetFinalityUpdate(finalizedSlot, &currentFinalityUpdate)
+	if err != nil {
+		logger.Error("get finality update error: %v %v", finalizedSlot, err)
+		return "", err
+	}
+	if !exists {
+		logger.Warn("no find finality update: %v", finalizedSlot)
+		return "", fmt.Errorf("no find finality update: %v", finalizedSlot)
+	}
+	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
+	if err != nil {
+		logger.Error("parse big error %v %v", currentFinalityUpdate.Data.AttestedHeader.Slot, err)
+		return "", err
+	}
+	period := attestedSlot / common.SlotPerPeriod
+	update, ok, err := t.prepared.GetSyncCommitUpdate(period)
 	if err != nil {
 		logger.Error("read update error:%v", err)
 		return "", err
 	}
 	if !ok {
 		logger.Warn("read update error:%v", err)
-		return "", err
+		return "", fmt.Errorf("read update error:%v", err)
 	}
 	syncCommitRoot, err := circuits.SyncCommitRoot(update.CurrentSyncCommittee)
 	if err != nil {
