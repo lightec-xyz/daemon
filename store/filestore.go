@@ -22,7 +22,7 @@ type IFileStore interface {
 	RootPath() string
 	ClearAll() error
 	Del(StoreKey FileKey) error
-	DelMatch(pattern string) error
+	DelMatch(pattern string, cacheKeys ...uint64) error
 	ICache
 	ISubFileStore
 }
@@ -222,7 +222,10 @@ func (fs *FileStore) CheckExists(name FileKey) (bool, error) {
 	return exists, nil
 }
 
-func (fs *FileStore) DelMatch(pattern string) error {
+func (fs *FileStore) DelMatch(pattern string, keys ...uint64) error {
+	for _, key := range keys {
+		fs.tree.Remove(key)
+	}
 	path := fmt.Sprintf("%s/%s", fs.Root, pattern)
 	files, err := filepath.Glob(path)
 	if err != nil {
