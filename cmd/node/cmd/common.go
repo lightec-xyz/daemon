@@ -2,9 +2,17 @@ package cmd
 
 import (
 	"encoding/json"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"os"
 )
+
+func InitLogger() error {
+	return logger.InitLogger(&logger.LogCfg{
+		IsStdout: true,
+		File:     false,
+	})
+}
 
 func readCfg(cfgFile string) (node.Config, error) {
 	cfgBytes, err := os.ReadFile(cfgFile)
