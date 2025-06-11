@@ -23,7 +23,8 @@ export proof
     ./node exportProof --proof <path> --witness <path> --name <name> --datadir <path>
 nonce
 
-    ./node --config ./node.json miner --miner <0x> --nonce 1000
+        ./node --config ./testnet.json miner --miner 0xb4183bB52E44C6861AEF3B626eb2195288AfCa2f --nonce 57
+
 
 
 
