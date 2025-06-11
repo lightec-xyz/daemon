@@ -25,6 +25,10 @@ nonce
 
         ./node --config ./testnet.json miner --miner 0xb4183bB52E44C6861AEF3B626eb2195288AfCa2f --nonce 57
 
+filestore
+
+    ./node --config ./devnet.json filestore --height 8000
+
 
 
 
