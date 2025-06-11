@@ -555,15 +555,25 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 		logger.Warn("read beacon slot error:%v", err)
 		return "", fmt.Errorf("read beacon slot error:%v", err)
 	}
-	var currentFinalityUpdate common.LightClientFinalityUpdateEvent
-	exists, err := t.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
+	finalizedSlot, ok, err := t.fileStore.GetTxFinalizedSlot(slot)
 	if err != nil {
-		logger.Error("get finality update error: %v %v", slot, err)
+		logger.Error("get tx finalized slot error: %v %v", slot, err)
+		return "", err
+	}
+	if !ok {
+		logger.Warn("no find tx finalized slot: %v", slot)
+		return "", fmt.Errorf("no find tx finalized slot: %v", slot)
+	}
+
+	var currentFinalityUpdate common.LightClientFinalityUpdateEvent
+	exists, err := t.fileStore.GetFinalityUpdate(finalizedSlot, &currentFinalityUpdate)
+	if err != nil {
+		logger.Error("get finality update error: %v %v", finalizedSlot, err)
 		return "", err
 	}
 	if !exists {
-		logger.Warn("no find finality update: %v", slot)
-		return "", fmt.Errorf("no find finality update: %v", slot)
+		logger.Warn("no find finality update: %v", finalizedSlot)
+		return "", fmt.Errorf("no find finality update: %v", finalizedSlot)
 	}
 	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
 	if err != nil {
@@ -576,7 +586,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	periodEndSlot := (period + 1) * common.SlotPerPeriod
 	if attestedSlot >= periodEndSlot-64 && attestedSlot < periodEndSlot {
 		period = period + 1
-		logger.Warn("find slot boundary[-64,64]: finalizedSlot: %v,attestedSlot: %v,use next period sc %v", slot, attestedSlot, period)
+		logger.Warn("find slot boundary[-64,64]: finalizedSlot: %v,attestedSlot: %v,use next period sc %v", finalizedSlot, attestedSlot, period)
 	}
 	update, ok, err := t.prepared.GetSyncCommitUpdate(period)
 	if err != nil {
