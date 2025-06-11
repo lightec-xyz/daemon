@@ -211,7 +211,7 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 			}
 			return "", nil
 		}
-		return "", err
+		return "", mockErr
 
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
@@ -229,6 +229,10 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 	}
 
 	txHash, err := t.ethClient.Deposit(privateKey, params, nonce, gasLimit, chainId, gasPrice, btcRawTx, proofBytes)
+	if err != nil {
+		logger.Error("deposit zkbtc error:%v %v", txId, err)
+		return "", err
+	}
 	logger.Debug("deposit zkbtc info address: %v ethTxHash: %v, btcTxId: %v,nonce: %v", ethAddress, txHash, txId, nonce)
 	err = t.chainStore.WriteNonce(common.ETH.String(), ethAddress, nonce)
 	if err != nil {
@@ -421,7 +425,7 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 		txIdBytes, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
 
 	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
-	if err != nil {
+	if mockErr != nil {
 		logger.Error("estimate update utxo gas limit error:%v %v", txId, mockErr)
 		if strings.Contains(mockErr.Error(), "execution reverted:") {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
@@ -433,13 +437,13 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 				logger.Warn("update utxo tx expired now,try again: %v", txId)
 				err = t.addBtcUnGenProof(txId)
 				if err != nil {
-					logger.Error("add btc ungen proof error: %v", err)
+					logger.Error("add btc ungen proof error: %v", mockErr)
 					return "", err
 				}
 			}
 			return "", nil
 		}
-		return "", err
+		return "", mockErr
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	balOk, err := t.CheckEthBalance(t.submitAddr, gasPrice, gasLimit)
