@@ -544,7 +544,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if len(txes) != 1 {
 		logger.Warn("read db tx error:%v", err)
-		return "", err
+		return "", fmt.Errorf("read db tx error:%v", err)
 	}
 	slot, ok, err := t.chainStore.ReadSlotByHeight(txes[0].Height)
 	if err != nil {
@@ -553,7 +553,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if !ok {
 		logger.Warn("read beacon slot error:%v", err)
-		return "", err
+		return "", fmt.Errorf("read beacon slot error:%v", err)
 	}
 	var currentFinalityUpdate common.LightClientFinalityUpdateEvent
 	exists, err := t.fileStore.GetFinalityUpdate(slot, &currentFinalityUpdate)
@@ -563,7 +563,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if !exists {
 		logger.Warn("no find finality update: %v", slot)
-		return "", err
+		return "", fmt.Errorf("no find finality update: %v", slot)
 	}
 	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
 	if err != nil {
@@ -585,7 +585,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 	}
 	if !ok {
 		logger.Warn("read update error:%v", err)
-		return "", err
+		return "", fmt.Errorf("read update error:%v", err)
 	}
 	syncCommitRoot, err := circuits.SyncCommitRoot(update.CurrentSyncCommittee)
 	if err != nil {
