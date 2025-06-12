@@ -33,12 +33,12 @@ const (
 // ********************* testnet ************************
 const (
 	LightecTestnet            = "testnet"
-	TestnetBtcOperatorAddress = "tb1q35x9nhg905sxrc87vedpfdsf78wv5d95ehf3pfzpzx0hkz6v2fvqhx3drt"
-	TestnetBtcLockScript      = "00208d0c59dd057d2061e0fe665a14b609f1dcca34b4cdd310a441119f7b0b4c5258"
-	TestnetMultiSig           = "52002102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
+	TestnetBtcOperatorAddress = "tb1q4ylfjrsehxyvv6r9p7emdtrv9n22kc074kxc8wvj8pwmnv7uftvqv2wqft"
+	TestnetBtcLockScript      = "0020a93e990e19b988c668650fb3b6ac6c2cd4ab61fead8d83b992385db9b3dc4ad8"
+	TestnetMultiSig           = "5221025af55cea2e528fd4369ca4f974f8a243b248f69e14d729c90ee405136376ab372102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
 	TestnetEthZkBridgeAddress = "0x21098979Fc10BBC754C6359E657eA28c52ea1acf"
 	TestnetEthZkBtcAddress    = "0x8f254bed38F9849950Aa78496d95526c445a29e4"
-	TestEthUtxoManagerAddress = "0xB985d8A465C7dce9426bACbb2Ea960bdb02D2578"
+	TestEthUtxoManagerAddress = "0x6ed6fd36bd5d090e2b0739b54b9b8e5c7c0e5f44"
 	TestEthBtcTxVerifyAddress = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
 	TestnetFeePoolAddr        = "0xfFe6AB09195352c899089E8155AEADE76d1902C5"
 	TestnetOasisSignerAddr    = "0xFd73932177f0DaB134337D91bb0e824b7cEc2971"
