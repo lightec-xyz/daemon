@@ -22,7 +22,7 @@ setup
 
     cd cmd/setup
     go build -tags="testnet4"
-    ./setup  --datadir /opt/circuitsetup/testnet --srsdir /opt/aztecSrs/aztec_bn254 run --group all --chainId 11155111 --zkbtcBridgeAddr 0x62a440b89479ef9e4C5C9D2b93C5CF01B0d9DeF6 --icpPublickey 02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b 
+    ./setup  --datadir /opt/circuitsetup/testnet --srsdir /opt/aztecSrs/aztec_bn254 run --group all --chainId 11155111 --zkbtcBridgeAddr 0x95E728c449ffF859CfbC100835e53064E6134f33 --icpPublickey 02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b 
 
 generator
 
