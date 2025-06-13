@@ -28,6 +28,14 @@ func init() {
 	}
 }
 
+func TestClient_IsCandidateExist(t *testing.T) {
+	exist, err := client.IsCandidateExist("0000000000000001e7a798ae790a9df0befa97d78816d8da1ae46f17b27547ed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(exist)
+}
+
 func TestClient_SuggestBtcMinerFee(t *testing.T) {
 	fee, err := client.SuggestBtcMinerFee()
 	if err != nil {
@@ -179,6 +187,46 @@ func TestClient_GetLogs(t *testing.T) {
 
 		}
 	}
+}
+
+func TestClient_UpdateUtxoChange(t *testing.T) {
+	secret := GetTestSecret()
+	address, err := privateKeyToAddr(secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	minerReward := big.NewInt(71744000000000)
+	txId := ethcommon.FromHex("6b60d9aeacc88ba21ccaf4bea35446e801cd26c9bbd334d901e43cb573aa1cb9")
+	proof := ethcommon.FromHex("0e32d5593816fb6c9496c53d2f7653e06da18ce4c5fec7ab5e3359d3fe938bf02d7922dc3ab48a1422651cbbb6eb5aa5e5006f25afcfd076cdce2215ef7c60f40958cd7b2fc16833e3fe303d72e873eb8360365452c81325f635b2f885ffd20e108bb3b6028963aaa87eedd7385d1b005785491b69e7cd16322ee2b09bb8cd2f006d246cb1564a6d978da27a9b62c71c0055af2193af7ed117f1c6742987ad591f631b7c34fceb5ef65a641512845755ba25a5af57caf15353f172f711ace4e51a748d17dea4106d26016636d44411a9916a329ed181cfff78e9a37189c45a08287789293a0adc9cc370f72a5bf9976db249b62689970f6efa1ac23d6c415e202f8ec38f0a66ef89f782225b763b8dab6bb5f871d08d3681ced5089216985cbe16d7897d0d2511d1d87949a38c012b728c8cd91a5e3769c95112e46b2481e52a18383b52ca98bd490fc55c4e1b0e7396f37ee63f8c00a0a0083980d095b4070516b871e77b40ef8ac1826441319edaee47bb22531d30b28b5f833d90e1f21f352a26a99f032c5a0788fef7f22be540569ed82f29009aade8592c2bcc7074c8de1f9c1a27cb8cf93f7ad3db71fa7e877fc9f81c7b9b5b8f77aa6ce814dc33101d2a2cafc6258c5b72c0229a6cc5b89792264e3feb7cdc234c3ce2c98b39ee8d4d2bd422cfccda1bc5a11a5ef937d80e705313d6537d9e81abf7f757185dd8eb201987c4aa683c759e63e586b17c8605c888666a3d6af322f2da86191be56695502f0fbe392c4be170748aaa1643c2094500126a250510cf1e2a947d98289d96b11d54224c98a154c53f95dcdd86a48f9e9915b2fcb96934063b6b04d36630bc312d3c5b46f092f698ad2b612e830891c4c25044ed97a59ce610d4053c5ee84fbf10de32ee68d7e364f3e7e4e9fd175ddc3c503b51f33e007e44cdf6e734b4782a267d4d9a835b164b9c99dc770622fcebb9a53ce4c73068500e45f17a31b917c21335917d87d2a1d924221decd7ec87b9f4f6c2475c8a77b7da3ceffce6f12a1b305baa81a230034e0ddeefdf9c1072e5bfadcab301b4f124a2b04db1eb42bc8c208ccb13c5e83664cf04e3943704b714ec31122c6578dcdb869634920e9c064625dff79c6fcf1e086d99a4ead282cfe5009aba3b9b2da2e791fefe1881a4d0fc17867951ab36142debbb92fc9350e8f47ee5c6ae2d1f05648fdd0f585974b6ab")
+	nonce, err := client.GetNonce(address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gasPrice, err := client.GetGasPrice()
+	if err != nil {
+		t.Fatal(err)
+	}
+	chainId, err := client.GetChainId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	gasLimit := uint64(500000)
+	params := zkbridge.IBtcTxVerifierPublicWitnessParams{
+		Checkpoint:        [32]byte(ethcommon.FromHex("69e71ff8334517efa8d94aaed13087a99b5a484d0aead746da44f90000000000")),
+		CpDepth:           1542,
+		TxDepth:           24,
+		TxBlockHash:       [32]byte(ethcommon.FromHex("50318f29f557d5dcb1347b5af955ce1bbe098b9bceaf8aff0efa506200000000")),
+		TxTimestamp:       1749794078,
+		ZkpMiner:          ethcommon.HexToAddress(address),
+		Flag:              big.NewInt(2),
+		SmoothedTimestamp: 1749794078,
+	}
+	hash, err := client.UpdateUtxoChange(ethcommon.FromHex(secret), &params, nonce, gasLimit, chainId,
+		gasPrice, minerReward, txId, proof)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(hash)
 }
 
 func TestClient_Redeem(t *testing.T) {
