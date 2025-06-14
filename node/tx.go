@@ -202,7 +202,7 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			if proofExpired(mockErr) {
+			if !proofFailed(mockErr) {
 				logger.Warn("deposit tx expired now,try to ungen it: %v", txId)
 				err = t.addBtcUnGenProof(txId)
 				if err != nil {
@@ -434,7 +434,7 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
 			}
-			if proofExpired(mockErr) {
+			if !proofFailed(mockErr) {
 				logger.Warn("update utxo tx expired now,try again: %v", txId)
 				err = t.addBtcUnGenProof(txId)
 				if err != nil {
@@ -694,7 +694,7 @@ func (t *TxManager) addBtcUnGenProof(txId string) error {
 	err = t.fileStore.DelProof(NewHashStoreKey(tx.ProofType, txId))
 	if err != nil {
 		logger.Error("del proof error: %v", err)
-		return err
+		//return err
 	}
 	// re select latest height to gen proof
 	tx.LatestHeight = 0
@@ -783,6 +783,8 @@ func proofFailed(err error) bool {
 func proofExpired(err error) bool {
 	// todo
 	switch err.Error() {
+	case "execution reverted: txDepth check failed":
+		return true
 	case "execution reverted: cpDepth check failed":
 		return true
 	case "execution reverted: deposit proof verification failed":
