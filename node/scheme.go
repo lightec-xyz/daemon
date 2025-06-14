@@ -54,13 +54,6 @@ var (
 	beaconLatestKey = []byte("beaconLatest")
 )
 
-type ChainPlan struct {
-	AssignmentHeight uint64
-	ProvedHeight     uint64
-	Height           uint64
-	Status           int
-}
-
 type DbTx struct {
 	Height    uint64
 	TxIndex   uint
