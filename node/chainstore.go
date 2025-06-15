@@ -449,7 +449,7 @@ func (cs *ChainStore) BtcSaveData(height uint64, depositTxs, redeemTxes []*DbTx)
 	}
 	return cs.store.WrapBatch(func(batch store.IBatch) error {
 		if len(depositTxs) > 0 {
-			err := batch.BatchPutObj(latestUpdateCpKey, depositTxs[0])
+			err := batch.BatchPutObj(latestUpdateCpKey, depositTxs[len(depositTxs)-1])
 			if err != nil {
 				return err
 			}
