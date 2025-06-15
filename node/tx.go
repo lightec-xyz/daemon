@@ -188,32 +188,37 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 		txId, params.CpDepth, params.TxDepth, params.Checkpoint, params.TxBlockHash, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, t.minerAddr, gasPrice, btcRawTx, proof)
 	gasLimit, mockErr := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
 	if mockErr != nil {
-		logger.Error("estimate %v gas limit error:%v %v", proofType.Name(), txId, mockErr)
-		logger.Warn("deposit tx expired now,delete it: %v", txId)
-		if proofType == common.BtcUpdateCpType {
+		switch proofType {
+		case common.BtcUpdateCpType:
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
 				return "", err
-			}
-		} else if strings.Contains(mockErr.Error(), "execution reverted:") && proofType == common.BtcDepositType {
-			err := t.chainStore.DeleteUnSubmitTx(txId)
-			if err != nil {
-				logger.Error("delete unSubmit tx error: %v", err)
-				return "", err
-			}
-			if !proofFailed(mockErr) {
-				logger.Warn("deposit tx expired now,try to ungen it: %v", txId)
-				err = t.addBtcUnGenProof(txId)
-				if err != nil {
-					logger.Error("add btc ungen proof error: %v", err)
-					return "", err
-				}
 			}
 			return "", nil
+		case common.BtcDepositType:
+			logger.Error("deposit zkbtc error:%v %v", txId, mockErr)
+			if strings.Contains(mockErr.Error(), "execution reverted:") {
+				err := t.chainStore.DeleteUnSubmitTx(txId)
+				if err != nil {
+					logger.Error("delete unSubmit tx error: %v", err)
+					return "", err
+				}
+				if !proofFailed(mockErr) {
+					logger.Warn("deposit tx expired now try again: %v", txId)
+					err = t.addBtcUnGenProof(txId)
+					if err != nil {
+						logger.Error("add btc ungen proof error: %v", err)
+						return "", err
+					}
+				}
+				return "", nil
+			}
+			return "", mockErr
+		default:
+			logger.Warn("never should happen: %v %v", txId, mockErr)
+			return "", mockErr
 		}
-		return "", mockErr
-
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
