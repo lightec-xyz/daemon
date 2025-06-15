@@ -27,6 +27,7 @@ type bitcoinAgent struct {
 	curHeight       uint64
 	txManager       *TxManager
 	chainStore      *ChainStore
+	fileStore       *FileStorage
 	chainForkSignal chan<- *ChainFork
 	reScan          bool
 	check           bool
@@ -178,6 +179,15 @@ func (b *bitcoinAgent) ReScan(height uint64) error {
 	if err != nil {
 		logger.Error("scan error: %v %v", height, err)
 		return err
+	}
+	txIds, err := b.chainStore.ReadBtcTxHeight(height)
+	if err != nil {
+		logger.Error("get btc tx height error: %v %v", height, err)
+		return err
+	}
+	for _, txId := range txIds {
+		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcDepositType, txId))
+		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcChangeType, txId))
 	}
 	return nil
 }
