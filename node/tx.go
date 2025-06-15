@@ -190,6 +190,7 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 	if mockErr != nil {
 		switch proofType {
 		case common.BtcUpdateCpType:
+			logger.Warn("mock updateCp error:%v %v", txId, mockErr)
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
