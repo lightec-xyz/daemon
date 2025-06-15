@@ -202,7 +202,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, nil, syncCommitResp))
 	}
 	if !cfg.DisableBtcAgent {
-		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, taskManager, chainFork)
+		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, taskManager, chainFork, fileStore)
 		if err != nil {
 			logger.Error("new bitcoin agent error:%v", err)
 			return nil, err
@@ -345,7 +345,7 @@ func (d *Daemon) Run() error {
 		go DoTimerTask("manager-checkBtcState", 2*time.Minute, d.manager.CheckBtcState, d.exitSignal, d.manager.BtcNotify())
 		go DoTimerTask("manager-checkPreBtcState", 3*time.Minute, d.manager.CheckPreBtcState, d.exitSignal)
 		go DoTimerTask("manager-icpSignature", 3*time.Minute, d.manager.BlockSignature, d.exitSignal)
-		go DoTimerTask("manager-updateBtcCp", 1*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
+		go DoTimerTask("manager-updateBtcCp", 12*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
 	}
 	if !d.cfg.DisableEthAgent {
 		go DoTimerTask("manager-checkEthState", 1*time.Minute, d.manager.CheckEthState, d.exitSignal, d.manager.EthNotify())

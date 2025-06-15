@@ -34,7 +34,7 @@ type bitcoinAgent struct {
 }
 
 func NewBitcoinAgent(cfg Config, store store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	dfinityClient *dfinity.Client, txManager *TxManager, chainFork chan *ChainFork) (IAgent, error) {
+	dfinityClient *dfinity.Client, txManager *TxManager, chainFork chan *ChainFork, fileStore *FileStorage) (IAgent, error) {
 	return &bitcoinAgent{
 		btcClient:       btcClient,
 		ethClient:       ethClient,
@@ -45,6 +45,7 @@ func NewBitcoinAgent(cfg Config, store store.IStore, btcClient *bitcoin.Client, 
 		chainStore:      NewChainStore(store),
 		chainForkSignal: chainFork,
 		reScan:          cfg.BtcReScan,
+		fileStore:       fileStore,
 		check:           true,
 	}, nil
 }
