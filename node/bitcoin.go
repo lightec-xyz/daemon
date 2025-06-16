@@ -27,13 +27,14 @@ type bitcoinAgent struct {
 	curHeight       uint64
 	txManager       *TxManager
 	chainStore      *ChainStore
+	fileStore       *FileStorage
 	chainForkSignal chan<- *ChainFork
 	reScan          bool
 	check           bool
 }
 
 func NewBitcoinAgent(cfg Config, store store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
-	dfinityClient *dfinity.Client, txManager *TxManager, chainFork chan *ChainFork) (IAgent, error) {
+	dfinityClient *dfinity.Client, txManager *TxManager, chainFork chan *ChainFork, fileStore *FileStorage) (IAgent, error) {
 	return &bitcoinAgent{
 		btcClient:       btcClient,
 		ethClient:       ethClient,
@@ -44,6 +45,7 @@ func NewBitcoinAgent(cfg Config, store store.IStore, btcClient *bitcoin.Client, 
 		chainStore:      NewChainStore(store),
 		chainForkSignal: chainFork,
 		reScan:          cfg.BtcReScan,
+		fileStore:       fileStore,
 		check:           true,
 	}, nil
 }
@@ -178,6 +180,15 @@ func (b *bitcoinAgent) ReScan(height uint64) error {
 	if err != nil {
 		logger.Error("scan error: %v %v", height, err)
 		return err
+	}
+	txIds, err := b.chainStore.ReadBtcTxHeight(height)
+	if err != nil {
+		logger.Error("get btc tx height error: %v %v", height, err)
+		return err
+	}
+	for _, txId := range txIds {
+		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcDepositType, txId))
+		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcChangeType, txId))
 	}
 	return nil
 }
