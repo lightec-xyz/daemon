@@ -250,7 +250,6 @@ func (fs *FileStore) Del(name FileKey) error {
 	path := fs.GetFilePath(name)
 	err := os.Remove(path)
 	if err != nil {
-		logger.Error("remove file error:%v", err)
 		return err
 	}
 	return nil
