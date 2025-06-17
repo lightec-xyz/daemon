@@ -199,7 +199,7 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 			return "", nil
 		case common.BtcDepositType:
 			logger.Error("deposit zkbtc error:%v %v", txId, mockErr)
-			if strings.Contains(mockErr.Error(), "execution reverted:") {
+			if strings.Contains(mockErr.Error(), "execution reverted") {
 				err := t.chainStore.DeleteUnSubmitTx(txId)
 				if err != nil {
 					logger.Error("delete unSubmit tx error: %v", err)
@@ -434,7 +434,7 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
 	if mockErr != nil {
 		logger.Error("estimate update utxo gas limit error:%v %v", txId, mockErr)
-		if strings.Contains(mockErr.Error(), "execution reverted:") {
+		if strings.Contains(mockErr.Error(), "execution reverted") {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
 				logger.Error("delete unSubmit tx error: %v", err)
