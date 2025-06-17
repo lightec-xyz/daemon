@@ -464,9 +464,9 @@ func (b *bitcoinAgent) migrateTx(tx bitcoin.Tx, height, txIndex, blockTime uint6
 		return nil, false, nil
 	}
 	amount := getDepositAmount(tx.Vout, b.btcFilter.OperatorAddr)
-	if amount <= b.btcFilter.minDepositValue {
-		logger.Debug("deposit amount tool low %v ,less than minDepositValue %v", amount, b.btcFilter.minDepositValue)
-		//return nil, false, nil
+	if amount < b.btcFilter.minDepositValue {
+		logger.Debug("migrate amount tool low %v ,less than minDepositValue %v", amount, b.btcFilter.minDepositValue)
+		return nil, false, nil
 	}
 
 	proved, err := b.checkTxProved(common.BtcDepositType, tx.Txid)
