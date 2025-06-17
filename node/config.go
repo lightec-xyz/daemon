@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/lightec-xyz/daemon/common"
-	btctypes "github.com/lightec-xyz/daemon/rpc/bitcoin/types"
+	btctypes "github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"os"
 	"time"
 )
