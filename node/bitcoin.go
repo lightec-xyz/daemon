@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"strings"
 	"time"
 
@@ -12,8 +13,6 @@ import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
-	"github.com/lightec-xyz/daemon/rpc/bitcoin"
-	"github.com/lightec-xyz/daemon/rpc/bitcoin/types"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 )
@@ -187,8 +186,9 @@ func (b *bitcoinAgent) ReScan(height uint64) error {
 		return err
 	}
 	for _, txId := range txIds {
-		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcDepositType, txId))
-		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcChangeType, txId))
+		logger.Debug("delete proof: %v", txId)
+		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcDepositType, DbValue(txId)))
+		_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcChangeType, DbValue(txId)))
 	}
 	return nil
 }
@@ -263,7 +263,7 @@ func (b *bitcoinAgent) parseBlock(hash string, height uint64) ([]*DbTx, []*DbTx,
 		logger.Error("btcClient get block error: %v %v", hash, err)
 		return nil, nil, err
 	}
-	var block types.Block
+	var block bitcoin.Block
 	err = json.Unmarshal([]byte(blockStr), &block)
 	if err != nil {
 		logger.Error("unmarshal btc block error: %v %v", hash, err)
@@ -438,7 +438,7 @@ func (b *bitcoinAgent) ProofResponse(resp *common.ProofResponse) error {
 	return nil
 }
 
-func (b *bitcoinAgent) redeemTx(tx types.Tx, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
+func (b *bitcoinAgent) redeemTx(tx bitcoin.Tx, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
 	isRedeem := b.btcFilter.Redeem(tx.Vin)
 	if !isRedeem {
 		return nil, false, nil
@@ -454,7 +454,7 @@ func (b *bitcoinAgent) redeemTx(tx types.Tx, height, txIndex, blockTime uint64) 
 	return redeemBtcTx, true, nil
 }
 
-func (b *bitcoinAgent) migrateTx(tx types.Tx, height, txIndex, blockTime uint64, skipCheck ...bool) (*DbTx, bool, error) {
+func (b *bitcoinAgent) migrateTx(tx bitcoin.Tx, height, txIndex, blockTime uint64, skipCheck ...bool) (*DbTx, bool, error) {
 	txOuts := tx.Vout
 	if len(txOuts) < 2 {
 		return nil, false, nil
@@ -464,9 +464,10 @@ func (b *bitcoinAgent) migrateTx(tx types.Tx, height, txIndex, blockTime uint64,
 		return nil, false, nil
 	}
 	amount := getDepositAmount(tx.Vout, b.btcFilter.OperatorAddr)
-	if amount <= b.btcFilter.minDepositValue {
-		logger.Debug("deposit amount tool low %v ,less than minDepositValue %v", amount, b.btcFilter.minDepositValue)
-		//return nil, false, nil
+	minDepositValue := b.btcFilter.GetMinDepositValue()
+	if amount < minDepositValue {
+		logger.Debug("migrate amount tool low %v ,less than minDepositValue %v", amount, minDepositValue)
+		return nil, false, nil
 	}
 
 	proved, err := b.checkTxProved(common.BtcDepositType, tx.Txid)
@@ -481,7 +482,7 @@ func (b *bitcoinAgent) migrateTx(tx types.Tx, height, txIndex, blockTime uint64,
 
 }
 
-func (b *bitcoinAgent) depositTx(tx types.Tx, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
+func (b *bitcoinAgent) depositTx(tx bitcoin.Tx, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
 	txOuts := tx.Vout
 	if len(txOuts) < 2 {
 		return nil, false, nil
@@ -496,8 +497,9 @@ func (b *bitcoinAgent) depositTx(tx types.Tx, height, txIndex, blockTime uint64)
 		return nil, false, nil
 	}
 	amount := getDepositAmount(tx.Vout, b.btcFilter.OperatorAddr)
-	if amount <= b.btcFilter.minDepositValue {
-		logger.Debug("deposit amount tool low %v ,less than minDepositValue %v", amount, b.btcFilter.minDepositValue)
+	minDepositValue := b.btcFilter.GetMinDepositValue()
+	if amount < minDepositValue {
+		logger.Debug("deposit amount tool low %v ,less than minDepositValue %v", amount, minDepositValue)
 		return nil, false, nil
 	}
 	proved, err := b.checkTxProved(common.BtcDepositType, tx.Txid)
@@ -579,7 +581,7 @@ func NewRedeemBtcTx(height, txIndex, blockTime uint64, txId string, amount int64
 	}
 }
 
-func getEthAddr(outputs []types.TxVout) (string, error) {
+func getEthAddr(outputs []bitcoin.TxVout) (string, error) {
 	for _, out := range outputs {
 		if out.ScriptPubKey.Type == "nulldata" && strings.HasPrefix(out.ScriptPubKey.Hex, "6a") {
 			ethAddr, err := getEthAddrFromScript(out.ScriptPubKey.Hex)
@@ -592,7 +594,7 @@ func getEthAddr(outputs []types.TxVout) (string, error) {
 	return "", fmt.Errorf("no find zkbtc opreturn")
 }
 
-func getDepositAmount(txOuts []types.TxVout, addr string) float64 {
+func getDepositAmount(txOuts []bitcoin.TxVout, addr string) float64 {
 	var total float64
 	for _, out := range txOuts {
 		if out.ScriptPubKey.Address == addr {
@@ -602,7 +604,7 @@ func getDepositAmount(txOuts []types.TxVout, addr string) float64 {
 	return total
 }
 
-func getRedeemAmount(txOuts []types.TxVout, addr string) float64 {
+func getRedeemAmount(txOuts []bitcoin.TxVout, addr string) float64 {
 	var total float64
 	for _, out := range txOuts {
 		if out.ScriptPubKey.Address != addr {

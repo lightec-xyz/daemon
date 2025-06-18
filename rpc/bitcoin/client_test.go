@@ -2,12 +2,10 @@ package bitcoin
 
 import (
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/common"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	bitcoin "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"github.com/stretchr/testify/require"
@@ -18,12 +16,18 @@ var err error
 
 func init() {
 	url := "http://127.0.0.1:9001"
-	user := ""
-	pwd := ""
-	client, err = NewClient(url, user, pwd)
+	client, err = NewClient(url, "", "")
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_Estimatesmartfee(t *testing.T) {
+	fee, err := client.Estimatesmartfee(50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(fee.Feerate)
 }
 
 func TestClient_GetBlockHeaderByHeight(t *testing.T) {
@@ -145,52 +149,4 @@ func Test_GetMultiSigScriptRelateds(t *testing.T) {
 	fmt.Printf("MultiSig Script: %v\n", hexutil.Encode(multiSigScript))
 	fmt.Printf("Wallet Address: %v\n", walletAddr.EncodeAddress())
 	fmt.Printf("Lock Script: %v\n", hexutil.Encode(lockScript))
-}
-
-func TestDepositTransaction(t *testing.T) {
-	utxoSet, err := client.Scantxoutset("tb1qn9fpljh5ggp407z02jx8x76pemzclgd6rla0qp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(utxoSet.Unspents) == 0 {
-		t.Fatal("no utxo found")
-	}
-	t.Logf("utxoSet: %v\n", len(utxoSet.Unspents))
-	amount := big.NewInt(1000000)
-	minerFee := big.NewInt(100000)
-	total := big.NewInt(0)
-	var inputs []bitcoin.TxIn
-	for _, tUtxo := range utxoSet.Unspents {
-		fmt.Printf("utxoId:%v index:%v scriptPubKey:%v\n", tUtxo.Txid, tUtxo.Vout, tUtxo.ScriptPubKey)
-		inputs = append(inputs, bitcoin.TxIn{
-			Hash:     tUtxo.Txid,
-			VOut:     uint32(tUtxo.Vout),
-			PkScript: tUtxo.ScriptPubKey,
-			//Amount:   floatBig.Sign(),
-		})
-		total = total.Add(total, big.NewInt(int64(tUtxo.Amount*100000000)))
-	}
-	findChange := total.Sub(total, amount).Sub(total, minerFee)
-	outputs := []bitcoin.TxOut{
-		{
-			Address: "tb1q4sxzxjxuz8lgx0s4g0hspn8v6g8pvx6juj0lgraglq4q6lnn649suxs3ws",
-			Amount:  amount.Int64(),
-		},
-		{
-			Address: "tb1qn9fpljh5ggp407z02jx8x76pemzclgd6rla0qp",
-			Amount:  findChange.Int64(),
-		},
-	}
-	secret := ethCommon.FromHex("0x")
-	ethAddr := ethCommon.FromHex("0x2A6443B5838f9524970c471289AB22f399395Ff6")
-	result, err := bitcoin.CreateDepositTransaction(secret, ethAddr, inputs, outputs, bitcoin.TestNet)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rawByres := ethCommon.Bytes2Hex(result)
-	txHash, err := client.Sendrawtransaction(rawByres)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(txHash)
 }
