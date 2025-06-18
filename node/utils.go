@@ -90,7 +90,7 @@ func privateKeyToEthAddr(secret string) (string, error) {
 }
 
 func trimOx(id string) string {
-	if strings.HasPrefix(id, "0x") || strings.HasPrefix(id, "0X") {
+	if strings.HasPrefix(strings.ToLower(id), "0x") {
 		return id[2:]
 	}
 	return id
