@@ -181,6 +181,10 @@ func NewBtcAddrFilter(operator, lockScript string, minDepositValue float64, txMo
 	}
 }
 
+func (b *BtcFilter) GetMinDepositValue() float64 {
+	return b.minDepositValue
+}
+
 func (b *BtcFilter) Redeem(inputs []btctypes.TxVin) bool {
 	if b.txMode != common.NormalTx {
 		return false
