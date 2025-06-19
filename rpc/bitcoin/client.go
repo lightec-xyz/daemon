@@ -25,7 +25,7 @@ func BasicAuth(username, password string) string {
 
 func NewClient(url, user, pwd string) (*Client, error) {
 	client := &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 3 * time.Minute,
 	}
 	return &Client{client: client, url: url, token: BasicAuth(user, pwd), debug: false}, nil
 }
