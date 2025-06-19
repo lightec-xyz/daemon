@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-var SetupDir = "/opt/lightec/opt2/circuitsetup/devnet"
+var SetupDir = "/opt/circuitsetup/testnet"
 var url = common.GetBtcUrl()
 var User = common.GetBtcUser()
 var Pass = common.GetBtcPwd()
