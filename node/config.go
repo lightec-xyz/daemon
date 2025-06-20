@@ -157,7 +157,7 @@ func getTestnetConfig(cfg RunConfig) (Config, error) {
 		EthScanTime:        TestnetEthScanTime,
 		BtcTxVerifyAddr:    TestEthBtcTxVerifyAddress,
 		OasisSignerAddress: TestnetOasisSignerAddr,
-		BtcFilter:          NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, 0, cfg.TxMode),
+		BtcFilter:          NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, MinDepositValue, cfg.TxMode),
 		EthAddrFilter: NewEthAddrFilter(TestnetBtcLockScript, TestEthUtxoManagerAddress, TestnetEthZkBridgeAddress, TestnetFeePoolAddr,
 			TestnetDepositTopic, TestnetRedeemTopic, TestnetUpdateUtxoTopic, TestnetDepositRewardTopic, TestnetRedeemRewardTopic,
 			cfg.TxMode),
@@ -179,6 +179,10 @@ func NewBtcAddrFilter(operator, lockScript string, minDepositValue float64, txMo
 		minDepositValue: minDepositValue,
 		txMode:          txMode,
 	}
+}
+
+func (b *BtcFilter) GetMinDepositValue() float64 {
+	return b.minDepositValue
 }
 
 func (b *BtcFilter) Redeem(inputs []btctypes.TxVin) bool {

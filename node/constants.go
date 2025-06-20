@@ -64,7 +64,10 @@ const (
 // *********************Other**************************************
 
 const (
-	MigrateProto      = "6a141234560000000000000000000000000000000000"
+	// MigrateProto operator migrate address
+	MigrateProto = "6a141234560000000000000000000000000000000000"
+	// MinDepositValue deposit min value
+	MinDepositValue   = float64(0.00002100) // 2100 sats
 	GeneratorVersion  = "1.0.0"
 	NodeVersion       = "1.0.0"
 	RpcRegisterName   = "zkbtc"
