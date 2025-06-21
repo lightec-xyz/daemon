@@ -704,6 +704,8 @@ func (t *TxManager) addBtcUnGenProof(txId string) error {
 	}
 	// re select latest height to gen proof
 	tx.LatestHeight = 0
+	tx.CheckPointHeight = 0
+	tx.GenProofNums = tx.GenProofNums + 1
 	err = t.chainStore.WriteDbTxes(tx)
 	if err != nil {
 		logger.Error("write db tx error: %v", err)
