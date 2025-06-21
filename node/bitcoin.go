@@ -73,37 +73,7 @@ func (b *bitcoinAgent) Init() error {
 			return err
 		}
 	}
-	checkpointHeight, cpHash, err := b.GetCheckpointHeight()
-	if err != nil {
-		logger.Error("get btc checkpoint height error:%v", err)
-		return err
-	}
-	err = b.chainStore.WriteCheckpoint(checkpointHeight, cpHash)
-	if err != nil {
-		logger.Error("write checkpoint error:%v", err)
-		return err
-	}
-	err = b.chainStore.WriteLatestCheckpoint(checkpointHeight)
-	if err != nil {
-		logger.Error("write latest checkpoint error:%v", err)
-		return err
-	}
-	logger.Debug("bitcoin initHeight: %v, checkpointHeight: %v", b.initHeight, checkpointHeight)
 	return nil
-}
-
-func (b *bitcoinAgent) GetCheckpointHeight() (uint64, string, error) {
-	hash, err := b.ethClient.SuggestedCP()
-	if err != nil {
-		logger.Error("ethClient get checkpoint hash error:%v", err)
-		return 0, "", err
-	}
-	header, err := b.btcClient.GetBlockHeader(hex.EncodeToString(common.ReverseBytes(hash)))
-	if err != nil {
-		logger.Error("btcClient checkpoint height  error:%v %v", err, hash)
-		return 0, "", err
-	}
-	return uint64(header.Height), hex.EncodeToString(common.ReverseBytes(hash)), nil
 }
 
 func (b *bitcoinAgent) ScanBlock() error {
@@ -120,22 +90,6 @@ func (b *bitcoinAgent) ScanBlock() error {
 	latestHeight, err := b.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error("get block count error:%v", err)
-		return err
-	}
-	checkPointHeight, cpHash, err := b.GetCheckpointHeight()
-	if err != nil {
-		logger.Error("get checkpoint height error:%v", err)
-		return err
-	}
-	err = b.chainStore.WriteCheckpoint(checkPointHeight, cpHash)
-	if err != nil {
-		logger.Error("write checkpoint error:%v", err)
-		return err
-	}
-	logger.Debug("blockHeightInfo: currentHeight: %v,blockHeight:%v,checkpointHeight:%d", currentHeight, latestHeight, checkPointHeight)
-	err = b.chainStore.WriteLatestCheckpoint(checkPointHeight)
-	if err != nil {
-		logger.Error("write latest checkpoint error:%v", err)
 		return err
 	}
 	blockCount := uint64(latestHeight)

@@ -73,6 +73,38 @@ func (e *ethereumAgent) Init() error {
 		logger.Error("ethClient json rpc error:%v", err)
 		return err
 	}
+	err = e.GetCheckpointHeight()
+	if err != nil {
+		logger.Error("get checkpoint height error:%v", err)
+		return err
+	}
+	return nil
+}
+
+func (b *ethereumAgent) GetCheckpointHeight() error {
+	hash, err := b.ethClient.SuggestedCP()
+	if err != nil {
+		logger.Error("ethClient get checkpoint hash error:%v", err)
+		return err
+	}
+	header, err := b.btcClient.GetBlockHeader(hex.EncodeToString(common.ReverseBytes(hash)))
+	if err != nil {
+		logger.Error("btcClient checkpoint height  error:%v %v", err, hash)
+		return err
+	}
+	checkpointHeight := uint64(header.Height)
+	cpHash := hex.EncodeToString(common.ReverseBytes(hash))
+	err = b.chainStore.WriteCheckpoint(checkpointHeight, cpHash)
+	if err != nil {
+		logger.Error("write checkpoint error:%v", err)
+		return err
+	}
+	err = b.chainStore.WriteLatestCheckpoint(checkpointHeight)
+	if err != nil {
+		logger.Error("write latest checkpoint error:%v", err)
+		return err
+	}
+	logger.Debug("checkpointHeight: %v, checkpointHash: %v", checkpointHeight, cpHash)
 	return nil
 }
 
@@ -96,6 +128,12 @@ func (e *ethereumAgent) ScanBlock() error {
 		logger.Debug("eth currentHeight:%d >= blockNumber:%d", currentHeight, blockNumber)
 		return nil
 	}
+	err = e.GetCheckpointHeight()
+	if err != nil {
+		logger.Error("get checkpoint height error:%v", err)
+		return err
+	}
+
 	for index := uint64(currentHeight) + 1; index <= blockNumber; index++ {
 		logger.Debug("ethereum parse block:%d", index)
 		preHeight := index - 1

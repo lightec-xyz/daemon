@@ -162,6 +162,10 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("no find btc tx:%v", unGenTx.Hash)
 			continue
 		}
+		if btcDbTx.GenProofNums >= common.GenMaxRetryNums {
+			logger.Warn("btc retry nums tx:%v %v>=%v,skip it now", unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
+			continue
+		}
 		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx)
 		if err != nil {
 			logger.Error("check tx height error:%v %v", unGenTx.Hash, err)
