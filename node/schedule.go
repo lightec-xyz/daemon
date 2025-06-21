@@ -163,7 +163,7 @@ func (s *Scheduler) CheckBtcState() error {
 			continue
 		}
 		if btcDbTx.GenProofNums >= common.GenMaxRetryNums {
-			logger.Warn("btc retry nums tx:%v %v>=%v,skip it now", unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
+			logger.Warn("btc retry nums %v tx:%v nun%v >= max %v,skip it now", unGenTx.ProofType.Name(), unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
 			continue
 		}
 		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx)
