@@ -146,7 +146,7 @@ func (s *Scheduler) CheckBtcState() error {
 		}
 		if proved {
 			logger.Debug("%v %v proof exists ,delete ungen proof now", unGenTx.ProofType.Name(), unGenTx.Hash)
-			err = s.chainStore.DeleteUnGenProof(common.BitcoinChain, unGenTx.Hash)
+			err := s.delUnGenProof(common.BitcoinChain, unGenTx.Hash)
 			if err != nil {
 				logger.Error("delete ungen proof error:%v %v", unGenTx.Hash, err)
 				return err
@@ -163,7 +163,13 @@ func (s *Scheduler) CheckBtcState() error {
 			continue
 		}
 		if btcDbTx.GenProofNums >= common.GenMaxRetryNums {
-			logger.Warn("btc retry nums %v tx:%v nun%v >= max %v,skip it now", unGenTx.ProofType.Name(), unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
+			//todo
+			logger.Warn("btc retry nums %v tx:%v num%v >= max %v,skip it now", unGenTx.ProofType.Name(), unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
+			err := s.delUnGenProof(common.BitcoinChain, unGenTx.Hash)
+			if err != nil {
+				logger.Error("delete ungen proof error:%v %v", unGenTx.Hash, err)
+				return err
+			}
 			continue
 		}
 		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx)
@@ -696,9 +702,9 @@ func (s *Scheduler) CheckEthState() error {
 				}
 			} else {
 				logger.Debug("Redeem proof exist now,delete cache: %v", txHash)
-				err := s.chainStore.DeleteUnGenProof(common.EthereumChain, txHash)
+				err := s.delUnGenProof(common.EthereumChain, txHash)
 				if err != nil {
-					logger.Error("delete ungen proof error: %v", err)
+					logger.Error("delete ungen proof error:%v %v", txHash, err)
 					return err
 				}
 			}
@@ -1045,6 +1051,15 @@ func (s *Scheduler) Locks() func() {
 	return func() {
 		s.lock.Unlock()
 	}
+}
+
+func (s *Scheduler) delUnGenProof(chain common.ChainType, hash string) error {
+	err := s.chainStore.DeleteUnGenProof(chain, hash)
+	if err != nil {
+		logger.Error("delete ungen proof error: %v", err)
+		return err
+	}
+	return err
 }
 
 func (s *Scheduler) addRequestToPending(req *common.ProofRequest) {
