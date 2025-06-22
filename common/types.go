@@ -12,7 +12,7 @@ type TaskRequest struct {
 	Id        string
 	MaxNums   int
 	ProofType []ProofType
-	Version   string
+	Version   int
 }
 
 type TaskResponse struct {
@@ -38,7 +38,7 @@ type SubmitProof struct {
 	Status    bool
 	WorkerId  string
 	Id        string
-	Version   string
+	Version   int
 }
 
 type ProofRequest struct {
