@@ -132,12 +132,10 @@ func (l *Local) polling() error {
 func (l *Local) CheckState() error {
 	l.cacheProofs.Iterator(func(value *common.SubmitProof) error {
 		_, err := l.client.SubmitProof(value)
-		if err != nil {
-			logger.Error("submit proof error again:%v %v ", value.Id, err)
-			return err
-		}
-		for _, resp := range value.Responses {
-			logger.Info("success submit proof again:%v,proofId: %v", value.Id, resp.ProofId())
+		if err == nil {
+			for _, resp := range value.Responses {
+				logger.Info("success submit proof again:%v,proofId: %v", value.Id, resp.ProofId())
+			}
 		}
 		l.cacheProofs.Delete(value.Id)
 		return nil
