@@ -206,6 +206,9 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 }
 
 func (h *Handler) SubmitProof(req *common.SubmitProof) (string, error) {
+	if req.Version < GeneratorVersion {
+		return "", fmt.Errorf("generator version %v, less than node version %v,please upgrade generator", req.Version, GeneratorVersion)
+	}
 	for _, item := range req.Responses {
 		logger.Debug("worker: %v submit proof: %v", req.WorkerId, item.ProofId())
 	}
