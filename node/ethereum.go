@@ -104,7 +104,7 @@ func (b *ethereumAgent) GetCheckpointHeight() error {
 		logger.Error("write latest checkpoint error:%v", err)
 		return err
 	}
-	logger.Debug("checkpointHeight: %v, checkpointHash: %v", checkpointHeight, cpHash)
+	logger.Debug("checkpointHeight: %v, checkpointHash: %x", checkpointHeight, hash)
 	return nil
 }
 
