@@ -68,7 +68,7 @@ const (
 	MigrateProto = "6a141234560000000000000000000000000000000000"
 	// MinDepositValue deposit min value
 	MinDepositValue   = float64(0.00002100) // 2100 sats
-	GeneratorVersion  = 100
+	GeneratorVersion  = 1
 	NodeVersion       = "1.0.0"
 	RpcRegisterName   = "zkbtc"
 	BitcoinNetwork    = "bitcoin"
