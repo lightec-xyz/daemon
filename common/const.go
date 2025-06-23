@@ -33,7 +33,7 @@ const (
 const (
 	SlotPerPeriod         = 8192
 	MaxDiffTxFinalitySlot = 32
-	BtcLatestBlockMaxDiff = 60 // todo
+	BtcLatestBlockMaxDiff = 15 // todo
 	GenMaxRetryNums       = 100
 )
 
