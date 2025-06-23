@@ -428,8 +428,8 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 		logger.Error("get params %v error %v", txId, err)
 		return "", err
 	}
-	logger.Debug("submit updateUtxo txId:%x, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
-		txIdBytes, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
+	logger.Debug("submit updateUtxo txId:%v, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
+		txId, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
 
 	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
 	if mockErr != nil {
