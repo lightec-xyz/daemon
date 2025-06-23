@@ -34,7 +34,7 @@ const (
 	SlotPerPeriod         = 8192
 	MaxDiffTxFinalitySlot = 32
 	BtcLatestBlockMaxDiff = 60 // todo
-	GenMaxRetryNums       = 2
+	GenMaxRetryNums       = 100
 )
 
 type TxMode int
