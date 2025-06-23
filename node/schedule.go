@@ -147,8 +147,6 @@ func (s *Scheduler) CheckBtcState() error {
 		logger.Error("read unGen proof error:%v", err)
 		return err
 	}
-	//todo
-	txNums := 0
 	for _, unGenTx := range unGenTxes {
 		logger.Debug("bitcoin check unGen proof: %v %v", unGenTx.ProofType.Name(), unGenTx.Hash)
 		proved, err := s.checkTxProved(unGenTx.ProofType, unGenTx.Hash)
@@ -165,10 +163,6 @@ func (s *Scheduler) CheckBtcState() error {
 			}
 			continue
 		}
-		if txNums > 5 {
-			break
-		}
-		txNums = txNums + 1
 		btcDbTx, ok, err := s.chainStore.ReadBtcTx(unGenTx.Hash)
 		if err != nil {
 			logger.Error("read btc tx error:%v %v", unGenTx.Hash, err)
