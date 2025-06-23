@@ -189,17 +189,21 @@ func (q *ArrayQueue) Len() int {
 	return len(q.list)
 }
 
-func (q *ArrayQueue) Remove(fn func(value *common.ProofRequest) bool) {
+func (q *ArrayQueue) Remove(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+	var expired []*common.ProofRequest
 	var newList []*common.ProofRequest
 	for _, value := range q.list {
 		ok := fn(value)
-		if !ok {
+		if ok {
+			expired = append(expired, value)
+		} else {
 			newList = append(newList, value)
 		}
 	}
 	q.list = newList
+	return expired
 }
 
 func (q *ArrayQueue) List() []*common.ProofRequest {

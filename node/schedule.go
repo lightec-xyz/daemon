@@ -1055,11 +1055,11 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 
 // when update a latestHeight of tx ,need to remove the expired request
 func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
-	s.proofQueue.Remove(func(value *common.ProofRequest) bool {
+	expiredRequests := s.proofQueue.Remove(func(value *common.ProofRequest) bool {
 		switch value.ProofType {
 		case common.BtcBulkType:
 			step := tx.LatestHeight - tx.Height
-			if step >= common.BtcTxMinDepth && step <= common.BtcTxUnitMaxDepth {
+			if step >= common.BtcTxMinDepth && step < common.BtcTxUnitMaxDepth {
 				return true
 			}
 		case common.BtcTimestampType:
@@ -1083,6 +1083,10 @@ func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
 		return false
 
 	})
+	for _, req := range expiredRequests {
+		logger.Warn("remove expired request:%v %v", tx.Hash, req.ProofId())
+		s.removeRequest(req.ProofId())
+	}
 	return nil
 }
 
