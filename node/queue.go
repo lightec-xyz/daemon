@@ -7,6 +7,14 @@ import (
 	"sync"
 )
 
+// todo
+type QueueManager struct {
+}
+
+func NewQueueManager() *QueueManager {
+	return &QueueManager{}
+}
+
 type PendingQueue struct {
 	list *sync.Map
 }
@@ -72,6 +80,7 @@ func sortRequest(a, b *common.ProofRequest) bool {
 	return a.Weight > b.Weight
 }
 
+// todo
 type ArrayQueue struct {
 	list   []*common.ProofRequest
 	lock   sync.Mutex
@@ -180,15 +189,17 @@ func (q *ArrayQueue) Len() int {
 	return len(q.list)
 }
 
-func (q *ArrayQueue) Remove(id string) {
+func (q *ArrayQueue) Remove(fn func(value *common.ProofRequest) bool) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	for index, value := range q.list {
-		if value.ProofId() == id {
-			q.list = append(q.list[:index], q.list[index+1:]...)
-			return
+	var newList []*common.ProofRequest
+	for _, value := range q.list {
+		ok := fn(value)
+		if !ok {
+			newList = append(newList, value)
 		}
 	}
+	q.list = newList
 }
 
 func (q *ArrayQueue) List() []*common.ProofRequest {

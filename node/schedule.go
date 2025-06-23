@@ -330,7 +330,13 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 			return false, err
 		}
 	}
-	if tx.LatestHeight == 0 || curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff { // the latestHeight on 24hour maybe expired
+	// the latestHeight on 24hour maybe expired
+	expired := curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff
+	if expired {
+		logger.Warn("txId latestHeight is expired:%v %v", tx.Hash, tx.LatestHeight)
+		s.removeExpiredRequest(tx)
+	}
+	if tx.LatestHeight == 0 || expired {
 		tx.LatestHeight = curHeight
 		err := s.chainStore.WriteDbTxes(tx)
 		if err != nil {
@@ -1045,7 +1051,39 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 		return true, nil
 	}
 	return raised, nil
+}
 
+// when update a latestHeight of tx ,need to remove the expired request
+func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
+	s.proofQueue.Remove(func(value *common.ProofRequest) bool {
+		switch value.ProofType {
+		case common.BtcBulkType:
+			step := tx.LatestHeight - tx.Height
+			if step >= common.BtcTxMinDepth && step <= common.BtcTxUnitMaxDepth {
+				return true
+			}
+		case common.BtcTimestampType:
+			if value.FIndex == tx.Height && value.SIndex == tx.LatestHeight {
+				return true
+			}
+		case common.BtcDepthRecursiveType:
+			if value.Prefix == tx.Height && value.SIndex == tx.LatestHeight { // tx depth
+				return true
+
+			} else if value.Prefix == tx.CheckPointHeight && value.SIndex == tx.LatestHeight { // cp depth
+				return true
+			}
+		case common.BtcDuperRecursiveType:
+			if value.SIndex == tx.LatestHeight+1 { // tx chain depth
+				return true
+			}
+		default:
+			return false
+		}
+		return false
+
+	})
+	return nil
 }
 
 func (s *Scheduler) upperRoundStartIndex(height uint64) uint64 {

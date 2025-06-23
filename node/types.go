@@ -7,18 +7,36 @@ import (
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"math/big"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type WorkerCount struct {
 	worker map[string]time.Time
+	sync.Mutex
 }
 
-func (w *WorkerCount) AddWorker(worker string) {
-	w.worker[worker] = time.Now()
+func NewWorkerCount() *WorkerCount {
+	return &WorkerCount{
+		worker: make(map[string]time.Time),
+	}
+}
+
+func (w *WorkerCount) AddWorker(workerId string) {
+	w.Lock()
+	defer w.Unlock()
+	w.worker[workerId] = time.Now()
 }
 
 func (w *WorkerCount) Len() int {
+	w.Lock()
+	defer w.Unlock()
+	for id, t := range w.worker {
+		//todo
+		if time.Now().Sub(t) > 2*time.Hour {
+			delete(w.worker, id)
+		}
+	}
 	return len(w.worker)
 }
 
