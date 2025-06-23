@@ -403,7 +403,7 @@ func (b *bitcoinAgent) redeemTx(tx bitcoin.Tx, height, txIndex, blockTime uint64
 		logger.Error("check btc change proved error: %v,%v", tx.Txid, err)
 		return nil, false, err
 	}
-	logger.Info("bitcoin agent find Redeem tx height: %v,hash: %v,amount: %f,proved:%v", height, tx.Txid, redeemAmount, proved)
+	logger.Info("bitcoin agent find Redeem tx height: %v,hash: %v,amount: %.8f,proved:%v", height, tx.Txid, redeemAmount, proved)
 	redeemBtcTx := NewRedeemBtcTx(height, txIndex, blockTime, tx.Txid, BtcToSat(redeemAmount), proved)
 	return redeemBtcTx, true, nil
 }
