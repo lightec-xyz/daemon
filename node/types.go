@@ -10,6 +10,18 @@ import (
 	"time"
 )
 
+type WorkerCount struct {
+	worker map[string]time.Time
+}
+
+func (w *WorkerCount) AddWorker(worker string) {
+	w.worker[worker] = time.Now()
+}
+
+func (w *WorkerCount) Len() int {
+	return len(w.worker)
+}
+
 type Notify struct {
 }
 
