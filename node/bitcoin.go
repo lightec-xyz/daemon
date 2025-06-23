@@ -403,7 +403,7 @@ func (b *bitcoinAgent) redeemTx(tx bitcoin.Tx, height, txIndex, blockTime uint64
 		logger.Error("check btc change proved error: %v,%v", tx.Txid, err)
 		return nil, false, err
 	}
-	logger.Info("bitcoin agent find Redeem tx height: %v,hash: %v,amount: %v,proved:%v", height, tx.Txid, redeemAmount, proved)
+	logger.Info("bitcoin agent find Redeem tx height: %v,hash: %v,amount: %f,proved:%v", height, tx.Txid, redeemAmount, proved)
 	redeemBtcTx := NewRedeemBtcTx(height, txIndex, blockTime, tx.Txid, BtcToSat(redeemAmount), proved)
 	return redeemBtcTx, true, nil
 }
@@ -453,7 +453,7 @@ func (b *bitcoinAgent) depositTx(tx bitcoin.Tx, height, txIndex, blockTime uint6
 	amount := getDepositAmount(tx.Vout, b.btcFilter.OperatorAddr)
 	minDepositValue := b.btcFilter.GetMinDepositValue()
 	if amount < minDepositValue {
-		logger.Debug("deposit amount tool low %v ,less than minDepositValue %v", amount, minDepositValue)
+		logger.Debug("deposit amount tool low %f ,less than minDepositValue %f", amount, minDepositValue)
 		return nil, false, nil
 	}
 	proved, err := b.checkTxProved(common.BtcDepositType, tx.Txid)
