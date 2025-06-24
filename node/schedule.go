@@ -1058,7 +1058,9 @@ func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
 	expiredRequests := s.proofQueue.Remove(func(value *common.ProofRequest) bool {
 		switch value.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType, common.BtcChangeType:
-			return true
+			if common.StrEqual(value.Hash, tx.Hash) {
+				return true
+			}
 		case common.BtcBulkType:
 			step := tx.LatestHeight - tx.Height
 			if step >= common.BtcTxMinDepth && step < common.BtcTxUnitMaxDepth {
