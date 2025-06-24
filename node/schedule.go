@@ -332,7 +332,7 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 	}
 	// the latestHeight on 24hour maybe expired
 	expired := curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff
-	if expired {
+	if tx.LatestHeight != 0 && expired {
 		logger.Warn("txId latestHeight is expired:%v %v %v", tx.Hash, tx.LatestHeight, curHeight)
 		s.removeExpiredRequest(tx)
 	}
