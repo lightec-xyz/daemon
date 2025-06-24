@@ -87,14 +87,14 @@ func (b *ethereumAgent) GetCheckpointHeight() error {
 		logger.Error("ethClient get checkpoint hash error:%v", err)
 		return err
 	}
-	header, err := b.btcClient.GetBlockHeader(hex.EncodeToString(common.ReverseBytes(hash)))
+	littleHash := hex.EncodeToString(common.ReverseBytes(hash))
+	header, err := b.btcClient.GetBlockHeader(littleHash)
 	if err != nil {
 		logger.Error("btcClient checkpoint height  error:%v %v", err, hash)
 		return err
 	}
 	checkpointHeight := uint64(header.Height)
-	cpHash := hex.EncodeToString(common.ReverseBytes(hash))
-	err = b.chainStore.WriteCheckpoint(checkpointHeight, cpHash)
+	err = b.chainStore.WriteCheckpoint(checkpointHeight, hex.EncodeToString(hash))
 	if err != nil {
 		logger.Error("write checkpoint error:%v", err)
 		return err
@@ -104,7 +104,7 @@ func (b *ethereumAgent) GetCheckpointHeight() error {
 		logger.Error("write latest checkpoint error:%v", err)
 		return err
 	}
-	logger.Debug("checkpointHeight: %v, checkpointHash: %v", checkpointHeight, cpHash)
+	logger.Debug("checkpointHeight: %v, checkpointHash: %v", checkpointHeight, littleHash)
 	return nil
 }
 
