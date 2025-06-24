@@ -306,7 +306,7 @@ func (b *bitcoinAgent) findForkHeight(height uint64) (uint64, error) {
 		}
 		if common.StrEqual(localBlockHash, chainBlockHash) {
 			logger.Info("find rollback start height: %v", index)
-			return index, nil
+			return index + 1, nil
 		}
 	}
 	return b.initHeight, nil

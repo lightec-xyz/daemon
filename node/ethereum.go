@@ -241,7 +241,7 @@ func (e *ethereumAgent) findChainForkHeight(height uint64) (uint64, error) {
 		}
 		if common.StrEqual(localBlockHash, chainBlockHash.Hash().String()) {
 			logger.Info("find eth startForkHeight: %v", index)
-			return index, nil
+			return index + 1, nil
 		}
 	}
 	return e.initHeight, nil
