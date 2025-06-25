@@ -4,6 +4,7 @@ import (
 	"fmt"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/store"
 	"github.com/spf13/cobra"
@@ -14,6 +15,11 @@ var minerCmd = &cobra.Command{
 	Short: "update miner nonce",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		err := logger.InitLogger(nil)
+		if err != nil {
+			fmt.Printf("init logger error: %v \n", err)
+			return
+		}
 		cfg, err := readCfg(cfgFile)
 		if err != nil {
 			fmt.Printf("read config error: %v %v \n", cfgFile, err)
