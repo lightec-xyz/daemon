@@ -73,37 +73,7 @@ func (b *bitcoinAgent) Init() error {
 			return err
 		}
 	}
-	checkpointHeight, cpHash, err := b.GetCheckpointHeight()
-	if err != nil {
-		logger.Error("get btc checkpoint height error:%v", err)
-		return err
-	}
-	err = b.chainStore.WriteCheckpoint(checkpointHeight, cpHash)
-	if err != nil {
-		logger.Error("write checkpoint error:%v", err)
-		return err
-	}
-	err = b.chainStore.WriteLatestCheckpoint(checkpointHeight)
-	if err != nil {
-		logger.Error("write latest checkpoint error:%v", err)
-		return err
-	}
-	logger.Debug("bitcoin initHeight: %v, checkpointHeight: %v", b.initHeight, checkpointHeight)
 	return nil
-}
-
-func (b *bitcoinAgent) GetCheckpointHeight() (uint64, string, error) {
-	hash, err := b.ethClient.SuggestedCP()
-	if err != nil {
-		logger.Error("ethClient get checkpoint hash error:%v", err)
-		return 0, "", err
-	}
-	header, err := b.btcClient.GetBlockHeader(hex.EncodeToString(common.ReverseBytes(hash)))
-	if err != nil {
-		logger.Error("btcClient checkpoint height  error:%v %v", err, hash)
-		return 0, "", err
-	}
-	return uint64(header.Height), hex.EncodeToString(common.ReverseBytes(hash)), nil
 }
 
 func (b *bitcoinAgent) ScanBlock() error {
@@ -120,22 +90,6 @@ func (b *bitcoinAgent) ScanBlock() error {
 	latestHeight, err := b.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error("get block count error:%v", err)
-		return err
-	}
-	checkPointHeight, cpHash, err := b.GetCheckpointHeight()
-	if err != nil {
-		logger.Error("get checkpoint height error:%v", err)
-		return err
-	}
-	err = b.chainStore.WriteCheckpoint(checkPointHeight, cpHash)
-	if err != nil {
-		logger.Error("write checkpoint error:%v", err)
-		return err
-	}
-	logger.Debug("blockHeightInfo: currentHeight: %v,blockHeight:%v,checkpointHeight:%d", currentHeight, latestHeight, checkPointHeight)
-	err = b.chainStore.WriteLatestCheckpoint(checkPointHeight)
-	if err != nil {
-		logger.Error("write latest checkpoint error:%v", err)
 		return err
 	}
 	blockCount := uint64(latestHeight)
@@ -352,7 +306,7 @@ func (b *bitcoinAgent) findForkHeight(height uint64) (uint64, error) {
 		}
 		if common.StrEqual(localBlockHash, chainBlockHash) {
 			logger.Info("find rollback start height: %v", index)
-			return index, nil
+			return index + 1, nil
 		}
 	}
 	return b.initHeight, nil
@@ -449,7 +403,7 @@ func (b *bitcoinAgent) redeemTx(tx bitcoin.Tx, height, txIndex, blockTime uint64
 		logger.Error("check btc change proved error: %v,%v", tx.Txid, err)
 		return nil, false, err
 	}
-	logger.Info("bitcoin agent find Redeem tx height: %v,hash: %v,amount: %v,proved:%v", height, tx.Txid, redeemAmount, proved)
+	logger.Info("bitcoin agent find Redeem tx height: %v,hash: %v,amount: %.8f,proved:%v", height, tx.Txid, redeemAmount, proved)
 	redeemBtcTx := NewRedeemBtcTx(height, txIndex, blockTime, tx.Txid, BtcToSat(redeemAmount), proved)
 	return redeemBtcTx, true, nil
 }
@@ -499,7 +453,7 @@ func (b *bitcoinAgent) depositTx(tx bitcoin.Tx, height, txIndex, blockTime uint6
 	amount := getDepositAmount(tx.Vout, b.btcFilter.OperatorAddr)
 	minDepositValue := b.btcFilter.GetMinDepositValue()
 	if amount < minDepositValue {
-		logger.Debug("deposit amount tool low %v ,less than minDepositValue %v", amount, minDepositValue)
+		logger.Debug("deposit amount tool low %f ,less than minDepositValue %f", amount, minDepositValue)
 		return nil, false, nil
 	}
 	proved, err := b.checkTxProved(common.BtcDepositType, tx.Txid)

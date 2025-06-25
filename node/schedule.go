@@ -114,6 +114,11 @@ func (s *Scheduler) updateBtcCp() error {
 
 func (s *Scheduler) CheckBtcState() error {
 	logger.Debug("start check btc state ....")
+	blockCount, err := s.btcClient.GetBlockCount()
+	if err != nil {
+		logger.Error("get block count error:%v", err)
+		return err
+	}
 	latestHeight, ok, err := s.chainStore.ReadBtcHeight()
 	if err != nil {
 		logger.Error("read latest btc height error: %v", err)
@@ -123,6 +128,11 @@ func (s *Scheduler) CheckBtcState() error {
 		logger.Warn("no find latest btc height")
 		return nil
 	}
+	if latestHeight < uint64(blockCount-10) {
+		logger.Warn("wait btc sync complete, block count:%v latestHeight:%v,skip check btc proof now", blockCount, latestHeight)
+		return nil
+	}
+
 	cpHeight, ok, err := s.chainStore.ReadLatestCheckPoint()
 	if err != nil {
 		logger.Error("read latest checkpoint error: %v", err)
@@ -146,7 +156,7 @@ func (s *Scheduler) CheckBtcState() error {
 		}
 		if proved {
 			logger.Debug("%v %v proof exists ,delete ungen proof now", unGenTx.ProofType.Name(), unGenTx.Hash)
-			err = s.chainStore.DeleteUnGenProof(common.BitcoinChain, unGenTx.Hash)
+			err := s.delUnGenProof(common.BitcoinChain, unGenTx.Hash)
 			if err != nil {
 				logger.Error("delete ungen proof error:%v %v", unGenTx.Hash, err)
 				return err
@@ -160,6 +170,16 @@ func (s *Scheduler) CheckBtcState() error {
 		}
 		if !ok {
 			logger.Warn("no find btc tx:%v", unGenTx.Hash)
+			continue
+		}
+		if btcDbTx.GenProofNums >= common.GenMaxRetryNums {
+			//todo
+			logger.Warn("btc retry nums %v tx:%v num%v >= max %v,skip it now", unGenTx.ProofType.Name(), unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
+			err := s.delUnGenProof(common.BitcoinChain, unGenTx.Hash)
+			if err != nil {
+				logger.Error("delete ungen proof error:%v %v", unGenTx.Hash, err)
+				return err
+			}
 			continue
 		}
 		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx)
@@ -310,7 +330,13 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 			return false, err
 		}
 	}
-	if tx.LatestHeight == 0 || curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff { // the latestHeight on 24hour maybe expired
+	// the latestHeight on 24hour maybe expired
+	expired := curHeight-tx.LatestHeight > common.BtcLatestBlockMaxDiff
+	if tx.LatestHeight != 0 && expired {
+		logger.Warn("txId latestHeight is expired:%v %v %v", tx.Hash, tx.LatestHeight, curHeight)
+		s.removeExpiredRequest(tx)
+	}
+	if tx.LatestHeight == 0 || expired {
 		tx.LatestHeight = curHeight
 		err := s.chainStore.WriteDbTxes(tx)
 		if err != nil {
@@ -692,9 +718,9 @@ func (s *Scheduler) CheckEthState() error {
 				}
 			} else {
 				logger.Debug("Redeem proof exist now,delete cache: %v", txHash)
-				err := s.chainStore.DeleteUnGenProof(common.EthereumChain, txHash)
+				err := s.delUnGenProof(common.EthereumChain, txHash)
 				if err != nil {
-					logger.Error("delete ungen proof error: %v", err)
+					logger.Error("delete ungen proof error:%v %v", txHash, err)
 					return err
 				}
 			}
@@ -1025,7 +1051,47 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 		return true, nil
 	}
 	return raised, nil
+}
 
+// when update a latestHeight of tx ,need to remove the expired request
+func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
+	expiredRequests := s.proofQueue.Remove(func(value *common.ProofRequest) bool {
+		switch value.ProofType {
+		case common.BtcDepositType, common.BtcUpdateCpType, common.BtcChangeType:
+			if common.StrEqual(value.Hash, tx.Hash) {
+				return true
+			}
+		case common.BtcBulkType:
+			step := tx.LatestHeight - tx.Height
+			if step >= common.BtcTxMinDepth && step < common.BtcTxUnitMaxDepth {
+				return true
+			}
+		case common.BtcTimestampType:
+			if value.FIndex == tx.Height && value.SIndex == tx.LatestHeight {
+				return true
+			}
+		case common.BtcDepthRecursiveType:
+			if value.Prefix == tx.Height && value.SIndex == tx.LatestHeight { // tx depth
+				return true
+
+			} else if value.Prefix == tx.CheckPointHeight && value.SIndex == tx.LatestHeight { // cp depth
+				return true
+			}
+		case common.BtcDuperRecursiveType:
+			if value.SIndex == tx.LatestHeight+1 { // tx chain depth
+				return true
+			}
+		default:
+			return false
+		}
+		return false
+
+	})
+	for _, req := range expiredRequests {
+		logger.Warn("remove expired request:%v %v", tx.Hash, req.ProofId())
+		s.removeRequest(req.ProofId())
+	}
+	return nil
 }
 
 func (s *Scheduler) upperRoundStartIndex(height uint64) uint64 {
@@ -1041,6 +1107,15 @@ func (s *Scheduler) Locks() func() {
 	return func() {
 		s.lock.Unlock()
 	}
+}
+
+func (s *Scheduler) delUnGenProof(chain common.ChainType, hash string) error {
+	err := s.chainStore.DeleteUnGenProof(chain, hash)
+	if err != nil {
+		logger.Error("delete ungen proof error: %v", err)
+		return err
+	}
+	return err
 }
 
 func (s *Scheduler) addRequestToPending(req *common.ProofRequest) {

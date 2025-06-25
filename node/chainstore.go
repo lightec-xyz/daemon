@@ -1303,12 +1303,12 @@ func (cs *ChainStore) WriteZkParamVerify(verify bool) error {
 }
 
 func (cs *ChainStore) WriteNonce(network, addr string, nonce uint64) error {
-	return cs.store.PutObj(dbAddrNonceId(network, addr), nonce)
+	return cs.store.PutObj(dbAddrNonceId(network, DbValue(addr)), nonce)
 
 }
 
 func (cs *ChainStore) ReadNonce(network, addr string) (uint64, bool, error) {
-	id := dbAddrNonceId(network, addr)
+	id := dbAddrNonceId(network, DbValue(addr))
 	exists, err := cs.store.HasObj(id)
 	if err != nil {
 		return 0, false, err

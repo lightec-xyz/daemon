@@ -55,16 +55,17 @@ var (
 )
 
 type DbTx struct {
-	Height    uint64
-	TxIndex   uint
-	Hash      string
-	BlockHash string
-	BlockTime uint64
-	TxType    common.TxType
-	ChainType common.ChainType
-	ProofType common.ProofType
-	Proved    bool
-	Amount    int64
+	Height       uint64
+	TxIndex      uint
+	Hash         string
+	BlockHash    string
+	BlockTime    uint64
+	TxType       common.TxType
+	ChainType    common.ChainType
+	ProofType    common.ProofType
+	Proved       bool
+	Amount       int64
+	GenProofNums int
 	// bitcoin chain
 	EthAddr string
 	// ethereum chain
