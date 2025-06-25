@@ -800,6 +800,8 @@ func proofFailed(err error) bool {
 func proofExpired(err error) bool {
 	// todo
 	switch err.Error() {
+	case "execution reverted: error pairing":
+		return true
 	case "execution reverted: txDepth check failed":
 		return true
 	case "execution reverted: cpDepth check failed":
