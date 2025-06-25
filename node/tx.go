@@ -193,8 +193,9 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 		logger.Error("get params error: %v %v", txId, err)
 		return "", err
 	}
-	logger.Debug("submit deposit tx:%v cpDepth:%v,txDepth:%v,checkPoint:%x,blockHash:%x,blockTime:%v,flag:%v,smoothedTimestamp: %v,minerAddr:%v,gasPrice:%v,btcTxRaw:%x,proof:%v",
+	paramsStr := fmt.Sprintf("submit deposit tx:%v cpDepth:%v,txDepth:%v,checkPoint:%x,blockHash:%x,blockTime:%v,flag:%v,smoothedTimestamp: %v,minerAddr:%v,gasPrice:%v,btcTxRaw:%x,proof:%v",
 		txId, params.CpDepth, params.TxDepth, params.Checkpoint, params.TxBlockHash, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, t.minerAddr, gasPrice, btcRawTx, proof)
+	logger.Debug("deposit txId:%v %s", txId, paramsStr)
 	gasLimit, mockErr := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
 	if mockErr != nil {
 		switch proofType {
@@ -207,7 +208,7 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 			}
 			return "", nil
 		case common.BtcDepositType:
-			logger.Error("deposit zkbtc error:%v %v", txId, mockErr)
+			logger.Error("deposit zkbtc error:%v %v %v", txId, mockErr, paramsStr)
 			if strings.Contains(mockErr.Error(), "execution reverted") {
 				err := t.chainStore.DeleteUnSubmitTx(txId)
 				if err != nil {
@@ -437,12 +438,12 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 		logger.Error("get params %v error %v", txId, err)
 		return "", err
 	}
-	logger.Debug("submit updateUtxo txId:%v, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
+	paramsStr := fmt.Sprintf("submit updateUtxo txId:%v, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
 		txId, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
-
+	logger.Debug("update utxo %v %v", txId, paramsStr)
 	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
 	if mockErr != nil {
-		logger.Error("estimate update utxo gas limit error:%v %v", txId, mockErr)
+		logger.Error("estimate update utxo gas limit error:%v %v %v", txId, mockErr, paramsStr)
 		if strings.Contains(mockErr.Error(), "execution reverted") {
 			err := t.chainStore.DeleteUnSubmitTx(txId)
 			if err != nil {
