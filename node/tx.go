@@ -130,7 +130,7 @@ func (t *TxManager) getEthAddrNonce(addr string) (uint64, error) {
 	if !exists {
 		return chainNonce, nil
 	}
-	if chainNonce <= dbNonce {
+	if chainNonce <= dbNonce+1 {
 		return dbNonce + 1, nil
 	}
 	return chainNonce, nil
