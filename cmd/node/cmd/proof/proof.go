@@ -19,4 +19,5 @@ var ProofCmd = &cobra.Command{
 func init() {
 	ProofCmd.AddCommand(importCmd)
 	ProofCmd.AddCommand(removeBtcProofCmd)
+	ProofCmd.AddCommand(readVkCmd)
 }

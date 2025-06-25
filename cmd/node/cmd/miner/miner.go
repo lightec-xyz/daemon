@@ -12,5 +12,4 @@ var MinerCmd = &cobra.Command{
 
 func init() {
 	MinerCmd.AddCommand(nonce)
-	MinerCmd.AddCommand(readVkCmd)
 }
