@@ -200,7 +200,7 @@ func (e *ethereumAgent) rollback(height uint64) error {
 		return err
 	}
 	logger.Debug("find eth chain startForkHeight: %v", startForkHeight)
-	for index := height; index > startForkHeight; index-- {
+	for index := height; index >= startForkHeight; index-- {
 		logger.Debug("eth rollback data height: %v", index)
 		err := e.chainStore.EthDeleteData(index)
 		if err != nil {
@@ -224,7 +224,6 @@ func (e *ethereumAgent) rollback(height uint64) error {
 
 func (e *ethereumAgent) findChainForkHeight(height uint64) (uint64, error) {
 	for index := height; index >= e.initHeight; index = index - 1 {
-		//logger.Warn("check rollback height: %v", index)
 		localBlockHash, exists, err := e.chainStore.ReadEthHash(index)
 		if err != nil {
 			logger.Error("get eth localHash error: %v %v", index, err)

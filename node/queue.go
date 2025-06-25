@@ -65,6 +65,9 @@ func (q *PendingQueue) Iterator(fn func(value *common.ProofRequest) error) {
 }
 
 func sortRequest(a, b *common.ProofRequest) bool {
+	if common.IsBtcInternalProofType(a.ProofType) && common.IsBtcInternalProofType(b.ProofType) {
+		return a.FIndex < b.FIndex
+	}
 	if a.Weight == b.Weight {
 		if a.ProofType == b.ProofType { // todo more rule
 			if a.ProofType == common.SyncComInnerType {
