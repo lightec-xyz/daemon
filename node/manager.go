@@ -173,9 +173,7 @@ func (m *manager) ReceiveProofs(res *common.SubmitProof) error {
 
 func (m *manager) CheckState() error {
 	logger.Debug("check pending req now")
-	pendingRequest := m.scheduler.FilterPendingRequest(func(request *common.ProofRequest) bool {
-		return true
-	})
+	pendingRequest := m.scheduler.PendingRequest()
 	for _, req := range pendingRequest {
 		if req == nil {
 			continue
@@ -278,9 +276,7 @@ func (m *manager) getChanResponse(reqType common.ProofType) chan *common.ProofRe
 
 func (m *manager) Close() error {
 	logger.Debug("manager start  cache cache now ...")
-	pendingRequest := m.scheduler.FilterPendingRequest(func(value *common.ProofRequest) bool {
-		return true
-	})
+	pendingRequest := m.scheduler.PendingRequest()
 	for _, req := range pendingRequest {
 		proofId := req.ProofId()
 		logger.Debug("write pending request to db :%v", proofId)

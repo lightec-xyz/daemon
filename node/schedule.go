@@ -1130,8 +1130,10 @@ func (s *Scheduler) PendingProofRequest() []*common.ProofRequest {
 	return s.queueManager.ListRequest()
 }
 
-func (s *Scheduler) FilterPendingRequest(fn func(request *common.ProofRequest) bool) []*common.ProofRequest {
-	return s.queueManager.FilterPending(fn)
+func (s *Scheduler) PendingRequest() []*common.ProofRequest {
+	return s.queueManager.FilterPending(func(value *common.ProofRequest) bool {
+		return true
+	})
 }
 
 func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prepared,
