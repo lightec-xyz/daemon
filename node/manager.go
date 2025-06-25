@@ -23,7 +23,6 @@ type manager struct {
 	ethNotify      chan *Notify
 	btcNotify      chan *Notify
 	beaconNotify   chan *Notify
-	preparedData   *Prepared
 	minerPower     *MinerPower
 	btcForks       []*ChainFork
 	appStartTime   time.Time
