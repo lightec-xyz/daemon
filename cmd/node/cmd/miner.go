@@ -46,12 +46,12 @@ var minerCmd = &cobra.Command{
 			return
 		}
 		chainStore := node.NewChainStore(storeDb)
-		err = chainStore.WriteNonce(common.EthereumChain.String(), node.DbValue(miner), uint64(nonce))
+		err = chainStore.WriteNonce(common.EthereumChain.String(), miner, uint64(nonce))
 		if err != nil {
 			fmt.Printf("write nonce error: %v \n", err)
 			return
 		}
-		minerNonce, ok, err := chainStore.ReadNonce(common.EthereumChain.String(), node.DbValue(miner))
+		minerNonce, ok, err := chainStore.ReadNonce(common.EthereumChain.String(), miner)
 		if err != nil {
 			fmt.Printf("read nonce error: %v \n", err)
 			return
