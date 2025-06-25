@@ -45,7 +45,7 @@ func (q *QueueManager) PopFnRequest(fn func(req *common.ProofRequest) bool) (*co
 	return q.requests.PopFn(fn)
 }
 
-func (q *QueueManager) FilterRequest(fn func(value *common.ProofRequest) (bool, error)) ([]*common.ProofRequest, error) {
+func (q *QueueManager) FilterRequest(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
 	return q.requests.Filter(fn)
 }
 func (q *QueueManager) RequestLen() int {
@@ -68,8 +68,8 @@ func (q *QueueManager) DeletePending(key string) {
 	q.pending.Delete(key)
 }
 
-func (q *QueueManager) IteratorPending(fn func(value *common.ProofRequest) error) {
-	q.pending.Iterator(fn)
+func (q *QueueManager) FilterPending(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
+	return q.pending.Iterator(fn)
 }
 
 type PendingQueue struct {
@@ -90,18 +90,23 @@ func (q *PendingQueue) Delete(key string) {
 	q.list.Delete(key)
 }
 
-func (q *PendingQueue) Iterator(fn func(value *common.ProofRequest) error) {
+func (q *PendingQueue) Iterator(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
+	var filters []*common.ProofRequest
 	q.list.Range(func(key, value interface{}) bool {
 		req, ok := value.(*common.ProofRequest)
 		if !ok {
 			return true
 		}
-		err := fn(req)
-		if err != nil {
-			return true //continue to check next item
+		if fn != nil {
+			match := fn(req)
+			if match {
+				filters = append(filters, req)
+			}
 		}
+
 		return true
 	})
+	return filters
 }
 
 func sortRequest(a, b *common.ProofRequest) bool {
@@ -190,24 +195,19 @@ func (q *ArrayQueue) sortList() {
 	})
 }
 
-func (q *ArrayQueue) Filter(fn func(value *common.ProofRequest) (bool, error)) ([]*common.ProofRequest, error) {
+func (q *ArrayQueue) Filter(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	var filtersReq []*common.ProofRequest
-	var newList []*common.ProofRequest
 	for _, value := range q.list {
-		ok, err := fn(value)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			filtersReq = append(filtersReq, value)
-		} else {
-			newList = append(newList, value)
+		if fn != nil {
+			ok := fn(value)
+			if ok {
+				filtersReq = append(filtersReq, value)
+			}
 		}
 	}
-	q.list = newList
-	return filtersReq, nil
+	return filtersReq
 }
 
 func (q *ArrayQueue) Len() int {

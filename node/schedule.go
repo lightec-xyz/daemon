@@ -615,28 +615,26 @@ func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64,
 
 func (s *Scheduler) btcStateRollback(forkHeight uint64) error {
 	logger.Debug("btc scheduler roll back to height: %v", forkHeight)
-	filterReqs, err := s.queueManager.FilterRequest(func(request *common.ProofRequest) (bool, error) {
-		if common.IsBtcProofType(request.ProofType) && forkHeight >= request.SIndex {
-			return true, nil
+	filterReqs := s.queueManager.FilterRequest(func(request *common.ProofRequest) bool {
+		if common.IsBtcProofType(request.ProofType) && forkHeight <= request.SIndex {
+			return true
 		}
-		return false, nil
+		return false
 	})
-	if err != nil {
-		logger.Error("remove queue error:%v", err)
-		return err
-	}
 	for _, req := range filterReqs {
-		logger.Warn("proof queue find forked  proof request: %v", req.ProofId())
+		logger.Warn("requests queue find forked  proof request: %v", req.ProofId())
 		s.removeRequest(req.ProofId())
 	}
-	s.queueManager.IteratorPending(func(request *common.ProofRequest) error {
+	pendingRequests := s.queueManager.FilterPending(func(request *common.ProofRequest) bool {
 		if common.IsBtcProofType(request.ProofType) && forkHeight <= request.SIndex {
-			logger.Warn("pending queue find unmatched proof request: %v", request.ProofId())
-			s.queueManager.DeletePending(request.ProofId())
-			return nil
+			return true
 		}
-		return nil
+		return false
 	})
+	for _, req := range pendingRequests {
+		logger.Warn("pending proof find forked proof request: %v", req.ProofId())
+		s.removeRequest(req.ProofId())
+	}
 	return nil
 }
 
@@ -1132,8 +1130,8 @@ func (s *Scheduler) PendingProofRequest() []*common.ProofRequest {
 	return s.queueManager.ListRequest()
 }
 
-func (s *Scheduler) IterPendingRequest(fn func(request *common.ProofRequest) error) {
-	s.queueManager.IteratorPending(fn)
+func (s *Scheduler) FilterPendingRequest(fn func(request *common.ProofRequest) bool) []*common.ProofRequest {
+	return s.queueManager.FilterPending(fn)
 }
 
 func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prepared,

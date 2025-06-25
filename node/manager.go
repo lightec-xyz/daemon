@@ -172,36 +172,35 @@ func (m *manager) ReceiveProofs(res *common.SubmitProof) error {
 }
 
 func (m *manager) CheckState() error {
-	logger.Debug("check pending request now")
-	m.scheduler.IterPendingRequest(func(request *common.ProofRequest) error {
-		if request == nil {
-			return nil
+	logger.Debug("check pending req now")
+	pendingRequest := m.scheduler.FilterPendingRequest(func(request *common.ProofRequest) bool {
+		return true
+	})
+	for _, req := range pendingRequest {
+		if req == nil {
+			continue
 		}
-		if request.StartTime.IsZero() {
-			logger.Error("never should happen,request start time is zero: %v", request.ProofId())
-			m.scheduler.removeRequest(request.ProofId())
-			return nil
+		if req.StartTime.IsZero() {
+			logger.Error("never should happen,req start time is zero: %v", req.ProofId())
+			m.scheduler.removeRequest(req.ProofId())
+			continue
 		}
-		timeout := time.Now().Sub(request.StartTime) >= request.ProofType.ProveTime()
+		timeout := time.Now().Sub(req.StartTime) >= req.ProofType.ProveTime()
 		if timeout {
-			storeKey := NewStoreKey(request.ProofType, request.Hash, request.Prefix, request.FIndex, request.SIndex)
+			storeKey := NewStoreKey(req.ProofType, req.Hash, req.Prefix, req.FIndex, req.SIndex)
 			proofId := storeKey.ProofId()
 			exists, err := m.fileStore.CheckProof(storeKey)
 			if err != nil {
 				logger.Error("check proof error:%v %v", proofId, err)
-				return err
+				continue
 			}
 			m.scheduler.removeRequest(proofId)
 			if !exists {
 				logger.Debug("%v timeout,add proof queue again", proofId)
-				//_, err := m.scheduler.tryProofRequest(storeKey)
-				//if err != nil {
-				//	logger.Error("try proof request error:%v", err)
-				//}
 			}
 		}
 		return nil
-	})
+	}
 	return nil
 }
 
@@ -279,16 +278,19 @@ func (m *manager) getChanResponse(reqType common.ProofType) chan *common.ProofRe
 
 func (m *manager) Close() error {
 	logger.Debug("manager start  cache cache now ...")
-	m.scheduler.IterPendingRequest(func(value *common.ProofRequest) error {
-		proofId := value.ProofId()
+	pendingRequest := m.scheduler.FilterPendingRequest(func(value *common.ProofRequest) bool {
+		return true
+	})
+	for _, req := range pendingRequest {
+		proofId := req.ProofId()
 		logger.Debug("write pending request to db :%v", proofId)
-		err := m.chainStore.WritePendingRequest(proofId, value)
+		err := m.chainStore.WritePendingRequest(proofId, req)
 		if err != nil {
 			logger.Error("write pending request error:%v %v", proofId, err)
 			return err
 		}
 		return nil
-	})
+	}
 	return nil
 
 }
