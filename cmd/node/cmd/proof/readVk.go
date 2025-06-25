@@ -1,4 +1,4 @@
-package cmd
+package miner
 
 import (
 	"bytes"
@@ -42,6 +42,5 @@ var readVkCmd = &cobra.Command{
 
 func init() {
 	readVkCmd.Flags().String("file", "", "vk file")
-	rootCmd.AddCommand(readVkCmd)
 
 }

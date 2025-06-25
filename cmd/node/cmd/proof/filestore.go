@@ -1,17 +1,35 @@
-package cmd
+package proof
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/spf13/cobra"
 )
 
-var filststoreCmd = &cobra.Command{
+var removeBtcProofCmd = &cobra.Command{
 	Use:   "filestore",
 	Short: "A brief description of your command",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		InitLogger()
+		err := logger.InitLogger(nil)
+		if err != nil {
+			fmt.Printf("init logger error: %v \n", err)
+			return
+		}
+		cfgFile, err := cmd.Root().PersistentFlags().GetString("config")
+		if err != nil {
+			fmt.Printf("get config error: %v \n", err)
+			return
+		}
+		fmt.Printf("config file: %v \n", cfgFile)
+		var cfg node.RunConfig
+		err = common.ReadObj(cfgFile, &cfg)
+		if err != nil {
+			fmt.Printf("read config error: %v %v \n", cfgFile, err)
+			return
+		}
 		height, err := cmd.Flags().GetInt64("height")
 		if err != nil {
 			fmt.Printf("get height error: %v \n", err)
@@ -19,11 +37,6 @@ var filststoreCmd = &cobra.Command{
 		}
 		if height == 0 {
 			fmt.Printf("height is empty \n")
-			return
-		}
-		cfg, err := readCfg(cfgFile)
-		if err != nil {
-			fmt.Printf("read config error: %v %v \n", cfgFile, err)
 			return
 		}
 		fileStorage, err := node.NewFileStorage(cfg.Datadir, 0, 0)
@@ -43,6 +56,5 @@ var filststoreCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(filststoreCmd)
-	filststoreCmd.Flags().Int64("height", 0, "btc height")
+	removeBtcProofCmd.Flags().Int64("height", 0, "btc height")
 }
