@@ -116,7 +116,6 @@ func sortRequest(a, b *common.ProofRequest) bool {
 			return true
 		}
 	}
-
 	if a.Weight == b.Weight {
 		if a.ProofType == b.ProofType {
 			if a.ProofType == common.SyncComInnerType {

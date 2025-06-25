@@ -504,7 +504,7 @@ func (s *Scheduler) checkBtcRequest(tx *DbTx) (bool, error) {
 		logger.Error("check depth proof request error:%v %v %v", height, latestHeight, err)
 		return false, err
 	}
-	txCpDepthExists, err := s.checkCpDepthProofRequest(cpHeight, latestHeight, txIndex)
+	txCpDepthExists, err := s.checkCpDepthProofRequest(cpHeight, latestHeight, height, txIndex)
 	if err != nil {
 		logger.Error("check depth proof request error:%v %v %v", cpHeight, latestHeight, err)
 		return false, err
@@ -533,7 +533,7 @@ func (s *Scheduler) checkBtcRequest(tx *DbTx) (bool, error) {
 	return exists && chainExists && txDepthExists && txCpDepthExists, nil
 }
 
-func (s *Scheduler) checkCpDepthProofRequest(depthHeight, latestHeight, txIndex uint64) (bool, error) {
+func (s *Scheduler) checkCpDepthProofRequest(depthHeight, latestHeight, height, txIndex uint64) (bool, error) {
 	step := latestHeight - depthHeight
 	if step <= common.BtcCpMinDepth {
 		//storeKey := NewDoubleStoreKey(common.BtcBulkType, depthHeight, latestHeight)
@@ -541,7 +541,7 @@ func (s *Scheduler) checkCpDepthProofRequest(depthHeight, latestHeight, txIndex 
 			PType:   common.BtcBulkType,
 			FIndex:  depthHeight,
 			SIndex:  latestHeight,
-			Height:  depthHeight,
+			Height:  height,
 			TxIndex: uint32(txIndex),
 		}
 		proofId := storeKey.ProofId()
@@ -559,7 +559,7 @@ func (s *Scheduler) checkCpDepthProofRequest(depthHeight, latestHeight, txIndex 
 		}
 		return exists, nil
 	} else if step > common.BtcCpMinDepth {
-		ok, err := s.checkDepthRecursive(depthHeight, latestHeight, common.BtcCpMinDepth, txIndex)
+		ok, err := s.checkDepthRecursive(depthHeight, latestHeight, common.BtcCpMinDepth, height, txIndex)
 		if err != nil {
 			logger.Error("check depth proof error:%v %v", depthHeight, err)
 			return false, err
@@ -597,7 +597,7 @@ func (s *Scheduler) checkTxDepthRequest(depthHeight, latestHeight, txIndex uint6
 		}
 		return exists, nil
 	} else if step > common.BtcTxUnitMaxDepth {
-		ok, err := s.checkDepthRecursive(depthHeight, latestHeight, common.BtcTxUnitMaxDepth, txIndex)
+		ok, err := s.checkDepthRecursive(depthHeight, latestHeight, common.BtcTxUnitMaxDepth, depthHeight, txIndex)
 		if err != nil {
 			logger.Error("check depth recursive error:%v %v %v", depthHeight, latestHeight, err)
 			return false, err
@@ -609,7 +609,7 @@ func (s *Scheduler) checkTxDepthRequest(depthHeight, latestHeight, txIndex uint6
 	}
 }
 
-func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64, maxUnitDepth, txIndex uint64) (bool, error) {
+func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64, maxUnitDepth, height, txIndex uint64) (bool, error) {
 	_, exists, err := s.fileStore.FindDepthProof(depthHeight, latestHeight)
 	if err != nil {
 		logger.Error("check depth proof error:%v %v", depthHeight, err)
@@ -624,7 +624,7 @@ func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64,
 		PType:   common.BtcBulkType,
 		FIndex:  depthHeight,
 		SIndex:  depthHeight + maxUnitDepth,
-		Height:  depthHeight,
+		Height:  height,
 		TxIndex: uint32(txIndex),
 	}
 	exists, err = s.fileStore.CheckProof(bulkStoreKey)
@@ -657,7 +657,7 @@ func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64,
 			Prefix:  depthIndex[0].Genesis,
 			FIndex:  depthIndex[0].Start,
 			SIndex:  depthIndex[0].End,
-			Height:  depthHeight,
+			Height:  height,
 			TxIndex: uint32(txIndex),
 		}
 		exists, err := s.fileStore.CheckProof(storeKey)
