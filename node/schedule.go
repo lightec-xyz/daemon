@@ -617,17 +617,19 @@ func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64,
 
 func (s *Scheduler) btcStateRollback(forkHeight uint64) error {
 	logger.Debug("btc scheduler roll back to height: %v", forkHeight)
-	err := s.proofQueue.Filter(func(request *common.ProofRequest) (bool, error) {
-		if common.IsBtcProofType(request.ProofType) && forkHeight <= request.SIndex {
-			s.cache.Delete(request.ProofId())
-			logger.Warn("request queue find unmatched proof request: %v", request.ProofId())
-			return false, nil
+	filterReqs, err := s.proofQueue.Filter(func(request *common.ProofRequest) (bool, error) {
+		if common.IsBtcProofType(request.ProofType) && forkHeight >= request.SIndex {
+			return true, nil
 		}
-		return true, nil
+		return false, nil
 	})
 	if err != nil {
 		logger.Error("remove queue error:%v", err)
 		return err
+	}
+	for _, req := range filterReqs {
+		logger.Warn("proof queue find forked  proof request: %v", req.ProofId())
+		s.removeRequest(req.ProofId())
 	}
 	s.pendingQueue.Iterator(func(request *common.ProofRequest) error {
 		if common.IsBtcProofType(request.ProofType) && forkHeight <= request.SIndex {
