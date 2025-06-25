@@ -30,10 +30,9 @@ type manager struct {
 }
 
 func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *Prepared,
-	btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ProofResponse, store store.IStore, fileStore *FileStorage, cache *cache,
+	btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ProofResponse, store store.IStore, fileStore *FileStorage,
 	btcNotify, ethNotify, beaconNotify chan *Notify) (IManager, error) {
-	scheduler, err := NewScheduler(NewArrayQueue(sortRequest), NewPendingQueue(), fileStore, store, cache, prep,
-		icpClient, btcClient, ethClient)
+	scheduler, err := NewScheduler(fileStore, store, prep, icpClient, btcClient, ethClient)
 	if err != nil {
 		logger.Error("new scheduler error:%v", err)
 		return nil, err
@@ -120,15 +119,15 @@ func (m *manager) LibP2pMessage(msg *p2p.Msg) error {
 }
 
 func (m *manager) GetProofRequest(proofTypes []common.ProofType) (*common.ProofRequest, bool, error) {
-	if m.scheduler.proofQueue.Len() == 0 {
+	if m.scheduler.queueManager.RequestLen() == 0 {
 		return nil, false, nil
 	}
 	var request *common.ProofRequest
 	var ok bool
 	if len(proofTypes) == 0 {
-		request, ok = m.scheduler.proofQueue.Pop()
+		request, ok = m.scheduler.queueManager.PopRequest()
 	} else {
-		request, ok = m.scheduler.proofQueue.PopFn(func(request *common.ProofRequest) bool {
+		request, ok = m.scheduler.queueManager.PopFnRequest(func(request *common.ProofRequest) bool {
 			for _, req := range proofTypes {
 				if request.ProofType == req {
 					return true

@@ -23,14 +23,12 @@ type IScheduler interface {
 }
 
 type Scheduler struct {
-	proofQueue   *ArrayQueue
-	pendingQueue *PendingQueue
+	queueManager *QueueManager
 	fileStore    *FileStorage
 	btcClient    *bitcoin.Client
 	ethClient    *ethereum.Client
 	icpClient    *dfinity.Client
 	chainStore   *ChainStore
-	cache        *cache
 	preparedData *Prepared
 	lock         sync.Mutex
 }
@@ -81,7 +79,7 @@ func (s *Scheduler) updateBtcCp() error {
 		return nil
 	}
 	btcCpKey := NewHashStoreKey(common.BtcUpdateCpType, cpTx.Hash)
-	if s.cache.Check(btcCpKey.ProofId()) {
+	if s.queueManager.CheckId(btcCpKey.ProofId()) {
 		return nil
 	}
 	exists, err = s.fileStore.CheckProof(btcCpKey)
@@ -617,7 +615,7 @@ func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64,
 
 func (s *Scheduler) btcStateRollback(forkHeight uint64) error {
 	logger.Debug("btc scheduler roll back to height: %v", forkHeight)
-	filterReqs, err := s.proofQueue.Filter(func(request *common.ProofRequest) (bool, error) {
+	filterReqs, err := s.queueManager.FilterRequest(func(request *common.ProofRequest) (bool, error) {
 		if common.IsBtcProofType(request.ProofType) && forkHeight >= request.SIndex {
 			return true, nil
 		}
@@ -631,10 +629,10 @@ func (s *Scheduler) btcStateRollback(forkHeight uint64) error {
 		logger.Warn("proof queue find forked  proof request: %v", req.ProofId())
 		s.removeRequest(req.ProofId())
 	}
-	s.pendingQueue.Iterator(func(request *common.ProofRequest) error {
+	s.queueManager.IteratorPending(func(request *common.ProofRequest) error {
 		if common.IsBtcProofType(request.ProofType) && forkHeight <= request.SIndex {
 			logger.Warn("pending queue find unmatched proof request: %v", request.ProofId())
-			s.pendingQueue.Delete(request.ProofId())
+			s.queueManager.DeletePending(request.ProofId())
 			return nil
 		}
 		return nil
@@ -644,7 +642,7 @@ func (s *Scheduler) btcStateRollback(forkHeight uint64) error {
 
 func (s *Scheduler) tryProofRequest(key StoreKey) (bool, error) {
 	proofId := common.GenKey(key.PType, key.Prefix, key.FIndex, key.SIndex, key.Hash).String()
-	exists := s.cache.Check(proofId)
+	exists := s.queueManager.CheckId(proofId)
 	if exists {
 		logger.Debug("proof request exists: %v", proofId)
 		return false, nil
@@ -670,11 +668,11 @@ func (s *Scheduler) tryProofRequest(key StoreKey) (bool, error) {
 		return false, nil
 	}
 	req := common.NewProofRequest(key.PType, data, key.Prefix, key.FIndex, key.SIndex, key.Hash)
-	if s.cache.Check(proofId) {
+	if s.queueManager.CheckId(proofId) {
 		return true, nil
 	}
-	s.cache.Store(proofId, nil)
-	s.proofQueue.Push(req)
+	s.queueManager.StoreId(proofId)
+	s.queueManager.PushRequest(req)
 	if req.ProofType == common.BtcDepositType {
 		err := s.chainStore.IncrDepositCount(req.FIndex)
 		if err != nil {
@@ -1057,7 +1055,7 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 
 // when update a latestHeight of tx ,need to remove the expired request
 func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
-	expiredRequests := s.proofQueue.Remove(func(value *common.ProofRequest) bool {
+	expiredRequests := s.queueManager.RemoveRequest(func(value *common.ProofRequest) bool {
 		switch value.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType, common.BtcChangeType:
 			if common.StrEqual(value.Hash, tx.Hash) {
@@ -1122,30 +1120,28 @@ func (s *Scheduler) delUnGenProof(chain common.ChainType, hash string) error {
 
 func (s *Scheduler) addRequestToPending(req *common.ProofRequest) {
 	logger.Debug("add request to pending queue: %v", req.ProofId())
-	s.pendingQueue.Add(req.ProofId(), req)
+	s.queueManager.AddPending(req.ProofId(), req)
 }
 
 func (s *Scheduler) removeRequest(proofId string) {
-	s.pendingQueue.Delete(proofId)
-	s.cache.Delete(proofId)
+	s.queueManager.DeletePending(proofId)
+	s.queueManager.DeleteId(proofId)
 }
 
 func (s *Scheduler) PendingProofRequest() []*common.ProofRequest {
-	return s.proofQueue.List()
+	return s.queueManager.ListRequest()
 }
 
 func (s *Scheduler) IterPendingRequest(fn func(request *common.ProofRequest) error) {
-	s.pendingQueue.Iterator(fn)
+	s.queueManager.IteratorPending(fn)
 }
 
-func NewScheduler(queue *ArrayQueue, pQueue *PendingQueue, filestore *FileStorage, store store.IStore, cache *cache, preparedData *Prepared,
+func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prepared,
 	icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client) (*Scheduler, error) {
 	return &Scheduler{
-		proofQueue:   queue,
-		pendingQueue: pQueue,
+		queueManager: NewQueueManager(),
 		fileStore:    filestore,
 		chainStore:   NewChainStore(store),
-		cache:        cache,
 		preparedData: preparedData,
 		btcClient:    btcClient,
 		ethClient:    ethClient,

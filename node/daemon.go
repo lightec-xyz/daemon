@@ -191,7 +191,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new tx manager error: %v", err)
 		return nil, err
 	}
-	cache := NewCacheState()
 	var agents []*WrapperAgent
 	if !cfg.DisableBeaconAgent {
 		beaconAgent, err := NewBeaconAgent(cfg.BeaconReScan, storeDb, beaconClient, beaClient, fileStore, cfg.BeaconInitSlot)
@@ -244,7 +243,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 
 	manager, err := NewManager(cfg.MinerAddr, libp2p, dfinityClient, btcClient, ethClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
-		storeDb, fileStore, cache, btcNotify, ethNotify, beaconNotify)
+		storeDb, fileStore, btcNotify, ethNotify, beaconNotify)
 	if err != nil {
 		logger.Error("new manager error: %v", err)
 		return nil, err
