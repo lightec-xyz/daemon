@@ -1,4 +1,4 @@
-package cmd
+package miner
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var minerCmd = &cobra.Command{
-	Use:   "miner",
+var nonce = &cobra.Command{
+	Use:   "nonce",
 	Short: "update miner nonce",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -20,12 +20,19 @@ var minerCmd = &cobra.Command{
 			fmt.Printf("init logger error: %v \n", err)
 			return
 		}
-		cfg, err := readCfg(cfgFile)
+		cfgFile, err := cmd.Root().PersistentFlags().GetString("config")
+		if err != nil {
+			fmt.Printf("get config error: %v \n", err)
+			return
+		}
+		fmt.Printf("config file: %v \n", cfgFile)
+		var cfg node.RunConfig
+		err = common.ReadObj(cfgFile, &cfg)
 		if err != nil {
 			fmt.Printf("read config error: %v %v \n", cfgFile, err)
 			return
 		}
-		miner, err := cmd.Flags().GetString("miner")
+		miner, err := cmd.Flags().GetString("addr")
 		if err != nil {
 			fmt.Printf("get miner error: %v \n", err)
 			return
@@ -75,7 +82,6 @@ var minerCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(minerCmd)
-	minerCmd.Flags().String("miner", "", "miner address")
-	minerCmd.Flags().Int64("nonce", -1, "miner nonce")
+	nonce.Flags().String("addr", "", "miner address")
+	nonce.Flags().Int64("nonce", -1, "miner nonce")
 }
