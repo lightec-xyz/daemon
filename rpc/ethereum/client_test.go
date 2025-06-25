@@ -28,6 +28,14 @@ func init() {
 	}
 }
 
+func TestClient_GetNonce(t *testing.T) {
+	nonce, err := client.GetNonce("0xb4183bB52E44C6861AEF3B626eb2195288AfCa2f")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(nonce)
+}
+
 func TestClient_IsCandidateExist(t *testing.T) {
 	exist, err := client.IsCandidateExist("0000000000000001e7a798ae790a9df0befa97d78816d8da1ae46f17b27547ed")
 	if err != nil {
