@@ -167,21 +167,24 @@ func (q *ArrayQueue) Iterator(fn func(index int, value *common.ProofRequest) err
 	}
 }
 
-func (q *ArrayQueue) Filter(fn func(value *common.ProofRequest) (bool, error)) error {
+func (q *ArrayQueue) Filter(fn func(value *common.ProofRequest) (bool, error)) ([]*common.ProofRequest, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
+	var filtersReq []*common.ProofRequest
 	var newList []*common.ProofRequest
 	for _, value := range q.list {
 		ok, err := fn(value)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if ok {
+			filtersReq = append(filtersReq, value)
+		} else {
 			newList = append(newList, value)
 		}
 	}
 	q.list = newList
-	return nil
+	return filtersReq, nil
 }
 
 func (q *ArrayQueue) Len() int {
