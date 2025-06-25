@@ -67,6 +67,15 @@ func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared
 }
 
 func (t *TxManager) init() error {
+	nonce, err := t.ethClient.GetNonce(t.submitAddr)
+	if err != nil {
+		return err
+	}
+	err = t.chainStore.WriteNonce(common.ETH.String(), t.submitAddr, nonce-1)
+	if err != nil {
+		return err
+	}
+	logger.Debug("current miner %v chaiNonce: %v,update dbNonce: %v", t.submitAddr, nonce, nonce-1)
 	return nil
 }
 
