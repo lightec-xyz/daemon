@@ -51,6 +51,19 @@ var minerCmd = &cobra.Command{
 			fmt.Printf("write nonce error: %v \n", err)
 			return
 		}
+		minerNonce, ok, err := chainStore.ReadNonce(common.EthereumChain.String(), miner)
+		if err != nil {
+			fmt.Printf("read nonce error: %v \n", err)
+			return
+		}
+		if !ok {
+			fmt.Printf("read nonce error: %v \n", err)
+			return
+		}
+		if uint64(nonce) != minerNonce {
+			fmt.Printf("read nonce error: %v \n", err)
+			return
+		}
 		fmt.Printf("write nonce success %v %v \n", miner, nonce)
 	},
 }
