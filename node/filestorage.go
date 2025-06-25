@@ -27,6 +27,8 @@ type StoreKey struct {
 	FIndex, SIndex uint64
 	Prefix         uint64
 	isCp           bool
+	Height         uint64
+	TxIndex        uint32
 }
 
 func (sk *StoreKey) FileKey() store.FileKey {
@@ -868,6 +870,12 @@ func newStoreProof(proofType common.ProofType, id string, proof, witness []byte)
 func prefixToTable(prefix interface{}) store.Table {
 	return store.Table(fmt.Sprintf("%v", prefix))
 }
+
+func NewBtcKey(proofType common.ProofType, hash string, prefix, fIndex, sIndex, height uint64, txIndex uint) StoreKey {
+	return StoreKey{PType: proofType, Prefix: prefix, FIndex: fIndex, SIndex: sIndex, Hash: hash, Height: height,
+		TxIndex: uint32(txIndex)}
+}
+
 func NewStoreKey(proofType common.ProofType, hash string, prefix, fIndex, sIndex uint64) StoreKey {
 	return StoreKey{PType: proofType, Hash: hash, Prefix: prefix, FIndex: fIndex, SIndex: sIndex}
 }
