@@ -615,7 +615,7 @@ func (s *Scheduler) checkDepthRecursive(depthHeight uint64, latestHeight uint64,
 
 func (s *Scheduler) btcStateRollback(forkHeight uint64) error {
 	logger.Debug("btc scheduler roll back to height: %v", forkHeight)
-	filterReqs := s.queueManager.FilterRequest(func(request *common.ProofRequest) bool {
+	filterReqs := s.queueManager.RemoveRequest(func(request *common.ProofRequest) bool {
 		if common.IsBtcProofType(request.ProofType) && forkHeight <= request.SIndex {
 			return true
 		}

@@ -200,11 +200,12 @@ func (q *ArrayQueue) Filter(fn func(value *common.ProofRequest) bool) []*common.
 	defer q.lock.Unlock()
 	var filtersReq []*common.ProofRequest
 	for _, value := range q.list {
-		if fn != nil {
-			ok := fn(value)
-			if ok {
-				filtersReq = append(filtersReq, value)
-			}
+		if fn == nil {
+			return filtersReq
+		}
+		ok := fn(value)
+		if ok {
+			filtersReq = append(filtersReq, value)
 		}
 	}
 	return filtersReq
@@ -219,18 +220,21 @@ func (q *ArrayQueue) Len() int {
 func (q *ArrayQueue) Remove(fn func(value *common.ProofRequest) bool) []*common.ProofRequest {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	var expired []*common.ProofRequest
+	var filters []*common.ProofRequest
 	var newList []*common.ProofRequest
 	for _, value := range q.list {
+		if fn != nil {
+			return filters
+		}
 		ok := fn(value)
 		if ok {
-			expired = append(expired, value)
+			filters = append(filters, value)
 		} else {
 			newList = append(newList, value)
 		}
 	}
 	q.list = newList
-	return expired
+	return filters
 }
 
 func (q *ArrayQueue) List() []*common.ProofRequest {
