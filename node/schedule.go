@@ -764,6 +764,15 @@ func (s *Scheduler) CheckEthState() error {
 			logger.Error("check tx proved error: %v %v", txHash, err)
 			return err
 		}
+		dbTx, ok, err := s.chainStore.ReadRedeemTx(txHash)
+		if err != nil {
+			logger.Error("read redeem tx error: %v %v", txHash, err)
+			return err
+		}
+		if !ok {
+			logger.Warn("read redeem tx error: %v %v", txHash, err)
+			return nil
+		}
 		if proved {
 			backendRedeemStoreKey := NewHashStoreKey(common.BackendRedeemTxType, txHash)
 			exists, err := s.fileStore.CheckProof(backendRedeemStoreKey)

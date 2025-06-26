@@ -22,6 +22,19 @@ func NewChainStore(store store.IStore) *ChainStore {
 	return &ChainStore{store: store}
 }
 
+func (cs *ChainStore) ReadRedeemTx(txId string) (*DbTx, bool, error) {
+	dbTxes, err := cs.ReadDbTxes(txId)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, tx := range dbTxes {
+		if tx.TxType == common.RedeemTx {
+			return tx, true, nil
+		}
+	}
+	return nil, false, nil
+}
+
 func (cs *ChainStore) WriteDepositCount(height, count uint64) error {
 	return cs.store.PutObj(height, count)
 }
@@ -746,17 +759,6 @@ func (cs *ChainStore) DeleteDbProof(txIds []string) error {
 		}
 		return nil
 	})
-}
-
-func (cs *ChainStore) DeleteDbBtcTxes(txId []string) error {
-	batch := cs.store.Batch()
-	for _, id := range txId {
-		err := batch.BatchDeleteObj(dbBtcTxId(id))
-		if err != nil {
-			return err
-		}
-	}
-	return batch.BatchWrite()
 }
 
 func (cs *ChainStore) DeleteAddrTxesPrefix(txIds []string) error {

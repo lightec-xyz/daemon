@@ -623,6 +623,7 @@ func NewDepositEthTx(height uint64, txIndex, logIndex uint, txHash, sender, utxo
 		UtxoIndex: utxoIndex,
 		Amount:    amount,
 		Sender:    sender,
+		BlockTime: blockTime,
 	}
 }
 
@@ -638,6 +639,7 @@ func NewRedeemEthTx(height uint64, txIndex, logIndex uint, txHash, sender, btcTx
 		UtxoId:    DbValue(btcTxId),
 		Sender:    DbValue(sender),
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
 func NewUpdateUtxoTx(height uint64, txIndex, logIndex uint, txHash, utxoId string, utxoIndex, amount int64, blockTime uint64) *DbTx {
@@ -651,6 +653,7 @@ func NewUpdateUtxoTx(height uint64, txIndex, logIndex uint, txHash, utxoId strin
 		UtxoId:    utxoId,
 		UtxoIndex: utxoIndex,
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
 
@@ -665,6 +668,7 @@ func NewDepositRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, m
 		Sender:    DbValue(sender),
 		Receiver:  DbValue(minerAddr),
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
 
@@ -679,6 +683,7 @@ func NewRedeemRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, mi
 		Sender:    DbValue(sender),
 		Receiver:  DbValue(minerAddr),
 		Amount:    amount,
+		BlockTime: blockTime,
 	}
 }
 
