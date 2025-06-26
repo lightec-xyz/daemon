@@ -164,8 +164,9 @@ func (m *manager) ReceiveProofs(res *common.SubmitProof) error {
 	if res.Status {
 		go m.storeProof(res.Responses)
 	} else {
-		//todo
-		//go m.tryRequestAgain(res.Requests)
+		for _, req := range res.Requests {
+			m.scheduler.removeRequest(req.ProofId())
+		}
 	}
 	return nil
 }
@@ -214,10 +215,6 @@ func (m *manager) storeProof(responses []*common.ProofResponse) {
 		if forked {
 			logger.Warn("success receive proof,%v but it's forked proof,try again", proofId)
 			m.scheduler.removeRequest(proofId)
-			//_, err := m.scheduler.tryProofRequest(storeKey)
-			//if err != nil {
-			//	logger.Error("try proof request error: %v %v", proofId, err)
-			//}
 			continue
 		}
 		// first btcUpper proof,store it to btcDuperProof

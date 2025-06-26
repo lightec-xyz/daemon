@@ -27,7 +27,7 @@ type StoreKey struct {
 	FIndex, SIndex uint64
 	Prefix         uint64
 	isCp           bool
-	Height         uint64
+	BlockTime      uint64
 	TxIndex        uint32
 }
 
@@ -871,17 +871,8 @@ func prefixToTable(prefix interface{}) store.Table {
 	return store.Table(fmt.Sprintf("%v", prefix))
 }
 
-func NewBtcKey(proofType common.ProofType, hash string, prefix, fIndex, sIndex, height uint64, txIndex uint) StoreKey {
-	return StoreKey{PType: proofType, Prefix: prefix, FIndex: fIndex, SIndex: sIndex, Hash: hash, Height: height,
-		TxIndex: uint32(txIndex)}
-}
-
 func NewStoreKey(proofType common.ProofType, hash string, prefix, fIndex, sIndex uint64) StoreKey {
 	return StoreKey{PType: proofType, Hash: hash, Prefix: prefix, FIndex: fIndex, SIndex: sIndex}
-}
-
-func NewBtcStoreKey(proofType common.ProofType, height, latestHeight uint64, hash string) StoreKey {
-	return StoreKey{PType: proofType, FIndex: height, SIndex: latestHeight, Hash: hash}
 }
 
 func NewHashStoreKey(proofType common.ProofType, hash string) StoreKey {
@@ -897,10 +888,6 @@ func NewDoubleStoreKey(proofType common.ProofType, fIndex, sIndex uint64) StoreK
 }
 func NewPrefixStoreKey(proofType common.ProofType, prefix, fIndex, sIndex uint64) StoreKey {
 	return StoreKey{PType: proofType, Prefix: prefix, FIndex: fIndex, SIndex: sIndex, isCp: true}
-}
-
-func NewTxDepthStoreKey(proofType common.ProofType, prefix, fIndex, sIndex uint64) StoreKey {
-	return StoreKey{PType: proofType, Prefix: prefix, FIndex: fIndex, SIndex: sIndex, isCp: false}
 }
 
 func FileKeyToIndex(fileKey store.FileKey) (uint64, uint64, uint64, error) {
