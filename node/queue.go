@@ -111,6 +111,9 @@ func (q *PendingQueue) Iterator(fn func(value *common.ProofRequest) bool) []*com
 
 func sortRequest(a, b *common.ProofRequest) bool {
 	if a.BlockTime != 0 && b.BlockTime != 0 {
+		if a.BlockTime == b.BlockTime {
+			return a.TxIndex < b.TxIndex
+		}
 		return a.BlockTime < b.BlockTime
 	}
 	if a.Weight == b.Weight {
