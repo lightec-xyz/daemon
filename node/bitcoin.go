@@ -445,7 +445,7 @@ func (b *bitcoinAgent) depositTx(tx bitcoin.Tx, height, txIndex, blockTime uint6
 	if !isDeposit {
 		return nil, false, nil
 	}
-	ethAddr, err := getEthAddr(tx.Vout)
+	ethAddr, err := isOpZkpProto(tx.Vout)
 	if err != nil {
 		logger.Error("get deposit info error: %v %v", tx.Txid, err)
 		return nil, false, nil
@@ -535,7 +535,10 @@ func NewRedeemBtcTx(height, txIndex, blockTime uint64, txId string, amount int64
 	}
 }
 
-func getEthAddr(outputs []bitcoin.TxVout) (string, error) {
+func isOpZkpProto(outputs []bitcoin.TxVout) (string, error) {
+	//https://mempool.space/zh/testnet4/tx/923d9f0fcb3654a343fd3e23d53f729c227f3ae77619e795e20c8b11a34bd358
+	//op_return + length + ethAddr （20 byte） + extra （0+byte）
+	//6a14e96af29bb5bb124c705c69034262fbc9fbb2d5f3
 	for _, out := range outputs {
 		if out.ScriptPubKey.Type == "nulldata" && strings.HasPrefix(out.ScriptPubKey.Hex, "6a") {
 			ethAddr, err := getEthAddrFromScript(out.ScriptPubKey.Hex)
@@ -569,16 +572,16 @@ func getRedeemAmount(txOuts []bitcoin.TxVout, addr string) float64 {
 }
 
 func getEthAddrFromScript(script string) (string, error) {
-	// example https://live.blockcypher.com/btc-testnet/tx/fa1bee4165f1720b33047792e47743aeb406940f4b2527874929db9cdbb9da42/
-	if len(script) < 5 {
-		return "", fmt.Errorf("scritp lenght is less than 4")
+	//6a 14 e96af29bb5bb124c705c69034262fbc9fbb2d5f3
+	if len(script) < 44 {
+		return "", fmt.Errorf("scritp lenght is less than 44")
 	}
 	if !strings.HasPrefix(script, "6a") {
 		return "", fmt.Errorf("script is not start with 6a")
 	}
-	isHexAddress := ethcommon.IsHexAddress(script[4:])
+	isHexAddress := ethcommon.IsHexAddress(script[4:44])
 	if !isHexAddress {
 		return "", fmt.Errorf("script is not hex address")
 	}
-	return script[4:], nil
+	return script[4:44], nil
 }
