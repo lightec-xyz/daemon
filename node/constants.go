@@ -33,15 +33,15 @@ const (
 // ********************* testnet ************************
 const (
 	LightecTestnet            = "testnet"
-	TestnetBtcOperatorAddress = "tb1qqnj9cxvhgm9d6yqdrv2v4axv7hafjhrfgnarxfxen0j88nyy3xgqtptt97"
-	TestnetBtcLockScript      = "0x002004e45c199746cadd100d1b14caf4ccf5fa995c6944fa3324d99be473cc848990"
-	TestnetMultiSig           = "0x5221038b6ce7e785f30c0eee59deda56c132a291d81800d2040bfb1e7b367c0e01f16d2102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
-	TestnetEthZkBridgeAddress = "0x5be96fd969C3CBa0079bb386abFfA683d338710C"
-	TestnetEthZkBtcAddress    = "0xF555fE8713E60a9B2fc636E39b3CbC179dB4D584"
-	TestEthUtxoManagerAddress = "0x2880732395cDeB0Fe27B45976B9aC159A03f2A8B"
-	TestEthBtcTxVerifyAddress = "0x9E16EFFa2740B3a955872660f01AA0c26aA7ABD8"
-	TestnetFeePoolAddr        = "0x7F065f8C92F9Eafb592c9CdECd94CcbE2fb33F08"
-	TestnetOasisSignerAddr    = "0x5286d6EF240C09c0Fbd85DA530dcAB712f8Fa5C8"
+	TestnetBtcOperatorAddress = "tb1qxv89x4mmu0e64e7g5zu3f4h9ar0zd7xjfw8fk3c7nd4vxh3swc6spz645v"
+	TestnetBtcLockScript      = "0x0020330e53577be3f3aae7c8a0b914d6e5e8de26f8d24b8e9b471e9b6ac35e307635"
+	TestnetMultiSig           = "0x52210327716110843c703f59f78c6d5e1b9c634307b87f95d161251a97f722c8bb9aa62102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
+	TestnetEthZkBridgeAddress = "0x04780Df6a1ac52cAd834C30Ff4Db6C13835241b0"
+	TestnetEthZkBtcAddress    = "0x079ED59FeE424de72E8C5D714331E4192f5151D1"
+	TestEthUtxoManagerAddress = "0x99DB155E0AdF0ecb754e1fa52AD44D65C667935D"
+	TestEthBtcTxVerifyAddress = "0x2B7DFb385C81582FE151E85Db0E160A17E4971BF"
+	TestnetFeePoolAddr        = "0x5149c483F180488189593b4B042dB3765EC04aF3"
+	TestnetOasisSignerAddr    = "0xbAa42115A13d62B4e99a227bd650991B5DB1a6Bb"
 	TestnetIcpPublicKey       = "0x02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b"
 	TestnetBtcScanTime        = 1 * time.Minute
 	TestnetEthScanTime        = 30 * time.Second

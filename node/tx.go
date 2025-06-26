@@ -348,6 +348,8 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 	}
 	btcTxHex := hex.EncodeToString(btcTxBytes)
 	logger.Info("Redeem btc: %v %v", btcTxHash, btcTxHex)
+	//todo
+	return btcTxHash, nil
 	txHash, err := t.btcClient.Sendrawtransaction(btcTxHex)
 	if err != nil {
 		logger.Error("send btc tx btcHash:%v,hash:%v %v", btcTxHash, hash, err)
