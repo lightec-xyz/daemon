@@ -1,4 +1,4 @@
-package cmd
+package proof
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-var exportProofCmd = &cobra.Command{
-	Use:   "exportProof",
+var importCmd = &cobra.Command{
+	Use:   "import",
 	Short: "export proof to db",
 	Run: func(cmd *cobra.Command, args []string) {
 		name, err := cmd.Flags().GetString("name")
@@ -80,11 +80,10 @@ var exportProofCmd = &cobra.Command{
 }
 
 func init() {
-	exportProofCmd.Flags().String("proof", "", "gnark proof path")
-	exportProofCmd.Flags().String("witness", "", "gnark witness path")
-	exportProofCmd.Flags().String("name", "", "circuit name")
-	exportProofCmd.Flags().String("datadir", "", "datadir path")
-	rootCmd.AddCommand(exportProofCmd)
+	importCmd.Flags().String("proof", "", "gnark proof path")
+	importCmd.Flags().String("witness", "", "gnark witness path")
+	importCmd.Flags().String("name", "", "circuit name")
+	importCmd.Flags().String("datadir", "", "datadir path")
 }
 
 func getProofType(name string) (common.ProofType, error) {

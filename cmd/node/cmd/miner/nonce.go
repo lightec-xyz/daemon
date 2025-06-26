@@ -1,25 +1,38 @@
-package cmd
+package miner
 
 import (
 	"fmt"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/store"
 	"github.com/spf13/cobra"
 )
 
-var minerCmd = &cobra.Command{
-	Use:   "miner",
+var nonce = &cobra.Command{
+	Use:   "nonce",
 	Short: "update miner nonce",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := readCfg(cfgFile)
+		err := logger.InitLogger(nil)
+		if err != nil {
+			fmt.Printf("init logger error: %v \n", err)
+			return
+		}
+		cfgFile, err := cmd.Root().PersistentFlags().GetString("config")
+		if err != nil {
+			fmt.Printf("get config error: %v \n", err)
+			return
+		}
+		fmt.Printf("config file: %v \n", cfgFile)
+		var cfg node.RunConfig
+		err = common.ReadObj(cfgFile, &cfg)
 		if err != nil {
 			fmt.Printf("read config error: %v %v \n", cfgFile, err)
 			return
 		}
-		miner, err := cmd.Flags().GetString("miner")
+		miner, err := cmd.Flags().GetString("addr")
 		if err != nil {
 			fmt.Printf("get miner error: %v \n", err)
 			return
@@ -46,12 +59,12 @@ var minerCmd = &cobra.Command{
 			return
 		}
 		chainStore := node.NewChainStore(storeDb)
-		err = chainStore.WriteNonce(common.EthereumChain.String(), miner, uint64(nonce))
+		err = chainStore.WriteNonce(common.ETH.String(), miner, uint64(nonce))
 		if err != nil {
 			fmt.Printf("write nonce error: %v \n", err)
 			return
 		}
-		minerNonce, ok, err := chainStore.ReadNonce(common.EthereumChain.String(), miner)
+		minerNonce, ok, err := chainStore.ReadNonce(common.ETH.String(), miner)
 		if err != nil {
 			fmt.Printf("read nonce error: %v \n", err)
 			return
@@ -69,7 +82,6 @@ var minerCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(minerCmd)
-	minerCmd.Flags().String("miner", "", "miner address")
-	minerCmd.Flags().Int64("nonce", -1, "miner nonce")
+	nonce.Flags().String("addr", "", "miner address")
+	nonce.Flags().Int64("nonce", -1, "miner nonce")
 }

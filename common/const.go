@@ -388,9 +388,21 @@ func ToZkProofType(str string) (ProofType, error) {
 }
 
 func IsBtcProofType(proofType ProofType) bool {
+	return IsBtcExternalProofType(proofType) || IsBtcInternalProofType(proofType)
+}
+
+func IsBtcExternalProofType(proofType ProofType) bool {
 	switch proofType {
-	case BtcBulkType, BtcTimestampType, BtcBaseType, BtcMiddleType, BtcUpperType, BtcDuperRecursiveType, BtcDepthRecursiveType,
-		BtcDepositType, BtcChangeType, BtcUpdateCpType:
+	case BtcDepositType, BtcChangeType, BtcUpdateCpType:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsBtcInternalProofType(proofType ProofType) bool {
+	switch proofType {
+	case BtcBulkType, BtcBaseType, BtcMiddleType, BtcUpperType, BtcDuperRecursiveType, BtcDepthRecursiveType:
 		return true
 	default:
 		return false
