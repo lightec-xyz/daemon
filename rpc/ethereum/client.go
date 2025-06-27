@@ -11,7 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -300,10 +300,7 @@ func (c *Client) Deposit(secret []byte, params *zkbridge.IBtcTxVerifierPublicWit
 	if err != nil {
 		return "", err
 	}
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
-	if err != nil {
-		return "", err
-	}
+	auth := bind.NewKeyedTransactor(privateKey, chainID)
 	auth.Context = ctx
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.GasFeeCap = gasPrice
@@ -347,10 +344,7 @@ func (c *Client) UpdateUtxoChange(secret []byte, params *zkbridge.IBtcTxVerifier
 	if err != nil {
 		return "", err
 	}
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
-	if err != nil {
-		return "", err
-	}
+	auth := bind.NewKeyedTransactor(privateKey, chainID)
 	auth.Context = ctx
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.GasFeeCap = gasPrice
@@ -363,14 +357,26 @@ func (c *Client) UpdateUtxoChange(secret []byte, params *zkbridge.IBtcTxVerifier
 
 }
 
-func TxIdsToFixedIds(txIds []string) [][32]byte {
-	fixedTxIds := make([][32]byte, 0)
-	for _, txId := range txIds {
-		fixedTxId := [32]byte{}
-		copy(fixedTxId[:], ethcommon.FromHex(txId))
-		fixedTxIds = append(fixedTxIds, fixedTxId)
+func (c *Client) EstimateRedeemGasLimit(from string, amount, btcMinerFee uint64, receiveLockScript []byte, gasPrice *big.Int) (uint64, error) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	defer cancelFunc()
+	payload, err := c.zkbtcBridgeAbi.Pack("redeem", amount, btcMinerFee, receiveLockScript)
+	if err != nil {
+		return 0, err
 	}
-	return fixedTxIds
+	toAddress := ethcommon.HexToAddress(c.zkbtcBridgeAddr)
+	msg := ethereum.CallMsg{
+		From:     ethcommon.HexToAddress(from),
+		To:       &toAddress,
+		GasPrice: gasPrice,
+		Value:    big.NewInt(0),
+		Data:     payload,
+	}
+	gasLimit, err := c.EstimateGas(ctx, msg)
+	if err != nil {
+		return 0, err
+	}
+	return gasLimit, nil
 }
 
 func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice *big.Int,
@@ -381,10 +387,7 @@ func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice
 	if err != nil {
 		return "", err
 	}
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
-	if err != nil {
-		return "", err
-	}
+	auth := bind.NewKeyedTransactor(privateKey, chainID)
 	auth.Context = ctx
 	auth.Nonce = nonce
 	auth.GasFeeCap = gasPrice

@@ -22,6 +22,22 @@ func init() {
 	}
 }
 
+func TestClient_CheckTxOnChain(t *testing.T) {
+	exists, err := client.CheckTxOnChain("0edef4c17568ee3f6dfdd275c684572a05ffc22283acddc10f84d1b74bc39f82")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(exists)
+}
+
+func TestClient_GetRawTransaction(t *testing.T) {
+	tx, err := client.GetRawTransaction("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(tx)
+}
+
 func TestClient_Estimatesmartfee(t *testing.T) {
 	fee, err := client.Estimatesmartfee(50)
 	if err != nil {
@@ -67,7 +83,7 @@ func TestClient_GetBlockStr(t *testing.T) {
 }
 
 func TestClient_CheckTx(t *testing.T) {
-	tx, err := client.CheckTx("abd134879e9acd79cdae361ad986b2c1e5832aa28b33bdd4e488a5a01f6e5f05")
+	tx, err := client.CheckTxOnChain("abd134879e9acd79cdae361ad986b2c1e5832aa28b33bdd4e488a5a01f6e5f05")
 	if err != nil {
 		t.Fatal(err)
 	}
