@@ -36,6 +36,16 @@ func TestClient_GetNonce(t *testing.T) {
 	t.Log(nonce)
 }
 
+func TestClient_GetBlock(t *testing.T) {
+	block, err := client.GetBlock(8633812)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//1750950612
+	//1750919856
+	t.Log(block.Time())
+}
+
 func TestClient_IsCandidateExist(t *testing.T) {
 	exist, err := client.IsCandidateExist("0000000000000001e7a798ae790a9df0befa97d78816d8da1ae46f17b27547ed")
 	if err != nil {

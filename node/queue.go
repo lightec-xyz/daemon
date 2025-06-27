@@ -110,9 +110,11 @@ func (q *PendingQueue) Iterator(fn func(value *common.ProofRequest) bool) []*com
 }
 
 func sortRequest(a, b *common.ProofRequest) bool {
-	//todo
-	if common.IsBtcProofType(a.ProofType) && common.IsBtcProofType(b.ProofType) {
-		return a.Height < b.Height
+	if a.BlockTime != 0 && b.BlockTime != 0 {
+		if a.BlockTime == b.BlockTime {
+			return a.TxIndex < b.TxIndex
+		}
+		return a.BlockTime < b.BlockTime
 	}
 	if a.Weight == b.Weight {
 		if a.ProofType == b.ProofType {

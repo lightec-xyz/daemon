@@ -12,8 +12,6 @@ type Memguard struct {
 }
 
 func NewMemguard() *Memguard {
-	// todo
-	//memguard.CatchInterrupt()
 	return &Memguard{
 		memguardMap: make(map[string]*memguard.Enclave),
 	}

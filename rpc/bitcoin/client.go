@@ -97,7 +97,7 @@ func (c *Client) GetBlockByNumber(height uint64) (Block, error) {
 
 func (c *Client) GetBlock(hash string) (Block, error) {
 	res := Block{}
-	err := c.call("getblock", NewParams(hash, 3), res)
+	err := c.call("getblock", NewParams(hash, 3), &res)
 	if err != nil {
 		return Block{}, err
 	}
