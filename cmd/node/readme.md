@@ -14,7 +14,7 @@ scRoot
 
 readVk
 
-    ./node readVk --file /opt/lightec/opt2/circuitsetup/devnet/redeem.vk
+    ./node  proof readVk --file /opt/lightec/opt2/circuitsetup/devnet/redeem.vk
 
 export proof
 
