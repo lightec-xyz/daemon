@@ -170,6 +170,9 @@ func (q *ArrayQueue) PopFn(fn func(req *common.ProofRequest) bool) (*common.Proo
 	}
 	var newList []*common.ProofRequest
 	for index, value := range q.list {
+		if fn == nil {
+			return nil, false
+		}
 		ok := fn(value)
 		if ok {
 			newList = append(newList, q.list[0:index]...)
@@ -228,7 +231,7 @@ func (q *ArrayQueue) Remove(fn func(value *common.ProofRequest) bool) []*common.
 	var filters []*common.ProofRequest
 	var newList []*common.ProofRequest
 	for _, value := range q.list {
-		if fn != nil {
+		if fn == nil {
 			return filters
 		}
 		ok := fn(value)
