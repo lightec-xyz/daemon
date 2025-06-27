@@ -770,7 +770,7 @@ func (s *Scheduler) CheckEthState() error {
 			return nil
 		}
 		blockTime := dbTx.BlockTime
-		txIndex := uint32(dbTx.LogIndex)
+		txIndex := uint32(dbTx.TxIndex)
 		if proved {
 			backendRedeemStoreKey := StoreKey{
 				PType:     common.BackendRedeemTxType,
