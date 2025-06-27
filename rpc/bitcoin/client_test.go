@@ -22,6 +22,22 @@ func init() {
 	}
 }
 
+func TestClient_CheckTxOnChain(t *testing.T) {
+	exists, err := client.CheckTxOnChain("0edef4c17568ee3f6dfdd275c684572a05ffc22283acddc10f84d1b74bc39f82")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(exists)
+}
+
+func TestClient_GetRawTransaction(t *testing.T) {
+	tx, err := client.GetRawTransaction("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(tx)
+}
+
 func TestClient_Estimatesmartfee(t *testing.T) {
 	fee, err := client.Estimatesmartfee(50)
 	if err != nil {
@@ -47,10 +63,11 @@ func TestClient_Getmempoolentry(t *testing.T) {
 }
 
 func TestClient_GetBlock(t *testing.T) {
-	block, err := client.GetBlock("00000000cb5a6a6f3f2dda8ac1c597d307dedaa80a6f131d70cf235d49c78a36")
+	block, err := client.GetBlock("000000007f1e11a0deb802c7a9df1908e70f349faa38ffd09656fd2b2bde1528")
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log(block.Time)
 	for _, tx := range block.Tx {
 		if tx.Txid == "8067f979ca7c23baab0e00311550b8e096a5ec097eb96ff29fdb6e23bfc777e3" {
 			t.Log(tx)
@@ -66,7 +83,7 @@ func TestClient_GetBlockStr(t *testing.T) {
 }
 
 func TestClient_CheckTx(t *testing.T) {
-	tx, err := client.CheckTx("abd134879e9acd79cdae361ad986b2c1e5832aa28b33bdd4e488a5a01f6e5f05")
+	tx, err := client.CheckTxOnChain("abd134879e9acd79cdae361ad986b2c1e5832aa28b33bdd4e488a5a01f6e5f05")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -97,7 +96,7 @@ func (c *Client) GetBlockByNumber(height uint64) (Block, error) {
 
 func (c *Client) GetBlock(hash string) (Block, error) {
 	res := Block{}
-	err := c.call("getblock", NewParams(hash, 3), res)
+	err := c.call("getblock", NewParams(hash, 3), &res)
 	if err != nil {
 		return Block{}, err
 	}
@@ -156,14 +155,16 @@ func (c *Client) Sendrawtransaction(hexData string) (string, error) {
 	return result, err
 }
 
-func (c *Client) CheckTx(txHash string) (bool, error) {
-	txId := strings.TrimPrefix(txHash, "0x")
-	var result RawTransaction
-	err := c.call("gettransaction", NewParams(txId, true), &result)
-	if err != nil {
-		return false, nil
+func (c *Client) CheckTxOnChain(txHash string) (bool, error) {
+	_, err := c.Getmempoolentry(txHash)
+	if err == nil {
+		return true, nil
 	}
-	return true, err
+	_, err = c.GetRawTransaction(txHash)
+	if err == nil {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (c *Client) GetRawTransaction(txHash string) (RawTransaction, error) {
