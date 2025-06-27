@@ -405,7 +405,7 @@ func (e *ethereumAgent) checkRedeemTxProved(btxTxId string) (bool, error) {
 	if exists {
 		return true, nil
 	}
-	exists, err = e.btcClient.CheckTx(btxTxId)
+	exists, err = e.btcClient.CheckTxOnChain(btxTxId)
 	if err != nil {
 		logger.Error("check btc txId error: %v", btxTxId)
 		return false, err

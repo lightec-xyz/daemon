@@ -1087,7 +1087,7 @@ func (s *Scheduler) checkTxProved(proofType common.ProofType, hash string) (bool
 		}
 		return true, nil
 	case common.RedeemTxType:
-		exists, err := s.btcClient.CheckTx(hash)
+		exists, err := s.btcClient.CheckTxOnChain(hash)
 		if err != nil {
 			logger.Error("check btc tx error:%v %v", hash, err)
 			return false, err
