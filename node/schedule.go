@@ -1159,7 +1159,9 @@ func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
 		case common.BtcBulkType:
 			step := tx.LatestHeight - tx.Height
 			if step >= common.BtcTxMinDepth && step < common.BtcTxUnitMaxDepth {
-				return true
+				if value.FIndex == tx.Height && value.SIndex == tx.Height+step {
+					return true
+				}
 			}
 		case common.BtcTimestampType:
 			if value.FIndex == tx.Height && value.SIndex == tx.LatestHeight {

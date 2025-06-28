@@ -236,6 +236,7 @@ func (fs *FileStore) DelMatch(pattern string, keys ...uint64) error {
 		if err != nil {
 			return err
 		}
+		logger.Warn("remove file:%s", file)
 	}
 	return nil
 }
