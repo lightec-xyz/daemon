@@ -217,3 +217,7 @@ func GetBtcUser() string {
 func GetBtcUrl() string {
 	return os.Getenv("btcUrl")
 }
+
+func SetUpDir() string {
+	return os.Getenv("setupDir")
+}
