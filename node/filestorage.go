@@ -89,8 +89,12 @@ func NewFileStorage(path string, genesisSlot, btcGenesisHeight uint64, tables ..
 func (fs *FileStorage) GetGenesisPeriod() uint64 {
 	return fs.genesisPeriod
 }
-func (fs *FileStorage) StoreRequest(req *common.ProofRequest) error {
-	return fs.StoreObj(common.RequestTable, store.FileKey(req.ProofId()), req)
+func (fs *FileStorage) StoreRequest(req *common.ProofRequest, extraIds ...string) error {
+	proofId := req.ProofId()
+	for _, id := range extraIds {
+		proofId = proofId + "_" + id
+	}
+	return fs.StoreObj(common.RequestTable, store.FileKey(proofId), req)
 }
 
 func (fs *FileStorage) StoreLatestPeriod(period uint64) error {
