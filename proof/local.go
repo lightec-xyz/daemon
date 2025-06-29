@@ -102,7 +102,7 @@ func (l *Local) polling() error {
 		proofs, err := node.WorkerGenProof(l.worker, request)
 		if err != nil {
 			logger.Error("worker gen proof error:%v %v", request.ProofId(), err)
-			err := l.fileStore.StoreRequest(request, "error", time.Now().String())
+			err := l.fileStore.StoreRequest(request, "error", time.Now().Format("20060102150405"))
 			if err != nil {
 				logger.Error("store request error:%v %v", request.ProofId(), err)
 			}

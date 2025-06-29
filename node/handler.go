@@ -201,7 +201,7 @@ func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskRespon
 	if err != nil {
 		logger.Error("store zk proof request error: %v %v", request.Id, err)
 	}
-	logger.Info("worker: %v get zk proof task proofId: %v,blockTime:%v txIndex:%v", request.Id, zkReq.ProofId(), zkReq.BlockTime, zkReq.TxIndex)
+	logger.Info("worker: %v get zk proof task proofId: %v, timestamp :%v txIndex:%v", request.Id, zkReq.ProofId(), zkReq.BlockTime, zkReq.TxIndex)
 	return &response, nil
 }
 
