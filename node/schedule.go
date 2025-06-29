@@ -769,6 +769,16 @@ func (s *Scheduler) CheckEthState() error {
 			logger.Warn("read redeem tx error: %v %v", txHash, err)
 			return nil
 		}
+		if dbTx.GenProofNums >= common.GenMaxRetryNums {
+			logger.Warn("eth retry nums %v tx:%v num%v >= max %v,skip it now", dbTx.ProofType.Name(), dbTx.Hash, dbTx.GenProofNums, common.GenMaxRetryNums)
+			err := s.delUnGenProof(common.EthereumChain, dbTx.Hash)
+			if err != nil {
+				logger.Error("delete ungen proof error:%v %v", dbTx.Hash, err)
+				return err
+			}
+			continue
+		}
+
 		blockTime := dbTx.BlockTime
 		txIndex := uint32(dbTx.TxIndex)
 		if proved {
