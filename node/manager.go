@@ -203,6 +203,8 @@ func (m *manager) CheckState() error {
 }
 
 func (m *manager) storeProof(responses []*common.ProofResponse) {
+	unLocks := m.scheduler.Locks()
+	defer unLocks()
 	for _, item := range responses {
 		//todo
 		if common.IsBtcProofType(item.ProofType) && item.ReqCreateTime.Before(m.appStartTime) {
