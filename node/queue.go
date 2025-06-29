@@ -115,20 +115,23 @@ func sortRequest(a, b *common.ProofRequest) bool {
 			return a.TxIndex < b.TxIndex
 		}
 		return a.BlockTime < b.BlockTime
-	}
-	if a.Weight == b.Weight {
-		if a.ProofType == b.ProofType {
-			if a.ProofType == common.SyncComInnerType {
-				if a.Prefix == b.Prefix {
-					return a.FIndex < b.FIndex
+	} else if (a.BlockTime == 0) != (b.BlockTime == 0) {
+		return a.BlockTime < b.BlockTime
+	} else {
+		if a.Weight == b.Weight {
+			if a.ProofType == b.ProofType {
+				if a.ProofType == common.SyncComInnerType {
+					if a.Prefix == b.Prefix {
+						return a.FIndex < b.FIndex
+					}
+					return a.Prefix < b.Prefix
 				}
-				return a.Prefix < b.Prefix
+				return a.FIndex < b.FIndex
 			}
-			return a.FIndex < b.FIndex
+			return false
 		}
-		return false
+		return a.Weight > b.Weight
 	}
-	return a.Weight > b.Weight
 }
 
 // todo
