@@ -817,31 +817,35 @@ type Index struct {
 }
 
 func (fs *FileStorage) RemoveBtcProof(height uint64) error {
+	logger.Warn("remove btc proof height <= %v", height)
 	tables := []store.Table{common.BtcBaseTable, common.BtcTimestampTable, common.BtcMiddleTable, common.BtcUpperTable, common.BtcDuperRecursiveTable, common.BtcBulkTable}
 	for _, table := range tables {
 		fileStore, ok := fs.GetFileStore(table)
 		if !ok {
+			logger.Error("no find table %v", fileStore.RootPath())
 			return fmt.Errorf("get file store error %v", table)
 		}
 		err := fs.removeFiles(fileStore, height)
 		if err != nil {
-			logger.Error("%v", err)
-			return err
+			logger.Error("remove btc proof %v fileStore error %v", fileStore.RootPath(), err)
+			continue
 		}
 	}
 	depthStore, ok := fs.GetFileStore(common.BtcDepthRecursiveTable)
 	if !ok {
+		logger.Error("no find depth table")
 		return fmt.Errorf("no find table")
 	}
 	subFileStores, err := depthStore.SubFileStores()
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error("get all subFileStores error %v", err)
 		return err
 	}
 	for _, fileStore := range subFileStores {
 		err := fs.removeFiles(fileStore, height)
 		if err != nil {
-			return err
+			logger.Error("remove btc depth %v fileStore error %v", fileStore.RootPath(), err)
+			continue
 		}
 	}
 	return nil
@@ -855,6 +859,7 @@ func (fs *FileStorage) removeFiles(fileStore store.IFileStore, height uint64) er
 			pattern := fmt.Sprintf("*_%v", index.(uint64))
 			err := fileStore.DelMatch(pattern, index.(uint64))
 			if err != nil {
+				logger.Error("del match error %v", err)
 				return err
 			}
 		}

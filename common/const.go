@@ -402,7 +402,7 @@ func IsBtcExternalProofType(proofType ProofType) bool {
 
 func IsBtcInternalProofType(proofType ProofType) bool {
 	switch proofType {
-	case BtcBulkType, BtcBaseType, BtcMiddleType, BtcUpperType, BtcDuperRecursiveType, BtcDepthRecursiveType:
+	case BtcBulkType, BtcBaseType, BtcTimestampType, BtcMiddleType, BtcUpperType, BtcDuperRecursiveType, BtcDepthRecursiveType:
 		return true
 	default:
 		return false
