@@ -541,6 +541,7 @@ func (cs *ChainStore) BtcDeleteData(height uint64) error {
 	if !ok {
 		logger.Error("btc hash not exist: %v", height)
 	}
+	logger.Debug("remove btc rollback block height:%v hash:%v", height, hash)
 	return cs.store.WrapBatch(func(batch store.IBatch) error {
 		err = batch.BatchDeleteObj(dbBtcBlockHashKey(height))
 		if err != nil {

@@ -334,7 +334,7 @@ func (m *manager) ChainFork(info *ChainFork) error {
 		err := m.fileStore.RemoveBtcProof(info.ForkHeight)
 		if err != nil {
 			logger.Error("remove btc proof error:%v %v", info, err)
-			return err
+			//return err
 		}
 		err = m.scheduler.btcStateRollback(info.ForkHeight)
 		if err != nil {
