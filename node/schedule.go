@@ -1195,7 +1195,7 @@ func (s *Scheduler) removeExpiredRequest(tx *DbTx) error {
 
 	})
 	for _, req := range expiredRequests {
-		logger.Warn("remove expired request:%v %v", tx.Hash, req.ProofId())
+		logger.Warn("remove expired request:%v %v %v", tx.Hash, tx.ProofType.Name(), req.ProofId())
 		s.removeRequest(req.ProofId())
 	}
 	return nil
