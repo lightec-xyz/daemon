@@ -14,20 +14,20 @@ scRoot
 
 readVk
 
-    ./node readVk --file /opt/lightec/opt2/circuitsetup/devnet/redeem.vk
+    ./node proof readVk --file /opt/lightec/opt2/circuitsetup/devnet/redeem.vk
 
 export proof
 
     //example ./node exportProof --name btcduperrecursive_84010_84024 --datadir ./daemon --proof btcduperrecursive_84010_84024.proof --witness btcduperrecursive_84010_84024.witness 
     
-    ./node exportProof --proof <path> --witness <path> --name <name> --datadir <path>
+    ./node proof import --proof <path> --witness <path> --name <name> --datadir <path>
 nonce
 
         ./node --config ./devnet.json miner nonce --addr 0xb4183bB52E44C6861AEF3B626eb2195288AfCa2f --nonce 1239
 
 filestore
 
-    ./node --config ./devnet.json filestore --height 8000
+    ./node --config ./devnet.json proof filestore --height 8000
 
 
 
