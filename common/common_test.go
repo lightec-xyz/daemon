@@ -28,3 +28,8 @@ func TestStrToTime(t *testing.T) {
 	}
 	t.Log(ti.Unix())
 }
+
+func TestTimestampToTime(t *testing.T) {
+	timestamp := int64(1751327951)
+	t.Log(time.Unix(timestamp, 0))
+}
