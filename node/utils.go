@@ -7,7 +7,6 @@ import (
 	btccdEcdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/lightec-xyz/daemon/common"
@@ -44,10 +43,6 @@ func RsToSignature(sig string) ([]byte, error) {
 	return signature.Serialize(), nil
 }
 
-func EIP55Addr(addr string) string {
-	return ethCommon.HexToAddress(addr).Hex()
-}
-
 func TxIdIsEmpty(txId [32]byte) bool {
 	for _, b := range txId {
 		if b != 0 {
@@ -65,14 +60,7 @@ func UUID() string {
 	return newV7.String()
 }
 func BtcToSat(value float64) int64 {
-	valueRat := NewRat().Mul(NewRat().SetFloat64(value), NewRat().SetUint64(100000000))
-	floatStr := valueRat.FloatString(1)
-	valuesStr := strings.Split(floatStr, ".")
-	amountBig, ok := big.NewInt(0).SetString(valuesStr[0], 10)
-	if !ok {
-		panic(fmt.Sprintf("never should happen:%v", value))
-	}
-	return amountBig.Int64()
+	return int64(value * 100000000)
 }
 
 func privateKeyToEthAddr(secret string) (string, error) {
