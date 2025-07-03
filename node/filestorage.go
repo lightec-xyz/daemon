@@ -906,7 +906,7 @@ func FileKeyToIndex(fileKey store.FileKey) (uint64, uint64, uint64, error) {
 		if err != nil {
 			return 0, 0, 0, err
 		}
-		return 0, 0, height, nil
+		return 0, height, 0, nil
 	} else if len(ids) == 3 { //btcbase_3192280_3192336
 		start, err := strconv.ParseUint(ids[1], 10, 64)
 		if err != nil {
