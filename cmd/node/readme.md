@@ -18,8 +18,8 @@ readVk
 
 export proof
 
-    //example ./node exportProof --name btcduperrecursive_84010_84024 --datadir ./daemon --proof btcduperrecursive_84010_84024.proof --witness btcduperrecursive_84010_84024.witness 
-    
+    //./node proof export --proof /Users/red/lworkspace/lightec/audit/daemon/testdata/mainnet/blockchain_0_901151.proof --witness /Users/red/lworkspace/lightec/audit/daemon/testdata/mainnet/blockchain_0_901151.wtns --name btcduperrecursive_899135_901151  --datadir <path>
+
     ./node proof import --proof <path> --witness <path> --name <name> --datadir <path>
 nonce
 

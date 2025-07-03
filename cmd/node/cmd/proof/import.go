@@ -74,7 +74,7 @@ var importCmd = &cobra.Command{
 			fmt.Printf("store proof error: %v \n", err)
 			return
 		}
-		fmt.Printf("export proof success \n")
+		fmt.Printf("import proof success \n")
 
 	},
 }
