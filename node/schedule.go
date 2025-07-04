@@ -1152,7 +1152,7 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 		logger.Error("read deposit count error:%v", err)
 		return false, err
 	}
-	if ok && count >= 21 { //todo
+	if ok && count >= 10 { //todo
 		return true, nil
 	}
 	return raised, nil
