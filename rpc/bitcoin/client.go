@@ -15,6 +15,7 @@ type Client struct {
 	debug  bool
 	url    string
 	token  string // todo
+	local  bool
 }
 
 func BasicAuth(username, password string) string {
@@ -22,11 +23,24 @@ func BasicAuth(username, password string) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-func NewClient(url, user, pwd string) (*Client, error) {
+func NewClient(url, user, pwd, token string) (*Client, error) {
 	client := &http.Client{
 		Timeout: 5 * time.Minute,
 	}
-	return &Client{client: client, url: url, token: BasicAuth(user, pwd), debug: false}, nil
+	local := true
+	if token != "" {
+		local = false
+	} else {
+		token = BasicAuth(user, pwd)
+		local = true
+	}
+	return &Client{
+		client: client,
+		url:    url,
+		token:  token,
+		debug:  false,
+		local:  local,
+	}, nil
 }
 
 func (c *Client) Estimatesmartfee(confirms int) (EstimateSmartFee, error) {
@@ -290,7 +304,12 @@ func (c *Client) newRequest(method string, param Params) (*http.Request, error) 
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Authorization", fmt.Sprintf("Basic %s", c.token))
+	if c.local {
+		request.Header.Set("Authorization", fmt.Sprintf("Basic %s", c.token))
+	} else {
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
+		request.Header.Set("Content-Type", "application/json")
+	}
 	return request, nil
 }
 

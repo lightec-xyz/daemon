@@ -15,8 +15,8 @@ var client *Client
 var err error
 
 func init() {
-	url := "http://127.0.0.1:9001"
-	client, err = NewClient(url, "", "")
+	url := "https://rpc.ankr.com/btc/8c933202fbe8dbe6d63377a319b6020f4a4c35bb4424f6368f630b676b4fcc2e"
+	client, err = NewClient(url, "", "", "")
 	if err != nil {
 		panic(err)
 	}
