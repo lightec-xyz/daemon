@@ -188,6 +188,9 @@ func (s *Scheduler) CheckBtcState() error {
 		if !depthOk {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
+		} else {
+			// todo check icp block sig again
+
 		}
 
 		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v", unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount,
@@ -319,6 +322,9 @@ func (s *Scheduler) fixLatestHeight(curHeight uint64) (uint64, bool, error) {
 		return 0, false, err
 	}
 	if !sigExists {
+		return curHeight, false, nil
+	}
+	if icpBlockSig.Height < curHeight {
 		return curHeight, false, nil
 	}
 	hash, ok, err := s.chainStore.ReadBitcoinHash(icpBlockSig.Height)

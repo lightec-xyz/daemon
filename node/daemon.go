@@ -343,7 +343,7 @@ func (d *Daemon) Run() error {
 	if !d.cfg.DisableBtcAgent {
 		go DoTimerTask("manager-checkBtcState", 2*time.Minute, d.manager.CheckBtcState, d.exitSignal, d.manager.BtcNotify())
 		go DoTimerTask("manager-checkPreBtcState", 3*time.Minute, d.manager.CheckPreBtcState, d.exitSignal)
-		go DoTimerTask("manager-icpSignature", 4*time.Minute, d.manager.BlockSignature, d.exitSignal)
+		go DoTimerTask("manager-icpSignature", 1*time.Minute, d.manager.BlockSignature, d.exitSignal)
 		go DoTimerTask("manager-updateBtcCp", 24*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
 	}
 	if !d.cfg.DisableEthAgent {

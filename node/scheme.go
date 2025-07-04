@@ -78,6 +78,7 @@ type DbTx struct {
 	CheckPointHeight uint64
 	LatestHeight     uint64
 	CpMinDepth       uint64
+	SigSigned        bool // flag: if icp block hash signed
 }
 
 type DbProof struct {
