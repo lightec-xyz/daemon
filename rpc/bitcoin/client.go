@@ -339,7 +339,9 @@ func (c *Client) call(method string, param Params, result interface{}) error {
 		return err
 	}
 	if resp.Error != nil {
-		return fmt.Errorf("%s", string(resp.Error))
+		if string(resp.Error) != "null" {
+			return fmt.Errorf("%s", string(resp.Error))
+		}
 	}
 	err = json.Unmarshal(resp.Result, result)
 	if err != nil {
