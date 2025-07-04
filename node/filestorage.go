@@ -153,17 +153,17 @@ func (fs *FileStorage) GetUpdate(period uint64, value interface{}) (bool, error)
 	return fs.GetObj(common.UpdateTable, store.GenFileKey(common.UpdateTable, period), value)
 }
 
-func (fs *FileStorage) StoreBootStrapBySlot(slot uint64, data interface{}) error {
-	return fs.StoreObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), data)
-}
-
-func (fs *FileStorage) GetBootStrapBySlot(slot uint64, value interface{}) (bool, error) {
-	return fs.GetObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), value)
-}
-
-func (fs *FileStorage) CheckBootStrapBySlot(slot uint64) (bool, error) {
-	return fs.CheckObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot))
-}
+//func (fs *FileStorage) StoreBootStrapBySlot(slot uint64, data interface{}) error {
+//	return fs.StoreObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), data)
+//}
+//
+//func (fs *FileStorage) GetBootStrapBySlot(slot uint64, value interface{}) (bool, error) {
+//	return fs.GetObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot), value)
+//}
+//
+//func (fs *FileStorage) CheckBootStrapBySlot(slot uint64) (bool, error) {
+//	return fs.CheckObj(common.GenesisTable, store.GenFileKey(common.GenesisTable, slot))
+//}
 
 func (fs *FileStorage) GetOuterProof(period uint64) (*StoreProof, bool, error) {
 	var storeProof StoreProof
@@ -510,7 +510,8 @@ func (fs *FileStorage) SyncComInnerIndexes() ([]Index, error) {
 		return nil, fmt.Errorf("get latest period error")
 	}
 	var tmpIndexes []Index
-	for period := fs.genesisPeriod; period <= latestPeriod; period++ {
+	sIndex := fs.getUnitStartIndex()
+	for period := sIndex; period <= latestPeriod; period++ {
 		fileStore, ok := fs.getSubFileStore(common.SyncComInnerType, prefixToTable(period), false)
 		if !ok {
 			for index := 0; index < common.SyncInnerNum; index++ {
@@ -560,8 +561,12 @@ func (fs *FileStorage) NeedUpdateIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
+	sIndex := fs.getUnitStartIndex() - 1
+	if sIndex < 0 {
+		sIndex = 0
+	}
 	var needUpdateIndex []uint64
-	for index := fs.genesisPeriod; index <= latestPeriod; index++ {
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.UpdateTable, index))
 		if err != nil {
 			return nil, err
@@ -587,8 +592,9 @@ func (fs *FileStorage) GenOuterIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
+	sIndex := fs.getUnitStartIndex()
 	var indexes []uint64
-	for index := fs.genesisPeriod; index <= latestPeriod; index++ {
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.OuterTable, index))
 		if err != nil {
 			return nil, err
@@ -614,8 +620,9 @@ func (fs *FileStorage) NeedGenUnitProofIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
+	sIndex := fs.getUnitStartIndex()
 	var needUpdateIndex []uint64
-	for index := fs.genesisPeriod; index <= latestPeriod; index++ {
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.UnitTable, index))
 		if err != nil {
 			return nil, err
@@ -625,6 +632,36 @@ func (fs *FileStorage) NeedGenUnitProofIndexes() ([]uint64, error) {
 		}
 	}
 	return needUpdateIndex, nil
+}
+
+func (fs *FileStorage) getRecursiveStartIndex() uint64 {
+	fileStore, ok := fs.GetFileStore(common.RecursiveTable)
+	if !ok {
+		return fs.genesisPeriod + 1
+	}
+	key, _ := fileStore.MaxIndex()
+	if key != nil {
+		index, ok := key.(uint64)
+		if ok {
+			return index + 1
+		}
+	}
+	return fs.genesisPeriod + 1
+}
+
+func (fs *FileStorage) getUnitStartIndex() uint64 {
+	fileStore, ok := fs.GetFileStore(common.RecursiveTable)
+	if !ok {
+		return fs.genesisPeriod
+	}
+	key, _ := fileStore.MaxIndex()
+	if key != nil {
+		index, ok := key.(uint64)
+		if ok {
+			return index + 1
+		}
+	}
+	return fs.genesisPeriod
 }
 
 func (fs *FileStorage) NeedDutyIndexes() ([]uint64, error) {
@@ -642,7 +679,8 @@ func (fs *FileStorage) NeedDutyIndexes() ([]uint64, error) {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
 	var indexes []uint64
-	for index := fs.genesisPeriod + 1; index <= latestPeriod; index++ {
+	sIndex := fs.getRecursiveStartIndex()
+	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.DutyTable, index))
 		if err != nil {
 			return nil, err

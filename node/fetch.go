@@ -31,7 +31,6 @@ type Fetch struct {
 
 func (f *Fetch) Init() error {
 	logger.Debug("init fetch now")
-	go f.Bootstrap()
 	return nil
 }
 
@@ -47,31 +46,31 @@ func (f *Fetch) Bootstrap() {
 	}
 }
 func (f *Fetch) bootstrap() error {
-	exists, err := f.fileStore.CheckBootStrapBySlot(f.genesisSlot)
-	if err != nil {
-		logger.Error("check bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	if exists {
-		return nil
-	}
-	logger.Debug("start get bootstrap: %v", f.genesisSlot)
-	bootstrap, err := f.client.Bootstrap(f.genesisSlot)
-	if err != nil {
-		logger.Error("get bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	dbBootstrap, err := parseBootstrapToDbBootstrap(bootstrap)
-	if err != nil {
-		logger.Error("parse bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	err = f.fileStore.StoreBootStrapBySlot(f.genesisSlot, dbBootstrap)
-	if err != nil {
-		logger.Error("store bootstrap error:%v %v", f.genesisSlot, err)
-		return err
-	}
-	logger.Debug("success store bootstrap Responses:%v", f.genesisSlot)
+	//exists, err := f.fileStore.CheckBootStrapBySlot(f.genesisSlot)
+	//if err != nil {
+	//	logger.Error("check bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//if exists {
+	//	return nil
+	//}
+	//logger.Debug("start get bootstrap: %v", f.genesisSlot)
+	//bootstrap, err := f.client.Bootstrap(f.genesisSlot)
+	//if err != nil {
+	//	logger.Error("get bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//dbBootstrap, err := parseBootstrapToDbBootstrap(bootstrap)
+	//if err != nil {
+	//	logger.Error("parse bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//err = f.fileStore.StoreBootStrapBySlot(f.genesisSlot, dbBootstrap)
+	//if err != nil {
+	//	logger.Error("store bootstrap error:%v %v", f.genesisSlot, err)
+	//	return err
+	//}
+	//logger.Debug("success store bootstrap Responses:%v", f.genesisSlot)
 	return nil
 }
 

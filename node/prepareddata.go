@@ -537,42 +537,26 @@ func (p *Prepared) GetBtcBulkRequest(start, end, prefix uint64) (*rpc.BtcBulkReq
 }
 
 func (p *Prepared) GetSyncCommittee(period uint64) (*WrapSyncCommittee, bool, error) {
-	if period == p.genesisPeriod {
-		var bootstrap common.BootstrapResponse
-		exists, err := p.filestore.GetBootStrapBySlot(p.genesisSlot, &bootstrap)
-		if err != nil {
-			logger.Error("get bootstrap error: %v", err)
-			return nil, false, err
-		}
-		if !exists {
-			return nil, false, nil
-		}
-		return &WrapSyncCommittee{
-			SyncCommittee: &proverType.SyncCommittee{
-				PubKeys:         bootstrap.Data.CurrentSyncCommittee.Pubkeys,
-				AggregatePubKey: bootstrap.Data.CurrentSyncCommittee.AggregatePubkey,
-			},
-			Version: bootstrap.Version,
-		}, true, nil
-
-	} else {
-		var lightClientUpdate common.LightClientUpdateResponse
-		exists, err := p.filestore.GetUpdate(period-1, &lightClientUpdate)
-		if err != nil {
-			logger.Error("get %v index update error: %v", period, err)
-			return nil, false, err
-		}
-		if !exists {
-			return nil, false, nil
-		}
-		return &WrapSyncCommittee{
-			SyncCommittee: &proverType.SyncCommittee{
-				PubKeys:         lightClientUpdate.Data.NextSyncCommittee.Pubkeys,
-				AggregatePubKey: lightClientUpdate.Data.NextSyncCommittee.AggregatePubkey,
-			},
-			Version: lightClientUpdate.Version,
-		}, true, nil
+	var lightClientUpdate common.LightClientUpdateResponse
+	prePeriod := period - 1
+	if prePeriod < 0 { // todo
+		prePeriod = 0
 	}
+	exists, err := p.filestore.GetUpdate(prePeriod, &lightClientUpdate)
+	if err != nil {
+		logger.Error("get %v index update error: %v", period, err)
+		return nil, false, err
+	}
+	if !exists {
+		return nil, false, nil
+	}
+	return &WrapSyncCommittee{
+		SyncCommittee: &proverType.SyncCommittee{
+			PubKeys:         lightClientUpdate.Data.NextSyncCommittee.Pubkeys,
+			AggregatePubKey: lightClientUpdate.Data.NextSyncCommittee.AggregatePubkey,
+		},
+		Version: lightClientUpdate.Version,
+	}, true, nil
 
 }
 
@@ -592,44 +576,26 @@ func (p *Prepared) GetSyncCommitUpdate(period uint64) (*rpc.WrapSyncCommitteeUpd
 		logger.Error("parse obj error: %v %v", period, err)
 		return nil, false, err
 	}
-	if p.genesisPeriod == period {
-		var bootstrap common.BootstrapResponse
-		genesisExists, err := p.filestore.GetBootStrapBySlot(p.genesisSlot, &bootstrap)
-		if err != nil {
-			logger.Error("get genesis update error: %v %v", period, err)
-			return nil, false, err
-		}
-		if !genesisExists {
-			logger.Warn("no find genesis update Responses,%v", period)
-			return nil, false, nil
-		}
-		update.CurrentSyncCommittee = &proverType.SyncCommittee{
-			PubKeys:         bootstrap.Data.CurrentSyncCommittee.Pubkeys,
-			AggregatePubKey: bootstrap.Data.CurrentSyncCommittee.AggregatePubkey,
-		}
-		update.CurrentSyncCommitteeBranch = bootstrap.Data.CurrentSyncCommitteeBranch
-	} else {
-		prePeriod := period - 1
-		if prePeriod < p.filestore.GetGenesisPeriod() {
-			logger.Error("should never happen: %v", prePeriod)
-			return nil, false, nil
-		}
-		var preUpdateData common.LightClientUpdateResponse
-		preUpdateExists, err := p.filestore.GetUpdate(prePeriod, &preUpdateData)
-		if err != nil {
-			logger.Error("get %v index update error: %v", prePeriod, err)
-			return nil, false, err
-		}
-		if !preUpdateExists {
-			logger.Warn("get unit Responses,no find %v FIndex update Responses", prePeriod)
-			return nil, false, nil
-		}
-		update.CurrentSyncCommittee = &proverType.SyncCommittee{
-			PubKeys:         preUpdateData.Data.NextSyncCommittee.Pubkeys,
-			AggregatePubKey: preUpdateData.Data.NextSyncCommittee.AggregatePubkey,
-		}
-		update.CurrentSyncCommitteeBranch = preUpdateData.Data.NextSyncCommitteeBranch
+	prePeriod := period - 1
+	if prePeriod < p.filestore.GetGenesisPeriod()-1 {
+		logger.Error("should never happen: %v", prePeriod)
+		return nil, false, nil
 	}
+	var preUpdateData common.LightClientUpdateResponse
+	preUpdateExists, err := p.filestore.GetUpdate(prePeriod, &preUpdateData)
+	if err != nil {
+		logger.Error("get %v index update error: %v", prePeriod, err)
+		return nil, false, err
+	}
+	if !preUpdateExists {
+		logger.Warn("get unit Responses,no find %v FIndex update Responses", prePeriod)
+		return nil, false, nil
+	}
+	update.CurrentSyncCommittee = &proverType.SyncCommittee{
+		PubKeys:         preUpdateData.Data.NextSyncCommittee.Pubkeys,
+		AggregatePubKey: preUpdateData.Data.NextSyncCommittee.AggregatePubkey,
+	}
+	update.CurrentSyncCommitteeBranch = preUpdateData.Data.NextSyncCommitteeBranch
 	ok, err := update.SyncCommitteeUpdate.Verify()
 	if err != nil {
 		logger.Error("verify light client update error: %v %v", period, err)
