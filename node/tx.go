@@ -71,9 +71,11 @@ func (t *TxManager) init() error {
 	if err != nil {
 		return err
 	}
-	err = t.chainStore.WriteNonce(common.ETH.String(), t.submitAddr, nonce-1)
-	if err != nil {
-		return err
+	if nonce > 0 {
+		err = t.chainStore.WriteNonce(common.ETH.String(), t.submitAddr, nonce-1)
+		if err != nil {
+			return err
+		}
 	}
 	logger.Debug("current miner %v chaiNonce: %v,update dbNonce: %v", t.submitAddr, nonce, nonce-1)
 	return nil
