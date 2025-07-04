@@ -298,22 +298,42 @@ func (s *Scheduler) CheckPreBtcState() error {
 }
 
 func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, error) {
-	sig, sigExists, err := s.chainStore.ReadLatestIcpSig()
-	if err != nil {
-		logger.Error("read latest icp sig error:%v", err)
-		return false, err
-	}
 	raised, err := s.getTxRaised(tx.Height, uint64(tx.Amount))
 	if err != nil {
 		logger.Error("get tx raised error:%v", err)
 		return false, err
 	}
-	// check icp block signature if is ok
-	if sigExists && curHeight-sig.Height <= 3 {
-		return s.updateBtcTxDepth(sig.Height, cpHeight, true, raised, tx)
-	} else {
-		return s.updateBtcTxDepth(curHeight, cpHeight, false, raised, tx)
+	latestHeight, signed, err := s.fixLatestHeight(curHeight)
+	if err != nil {
+		logger.Error("get latest height error:%v", err)
+		return false, err
 	}
+	return s.updateBtcTxDepth(latestHeight, cpHeight, signed, raised, tx)
+
+}
+
+func (s *Scheduler) fixLatestHeight(curHeight uint64) (uint64, bool, error) {
+	icpBlockSig, sigExists, err := s.chainStore.ReadLatestIcpSig()
+	if err != nil {
+		logger.Error("read latest icp sig error:%v", err)
+		return 0, false, err
+	}
+	if !sigExists {
+		return curHeight, false, nil
+	}
+	hash, ok, err := s.chainStore.ReadBitcoinHash(icpBlockSig.Height)
+	if err != nil {
+		logger.Error("read db bitcoin hash error: %v %v", icpBlockSig.Height, err)
+		return 0, false, err
+	}
+	if !ok {
+		logger.Error("no find bitcoin hash:%v", icpBlockSig.Height)
+		return curHeight, false, nil
+	}
+	if !common.StrEqual(hash, icpBlockSig.Hash) {
+		return curHeight, false, nil
+	}
+	return icpBlockSig.Height, true, nil
 }
 
 func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised bool, tx *DbTx) (bool, error) {
@@ -1152,7 +1172,7 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 		logger.Error("read deposit count error:%v", err)
 		return false, err
 	}
-	if ok && count >= 21 { //todo
+	if ok && count >= 10 { //todo
 		return true, nil
 	}
 	return raised, nil
