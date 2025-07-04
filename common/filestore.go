@@ -5,9 +5,8 @@ import (
 )
 
 const (
-	LatestPeriodKey   = "latestPeriod"
-	LatestSlotKey     = "latestFinalitySlot"
-	SyncComGenesisKey = "syncComGenesisProof"
+	LatestPeriodKey = "latestPeriod"
+	LatestSlotKey   = "latestFinalitySlot"
 )
 const (
 	IndexTable    store.Table = "index"
