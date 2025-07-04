@@ -510,7 +510,8 @@ func (fs *FileStorage) SyncComInnerIndexes() ([]Index, error) {
 		return nil, fmt.Errorf("get latest period error")
 	}
 	var tmpIndexes []Index
-	for period := fs.genesisPeriod; period <= latestPeriod; period++ {
+	sIndex := fs.getUnitStartIndex()
+	for period := sIndex; period <= latestPeriod; period++ {
 		fileStore, ok := fs.getSubFileStore(common.SyncComInnerType, prefixToTable(period), false)
 		if !ok {
 			for index := 0; index < common.SyncInnerNum; index++ {
