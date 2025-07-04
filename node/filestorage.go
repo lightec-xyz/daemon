@@ -561,10 +561,11 @@ func (fs *FileStorage) NeedUpdateIndexes() ([]uint64, error) {
 	if !ok {
 		return nil, fmt.Errorf("get latest FIndex error")
 	}
-	sIndex := fs.getUnitStartIndex() - 1
-	if sIndex < 0 {
-		sIndex = 0
-	}
+	//sIndex := fs.getUnitStartIndex() - 1
+	//if sIndex < 0 {
+	//	sIndex = 0
+	//}
+	sIndex := fs.genesisPeriod - 1
 	var needUpdateIndex []uint64
 	for index := sIndex; index <= latestPeriod; index++ {
 		exists, err := fileStore.CheckExists(store.GenFileKey(common.UpdateTable, index))
