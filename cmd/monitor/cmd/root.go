@@ -180,7 +180,7 @@ type BtcNode struct {
 }
 
 func NewBtcNode(url, user, pwd string) (*BtcNode, error) {
-	client, err := bitcoin.NewClient(url, user, pwd)
+	client, err := bitcoin.NewClient(url, user, pwd, "")
 	if err != nil {
 		return nil, err
 	}

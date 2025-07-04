@@ -18,6 +18,7 @@ type RunConfig struct {
 	Network        string `json:"network"`
 	BtcUser        string `json:"btcUser"`
 	BtcPwd         string `json:"btcPwd"`
+	BtcToken       string `json:"btcToken"`
 	BtcUrl         string `json:"btcUrl"`
 	EthUrl         string `json:"ethUrl"`
 	BeaconUrl      string `json:"beaconUrl"`

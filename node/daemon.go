@@ -86,7 +86,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	logger.Info("current DebugMode :%v", cfg.Debug)
-	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
+	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, cfg.BtcToken)
 	if err != nil {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
