@@ -36,17 +36,17 @@ const (
 	TestnetBtcOperatorAddress = "tb1qqnj9cxvhgm9d6yqdrv2v4axv7hafjhrfgnarxfxen0j88nyy3xgqtptt97"
 	TestnetBtcLockScript      = "0x002004e45c199746cadd100d1b14caf4ccf5fa995c6944fa3324d99be473cc848990"
 	TestnetMultiSig           = "0x5221038b6ce7e785f30c0eee59deda56c132a291d81800d2040bfb1e7b367c0e01f16d2102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
-	TestnetEthZkBridgeAddress = "0x21098979Fc10BBC754C6359E657eA28c52ea1acf"
-	TestnetEthZkBtcAddress    = "0x8f254bed38F9849950Aa78496d95526c445a29e4"
-	TestEthUtxoManagerAddress = "0x2880732395cDeB0Fe27B45976B9aC159A03f2A8B"
-	TestEthBtcTxVerifyAddress = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
-	TestnetFeePoolAddr        = "0xfFe6AB09195352c899089E8155AEADE76d1902C5"
+	TestnetEthZkBridgeAddress = "0xB86E9A8391d3df83F53D3f39E3b5Fce4D7da405d"
+	TestnetEthZkBtcAddress    = "0x199CC8f0ac008Bdc8cF0B1CCd5187F84E168C4D2"
+	TestEthUtxoManagerAddress = "0x2635Dc72706478F4bD784A8D04B3e0af8AB053dc"
+	TestEthBtcTxVerifyAddress = "0x45bc26C34f9e6BA7704cBBf8dE090f2D1fEfA097"
+	TestnetFeePoolAddr        = "0x7be6F1ECac63c8562Da8fF769347c45fc4590bFb"
 	TestnetOasisSignerAddr    = "0x5286d6EF240C09c0Fbd85DA530dcAB712f8Fa5C8"
-	TestnetIcpPublicKey       = "0x02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b"
+	TestnetIcpPublicKey       = "03183007b9afcfa519871885380d4dfd1144269d8050ec2a51992065af2a87d3df"
 	TestnetBtcScanTime        = 1 * time.Minute
 	TestnetEthScanTime        = 30 * time.Second
 
-	TestnetIcpSingerId  = "6ybqh-oiaaa-aaaak-quffa-cai"
+	TestnetIcpSingerId  = "xdqo6-dqaaa-aaaal-qsqva-cai"
 	TestnetIcpUrl       = "https://icp0.io"
 	TestnetSgxServerUrl = ""
 
