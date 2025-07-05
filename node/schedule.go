@@ -188,11 +188,7 @@ func (s *Scheduler) CheckBtcState() error {
 		if !depthOk {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
-		} else {
-			// todo check icp block sig again
-
 		}
-
 		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v", unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount,
 			btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight)
 		switch unGenTx.ProofType {
@@ -301,6 +297,18 @@ func (s *Scheduler) CheckPreBtcState() error {
 }
 
 func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, error) {
+	// todo need more check
+	if tx.LatestHeight == 0 && !tx.SigSigned {
+		forked, err := s.checkIcpSig(tx.LatestHeight)
+		if err != nil {
+			logger.Error("check icp sig error:%v", err)
+			return false, err
+		}
+		if forked {
+			tx.SigSigned = false
+			tx.LatestHeight = 0
+		}
+	}
 	raised, err := s.getTxRaised(tx.Height, uint64(tx.Amount))
 	if err != nil {
 		logger.Error("get tx raised error:%v", err)
@@ -312,6 +320,28 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 		return false, err
 	}
 	return s.updateBtcTxDepth(latestHeight, cpHeight, signed, raised, tx)
+
+}
+
+func (s *Scheduler) checkIcpSig(height uint64) (bool, error) {
+	signature, ok, err := s.chainStore.ReadIcpSignature(height)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+	hash, ok, err := s.chainStore.ReadBitcoinHash(height)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+	if !common.StrEqual(hash, signature.Hash) {
+		return false, nil
+	}
+	return true, nil
 
 }
 
@@ -362,6 +392,7 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 	}
 	if tx.LatestHeight == 0 || expired {
 		tx.LatestHeight = curHeight
+		tx.SigSigned = signed
 		err := s.chainStore.WriteDbTxes(tx)
 		if err != nil {
 			logger.Error("write db tx error:%v", err)
@@ -381,6 +412,7 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 	}
 	if curHeight-tx.Height >= uint64(txMinDepth) && curHeight-tx.CheckPointHeight >= uint64(common.BtcCpMinDepth) {
 		tx.LatestHeight = curHeight
+		tx.SigSigned = signed
 		logger.Debug("check tx depth hash:%v, cpDepth:%v,txDepth:%v,height:%v,cpHeight:%v,latestHeight:%v,", tx.Hash, common.BtcCpMinDepth, txMinDepth, tx.Height, tx.CheckPointHeight, tx.LatestHeight)
 		err := s.chainStore.WriteDbTxes(tx)
 		if err != nil {
