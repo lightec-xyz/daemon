@@ -360,7 +360,8 @@ func (b *bitcoinAgent) ProofResponse(resp *common.ProofResponse) error {
 			logger.Error("update Proof error: %v %v", resp.Hash, err)
 			return err
 		}
-		hash, err := b.txManager.DepositBtc(common.BtcDepositType, resp.Hash, hex.EncodeToString(resp.Proof))
+		submitTx := NewDbUnSubmitTx(resp.Hash, hex.EncodeToString(resp.Proof), common.BtcDepositType)
+		hash, err := b.txManager.DepositBtc(submitTx)
 		if err != nil {
 			logger.Error("update deposit error: %v %v,save to db", resp.Hash, err)
 			b.txManager.AddTask(resp)
@@ -370,7 +371,8 @@ func (b *bitcoinAgent) ProofResponse(resp *common.ProofResponse) error {
 
 	case common.BtcUpdateCpType:
 		logger.Info("find deposit proof: %v %v %v", resp.ProofId(), resp.Hash, hex.EncodeToString(resp.Proof))
-		hash, err := b.txManager.DepositBtc(common.BtcUpdateCpType, resp.Hash, hex.EncodeToString(resp.Proof))
+		submitTx := NewDbUnSubmitTx(resp.Hash, hex.EncodeToString(resp.Proof), common.BtcUpdateCpType)
+		hash, err := b.txManager.DepositBtc(submitTx)
 		if err != nil {
 			logger.Error("update deposit error: %v %v,save to db", resp.Hash, err)
 			b.txManager.AddTask(resp)
@@ -379,7 +381,8 @@ func (b *bitcoinAgent) ProofResponse(resp *common.ProofResponse) error {
 		logger.Debug("success  deposit: btcTxId:%v  ethHash:%v", resp.Hash, hash)
 	case common.BtcChangeType:
 		logger.Info("find change proof: %v %v", resp.Hash, hex.EncodeToString(resp.Proof))
-		hash, err := b.txManager.UpdateUtxoChange(resp.Hash, hex.EncodeToString(resp.Proof))
+		submitTx := NewDbUnSubmitTx(resp.Hash, hex.EncodeToString(resp.Proof), common.BtcChangeType)
+		hash, err := b.txManager.UpdateUtxoChange(submitTx)
 		if err != nil {
 			logger.Error("update utxo fail: %v %v,save to db", resp.Hash, err)
 			b.txManager.AddTask(resp)
