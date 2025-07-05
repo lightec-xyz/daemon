@@ -1142,6 +1142,19 @@ func (s *Scheduler) BlockSignature() error {
 		logger.Error("get block sig error:%v", err)
 		return err
 	}
+	hash, ok, err := s.chainStore.ReadBitcoinHash(uint64(sig.Height))
+	if err != nil {
+		logger.Error("read db bitcoin hash error: %v %v", sig.Height, err)
+		return err
+	}
+	if !ok {
+		logger.Error("no find bitcoin hash:%v", sig.Height)
+		return nil
+	}
+	if !common.StrEqual(hash, sig.Hash) {
+		logger.Warn("find ipc hash != db hash:%v %v", sig.Hash, hash)
+		return nil
+	}
 	dbIcpSignature := DbIcpSignature{Height: uint64(sig.Height), Hash: sig.Hash, Signature: sig.Signature}
 	err = s.chainStore.WriteLatestIcpSig(dbIcpSignature)
 	if err != nil {
