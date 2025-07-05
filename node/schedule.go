@@ -415,7 +415,8 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 	if curHeight-tx.Height >= uint64(txMinDepth) && curHeight-tx.CheckPointHeight >= uint64(common.BtcCpMinDepth) {
 		tx.LatestHeight = curHeight
 		tx.SigSigned = signed
-		logger.Debug("check tx depth hash:%v, cpDepth:%v,txDepth:%v,height:%v,cpHeight:%v,latestHeight:%v,", tx.Hash, common.BtcCpMinDepth, txMinDepth, tx.Height, tx.CheckPointHeight, tx.LatestHeight)
+		logger.Debug("assignment check tx depth hash:%v, cpDepth:%v,txDepth:%v,height:%v,cpHeight:%v,latestHeight:%v, signed:%v",
+			tx.Hash, common.BtcCpMinDepth, txMinDepth, tx.Height, tx.CheckPointHeight, tx.LatestHeight, signed)
 		err := s.chainStore.WriteDbTxes(tx)
 		if err != nil {
 			logger.Error("update btc tx error:%v", err)
