@@ -298,7 +298,7 @@ func (s *Scheduler) CheckPreBtcState() error {
 
 func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, error) {
 	// todo need more check
-	if tx.LatestHeight == 0 && tx.SigSigned {
+	if tx.LatestHeight != 0 && tx.SigSigned {
 		forked, err := s.checkIcpSig(tx.LatestHeight)
 		if err != nil {
 			logger.Error("check icp sig error:%v", err)
@@ -325,6 +325,7 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 }
 
 func (s *Scheduler) checkIcpSig(height uint64) (bool, error) {
+	//todo
 	signature, ok, err := s.chainStore.ReadIcpSignature(height)
 	if err != nil {
 		return false, err
