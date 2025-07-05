@@ -77,7 +77,7 @@ func (t *TxManager) init() error {
 			return err
 		}
 	}
-	logger.Debug("current miner %v chaiNonce:", t.submitAddr, nonce)
+	logger.Debug("current miner %v chaiNonce:%v", t.submitAddr, nonce)
 	return nil
 }
 
