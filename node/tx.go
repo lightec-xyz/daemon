@@ -4,17 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
-	"math/big"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -22,10 +16,16 @@ import (
 	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
+	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/rpc/sgx"
 	"github.com/lightec-xyz/daemon/store"
 	redeemUtils "github.com/lightec-xyz/provers/utils/redeem-tx"
+	"math/big"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 //todo record tx hash to check status
@@ -98,31 +98,51 @@ func (t *TxManager) Check() error {
 		return err
 	}
 	for _, tx := range unSubmitTxs {
-		switch tx.ProofType {
-		case common.BtcDepositType, common.BtcUpdateCpType:
-			hash, err := t.DepositBtc(tx.ProofType, tx.Hash, tx.Proof)
+		if tx.ConfirmHash != "" { // deposit and updateUtxo tx
+			receipt, err := t.ethClient.TransactionReceipt(context.Background(), ethcommon.HexToHash(tx.ConfirmHash))
 			if err != nil {
-				logger.Error("update deposit error: %v %v", tx.ProofType.Name(), tx.Hash)
+				logger.Error("get eth tx receipt error:%v %v %v", tx.Hash, tx.ConfirmHash, err)
 				continue
 			}
-			logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
-		case common.BtcChangeType:
-			hash, err := t.UpdateUtxoChange(tx.Hash, tx.Proof)
+			err = t.chainStore.DeleteUnSubmitTx(tx.Hash)
 			if err != nil {
-				logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
+				logger.Error("delete unsubmit tx error:%v %v", tx.Hash, err)
+			}
+			if receipt.Status != ethTypes.ReceiptStatusSuccessful {
+				err = t.addBtcUnGenProof(tx.Hash)
+				if err != nil {
+					logger.Error("add btc un gen proof error:%v %v", tx.Hash, err)
+				}
 				continue
 			}
-			logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
-		case common.RedeemTxType:
-			hash, err := t.RedeemZkbtc(tx.Hash, tx.Proof)
-			if err != nil {
-				logger.Error("Redeem btx tx error: %v %v", tx.ProofType.Name(), tx.Hash)
-				continue
+		} else {
+			switch tx.ProofType {
+			case common.BtcDepositType, common.BtcUpdateCpType:
+				hash, err := t.DepositBtc(tx)
+				if err != nil {
+					logger.Error("update deposit error: %v %v", tx.ProofType.Name(), tx.Hash)
+					continue
+				}
+				logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
+			case common.BtcChangeType:
+				hash, err := t.UpdateUtxoChange(tx)
+				if err != nil {
+					logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
+					continue
+				}
+				logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
+			case common.RedeemTxType:
+				hash, err := t.RedeemZkbtc(tx.Hash, tx.Proof)
+				if err != nil {
+					logger.Error("Redeem btx tx error: %v %v", tx.ProofType.Name(), tx.Hash)
+					continue
+				}
+				logger.Debug("success Redeem btc ethHash: %v,btcHash: %v", tx.Hash, hash)
+			default:
+				logger.Warn("never should happen: %v %v", tx.ProofType.Name(), tx.Hash)
 			}
-			logger.Debug("success Redeem btc ethHash: %v,btcHash: %v", tx.Hash, hash)
-		default:
-			logger.Warn("never should happen: %v %v", tx.ProofType.Name(), tx.Hash)
 		}
+
 	}
 	return nil
 }
@@ -147,9 +167,12 @@ func (t *TxManager) getEthAddrNonce(addr string) (uint64, error) {
 	return chainNonce, nil
 }
 
-func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (string, error) {
+func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	proofType := tx.ProofType
+	txId := tx.Hash
+	proof := tx.Proof
 	exists, err := t.ethClient.CheckUtxo(txId)
 	if err != nil {
 		logger.Error("check utxo error: %v %v", txId, err)
@@ -257,9 +280,10 @@ func (t *TxManager) DepositBtc(proofType common.ProofType, txId, proof string) (
 		logger.Error("write nonce error: %v %v", ethAddress, err)
 		return "", err
 	}
-	err = t.chainStore.DeleteUnSubmitTx(txId)
+	tx.ConfirmHash = txHash
+	err = t.chainStore.WriteUnSubmitTx(tx)
 	if err != nil {
-		logger.Error("delete unsubmit tx error: %v %v", txId, err)
+		logger.Error("write unsubmit tx error: %v %v", txId, err)
 		return "", err
 	}
 	return txHash, nil
@@ -376,9 +400,11 @@ func (t *TxManager) btcTxOnChain(hash string) (bool, error) {
 	return false, nil
 }
 
-func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
+func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	txId := tx.Hash
+	proof := tx.Proof
 	confirmed, err := t.ethClient.UtxoConfirm(txId)
 	if err != nil {
 		logger.Error("utxo confirm error: %v %v", txId, err)
@@ -482,9 +508,10 @@ func (t *TxManager) UpdateUtxoChange(txId, proof string) (string, error) {
 		logger.Error("write nonce error: %v %v", fromAddress, err)
 		return "", err
 	}
-	err = t.chainStore.DeleteUnSubmitTx(txId)
+	tx.ConfirmHash = txHash
+	err = t.chainStore.WriteUnSubmitTx(tx)
 	if err != nil {
-		logger.Error("delete unsubmit tx error: %v %v", txId, err)
+		logger.Error("write unsubmit tx error: %v %v", txId, err)
 		return "", err
 	}
 	return txHash, nil

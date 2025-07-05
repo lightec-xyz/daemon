@@ -940,20 +940,16 @@ func (cs *ChainStore) ReadEthereumHeight() (uint64, bool, error) {
 }
 
 func (cs *ChainStore) WriteUnSubmitTx(txes ...DbUnSubmitTx) error {
-	batch := cs.store.Batch()
-	for _, tx := range txes {
-		err := batch.BatchPutObj(dbUnSubmitTxId(tx.Hash), tx)
-		if err != nil {
-			logger.Error("put unsubmit tx error:%v", err)
-			return err
+	return cs.store.WrapBatch(func(batch store.IBatch) error {
+		for _, tx := range txes {
+			err := batch.BatchPutObj(dbUnSubmitTxId(tx.Hash), tx)
+			if err != nil {
+				logger.Error("put unsubmit tx error:%v", err)
+				return err
+			}
 		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put unsubmit tx batch error:%v", err)
-		return err
-	}
-	return nil
+		return nil
+	})
 }
 
 func (cs *ChainStore) ReadUnSubmitTxs() ([]DbUnSubmitTx, error) {

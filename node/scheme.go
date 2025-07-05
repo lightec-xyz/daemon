@@ -103,6 +103,7 @@ type DbUnSubmitTx struct {
 	Proof       string
 	Timestamp   int64
 	ConfirmHash string //
+	Status      int
 }
 
 type DbMiner struct {
