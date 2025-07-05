@@ -1142,6 +1142,10 @@ func (s *Scheduler) BlockSignature() error {
 		logger.Error("get block sig error:%v", err)
 		return err
 	}
+	if sig.Signature == "" {
+		logger.Warn("block signature is empty:%v", sig.Height)
+		return nil
+	}
 	hash, ok, err := s.chainStore.ReadBitcoinHash(uint64(sig.Height))
 	if err != nil {
 		logger.Error("read db bitcoin hash error: %v %v", sig.Height, err)
