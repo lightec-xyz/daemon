@@ -98,7 +98,7 @@ func (t *TxManager) Check() error {
 		return err
 	}
 	for _, tx := range unSubmitTxs {
-		if tx.ConfirmHash != "" {
+		if tx.ConfirmHash != "" { // deposit and updateUtxo tx
 			receipt, err := t.ethClient.TransactionReceipt(context.Background(), ethcommon.HexToHash(tx.ConfirmHash))
 			if err != nil {
 				logger.Error("get eth tx receipt error:%v %v %v", tx.Hash, tx.ConfirmHash, err)
