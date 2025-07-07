@@ -175,7 +175,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		cfg.MinerAddr = keyStore.address
 	}
 	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisBeaconSlot, cfg.BtcGenesisHeight,
-		btcProverClient, btcClient, ethClient, beaClient, beaconClient, cfg.MinerAddr, cfg.ScIsRecursive)
+		btcProverClient, btcClient, ethClient, beaClient, beaconClient, cfg.MinerAddr, cfg.ScNewRecursive)
 	if err != nil {
 		logger.Error("new proof Prepared data error: %v", err)
 		return nil, err

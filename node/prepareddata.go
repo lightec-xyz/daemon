@@ -37,7 +37,7 @@ type Prepared struct {
 	beaconClient     *beacon.Client
 	genesisPeriod    uint64
 	genesisSlot      uint64
-	scIsRecursive    bool
+	scNewRecursive   bool
 	minerAddr        string
 	btcGenesisHeight uint64 // startIndex
 }
@@ -341,7 +341,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 	var firstProof *StoreProof
 	var exists bool
 	var choice string
-	if period == genesisPeriod+1 && p.scIsRecursive { //todo
+	if period == genesisPeriod+1 && p.scNewRecursive { //todo
 		firstProof, exists, err = p.filestore.GetUnitProof(p.genesisPeriod)
 		choice = circuits.SyncCommitteeGenesis
 	} else {
@@ -1124,7 +1124,7 @@ func (p *Prepared) GetBtcTimestampRequest(fIndex uint64, sIndex uint64) (*rpc.Bt
 }
 
 func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, btcGenesisHeight uint64, proverClient btcproverClient.IClient, btcClient *btcrpc.Client,
-	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr string, scIsRecursive bool) (*Prepared, error) {
+	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr string, scNewRecursive bool) (*Prepared, error) {
 	return &Prepared{
 		filestore:        filestore,
 		chainStore:       NewChainStore(store),
@@ -1137,7 +1137,7 @@ func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, bt
 		genesisPeriod:    genesisSlot / common.SlotPerPeriod,
 		btcGenesisHeight: btcGenesisHeight,
 		minerAddr:        minerAddr,
-		scIsRecursive:    scIsRecursive,
+		scNewRecursive:   scNewRecursive,
 	}, nil
 }
 
