@@ -7,6 +7,7 @@ import (
 	"github.com/aviate-labs/agent-go/ic/wallet"
 	"github.com/aviate-labs/agent-go/identity"
 	"github.com/aviate-labs/agent-go/principal"
+	"github.com/lightec-xyz/daemon/common"
 	"math/big"
 	"time"
 )
@@ -80,6 +81,7 @@ func (c *Client) BlockSignature() (*BlockSignature, error) {
 	if err != nil {
 		return nil, err
 	}
+	result.Hash = common.ReverseStr(result.Hash)
 	return &result, nil
 }
 

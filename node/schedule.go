@@ -1181,7 +1181,6 @@ func (s *Scheduler) BlockSignature() error {
 		logger.Warn("block signature is empty:%v", sig.Height)
 		return nil
 	}
-	sig.Hash = common.ReverseStr(sig.Hash)
 	hash, ok, err := s.chainStore.ReadBitcoinHash(uint64(sig.Height))
 	if err != nil {
 		logger.Error("read db bitcoin hash error: %v %v", sig.Height, err)
@@ -1192,7 +1191,7 @@ func (s *Scheduler) BlockSignature() error {
 		return nil
 	}
 	if !common.StrEqual(hash, sig.Hash) {
-		logger.Warn("find ipc hash != db hash:%v %v", sig.Hash, hash)
+		logger.Warn("find icp hash %v != db hash %v,height:%v", sig.Hash, hash, sig.Height)
 		return nil
 	}
 	dbIcpSignature := DbIcpSignature{Height: uint64(sig.Height), Hash: sig.Hash, Signature: sig.Signature}
