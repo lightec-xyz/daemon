@@ -340,7 +340,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 	var firstProof *StoreProof
 	var exists bool
 	var choice string
-	if period == genesisPeriod+1 {
+	if period == genesisPeriod+1 && false { //todo
 		firstProof, exists, err = p.filestore.GetUnitProof(p.genesisPeriod)
 		choice = circuits.SyncCommitteeGenesis
 	} else {
