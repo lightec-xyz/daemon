@@ -545,9 +545,9 @@ func (t *TxManager) SignerBtc(currentScRoot, ethTxHash, btcTxId, proof string, s
 	var signatures [][][]byte
 	var err error
 	if t.randCount%5 == 0 {
-		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward, t.oasisSign, t.icpSign, t.sgxSign)
+		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward, t.sgxSign, t.icpSign, t.oasisSign)
 	} else {
-		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward, t.oasisSign, t.sgxSign, t.icpSign)
+		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward, t.sgxSign, t.oasisSign, t.icpSign)
 	}
 	if err != nil {
 		logger.Error("sign btc tx error: %v %v", btcTxId, err)
