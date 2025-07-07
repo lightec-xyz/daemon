@@ -8,6 +8,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	"github.com/lightec-xyz/daemon/rpc/sgx"
 	prysmClient "github.com/prysmaticlabs/prysm/v5/api/client"
+	"github.com/prysmaticlabs/prysm/v5/config/params"
 	"github.com/ybbus/jsonrpc/v3"
 	"net/http"
 	"os"
@@ -96,6 +97,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new store error:%v,dbPath:%s", err, dbPath)
 		return nil, err
 	}
+	params.UseSepoliaNetworkConfig()
+	params.OverrideBeaconConfig(params.SepoliaConfig())
 	proverClient := btcproverClient.NewJsonRpcClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, &jsonrpc.RPCClientOpts{
 		HTTPClient: &http.Client{
 			Timeout: 1 * time.Minute,
