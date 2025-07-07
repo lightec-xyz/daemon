@@ -24,7 +24,7 @@ type RunConfig struct {
 	OasisUrl         string `json:"oasisUrl"`
 	SgxUrl           string `json:"sgxUrl"`
 	DiscordHookUrl   string `json:"discordHookUrl"`
-	ScIsRecursive    bool   `json:"scIsRecursive"`
+	ScNewRecursive   bool   `json:"scNewRecursive"`
 	IcpWalletAddress string `json:"icpWalletAddress"`
 	IcpPrivateKey    string `json:"icpPrivateKey"`
 
