@@ -118,7 +118,7 @@ func (b *beaconAgent) ScanBlock() error {
 		logger.Warn("no find beacon latest slot")
 		return fmt.Errorf("no find beacon latest slot")
 	}
-	headSlot, err := beacon.GetFinalizedHeadSlot(b.apiClient)
+	headSlot, err := b.beaconClient.GetLatestFinalizedSlot()
 	if err != nil {
 		logger.Error("get beaconhead slot error: %v", err)
 		return err
@@ -128,7 +128,7 @@ func (b *beaconAgent) ScanBlock() error {
 		return nil
 	}
 	for index := slot + 1; index <= headSlot; index++ {
-		slotMapInfo, err := beacon.GetEth1MapToEth2(b.apiClient, index)
+		slotMapInfo, err := b.beaconClient.Eth1MapToEth2(index)
 		if err != nil {
 			if strings.Contains(err.Error(), "404 NotFound response") { // todo
 				logger.Warn("miss beacon slot %v", index)

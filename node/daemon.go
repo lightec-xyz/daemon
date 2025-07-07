@@ -121,7 +121,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new oasis client error:%v", err)
 		return nil, err
 	}
-	params.OverrideBeaconConfig(params.MainnetConfig())
+	params.UseHoleskyNetworkConfig()
+	params.OverrideBeaconConfig(params.HoleskyConfig())
 	beaClient, err := apiclient.NewClient(cfg.BeaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(cfg.BeaconUrl)))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
