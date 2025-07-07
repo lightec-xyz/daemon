@@ -12,6 +12,7 @@ import (
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"math/big"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -198,4 +199,14 @@ func PrintPanicStack(extras ...interface{}) {
 			logger.Error("EXRAS#%v DATA:%v\n", k, spew.Sdump(extras[k]))
 		}
 	}
+}
+
+func getUrlToken(url string) string {
+	pattern := `^https?://[^/]+/.+/([0-9a-fA-F]{64})$`
+	re := regexp.MustCompile(pattern)
+	match := re.FindStringSubmatch(url)
+	if len(match) > 1 {
+		return match[1]
+	}
+	return ""
 }

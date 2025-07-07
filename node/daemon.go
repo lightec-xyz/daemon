@@ -5,15 +5,15 @@ import (
 	"github.com/aviate-labs/agent-go/identity"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/node/p2p"
+	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	"github.com/lightec-xyz/daemon/rpc/sgx"
+	prysmClient "github.com/prysmaticlabs/prysm/v5/api/client"
 	"github.com/ybbus/jsonrpc/v3"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/lightec-xyz/daemon/rpc/dfinity"
 
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -123,7 +123,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	params.UseHoleskyNetworkConfig()
 	params.OverrideBeaconConfig(params.HoleskyConfig())
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl)
+	beaClient, err := apiclient.NewClient(cfg.BeaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(cfg.BeaconUrl)))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
 		return nil, err
