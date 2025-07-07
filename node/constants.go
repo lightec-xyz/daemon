@@ -43,6 +43,7 @@ const (
 	TestnetFeePoolAddr        = "0x7be6F1ECac63c8562Da8fF769347c45fc4590bFb"
 	TestnetOasisSignerAddr    = "0xA81Fc99DBC654D68513B8C1475aFeC3B5d76496e"
 	TestnetIcpPublicKey       = "03183007b9afcfa519871885380d4dfd1144269d8050ec2a51992065af2a87d3df"
+	TestnetGenesisRoot        = "52bbd8287d0e455ce6cd732fa8a5f003e2ad82fd0ed3a59516f9ae1642f1b182"
 	TestnetBtcScanTime        = 1 * time.Minute
 	TestnetEthScanTime        = 30 * time.Second
 
