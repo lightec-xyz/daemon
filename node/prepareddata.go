@@ -952,6 +952,8 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 		// no work,just placeholder
 		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
 		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"
+	} else {
+		logger.Debug("%v icp signature: %v %v %v", dbTx.Hash, icpSignature.Height, icpSignature.Hash, icpSignature.Signature)
 	}
 	blockHash, err := p.btcClient.GetBlockHash(int64(dbTx.Height))
 	if err != nil {
@@ -980,7 +982,7 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 	}
 
 	sigVerifyData, err := blockdepthUtil.GetSigVerifProofData(
-		ethcommon.FromHex(icpSignature.Hash),
+		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
 		ethcommon.FromHex(TestnetIcpPublicKey))
 	if err != nil {
