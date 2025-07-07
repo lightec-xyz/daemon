@@ -598,7 +598,16 @@ func (t *TxManager) icpSign(currentScRoot, ethTxHash, btcTxId, proof string, sig
 }
 
 func (t *TxManager) sgxSign(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error) {
-	sgxSignatures, err := t.sgxClient.BtcTxSignature(currentScRoot, minerReward.String(), btcTxId, proof, sigHashes)
+	sgxRedeemProof, ok, err := t.fileStore.GetSgxRedeemProof(ethTxHash)
+	if err != nil {
+		logger.Error("get sgx redeem proof error: %v %v", ethTxHash, err)
+		return nil, err
+	}
+	if !ok {
+		logger.Error("get sgx redeem proof error: %v", ethTxHash)
+		return nil, fmt.Errorf("get sgx redeem proof error: %v", ethTxHash)
+	}
+	sgxSignatures, err := t.sgxClient.BtcTxSignature(currentScRoot, minerReward.String(), btcTxId, sgxRedeemProof.Proof, sigHashes)
 	if err != nil {
 		logger.Error("sign btc tx error: %v %v", btcTxId, err)
 		return nil, err
