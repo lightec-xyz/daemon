@@ -128,27 +128,22 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new provers api client error: %v", err)
 		return nil, err
 	}
-	var dfinityClient *dfinity.Client
-	if cfg.IcpPrivateKey != "" {
-		icpIdentity, err := identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(cfg.IcpPrivateKey))
-		if err != nil {
-			logger.Error("new icp identity error: %v", err)
-			return nil, err
-		}
-		dfinityClient, err = dfinity.NewClientWithIdentity(cfg.IcpSingerAddress, cfg.IcpWalletAddress,
-			cfg.IcpSingerUrl, icpIdentity)
-		if err != nil {
-			logger.Error("new dfinity client error: %v", err)
-			return nil, err
-		}
-	} else {
-		dfinityClient, err = dfinity.NewClient(cfg.IcpSingerAddress)
-		if err != nil {
-			logger.Error("new dfinity client error: %v", err)
-			return nil, err
-		}
-	}
 
+	var secp256k1Identity identity.Identity
+	if cfg.IcpPrivateKey != "" && cfg.IcpWalletAddress != "" {
+		secp256k1Identity, err = identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(cfg.IcpPrivateKey))
+		if err != nil {
+			logger.Warn("new icp secp256k1Identity error: %v", err)
+			return nil, err
+		}
+		logger.Info("dfinity client use wallet agent sender: %v,publicKey: %x", secp256k1Identity.Sender().String(), secp256k1Identity.PublicKey())
+	}
+	icpClientOption := dfinity.NewOption(cfg.IcpWalletAddress, cfg.IcpTxSingerAddress, cfg.IcpBlockSignerAddress, secp256k1Identity)
+	dfinityClient, err := dfinity.NewClient(icpClientOption)
+	if err != nil {
+		logger.Error("new dfinity client error: %v", err)
+		return nil, err
+	}
 	logger.Debug("beaconGenesisSlot: %v, beaconGenesisPeriod: %v,ethInitHeight: %v,btcGenesisHeight: %v, btcInitHeight: %v",
 		cfg.GenesisBeaconSlot, cfg.GenesisSyncPeriod, cfg.EthInitHeight, cfg.BtcGenesisHeight, cfg.BtcInitHeight)
 

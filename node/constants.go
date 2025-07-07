@@ -46,9 +46,10 @@ const (
 	TestnetBtcScanTime        = 1 * time.Minute
 	TestnetEthScanTime        = 30 * time.Second
 
-	TestnetIcpSingerId  = "6ybqh-oiaaa-aaaak-quffa-cai"
-	TestnetIcpUrl       = "https://icp0.io"
-	TestnetSgxServerUrl = ""
+	TestnetIcpTxSingerId = "6ybqh-oiaaa-aaaak-quffa-cai"
+	TestnetBlockSingerId = "xdqo6-dqaaa-aaaal-qsqva-cai"
+	TestnetIcpWalletId   = ""
+	TestnetSgxServerUrl  = ""
 
 	TestnetInitBitcoinHeight  = 2812015
 	TestnetInitBeaconHeight   = 153

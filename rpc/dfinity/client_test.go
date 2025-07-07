@@ -3,7 +3,6 @@ package dfinity
 import (
 	"crypto/ed25519"
 	"encoding/hex"
-	"fmt"
 	"github.com/aviate-labs/agent-go/identity"
 	"testing"
 )
@@ -11,21 +10,20 @@ import (
 var client *Client
 var err error
 
-var endpoint = "https://icp0.io"
-
-var canisterId = "xbsjj-qaaaa-aaaai-aqamq-cai"
-
-var walletId = "mno3q-2iaaa-aaaak-qdewq-cai"
+var txSignerCanId = "wlkxr-hqaaa-aaaad-aaxaa-cai"
+var blockSignerCanId = "xdqo6-dqaaa-aaaal-qsqva-cai"
+var walletCanId = ""
 
 func init() {
-	secp256k1Identity, err := identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(``))
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("accountId: %x \n", secp256k1Identity.PublicKey())
-	fmt.Printf("sender: %v \n", secp256k1Identity.Sender())
-	fmt.Printf("PrincipalId: %v \n", secp256k1Identity.Sender().String())
-	client, err = NewClientWithIdentity(canisterId, walletId, endpoint, secp256k1Identity)
+	//secp256k1Identity, err := identity.NewSecp256k1IdentityFromPEMWithoutParameters([]byte(``))
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Printf("accountId: %x \n", secp256k1Identity.PublicKey())
+	//fmt.Printf("sender: %v \n", secp256k1Identity.Sender())
+	//fmt.Printf("PrincipalId: %v \n", secp256k1Identity.Sender().String())
+	option := NewOption(walletCanId, txSignerCanId, blockSignerCanId, nil)
+	client, err = NewClient(option)
 	if err != nil {
 		panic(err)
 	}
@@ -64,8 +62,16 @@ func TestClient_Identity(t *testing.T) {
 	t.Log(ed25519Identity.Sender())
 }
 
-func TestClient_VerifyPublicKey(t *testing.T) {
-	publicKey, err := client.PublicKey()
+func TestClient_TxPublicKey(t *testing.T) {
+	publicKey, err := client.TxPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(publicKey)
+}
+
+func TestClient_BlockPublicKey(t *testing.T) {
+	publicKey, err := client.BlockPublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,22 +84,6 @@ func TestClient_DummyAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(address)
-}
-
-func TestClient_EthDecoderCanister(t *testing.T) {
-	result, err := client.EthDecoderCanister()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(result)
-}
-
-func TestClient_PlonkVerifierCanister(t *testing.T) {
-	result, err := client.PlonkVerifierCanister()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(result)
 }
 
 func TestClient_Sign(t *testing.T) {
@@ -123,7 +113,7 @@ func TestClient_BlockHeight(t *testing.T) {
 }
 
 func TestClient_WalletBalance(t *testing.T) {
-	balance, err := client.WalletBalance()
+	balance, err := client.IcpBalance()
 	if err != nil {
 		t.Fatal(err)
 	}
