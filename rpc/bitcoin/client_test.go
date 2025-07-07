@@ -103,7 +103,7 @@ func TestClient_GetBlockHeader(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(header)
+	fmt.Println(header.Hash)
 }
 
 func TestClient_GetHexBlockHeader(t *testing.T) {
@@ -123,7 +123,7 @@ func TestClient_GetBlockCount1(t *testing.T) {
 }
 
 func TestClient_GetBlockHash(t *testing.T) {
-	hash, err := client.GetBlockHash(66674)
+	hash, err := client.GetBlockHash(904399)
 	if err != nil {
 		panic(err)
 	}
