@@ -341,9 +341,9 @@ func (s *Scheduler) checkIcpSig(height uint64) (bool, error) {
 		return false, nil
 	}
 	if !common.StrEqual(hash, signature.Hash) {
-		return false, nil
+		return true, nil
 	}
-	return true, nil
+	return false, nil
 
 }
 
