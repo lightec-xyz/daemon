@@ -11,20 +11,20 @@ import (
 )
 
 type RunConfig struct {
-	Datadir        string `json:"datadir"`
-	Rpcbind        string `json:"rpcbind"`
-	Rpcport        string `json:"rpcport"`
-	WsPort         string `json:"wsport"`
-	Network        string `json:"network"`
-	BtcUser        string `json:"btcUser"`
-	BtcPwd         string `json:"btcPwd"`
-	BtcUrl         string `json:"btcUrl"`
-	EthUrl         string `json:"ethUrl"`
-	BeaconUrl      string `json:"beaconUrl"`
-	OasisUrl       string `json:"oasisUrl"`
-	SgxUrl         string `json:"sgxUrl"`
-	DiscordHookUrl string `json:"discordHookUrl"`
-
+	Datadir          string `json:"datadir"`
+	Rpcbind          string `json:"rpcbind"`
+	Rpcport          string `json:"rpcport"`
+	WsPort           string `json:"wsport"`
+	Network          string `json:"network"`
+	BtcUser          string `json:"btcUser"`
+	BtcPwd           string `json:"btcPwd"`
+	BtcUrl           string `json:"btcUrl"`
+	EthUrl           string `json:"ethUrl"`
+	BeaconUrl        string `json:"beaconUrl"`
+	OasisUrl         string `json:"oasisUrl"`
+	SgxUrl           string `json:"sgxUrl"`
+	DiscordHookUrl   string `json:"discordHookUrl"`
+	ScIsRecursive    bool   `json:"scIsRecursive"`
 	IcpWalletAddress string `json:"icpWalletAddress"`
 	IcpPrivateKey    string `json:"icpPrivateKey"`
 

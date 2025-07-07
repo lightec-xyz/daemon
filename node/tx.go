@@ -331,6 +331,21 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 	for index, vin := range transaction.MsgTx.TxIn {
 		logger.Debug("%v vin: %v", index, vin)
 	}
+	btcTxHash := transaction.TxHash()
+	exists, err := t.btcTxOnChain(btcTxHash)
+	if err != nil {
+		logger.Error("get btc tx %v on chain error: %v %v", hash, btcTxHash, err)
+		return "", err
+	}
+	if exists {
+		logger.Warn("btc tx already exist: %v %v", btcTxHash, hash)
+		err := t.chainStore.DeleteUnSubmitTx(hash)
+		if err != nil {
+			logger.Error("delete unSubmit tx error: %v %v", hash, err)
+			return "", err
+		}
+		return "", nil
+	}
 
 	scRoot, err := t.getTxScRoot(hash)
 	if err != nil {
@@ -360,21 +375,7 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 		logger.Error("serialize btc tx error:%v %v", hash, err)
 		return "", err
 	}
-	btcTxHash := transaction.TxHash()
-	exists, err := t.btcTxOnChain(btcTxHash)
-	if err != nil {
-		logger.Error("get btc tx %v on chain error: %v %v", hash, btcTxHash, err)
-		return "", err
-	}
-	if exists {
-		logger.Warn("btc tx already exist: %v %v", btcTxHash, hash)
-		err := t.chainStore.DeleteUnSubmitTx(hash)
-		if err != nil {
-			logger.Error("delete unSubmit tx error: %v %v", hash, err)
-			return "", err
-		}
-		return "", nil
-	}
+
 	btcTxHex := hex.EncodeToString(btcTxBytes)
 	logger.Info("Redeem btc: %v %v", btcTxHash, btcTxHex)
 	txHash, err := t.btcClient.Sendrawtransaction(btcTxHex)
@@ -597,7 +598,16 @@ func (t *TxManager) icpSign(currentScRoot, ethTxHash, btcTxId, proof string, sig
 }
 
 func (t *TxManager) sgxSign(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error) {
-	sgxSignatures, err := t.sgxClient.BtcTxSignature(currentScRoot, minerReward.String(), btcTxId, proof, sigHashes)
+	sgxRedeemProof, ok, err := t.fileStore.GetSgxRedeemProof(ethTxHash)
+	if err != nil {
+		logger.Error("get sgx redeem proof error: %v %v", ethTxHash, err)
+		return nil, err
+	}
+	if !ok {
+		logger.Error("get sgx redeem proof error: %v", ethTxHash)
+		return nil, fmt.Errorf("get sgx redeem proof error: %v", ethTxHash)
+	}
+	sgxSignatures, err := t.sgxClient.BtcTxSignature(currentScRoot, minerReward.String(), btcTxId, sgxRedeemProof.Proof, sigHashes)
 	if err != nil {
 		logger.Error("sign btc tx error: %v %v", btcTxId, err)
 		return nil, err

@@ -54,7 +54,7 @@ var scRootCmd = &cobra.Command{
 			return
 		}
 		prepared, err := node.NewPreparedData(fileStorage, nil, uint64(genesisSlot), 0, nil, nil,
-			nil, nil, nil, "")
+			nil, nil, nil, "", false)
 		if err != nil {
 			fmt.Printf("new preparedData error: %v \n", err)
 			return
