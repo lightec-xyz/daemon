@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	native_plonk "github.com/consensys/gnark/backend/plonk"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"io"
 	"net/http"
 	"os"
@@ -49,6 +50,12 @@ func TrimOx(value string) string {
 		return value[2:]
 	}
 	return value
+}
+
+func ReverseHex(value string) string {
+	hexValue := ethCommon.FromHex(value)
+	reversed := ReverseBytes(hexValue)
+	return ethCommon.Bytes2Hex(reversed)
 }
 
 func ReverseU32(input []uint32) []uint32 {
