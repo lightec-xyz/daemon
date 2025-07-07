@@ -45,6 +45,7 @@ type TxManager struct {
 	keyStore     *KeyStore
 	lock         sync.Mutex
 	icpSigMap    map[string][][]byte
+	randCount    int
 }
 
 func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client,
@@ -385,6 +386,7 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 		return "", err
 	}
 	delete(t.icpSigMap, hash)
+	t.randCount = t.randCount + 1
 	return txHash, err
 }
 
@@ -528,6 +530,12 @@ func (t *TxManager) SignerBtc(currentScRoot, ethTxHash, btcTxId, proof string, s
 		logger.Debug("txId:%v,oasis signature:%x", btcTxId, oasisSignature)
 		signatures = append(signatures, oasisSignature...)
 	}
+	if t.randCount%4 == 0 { //todo
+
+	} else {
+
+	}
+
 	if icpSignatures, ok := t.icpSigMap[btcTxId]; ok {
 		logger.Debug("txId:%v,use cache icp signature:%x", btcTxId, icpSignatures)
 		signatures = append(signatures, icpSignatures)
@@ -577,6 +585,57 @@ func (t *TxManager) SignerBtc(currentScRoot, ethTxHash, btcTxId, proof string, s
 	}
 	signatures = append(signatures, sgxSignaturesBytes)
 	return signatures, nil
+}
+
+func (t *TxManager) oasisSign(ethTxHash, currentScRoot, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][][]byte, error) {
+	oasisSignatures, err := t.oasisClient.SignBtcTx(btcTxId, currentScRoot, proof, sigHashes, minerReward)
+	if err != nil {
+		logger.Error("oasis sign btc tx error: %v %v", btcTxId, err)
+		return nil, err
+	}
+	logger.Debug("txId:%v,oasis signature:%x", btcTxId, oasisSignatures)
+	return oasisSignatures, nil
+}
+
+func (t *TxManager) icpSign(ethTxHash, currentScRoot, minerReward, btcTxId, proof string, sigHashes []string) ([][]byte, error) {
+	if icpSignatures, ok := t.icpSigMap[btcTxId]; ok {
+		logger.Debug("txId:%v,use cache icp signature:%x", btcTxId, icpSignatures)
+		return icpSignatures, nil
+	} else {
+		icpTxSignatures, err := t.icpClient.BtcTxSign(currentScRoot, ethTxHash, btcTxId, proof, minerReward, sigHashes)
+		if err != nil {
+			logger.Error("sign btc tx error: %v %v", btcTxId, err)
+			return nil, err
+		} else {
+			if !icpTxSignatures.Signed {
+				return nil, fmt.Errorf("icp signer faile: %v", ethTxHash)
+
+			}
+			logger.Debug("txId:%v,icp signature:%v", btcTxId, icpTxSignatures.Signature)
+			icpSignaturesBytes, err := icpSigToBytes(icpTxSignatures.Signature)
+			if err != nil {
+				logger.Error("sign btc tx error: %v %v", btcTxId, err)
+				return nil, err
+			}
+			t.icpSigMap[btcTxId] = icpSignaturesBytes
+			return icpSignaturesBytes, nil
+		}
+	}
+}
+
+func (t *TxManager) sgxSign(currentScRoot, minerReward, btcTxId, proof string, sigHashes []string) ([][]byte, error) {
+	sgxSignatures, err := t.sgxClient.BtcTxSignature(currentScRoot, minerReward, btcTxId, proof, sigHashes)
+	if err != nil {
+		logger.Error("sign btc tx error: %v %v", btcTxId, err)
+		return nil, err
+	}
+	logger.Debug("txId:%v,sgx signature:%v", btcTxId, sgxSignatures.Signatures)
+	sgxSignaturesBytes, err := sgxSigToBytes(sgxSignatures.Signatures)
+	if err != nil {
+		logger.Error("sign btc tx error: %v %v", btcTxId, err)
+		return nil, err
+	}
+	return sgxSignaturesBytes, nil
 }
 
 func (t *TxManager) getTxScRoot(hash string) (string, error) {
