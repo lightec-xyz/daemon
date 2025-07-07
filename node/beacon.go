@@ -130,7 +130,7 @@ func (b *beaconAgent) ScanBlock() error {
 	for index := slot + 1; index <= headSlot; index++ {
 		slotMapInfo, err := b.beaconClient.Eth1MapToEth2(index)
 		if err != nil {
-			if strings.Contains(err.Error(), "404 NotFound response") { // todo
+			if strings.Contains(err.Error(), "404 Not Found") { // todo
 				logger.Warn("miss beacon slot %v", index)
 				continue
 			}
