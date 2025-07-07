@@ -291,6 +291,9 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 }
 
 func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
+	defer func() {
+		t.randCount = t.randCount + 1
+	}()
 	ethTxHash := ethcommon.HexToHash(hash)
 	ethTx, _, err := t.ethClient.TransactionByHash(context.Background(), ethTxHash)
 	if err != nil {
@@ -386,7 +389,6 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 		return "", err
 	}
 	delete(t.icpSigMap, hash)
-	t.randCount = t.randCount + 1
 	return txHash, err
 }
 
