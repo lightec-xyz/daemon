@@ -1181,6 +1181,7 @@ func (s *Scheduler) BlockSignature() error {
 		logger.Warn("block signature is empty:%v", sig.Height)
 		return nil
 	}
+	sig.Hash = common.ReverseStr(sig.Hash)
 	hash, ok, err := s.chainStore.ReadBitcoinHash(uint64(sig.Height))
 	if err != nil {
 		logger.Error("read db bitcoin hash error: %v %v", sig.Height, err)
@@ -1205,7 +1206,7 @@ func (s *Scheduler) BlockSignature() error {
 		logger.Error("write icp sig error:%v", err)
 		return err
 	}
-	logger.Debug("success get icp block signature:%v", sig.Height)
+	logger.Debug("success get icp block signature:%v %v %v", sig.Height, sig.Hash, sig.Signature)
 	return nil
 }
 func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {

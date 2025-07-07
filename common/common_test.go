@@ -11,6 +11,10 @@ func Test_Reverse(t *testing.T) {
 	fmt.Println(ReverseBytes(res))
 }
 
+func Test_ReverseStr(t *testing.T) {
+	str := ReverseStr("abc22a")
+	t.Log(str)
+}
 func TestBtcChainGenesisIndex(t *testing.T) {
 	endIndex := 83929
 	startIndex := ((endIndex-10)/2016 - 2) * 2016
