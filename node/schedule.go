@@ -1205,6 +1205,7 @@ func (s *Scheduler) BlockSignature() error {
 		logger.Error("write icp sig error:%v", err)
 		return err
 	}
+	logger.Debug("success get icp block signature:%v", sig.Height)
 	return nil
 }
 func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
