@@ -8,27 +8,39 @@ import (
 	"github.com/aviate-labs/agent-go/identity"
 	"github.com/aviate-labs/agent-go/principal"
 	"math/big"
-	"net/url"
 	"time"
 )
 
 type Client struct {
-	agent       *agent.Agent
-	walletAgent *wallet.Agent
-	canisterId  principal.Principal
-	timeout     time.Duration
+	agent           *agent.Agent
+	walletAgent     *wallet.Agent
+	txCanisterId    principal.Principal
+	blockCanisterId principal.Principal
+	timeout         time.Duration
 }
 
-func (c *Client) PublicKey() (string, error) {
+func (c *Client) TxPublicKey() (string, error) {
 	var result string
-	err := c.call(c.canisterId, "public_key", []any{}, []any{&result})
+	err := c.call(c.txCanisterId, "public_key", []any{}, []any{&result})
 	if err != nil {
 		return "", err
 	}
 	return result, nil
 }
 
-func (c *Client) WalletBalance() (uint64, error) {
+func (c *Client) BlockPublicKey() (string, error) {
+	var result string
+	err := c.call(c.blockCanisterId, "public_key", []any{}, []any{&result})
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+func (c *Client) IcpBalance() (uint64, error) {
+	if c.walletAgent == nil {
+		return 0, fmt.Errorf("walletAgent is nil")
+	}
 	balance, err := c.walletAgent.WalletBalance()
 	if err != nil {
 		return 0, err
@@ -38,25 +50,7 @@ func (c *Client) WalletBalance() (uint64, error) {
 
 func (c *Client) DummyAddress() (string, error) {
 	var result string
-	err := c.call(c.canisterId, "dummy_address", []any{}, []any{&result})
-	if err != nil {
-		return "", err
-	}
-	return result, nil
-}
-
-func (c *Client) EthDecoderCanister() (string, error) {
-	var result string
-	err := c.call(c.canisterId, "eth_decoder_canister", []any{}, []any{&result})
-	if err != nil {
-		return "", err
-	}
-	return result, nil
-}
-
-func (c *Client) PlonkVerifierCanister() (string, error) {
-	var result string
-	err := c.call(c.canisterId, "plonk_verifier_canister", []any{}, []any{&result})
+	err := c.call(c.txCanisterId, "dummy_address", []any{}, []any{&result})
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +59,15 @@ func (c *Client) PlonkVerifierCanister() (string, error) {
 
 func (c *Client) BtcTxSign(currentScRoot, ethTxHash, btcTxId, proof, minerReward string, sigHashes []string) (*TxSignature, error) {
 	signature := TxSignature{}
-	err := c.call(c.canisterId, "verify_and_sign_free", []any{currentScRoot, ethTxHash, btcTxId, minerReward, sigHashes, proof}, []any{&signature.Signed, &signature.Signature})
+	err := c.call(c.txCanisterId, "verify_and_sign_free", []any{currentScRoot, ethTxHash, btcTxId, minerReward, sigHashes, proof}, []any{&signature.Signed, &signature.Signature})
+	if err != nil {
+		return nil, err
+	}
+	return &signature, nil
+}
+func (c *Client) BtcTxSignWithCycle(currentScRoot, ethTxHash, btcTxId, proof, minerReward string, sigHashes []string) (*TxSignature, error) {
+	signature := TxSignature{}
+	err := c.walletCall(c.txCanisterId, 50_000_000_000, "verify_and_sign", []any{currentScRoot, ethTxHash, btcTxId, minerReward, sigHashes, proof}, []any{&signature.Signed, &signature.Signature})
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func (c *Client) BtcTxSign(currentScRoot, ethTxHash, btcTxId, proof, minerReward
 
 func (c *Client) BlockSignature() (*BlockSignature, error) {
 	result := BlockSignature{}
-	err := c.call(c.canisterId, "block_height", []any{}, []any{&result.Hash, &result.Height, &result.Signature})
+	err := c.call(c.blockCanisterId, "block_height_free", []any{}, []any{&result.Height, &result.Hash, &result.Signature})
 	if err != nil {
 		return nil, err
 	}
@@ -83,23 +85,21 @@ func (c *Client) BlockSignature() (*BlockSignature, error) {
 
 func (c *Client) BlockSignatureWithCycle() (*BlockSignature, error) {
 	result := BlockSignature{}
-	err := c.walletCall(28_000_000_000, "block_height", []any{}, []any{&result.Hash, &result.Height, &result.Signature})
+	err := c.walletCall(c.blockCanisterId, 50_000_000_000, "block_height", []any{}, []any{&result.Height, &result.Hash, &result.Signature})
 	if err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (c *Client) BtcTxSignWithCycle(currentScRoot, ethTxHash, btcTxId, proof, minerReward string, sigHashes []string) (*TxSignature, error) {
-	signature := TxSignature{}
-	err := c.walletCall(28_000_000_000, "verify_and_sign", []any{currentScRoot, ethTxHash, btcTxId, minerReward, sigHashes, proof}, []any{&signature.Signed, &signature.Signature})
-	if err != nil {
-		return nil, err
-	}
-	return &signature, nil
+func (c *Client) WalletInfo() {
+
 }
 
-func (c *Client) WalletBalance128() (*big.Int, error) {
+func (c *Client) CyclesBalance() (*big.Int, error) {
+	if c.walletAgent == nil {
+		return nil, fmt.Errorf("walletAgent is nil")
+	}
 	cycles, err := c.walletAgent.WalletBalance128()
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (c *Client) call(canisterID principal.Principal, method string, args []any,
 	return c.agent.Call(canisterID, method, args, rets)
 }
 
-func (c *Client) walletCall(cycles uint64, method string, args []any, rets []any) error {
+func (c *Client) walletCall(destCanId principal.Principal, cycles uint64, method string, args []any, rets []any) error {
 	var input []byte
 	var err error
 	if len(args) != 0 {
@@ -121,10 +121,13 @@ func (c *Client) walletCall(cycles uint64, method string, args []any, rets []any
 		}
 	}
 	walletCallArg := WalletCallArg{
-		Canister:   c.canisterId,
+		Canister:   destCanId,
 		MethodName: method,
 		Args:       input,
 		Cycles:     cycles,
+	}
+	if c.walletAgent == nil {
+		return fmt.Errorf("walletAgent is nil")
 	}
 	res, err := c.walletAgent.WalletCall(walletCallArg)
 	if err != nil {
@@ -144,48 +147,51 @@ func (c *Client) query(canisterID principal.Principal, method string, args []any
 	return c.agent.Query(canisterID, method, args, rets)
 }
 
-func NewClient(canId string) (*Client, error) {
-	timeout := 60 * time.Second
+func NewClient(opt *Options) (*Client, error) {
+	if opt == nil {
+		return nil, fmt.Errorf("opt is nil")
+	}
+	timeout := 2 * time.Minute
 	config := agent.Config{
 		PollTimeout: timeout,
 	}
-	canisterId, err := principal.Decode(canId)
+	txCanisterId, err := principal.Decode(opt.TxCanisterId)
 	if err != nil {
 		return nil, err
 	}
-	icpAgent, err := agent.New(config)
+	agent, err := agent.New(config)
 	if err != nil {
 		return nil, err
+	}
+	blockCanisterId, err := principal.Decode(opt.BlockCanisterId)
+	if err != nil {
+		return nil, err
+	}
+	var walletClient *wallet.Agent
+	if opt.identity != nil && opt.WalletCanisterId != "" {
+		walletClient, err = NewWalletClient(opt.WalletCanisterId, opt.identity)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &Client{
-		agent:      icpAgent,
-		canisterId: canisterId,
-		timeout:    timeout,
+		agent:           agent,
+		walletAgent:     walletClient,
+		txCanisterId:    txCanisterId,
+		blockCanisterId: blockCanisterId,
+		timeout:         timeout,
 	}, nil
 }
 
-func NewClientWithIdentity(canId, walletId, endpoint string, identity identity.Identity) (*Client, error) {
-	timeout := 60 * time.Second
-	host, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, err
-	}
+func NewWalletClient(walletCanId string, identity identity.Identity) (*wallet.Agent, error) {
 	config := agent.Config{
-		Identity:                       identity,
-		ClientConfig:                   &agent.ClientConfig{Host: host},
+		Identity: identity,
+		//ClientConfig:                   &agent.ClientConfig{Host: host},
 		FetchRootKey:                   true,
-		PollTimeout:                    timeout,
+		PollTimeout:                    2 * time.Minute,
 		DisableSignedQueryVerification: false,
 	}
-	canisterId, err := principal.Decode(canId)
-	if err != nil {
-		return nil, err
-	}
-	icpAgent, err := agent.New(config)
-	if err != nil {
-		return nil, err
-	}
-	walletCanisterId, err := principal.Decode(walletId)
+	walletCanisterId, err := principal.Decode(walletCanId)
 	if err != nil {
 		return nil, err
 	}
@@ -193,10 +199,5 @@ func NewClientWithIdentity(canId, walletId, endpoint string, identity identity.I
 	if err != nil {
 		return nil, err
 	}
-	return &Client{
-		agent:       icpAgent,
-		walletAgent: walletAgent,
-		canisterId:  canisterId,
-		timeout:     timeout,
-	}, nil
+	return walletAgent, nil
 }

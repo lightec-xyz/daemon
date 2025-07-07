@@ -24,18 +24,17 @@ type RunConfig struct {
 	BeaconUrl      string `json:"beaconUrl"`
 	OasisUrl       string `json:"oasisUrl"`
 	SgxUrl         string `json:"sgxUrl"`
-	IcpSingerUrl   string `json:"icpSingerUrl"`
 	DiscordHookUrl string `json:"discordHookUrl"`
 
-	IcpSingerAddress   string        `json:"icpSingerAddress"`
-	IcpWalletAddress   string        `json:"icpWalletAddress"`
+	IcpWalletAddress string `json:"icpWalletAddress"`
+	IcpPrivateKey    string `json:"icpPrivateKey"`
+
 	MinerAddr          string        `json:"minerAddr"`
 	BtcReScan          bool          `json:"btcReScan"`
 	EthReScan          bool          `json:"ethReScan"`
 	TxMode             common.TxMode `json:"txMode"`
 	BeaconReScan       bool          `json:"beaconReScan"`
 	EthPrivateKey      string        `json:"ethPrivateKey"`
-	IcpPrivateKey      string        `json:"icpPrivateKey"`
 	EnableLocalWorker  bool          `json:"enableLocalWorker"`
 	BtcInitHeight      uint64        `json:"btcInitHeight"`
 	EthInitHeight      uint64        `json:"ethInitHeight"`
@@ -102,19 +101,21 @@ func (rc *RunConfig) Check() error {
 
 type Config struct {
 	RunConfig
-	BtcOperatorAddr    string        `json:"btcOperatorAddr"`
-	BtcLockScript      string        `json:"btcLockScript"`
-	GenesisSyncPeriod  uint64        `json:"genesisPeriod"`
-	ZkBridgeAddr       string        `json:"zkBridgeAddr"`
-	ZkBtcAddr          string        `json:"zkBtcAddr"`
-	UtxoManagerAddr    string        `json:"utxoManagerAddr"`
-	OasisSignerAddress string        `json:"oasisSignerAddress"`
-	BtcTxVerifyAddr    string        `json:"txVerifyAddr"`
-	EthAddrFilter      *EthFilter    `json:"ethAddrFilter"`
-	BtcFilter          *BtcFilter    `json:"btcFilter"`
-	EthScanTime        time.Duration `json:"ethScanTime"`
-	BtcScanTime        time.Duration `json:"btcScanTime"`
-	Debug              bool
+	BtcOperatorAddr       string        `json:"btcOperatorAddr"`
+	BtcLockScript         string        `json:"btcLockScript"`
+	GenesisSyncPeriod     uint64        `json:"genesisPeriod"`
+	ZkBridgeAddr          string        `json:"zkBridgeAddr"`
+	ZkBtcAddr             string        `json:"zkBtcAddr"`
+	UtxoManagerAddr       string        `json:"utxoManagerAddr"`
+	OasisSignerAddress    string        `json:"oasisSignerAddress"`
+	IcpTxSingerAddress    string        `json:"icpTxSingerAddress"`
+	IcpBlockSignerAddress string        `json:"icpBlockSignerAddress"`
+	BtcTxVerifyAddr       string        `json:"txVerifyAddr"`
+	EthAddrFilter         *EthFilter    `json:"ethAddrFilter"`
+	BtcFilter             *BtcFilter    `json:"btcFilter"`
+	EthScanTime           time.Duration `json:"ethScanTime"`
+	BtcScanTime           time.Duration `json:"btcScanTime"`
+	Debug                 bool
 }
 
 func NewConfig(cfg RunConfig) (Config, error) {
@@ -140,25 +141,22 @@ func getTestnetConfig(cfg RunConfig) (Config, error) {
 	if cfg.BeaconInitSlot == 0 {
 		cfg.BeaconInitSlot = TestnetInitBeaconHeight
 	}
-	if cfg.IcpSingerAddress == "" {
-		cfg.IcpSingerAddress = TestnetIcpSingerId
-	}
-	if cfg.IcpSingerUrl == "" {
-		cfg.IcpSingerUrl = TestnetIcpUrl
-	}
 	return Config{
-		RunConfig:          cfg,
-		GenesisSyncPeriod:  cfg.GenesisBeaconSlot / common.SlotPerPeriod,
-		BtcOperatorAddr:    TestnetBtcOperatorAddress,
-		BtcLockScript:      TestnetBtcLockScript,
-		ZkBridgeAddr:       TestnetEthZkBridgeAddress,
-		ZkBtcAddr:          TestnetEthZkBtcAddress,
-		UtxoManagerAddr:    TestEthUtxoManagerAddress,
-		BtcScanTime:        TestnetBtcScanTime,
-		EthScanTime:        TestnetEthScanTime,
-		BtcTxVerifyAddr:    TestEthBtcTxVerifyAddress,
-		OasisSignerAddress: TestnetOasisSignerAddr,
-		BtcFilter:          NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, MinDepositValue, cfg.TxMode),
+		RunConfig: cfg,
+
+		IcpBlockSignerAddress: TestnetBlockSingerId,
+		IcpTxSingerAddress:    TestnetIcpTxSingerId,
+		GenesisSyncPeriod:     cfg.GenesisBeaconSlot / common.SlotPerPeriod,
+		BtcOperatorAddr:       TestnetBtcOperatorAddress,
+		BtcLockScript:         TestnetBtcLockScript,
+		ZkBridgeAddr:          TestnetEthZkBridgeAddress,
+		ZkBtcAddr:             TestnetEthZkBtcAddress,
+		UtxoManagerAddr:       TestEthUtxoManagerAddress,
+		BtcScanTime:           TestnetBtcScanTime,
+		EthScanTime:           TestnetEthScanTime,
+		BtcTxVerifyAddr:       TestEthBtcTxVerifyAddress,
+		OasisSignerAddress:    TestnetOasisSignerAddr,
+		BtcFilter:             NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, MinDepositValue, cfg.TxMode),
 		EthAddrFilter: NewEthAddrFilter(TestnetBtcLockScript, TestEthUtxoManagerAddress, TestnetEthZkBridgeAddress, TestnetFeePoolAddr,
 			TestnetDepositTopic, TestnetRedeemTopic, TestnetUpdateUtxoTopic, TestnetDepositRewardTopic, TestnetRedeemRewardTopic,
 			cfg.TxMode),

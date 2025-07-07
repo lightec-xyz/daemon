@@ -179,6 +179,16 @@ func (b *bitcoinAgent) scan(index uint64) error {
 		logger.Error("")
 		return err
 	}
+	if b.reScan {
+		checkTxes := append(depositTxes, redeemTxes...)
+		for _, tx := range checkTxes {
+			if !tx.Proved {
+				logger.Debug("delete proof: %v %v", tx.ProofType.Name(), tx.Hash)
+				_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcDepositType, DbValue(tx.Hash)))
+				_ = b.fileStore.DelProof(NewHashStoreKey(common.BtcChangeType, DbValue(tx.Hash)))
+			}
+		}
+	}
 	return nil
 
 }
