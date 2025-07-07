@@ -103,12 +103,12 @@ func TestClient_Sign(t *testing.T) {
 	t.Log(signature)
 }
 
-func TestClient_BlockHeight(t *testing.T) {
-	height, err := client.BlockSignature()
+func TestClient_BlockSignature(t *testing.T) {
+	result, err := client.BlockSignature()
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(height.Height)
+	t.Log(result)
 
 }
 

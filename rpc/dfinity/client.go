@@ -76,7 +76,7 @@ func (c *Client) BtcTxSignWithCycle(currentScRoot, ethTxHash, btcTxId, proof, mi
 
 func (c *Client) BlockSignature() (*BlockSignature, error) {
 	result := BlockSignature{}
-	err := c.call(c.blockCanisterId, "block_height", []any{}, []any{&result.Hash, &result.Height, &result.Signature})
+	err := c.call(c.blockCanisterId, "block_height_free", []any{}, []any{&result.Height, &result.Hash, &result.Signature})
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (c *Client) BlockSignature() (*BlockSignature, error) {
 
 func (c *Client) BlockSignatureWithCycle() (*BlockSignature, error) {
 	result := BlockSignature{}
-	err := c.walletCall(c.blockCanisterId, 50_000_000_000, "block_height", []any{}, []any{&result.Hash, &result.Height, &result.Signature})
+	err := c.walletCall(c.blockCanisterId, 50_000_000_000, "block_height", []any{}, []any{&result.Height, &result.Hash, &result.Signature})
 	if err != nil {
 		return nil, err
 	}
