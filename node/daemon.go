@@ -24,8 +24,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/oasis"
 	"github.com/lightec-xyz/daemon/store"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
-
-	"github.com/prysmaticlabs/prysm/v5/config/params"
 )
 
 type IAgent interface {
@@ -121,8 +119,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new oasis client error:%v", err)
 		return nil, err
 	}
-	params.UseHoleskyNetworkConfig()
-	params.OverrideBeaconConfig(params.HoleskyConfig())
 	beaClient, err := apiclient.NewClient(cfg.BeaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(cfg.BeaconUrl)))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
