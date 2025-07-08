@@ -3,6 +3,7 @@ package proof
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/spf13/cobra"
 )
@@ -12,6 +13,11 @@ var removeBtcProofCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		err := logger.InitLogger(nil)
+		if err != nil {
+			fmt.Printf("init logger error: %v \n", err)
+			return
+		}
 		cfgFile, err := cmd.Root().PersistentFlags().GetString("config")
 		if err != nil {
 			fmt.Printf("get config error: %v \n", err)

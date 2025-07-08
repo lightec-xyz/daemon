@@ -3,6 +3,7 @@ package proof
 import (
 	"fmt"
 	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/lightec-xyz/daemon/store"
 	"github.com/spf13/cobra"
@@ -14,6 +15,11 @@ var importCmd = &cobra.Command{
 	Use:   "import",
 	Short: "export proof to db",
 	Run: func(cmd *cobra.Command, args []string) {
+		err := logger.InitLogger(nil)
+		if err != nil {
+			fmt.Printf("init logger error: %v \n", err)
+			return
+		}
 		name, err := cmd.Flags().GetString("name")
 		if err != nil {
 			fmt.Printf("get path error: %v \n", err)

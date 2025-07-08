@@ -2,8 +2,6 @@ package proof
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/daemon/logger"
-
 	"github.com/spf13/cobra"
 )
 
@@ -18,11 +16,6 @@ var ProofCmd = &cobra.Command{
 }
 
 func init() {
-	err := logger.InitLogger(nil)
-	if err != nil {
-		fmt.Printf("init logger error: %v \n", err)
-		return
-	}
 	ProofCmd.AddCommand(importCmd)
 	ProofCmd.AddCommand(removeBtcProofCmd)
 	ProofCmd.AddCommand(readVkCmd)
