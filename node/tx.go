@@ -572,11 +572,20 @@ func (t *TxManager) oasisSign(currentScRoot, ethTxHash, btcTxId, proof string, s
 }
 
 func (t *TxManager) icpSign(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error) {
+	redeemProof, ok, err := t.fileStore.GetSgxRedeemProof(ethTxHash)
+	if err != nil {
+		logger.Error("get sgx redeem proof error: %v %v", ethTxHash, err)
+		return nil, err
+	}
+	if !ok {
+		logger.Error("get sgx redeem proof error: %v", ethTxHash)
+		return nil, fmt.Errorf("get sgx redeem proof error: %v", ethTxHash)
+	}
 	if icpSignatures, ok := t.icpSigMap[btcTxId]; ok {
 		logger.Debug("txId:%v,use cache icp signature:%x", btcTxId, icpSignatures)
 		return icpSignatures, nil
 	} else {
-		icpTxSignatures, err := t.icpClient.BtcTxSign(currentScRoot, ethTxHash, btcTxId, proof, minerReward.String(), sigHashes)
+		icpTxSignatures, err := t.icpClient.BtcTxSign(currentScRoot, ethTxHash, btcTxId, redeemProof.Proof, minerReward.String(), sigHashes)
 		if err != nil {
 			logger.Error("sign btc tx error: %v %v", btcTxId, err)
 			return nil, err
