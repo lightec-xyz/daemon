@@ -26,11 +26,6 @@ func TestPrepared_GetTxInEth2Request(t *testing.T) {
 		logger.Error("new provers api client error: %v", err)
 		t.Fatal(err)
 	}
-	data, err := apiClient.GetBlindedBlockV1("12089032")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(data)
 	params.UseSepoliaNetworkConfig()
 	params.OverrideBeaconConfig(params.SepoliaConfig())
 	txData, err := txineth2Utils.GetTxInEth2ProofData(ethClient.Client, apiClient, func(blockNumber uint64) (uint64, error) {

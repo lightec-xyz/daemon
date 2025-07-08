@@ -532,10 +532,15 @@ func (t *TxManager) signBtc(currentScRoot, ethTxHash, btcTxId, proof string, sig
 			continue
 		}
 		signatures = append(signatures, signature)
-		if len(signatures) >= 2 {
-			return signatures, nil
-		}
+		//todo
+		//if len(signatures) >= 2 {
+		//	return signatures, nil
+		//}
 	}
+	if len(signatures) >= 2 {
+		return signatures, nil
+	}
+
 	return nil, fmt.Errorf("sign btc tx error: %v", btcTxId)
 
 }
