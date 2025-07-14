@@ -1178,6 +1178,7 @@ func (s *Scheduler) BlockSignature() error {
 		return err
 	}
 	if len(unGenProofs) == 0 {
+		logger.Warn("no deposit proof,skip get icp block signature")
 		return nil
 	}
 	sig, err := s.icpClient.BlockSignature()
