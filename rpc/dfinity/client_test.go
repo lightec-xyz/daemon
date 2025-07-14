@@ -23,10 +23,11 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
+		fmt.Printf("accountId: %x \n", secp256k1Identity.PublicKey())
+		fmt.Printf("sender: %v \n", secp256k1Identity.Sender())
+		fmt.Printf("PrincipalId: %v \n", secp256k1Identity.Sender().String())
 	}
-	fmt.Printf("accountId: %x \n", secp256k1Identity.PublicKey())
-	fmt.Printf("sender: %v \n", secp256k1Identity.Sender())
-	fmt.Printf("PrincipalId: %v \n", secp256k1Identity.Sender().String())
+
 	option := NewOption(walletCanId, txSignerCanId, blockSignerCanId, secp256k1Identity)
 	client, err = NewClient(option)
 	if err != nil {
@@ -109,6 +110,14 @@ func TestClient_BlockSignature(t *testing.T) {
 	}
 	t.Log(result)
 
+}
+
+func TestClient_BlockSignatureWithCycle(t *testing.T) {
+	result, err := client.BlockSignatureWithCycle()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(result)
 }
 
 func TestClient_WalletBalance(t *testing.T) {
