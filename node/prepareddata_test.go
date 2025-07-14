@@ -24,13 +24,14 @@ func TestPrepared_GetTxInEth2Request(t *testing.T) {
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
 		t.Fatal(err)
-	//params.UseSepoliaNetworkConfig()
-	//params.OverrideBeaconConfig(params.SepoliaConfig())
-	txData, err := txineth2Utils.GetTxInEth2ProofData(ethClient.Client, apiClient, func(blockNumber uint64) (uint64, error) {
-		return 12089032, nil
-	}, ethcommon.HexToHash("08be2acd2b07cda893c33be6790939500c49f61ace481a3507a272de383e5927"))
-	if err != nil {
-		t.Fatal(err)
+		//params.UseSepoliaNetworkConfig()
+		//params.OverrideBeaconConfig(params.SepoliaConfig())
+		txData, err := txineth2Utils.GetTxInEth2ProofData(ethClient.Client, apiClient, func(blockNumber uint64) (uint64, error) {
+			return 12089032, nil
+		}, ethcommon.HexToHash("08be2acd2b07cda893c33be6790939500c49f61ace481a3507a272de383e5927"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(txData)
 	}
-	t.Log(txData)
 }
