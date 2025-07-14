@@ -1172,6 +1172,14 @@ func (s *Scheduler) checkTxProved(proofType common.ProofType, hash string) (bool
 }
 
 func (s *Scheduler) BlockSignature() error {
+	unGenProofs, err := s.chainStore.ReadUnGenProofs(common.BitcoinChain)
+	if err != nil {
+		logger.Error("read un gen proofs error:%v", err)
+		return err
+	}
+	if len(unGenProofs) == 0 {
+		return nil
+	}
 	sig, err := s.icpClient.BlockSignature()
 	if err != nil {
 		logger.Error("get block sig error:%v", err)
