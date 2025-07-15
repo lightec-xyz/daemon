@@ -94,6 +94,29 @@ func (s *Scheduler) updateBtcCp() error {
 			return err
 		}
 	}
+	err = s.BlockSignature(false)
+	if err != nil {
+		logger.Error("block signature error:%v", err)
+		return err
+	}
+	tx, ok, err := s.chainStore.ReadBtcTx(cpTx.Hash)
+	if err != nil {
+		logger.Error("read btc tx error:%v %v", cpTx.Hash, err)
+		return err
+	}
+	if !ok {
+		logger.Error("no find btc tx:%v", cpTx.Hash)
+		return fmt.Errorf("no find btc tx:%v", cpTx.Hash)
+	}
+	tx.LatestHeight = 0
+	tx.CheckPointHeight = 0
+	tx.GenProofNums = 0
+	tx.SigSigned = false
+	err = s.chainStore.WriteDbTxes(tx)
+	if err != nil {
+		logger.Error("write db tx error: %v", err)
+		return err
+	}
 	err = s.chainStore.WriteUnGenProof(common.BitcoinChain, &DbUnGenProof{
 		Hash:      cpTx.Hash,
 		ProofType: common.BtcUpdateCpType,
@@ -1171,15 +1194,21 @@ func (s *Scheduler) checkTxProved(proofType common.ProofType, hash string) (bool
 	}
 }
 
-func (s *Scheduler) BlockSignature() error {
-	unGenProofs, err := s.chainStore.ReadUnGenProofs(common.BitcoinChain)
-	if err != nil {
-		logger.Error("read un gen proofs error:%v", err)
-		return err
+func (s *Scheduler) BlockSignature(checks ...bool) error {
+	check := true
+	if len(checks) > 0 {
+		check = checks[0]
 	}
-	if len(unGenProofs) == 0 {
-		logger.Warn("no deposit proof,skip get icp block signature")
-		return nil
+	if check {
+		unGenProofs, err := s.chainStore.ReadUnGenProofs(common.BitcoinChain)
+		if err != nil {
+			logger.Error("read un gen proofs error:%v", err)
+			return err
+		}
+		if len(unGenProofs) == 0 {
+			logger.Warn("no deposit proof,skip get icp block signature")
+			return nil
+		}
 	}
 	sig, err := s.icpClient.BlockSignature()
 	if err != nil {
