@@ -6,7 +6,10 @@ var client *Client
 var err error
 
 func init() {
-	client = NewClient("http://127.0.0.1:9004")
+	client, err = NewClient("")
+	if err != nil {
+		panic(err)
+	}
 }
 func TestClient_SgxKeyInfo(t *testing.T) {
 	keyInfo, err := client.SgxKeyInfo()
@@ -15,40 +18,6 @@ func TestClient_SgxKeyInfo(t *testing.T) {
 	}
 	t.Log(keyInfo)
 }
-
-func TestMultiClient_SgxKeyInfo(t *testing.T) {
-	multiClient, err := NewMultiClient("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	info, err := multiClient.SgxKeyInfo()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(info)
-}
-
-func TestMultiClient_BtcTxSignature(t *testing.T) {
-	multiClient, err := NewMultiClient("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	sigsHash := []string{"cb0799771fea76af9496fa65df8834529f7cd9ff0cf766ab65219cbef532e5f5", "b5fee61e386aca8671e0b925e597926d9d3c7a8cc65ff73b53a5c09afb13363e"}
-	sig, err := multiClient.BtcTxSignature(
-		"6813630637d6a988524df575932262242bd5a4486946ff011bdd58c4397b3d93",
-		"168000000000000",
-		"1916ef627d82b4c52d2ec3eb350af63fd9754674892667d6e0b5aa8dd7a850c5",
-		"d20903ba2129a1b9812ac3dd37d9ef529996fa5f95305483704f0ed72150bcb0905ab670c87ebd7a064fe64d39ea0b88d62f0975d2ca3a55f2aa8c3b289c56e3f0239f31d190871bba9956dabcf933213abdcf12fd551efd18106807f205fd3cf05abefe1772a98940046338691f2c3e4c6b3050539330b444dd7ff021206a0ea4b38f0a63db9e3b8cd6b904344a95610e9c2298a0379d2727237707d924a35bda1f571539cbafbd9043f6f35eb4f48bf245b2544744e665785a2e2958d75642c28388b5ecc298af8f4e504b55af748863d191fd101ede15109456dcf310274ae1aa8fc6eb24ace3bef362f11ba467686220828b150d3aa9d29afe8d5c77bcff000000071fd5701ed1f973772dc6f286c5f05b4e5cfcc12bb9e8c55bb4b4b6e020747c26026c23d59823a1cf6df3fac1dbbc53df989d32398eca54637060a2064de038941abd7f429913877083fea195480896be241459785790d99a42166123a059f9870f302539d57a188e2780fd795eb12552deddf7abbb12fc13885570e918eb904416820c960fa90c8f5ac8ec7eb1f303cabce812bfae157c5cc3433635809e69e41543b800105f679610a434200fc191173d452530194ed93da965dde1bd52a26a26fa5faa346bb035533ed52b7aee242cb5956ebd1e2bfe1f9e6d61ef8bebc469a75d8b36942085aada9a2b9a7bb18e74f2d69c5d755b84efd26f5219d28643551561e532bbdb7486459397de3deb5663d1a6afbf11db8c51367526ca60e3d72300000001eeebd9c998d847c3afe485f368750d9cfe7e56d72a321d0bba5f61e1c6f3ddde",
-		sigsHash,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, value := range sig.Signatures {
-		t.Log(value)
-	}
-}
-
 func TestClient_BtcTxSignature(t *testing.T) {
 	sigsHash := []string{"cb0799771fea76af9496fa65df8834529f7cd9ff0cf766ab65219cbef532e5f5", "b5fee61e386aca8671e0b925e597926d9d3c7a8cc65ff73b53a5c09afb13363e"}
 	sig, err := client.BtcTxSignature(

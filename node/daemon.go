@@ -106,17 +106,23 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	})
 	btcProverClient := NewBtcClient(proverClient, storeDb, btcClient, int64(cfg.BtcInitHeight))
 
-	beaconClient, err := beacon.NewClient(cfg.BeaconUrl)
+	beaconClient, err := beacon.NewClient(cfg.BeaconUrl...)
 	if err != nil {
 		logger.Error("new beacon client error:%v", err)
 		return nil, err
 	}
+	beaconMultiClient, err := beacon.NewMultiClient(cfg.BeaconUrl...)
+	if err != nil {
+		logger.Error("new beacon multi client error:%v", err)
+		return nil, err
+	}
+
 	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.UtxoManagerAddr, cfg.BtcTxVerifyAddr, cfg.ZkBtcAddr)
 	if err != nil {
 		logger.Error("new eth client error:%v", err)
 		return nil, err
 	}
-	sgxClient, err := sgx.NewMultiClient(cfg.SgxUrl...)
+	sgxClient, err := sgx.NewClient(cfg.SgxUrl...)
 	if err != nil {
 		logger.Error("new sgx error")
 		return nil, err
@@ -126,7 +132,8 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new oasis client error:%v", err)
 		return nil, err
 	}
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(cfg.BeaconUrl)))
+	beaconUrl := cfg.BeaconUrl[0]
+	beaClient, err := apiclient.NewClient(beaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(beaconUrl)))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
 		return nil, err
@@ -257,7 +264,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	logger.Debug("rpcServer: listen on %v,port  %v", cfg.Rpcbind, cfg.Rpcport)
 	var fetch IFetch
 	if !cfg.DisableFetch {
-		fetch, err = NewFetch(beaconClient, storeDb, fileStore, cfg.GenesisBeaconSlot, beaconNotify, ethNotify)
+		fetch, err = NewFetch(beaconMultiClient, storeDb, fileStore, cfg.GenesisBeaconSlot, beaconNotify, ethNotify)
 		if err != nil {
 			logger.Error("new fetch error: %v", err)
 			return nil, err

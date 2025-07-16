@@ -20,7 +20,7 @@ type RunConfig struct {
 	BtcPwd           string   `json:"btcPwd"`
 	BtcUrl           string   `json:"btcUrl"`
 	EthUrl           string   `json:"ethUrl"`
-	BeaconUrl        string   `json:"beaconUrl"`
+	BeaconUrl        []string `json:"beaconUrl"`
 	OasisUrl         string   `json:"oasisUrl"`
 	SgxUrl           []string `json:"sgxUrl"`
 	DiscordHookUrl   string   `json:"discordHookUrl"`
@@ -80,7 +80,7 @@ func (rc *RunConfig) Check() error {
 	if rc.EthUrl == "" {
 		return fmt.Errorf("ethUrl is empty")
 	}
-	if rc.BeaconUrl == "" {
+	if len(rc.BeaconUrl) == 0 {
 		return fmt.Errorf("beaconUrl is empty")
 	}
 	if len(rc.SgxUrl) == 0 {

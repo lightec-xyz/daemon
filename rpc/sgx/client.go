@@ -18,70 +18,21 @@ type ISgx interface {
 	BtcTxSignature(currentScRoot, minerReward, txId, proof string, sigHashes []string) (*TxSignature, error)
 }
 
-type MultiClient struct {
-	clients []*Client
-}
-
-func (m *MultiClient) SgxKeyInfo() (*KeyInfo, error) {
-	result, err := m.call(func(client *Client) (interface{}, error) {
-		return client.SgxKeyInfo()
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*KeyInfo), nil
-}
-
-func (m *MultiClient) BtcTxSignature(currentScRoot, minerReward, txId, proof string, sigHashes []string) (*TxSignature, error) {
-	res, err := m.call(func(client *Client) (interface{}, error) {
-		return client.BtcTxSignature(currentScRoot, minerReward, txId, proof, sigHashes)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return res.(*TxSignature), nil
-}
-
-func (m *MultiClient) call(fn func(*Client) (interface{}, error)) (interface{}, error) {
-	msg := "request error "
-	for _, c := range m.clients {
-		result, err := fn(c)
-		if err != nil {
-			msg = msg + err.Error()
-			continue
-		}
-		return result, nil
-	}
-	return nil, errors.New(msg)
-}
-
-func NewMultiClient(urls ...string) (ISgx, error) {
-	if len(urls) == 0 {
-		return nil, fmt.Errorf("url is empty")
-	}
-	var clients []*Client
-	for _, url := range urls {
-		client := NewClient(url)
-		clients = append(clients, client)
-	}
-	return &MultiClient{
-		clients: clients,
-	}, nil
-
-}
-
 type Client struct {
-	endpoint string
-	timeout  time.Duration
-	imp      *http.Client
+	endpoints []string
+	timeout   time.Duration
+	imp       *http.Client
 }
 
-func NewClient(endpoint string) *Client {
-	return &Client{
-		endpoint: endpoint,
-		imp:      http.DefaultClient,
-		timeout:  60 * time.Second,
+func NewClient(endpoint ...string) (*Client, error) {
+	if len(endpoint) == 0 {
+		return nil, errors.New("endpoint is empty")
 	}
+	return &Client{
+		endpoints: endpoint,
+		imp:       http.DefaultClient,
+		timeout:   60 * time.Second,
+	}, nil
 }
 
 func (c *Client) SgxKeyInfo() (*KeyInfo, error) {
@@ -109,7 +60,16 @@ func (c *Client) BtcTxSignature(currentScRoot, minerReward, txId, proof string, 
 }
 
 func (c *Client) post(method string, param Param, value interface{}) error {
-	return c.httpReq(http.MethodPost, method, param, value)
+	msg := "request error "
+	for _, url := range c.endpoints {
+		err := c.httpReq(http.MethodPost, url, method, param, value)
+		if err != nil {
+			msg = msg + err.Error() + "\n"
+			continue
+		}
+		return nil
+	}
+	return errors.New(msg)
 }
 
 func (c *Client) newRequest(ctx context.Context, httpMethod, url, method string, param interface{}) (*http.Request, error) {
@@ -125,14 +85,14 @@ func (c *Client) newRequest(ctx context.Context, httpMethod, url, method string,
 	return req, nil
 }
 
-func (c *Client) httpReq(httpMethod, method string, param Param, value interface{}) (err error) {
+func (c *Client) httpReq(httpMethod, url, method string, param Param, value interface{}) (err error) {
 	vi := reflect.ValueOf(value)
 	if vi.Kind() != reflect.Ptr {
 		return fmt.Errorf("value must be pointer")
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
-	req, err := c.newRequest(ctx, httpMethod, c.endpoint, method, param)
+	req, err := c.newRequest(ctx, httpMethod, url, method, param)
 	if err != nil {
 		return err
 	}
