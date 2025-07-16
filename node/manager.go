@@ -53,6 +53,11 @@ func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client,
 }
 
 func (m *manager) Init() error {
+	err := m.scheduler.init()
+	if err != nil {
+		logger.Error("init scheduler error:%v", err)
+		return err
+	}
 	btcChainFork, err := m.chainStore.ReadChainForks(common.BitcoinChain.String())
 	if err != nil {
 		logger.Error("read btc chain fork error:%v", err)

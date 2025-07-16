@@ -34,6 +34,10 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) init() error {
+	err := s.updateBtcCp()
+	if err != nil {
+		logger.Warn("update btc cp error:%v", err)
+	}
 	return nil
 }
 
