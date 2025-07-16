@@ -17,7 +17,7 @@ var client *Client
 var endpoint = "http://127.0.0.1:9002"
 var zkBridgeAddr = "0x21098979Fc10BBC754C6359E657eA28c52ea1acf"
 var utxoManager = "0xD2f892d4Ece281C91Fd5D9f28658F8d445878239"
-var btcTxVerifyAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
+var btcTxVerifyAddr = "0x45bc26C34f9e6BA7704cBBf8dE090f2D1fEfA097"
 var zkbtcAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
 
 func init() {
@@ -26,6 +26,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_IcpSwitch(t *testing.T) {
+	icpSwitch, err := client.EnableUnsignedProtection()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(icpSwitch)
 }
 
 func TestClient_GetNonce(t *testing.T) {

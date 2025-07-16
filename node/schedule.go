@@ -153,19 +153,28 @@ func (s *Scheduler) CheckBtcState() error {
 		logger.Warn("no find latest btc height")
 		return nil
 	}
-	icpSig, exists, err := s.chainStore.ReadLatestIcpSig()
-	if err != nil {
-		logger.Error("read latest icp sig error:%v", err)
-		return err
-	}
-	if !exists {
-		logger.Warn("no find latest icp sig")
-		return nil
-	}
-	//todo
-	if latestHeight < icpSig.Height-1 || latestHeight < uint64(blockCount-10) {
+	if latestHeight < uint64(blockCount-10) {
 		logger.Warn("wait btc sync complete, block count:%v latestHeight:%v,skip check btc proof now", blockCount, latestHeight)
 		return nil
+	}
+	unsignedProtection, err := s.ethClient.EnableUnsignedProtection()
+	if err != nil {
+		logger.Error("enable unsigned protection error:%v", err)
+		return err
+	}
+	if unsignedProtection {
+		icpSig, exists, err := s.chainStore.ReadLatestIcpSig()
+		if err != nil {
+			logger.Error("read latest icp sig error:%v", err)
+			return err
+		}
+		if !exists {
+			logger.Warn("no find latest icp sig")
+			return nil
+		}
+		if latestHeight < icpSig.Height {
+			logger.Warn("unsigned protection is true,wait sync complete, latestHeight:%v,icpSig.Height:%v,skip check btc proof now", latestHeight, icpSig.Height)
+		}
 	}
 	cpHeight, ok, err := s.chainStore.ReadLatestCheckPoint()
 	if err != nil {
