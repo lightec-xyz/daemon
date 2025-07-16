@@ -404,7 +404,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 			Proof:   outerProof.Proof,
 			Witness: outerProof.Witness,
 		},
-		BeginId: TestnetGenesisRoot,
+		BeginId: GenesisRoot,
 		RelayId: hex.EncodeToString(relayId),
 		EndId:   hex.EncodeToString(endId),
 		ScIndex: int(period), //todo
@@ -782,7 +782,7 @@ func (p *Prepared) GetRedeemRequest(txHash string) (*rpc.RedeemRequest, bool, er
 			Proof:   dutyProof.Proof,
 			Witness: dutyProof.Witness,
 		},
-		GenesisScRoot:    TestnetGenesisRoot,
+		GenesisScRoot:    GenesisRoot,
 		CurrentSCSSZRoot: hex.EncodeToString(currentRoot),
 		SigHashes:        common.BytesArrayToHex(sigHashes),
 		NbBeaconHeaders:  len(beaconHeaders) - 1,
@@ -985,7 +985,7 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 	sigVerifyData, err := blockdepthUtil.GetSigVerifProofData(
 		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(TestnetIcpPublicKey))
+		ethcommon.FromHex(IcpPublicKey))
 	if err != nil {
 		logger.Error("get sig verif proof data error: %v", err)
 		return nil, false, err

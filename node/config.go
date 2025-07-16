@@ -72,7 +72,7 @@ func (rc *RunConfig) Check() error {
 		rc.WsPort = "9880"
 	}
 	if rc.Network == "" {
-		rc.Network = "testnet" // todo
+		rc.Network = LightecNetwork // todo
 	}
 	if rc.BtcUrl == "" {
 		return fmt.Errorf("btcUrl is empty")
@@ -83,11 +83,8 @@ func (rc *RunConfig) Check() error {
 	if rc.BeaconUrl == "" {
 		return fmt.Errorf("beaconUrl is empty")
 	}
-	//if rc.MinerAddr == "" {
-	//	return fmt.Errorf("minerAddr is empty")
-	//}
 	if rc.SgxUrl == "" {
-		rc.SgxUrl = TestnetSgxServerUrl
+		rc.SgxUrl = SgxServerUrl
 	}
 	if rc.OasisUrl == "" {
 		return fmt.Errorf("oasisUrl is empty")
@@ -123,41 +120,41 @@ func NewConfig(cfg RunConfig) (Config, error) {
 		return Config{}, err
 	}
 	switch cfg.Network {
-	case LightecTestnet:
-		return getTestnetConfig(cfg)
+	case LightecNetwork:
+		return getMainnetConfig(cfg)
 	default:
 		return Config{}, fmt.Errorf("unsupport network now: %v", cfg.Network)
 	}
 }
 
-func getTestnetConfig(cfg RunConfig) (Config, error) {
+func getMainnetConfig(cfg RunConfig) (Config, error) {
 	if cfg.BtcInitHeight == 0 {
-		cfg.BtcInitHeight = TestnetInitBitcoinHeight
+		cfg.BtcInitHeight = InitBitcoinHeight
 	}
 	if cfg.EthInitHeight == 0 {
-		cfg.EthInitHeight = TestnetInitEthereumHeight
+		cfg.EthInitHeight = InitEthereumHeight
 	}
 	if cfg.BeaconInitSlot == 0 {
-		cfg.BeaconInitSlot = TestnetInitBeaconHeight
+		cfg.BeaconInitSlot = InitBeaconHeight
 	}
 	return Config{
 		RunConfig: cfg,
 
-		IcpBlockSignerAddress: TestnetBlockSingerId,
-		IcpTxSingerAddress:    TestnetIcpTxSingerId,
+		IcpBlockSignerAddress: BlockSingerId,
+		IcpTxSingerAddress:    IcpTxSingerId,
 		GenesisSyncPeriod:     cfg.GenesisBeaconSlot / common.SlotPerPeriod,
-		BtcOperatorAddr:       TestnetBtcOperatorAddress,
-		BtcLockScript:         TestnetBtcLockScript,
-		ZkBridgeAddr:          TestnetEthZkBridgeAddress,
-		ZkBtcAddr:             TestnetEthZkBtcAddress,
-		UtxoManagerAddr:       TestEthUtxoManagerAddress,
-		BtcScanTime:           TestnetBtcScanTime,
-		EthScanTime:           TestnetEthScanTime,
-		BtcTxVerifyAddr:       TestEthBtcTxVerifyAddress,
-		OasisSignerAddress:    TestnetOasisSignerAddr,
-		BtcFilter:             NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, MinDepositValue, cfg.TxMode),
-		EthAddrFilter: NewEthAddrFilter(TestnetBtcLockScript, TestEthUtxoManagerAddress, TestnetEthZkBridgeAddress, TestnetFeePoolAddr,
-			TestnetDepositTopic, TestnetRedeemTopic, TestnetUpdateUtxoTopic, TestnetDepositRewardTopic, TestnetRedeemRewardTopic,
+		BtcOperatorAddr:       BtcOperatorAddress,
+		BtcLockScript:         BtcLockScript,
+		ZkBridgeAddr:          EthZkBridgeAddress,
+		ZkBtcAddr:             EthZkBtcAddress,
+		UtxoManagerAddr:       EthUtxoManagerAddress,
+		BtcScanTime:           BtcScanTime,
+		EthScanTime:           EthScanTime,
+		BtcTxVerifyAddr:       EthBtcTxVerifyAddress,
+		OasisSignerAddress:    OasisSignerAddr,
+		BtcFilter:             NewBtcAddrFilter(BtcOperatorAddress, BtcLockScript, MinDepositValue, cfg.TxMode),
+		EthAddrFilter: NewEthAddrFilter(BtcLockScript, EthUtxoManagerAddress, EthZkBridgeAddress, FeePoolAddr,
+			DepositTopic, RedeemTopic, UpdateUtxoTopic, DepositRewardTopic, RedeemRewardTopic,
 			cfg.TxMode),
 		Debug: common.GetEnvDebugMode(),
 	}, nil

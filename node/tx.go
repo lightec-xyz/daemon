@@ -359,7 +359,7 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 		logger.Error("sign btc tx error: %v %v", hash, err)
 		return "", err
 	}
-	multiSigScriptBytes := ethcommon.FromHex(TestnetMultiSig)
+	multiSigScriptBytes := ethcommon.FromHex(BtcMultiSig)
 	err = transaction.AddMultiScript(multiSigScriptBytes, 2, 3)
 	if err != nil {
 		logger.Error("add multi script error: %v %v", hash, err)
@@ -745,7 +745,7 @@ func (t *TxManager) getParams(txId string) (*zkbridge.IBtcTxVerifierPublicWitnes
 	sigVerif, err := blockdepthUtil.GetSigVerifProofData(
 		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(TestnetIcpPublicKey))
+		ethcommon.FromHex(IcpPublicKey))
 	if err != nil {
 		logger.Error("%v", err.Error())
 		return nil, err
