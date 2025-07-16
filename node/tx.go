@@ -587,7 +587,7 @@ func (t *TxManager) icpSign(currentScRoot, ethTxHash, btcTxId, proof string, sig
 		logger.Debug("txId:%v,use cache icp signature:%x", btcTxId, icpSignatures)
 		return icpSignatures, nil
 	} else {
-		icpTxSignatures, err := t.icpClient.BtcTxSign(currentScRoot, ethTxHash, btcTxId, redeemProof.Proof, minerReward.String(), sigHashes)
+		icpTxSignatures, err := t.icpClient.BtcTxSignWithCycle(currentScRoot, ethTxHash, btcTxId, redeemProof.Proof, minerReward.String(), sigHashes)
 		if err != nil {
 			logger.Error("sign btc tx error: %v %v", btcTxId, err)
 			return nil, err

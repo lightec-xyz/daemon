@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const CostCycleUnit = 50_000_000_000
+
 type Client struct {
 	agent           *agent.Agent
 	walletAgent     *wallet.Agent
@@ -69,7 +71,7 @@ func (c *Client) BtcTxSign(currentScRoot, ethTxHash, btcTxId, proof, minerReward
 }
 func (c *Client) BtcTxSignWithCycle(currentScRoot, ethTxHash, btcTxId, proof, minerReward string, sigHashes []string) (*TxSignature, error) {
 	signature := TxSignature{}
-	err := c.walletCall(c.txCanisterId, 50_000_000_000, "verify_and_sign", []any{currentScRoot, ethTxHash, btcTxId, minerReward, sigHashes, proof}, []any{&signature.Signed, &signature.Signature})
+	err := c.walletCall(c.txCanisterId, CostCycleUnit, "verify_and_sign", []any{currentScRoot, ethTxHash, btcTxId, minerReward, sigHashes, proof}, []any{&signature.Signed, &signature.Signature})
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +91,7 @@ func (c *Client) BlockSignature() (*BlockSignature, error) {
 
 func (c *Client) BlockSignatureWithCycle() (*BlockSignature, error) {
 	result := BlockSignature{}
-	err := c.walletCall(c.blockCanisterId, 50_000_000_000, "block_height", []any{}, []any{&result.Height, &result.Hash, &result.Signature})
+	err := c.walletCall(c.blockCanisterId, CostCycleUnit, "block_height", []any{}, []any{&result.Height, &result.Hash, &result.Signature})
 	if err != nil {
 		return nil, err
 	}
@@ -116,13 +118,9 @@ func (c *Client) call(canisterID principal.Principal, method string, args []any,
 }
 
 func (c *Client) walletCall(destCanId principal.Principal, cycles uint64, method string, args []any, rets []any) error {
-	var input []byte
-	var err error
-	if len(args) != 0 {
-		input, err = idl.Marshal(args)
-		if err != nil {
-			return err
-		}
+	input, err := idl.Marshal(args)
+	if err != nil {
+		return err
 	}
 	walletCallArg := WalletCallArg{
 		Canister:   destCanId,
