@@ -95,6 +95,8 @@ func (c *Client) BlockSignatureWithCycle() (*BlockSignature, error) {
 	if err != nil {
 		return nil, err
 	}
+	hashBytes := ethCommon.FromHex(result.Hash)
+	result.Hash = ethCommon.Bytes2Hex(common.ReverseBytes(hashBytes))
 	return &result, nil
 }
 
