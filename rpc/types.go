@@ -46,7 +46,6 @@ type Transaction struct {
 	Amount    int64         `json:"amount"`
 	DestChain DestChainInfo `json:"destChain"`
 	Proof     ProofInfo     `json:"proof"`
-	Tasks     interface{}   `json:"tasks"`
 }
 
 type BtcDuperRecursiveRequest struct {
@@ -334,8 +333,20 @@ type SyncCommDutyResponse struct {
 }
 
 type ProofInfo struct {
-	ProofType int    `json:"-"`
-	TxId      string `json:"txId"`
-	Proof     string `json:"proof"`
-	Status    int    `json:"status"`
+	ProofType int          `json:"-"`
+	TxId      string       `json:"txId"`
+	Proof     string       `json:"proof"`
+	Params    *ProofParams `json:"params"`
+	Status    int          `json:"status"`
+}
+
+type ProofParams struct {
+	Checkpoint        string `json:"checkpoint"`
+	CpDepth           uint32 `json:"cpDepth"`
+	TxDepth           uint32 `json:"txDepth"`
+	TxBlockHash       string `json:"txBlockHash"`
+	TxTimestamp       uint32 `json:"txTimestamp"`
+	ZkpMiner          string `json:"zkpMiner"`
+	Flag              uint32 `json:"flag"`
+	SmoothedTimestamp uint32 `json:"smoothedTimestamp"`
 }

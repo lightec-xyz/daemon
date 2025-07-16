@@ -21,6 +21,7 @@ type beaconAgent struct {
 	beaconClient   *beacon.Client
 	initBeaconSlot uint64
 	reScan         bool
+	mode           Mode
 	init           bool
 	curSlot        uint64
 }
@@ -60,7 +61,7 @@ func (b *beaconAgent) Init() error {
 
 func (b *beaconAgent) initSotInfo() {
 	for {
-		latestFinalizedSlot, err := b.beaconClient.GetLatestFinalizedSlot()
+		latestFinalizedSlot, err := b.beaconClient.FinalizedSlot()
 		if err != nil {
 			logger.Error("get beacon latest finalized finalizedSlot error: %v", err)
 			time.Sleep(2 * time.Second)
@@ -118,7 +119,7 @@ func (b *beaconAgent) ScanBlock() error {
 		logger.Warn("no find beacon latest slot")
 		return fmt.Errorf("no find beacon latest slot")
 	}
-	headSlot, err := b.beaconClient.GetLatestFinalizedSlot()
+	headSlot, err := b.beaconClient.FinalizedSlot()
 	if err != nil {
 		logger.Error("get beaconhead slot error: %v", err)
 		return err

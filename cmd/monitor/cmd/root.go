@@ -180,7 +180,7 @@ type BtcNode struct {
 }
 
 func NewBtcNode(url, user, pwd string) (*BtcNode, error) {
-	client, err := bitcoin.NewClient(url, user, pwd, "")
+	client, err := bitcoin.NewClient(user, pwd, url)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func NewBeaconNode(url string) (*BeaconNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	height, err := client.GetLatestFinalizedSlot()
+	height, err := client.FinalizedSlot()
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func NewBeaconNode(url string) (*BeaconNode, error) {
 }
 
 func (b *BeaconNode) Check() error {
-	height, err := b.client.GetLatestFinalizedSlot()
+	height, err := b.client.FinalizedSlot()
 	if err != nil {
 		return err
 	}

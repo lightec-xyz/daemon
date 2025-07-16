@@ -35,7 +35,7 @@ type TxManager struct {
 	btcClient    *bitcoin.Client
 	oasisClient  *oasis.Client
 	icpClient    *dfinity.Client
-	sgxClient    *sgx.Client
+	sgxClient    sgx.ISgx
 	proverClient btcproverClient.IClient
 	minerAddr    string
 	submitAddr   string
@@ -46,10 +46,11 @@ type TxManager struct {
 	lock         sync.Mutex
 	icpSigMap    map[string][][]byte
 	randCount    int
+	maxGasPrice  *big.Int
 }
 
 func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client,
-	oasisClient *oasis.Client, dfinityClient *dfinity.Client, sgxClient *sgx.Client, proverClient btcproverClient.IClient, minerAddr string) (*TxManager, error) {
+	oasisClient *oasis.Client, dfinityClient *dfinity.Client, sgxClient sgx.ISgx, proverClient btcproverClient.IClient, minerAddr string) (*TxManager, error) {
 	return &TxManager{
 		ethClient:    ethClient,
 		btcClient:    btcClient,
@@ -64,6 +65,7 @@ func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared
 		submitAddr:   keyStore.EthAddress(),
 		icpSigMap:    make(map[string][][]byte),
 		fileStore:    fileStore,
+		maxGasPrice:  big.NewInt(3000000000), //tdoo 3Gwei
 	}, nil
 }
 
@@ -80,6 +82,10 @@ func (t *TxManager) init() error {
 	}
 	logger.Debug("current miner %v chaiNonce:%v", t.submitAddr, nonce)
 	return nil
+}
+
+func (t *TxManager) setMaxGasPrice(gasPrice uint64) {
+	t.maxGasPrice = big.NewInt(0).SetUint64(gasPrice)
 }
 
 func (t *TxManager) AddTask(resp *common.ProofResponse) {
@@ -110,6 +116,7 @@ func (t *TxManager) Check() error {
 				logger.Error("delete unsubmit tx error:%v %v", tx.Hash, err)
 			}
 			if receipt.Status != ethTypes.ReceiptStatusSuccessful {
+				logger.Debug("tx %v confirm fail:%v,add to un gen proof", tx.Hash, receipt.Status)
 				err = t.addBtcUnGenProof(tx.Hash)
 				if err != nil {
 					logger.Error("add btc un gen proof error:%v %v", tx.Hash, err)
@@ -124,14 +131,20 @@ func (t *TxManager) Check() error {
 					logger.Error("update deposit error: %v %v", tx.ProofType.Name(), tx.Hash)
 					continue
 				}
-				logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
+				if hash == "" {
+					logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
+					continue
+				}
 			case common.BtcChangeType:
 				hash, err := t.UpdateUtxoChange(tx)
 				if err != nil {
 					logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
 					continue
 				}
-				logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
+				if hash == "" {
+					logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
+					continue
+				}
 			case common.RedeemTxType:
 				hash, err := t.RedeemZkbtc(tx.Hash, tx.Proof)
 				if err != nil {
@@ -255,6 +268,10 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 			logger.Warn("never should happen: %v %v", txId, mockErr)
 			return "", mockErr
 		}
+	}
+	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
+		return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
@@ -443,6 +460,7 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 		logger.Error("get gas price error:%v", err)
 		return "", err
 	}
+	gasPrice = getSuggestGasPrice(gasPrice)
 	destHash, err := t.chainStore.ReadDestHash(txId)
 	if err != nil {
 		logger.Error("read dest hash error:%v", err)
@@ -463,8 +481,6 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 		return "", err
 	}
 	minerReward := big.NewInt(0).SetBytes(rewardBytes[:])
-	gasPrice = getSuggestGasPrice(gasPrice)
-
 	params, err := t.getParams(txId)
 	if err != nil {
 		logger.Error("get params %v error %v", txId, err)
@@ -492,6 +508,10 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 			return "", nil
 		}
 		return "", mockErr
+	}
+	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
+		return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	balOk, err := t.CheckEthBalance(t.submitAddr, gasPrice, gasLimit)
@@ -770,9 +790,8 @@ func (t *TxManager) CheckEthBalance(addr string, gasPrice *big.Int, gasLimit uin
 		return false, nil
 	}
 	gasFee := big.NewInt(0).Mul(gasPrice, big.NewInt(int64(gasLimit)))
-	fixGasFee := big.NewInt(0).Mul(gasFee, big.NewInt(2)) // todo
-	if balance.Cmp(fixGasFee) <= 0 {
-		logger.Error("not enough gas fee to submit proof,please deposit gasFee:%v", addr)
+	if balance.Cmp(gasFee) < 0 {
+		logger.Error("not enough gas fee to submit proof,please deposit gasFee:%v %v %v", addr, balance, gasFee)
 		return false, nil
 	}
 	return true, nil
@@ -859,15 +878,15 @@ func sgxSigToBytes(signatures []string) ([][]byte, error) {
 
 func getSuggestGasLimit(value uint64) uint64 {
 	gasLimit := big.NewInt(0).Div(
-		big.NewInt(0).Mul(big.NewInt(int64(value)), big.NewInt(3)),
-		big.NewInt(2))
+		big.NewInt(0).Mul(big.NewInt(int64(value)), big.NewInt(120)),
+		big.NewInt(100))
 	return gasLimit.Uint64()
 
 }
 func getSuggestGasPrice(value *big.Int) *big.Int {
 	gasPrice := big.NewInt(0).Div(
-		big.NewInt(0).Mul(value, big.NewInt(3)),
-		big.NewInt(2))
+		big.NewInt(0).Mul(value, big.NewInt(110)), // todo
+		big.NewInt(100))
 	return gasPrice
 }
 

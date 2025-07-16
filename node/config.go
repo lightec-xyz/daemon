@@ -11,23 +11,23 @@ import (
 )
 
 type RunConfig struct {
-	Datadir          string `json:"datadir"`
-	Rpcbind          string `json:"rpcbind"`
-	Rpcport          string `json:"rpcport"`
-	WsPort           string `json:"wsport"`
-	Network          string `json:"network"`
-	BtcUser          string `json:"btcUser"`
-	BtcPwd           string `json:"btcPwd"`
-	BtcUrl           string `json:"btcUrl"`
-	EthUrl           string `json:"ethUrl"`
-	BeaconUrl        string `json:"beaconUrl"`
-	OasisUrl         string `json:"oasisUrl"`
-	SgxUrl           string `json:"sgxUrl"`
-	DiscordHookUrl   string `json:"discordHookUrl"`
-	ScNewRecursive   bool   `json:"scNewRecursive"`
-	IcpWalletAddress string `json:"icpWalletAddress"`
-	IcpPrivateKey    string `json:"icpPrivateKey"`
-
+	Datadir            string        `json:"datadir"`
+	Rpcbind            string        `json:"rpcbind"`
+	Rpcport            string        `json:"rpcport"`
+	WsPort             string        `json:"wsport"`
+	Network            string        `json:"network"`
+	BtcUser            string        `json:"btcUser"`
+	BtcPwd             string        `json:"btcPwd"`
+	BtcUrl             []string      `json:"btcUrl"`
+	EthUrl             string        `json:"ethUrl"`
+	BeaconUrl          []string      `json:"beaconUrl"`
+	OasisUrl           string        `json:"oasisUrl"`
+	SgxUrl             []string      `json:"sgxUrl"`
+	DiscordHookUrl     string        `json:"discordHookUrl"`
+	ScNewRecursive     bool          `json:"scNewRecursive"`
+	IcpWalletAddress   string        `json:"icpWalletAddress"`
+	IcpPrivateKey      string        `json:"icpPrivateKey"`
+	Mode               Mode          `json:"mode"`
 	MinerAddr          string        `json:"minerAddr"`
 	BtcReScan          bool          `json:"btcReScan"`
 	EthReScan          bool          `json:"ethReScan"`
@@ -71,19 +71,22 @@ func (rc *RunConfig) Check() error {
 	if rc.WsPort == "" {
 		rc.WsPort = "9880"
 	}
+	if rc.Mode == "" {
+		rc.Mode = LiteMode
+	}
 	if rc.Network == "" {
 		rc.Network = LightecNetwork // todo
 	}
-	if rc.BtcUrl == "" {
+	if len(rc.BtcUrl) == 0 {
 		return fmt.Errorf("btcUrl is empty")
 	}
 	if rc.EthUrl == "" {
 		return fmt.Errorf("ethUrl is empty")
 	}
-	if rc.BeaconUrl == "" {
+	if len(rc.BeaconUrl) == 0 {
 		return fmt.Errorf("beaconUrl is empty")
 	}
-	if rc.SgxUrl == "" {
+	if len(rc.SgxUrl) == 0 {
 		rc.SgxUrl = SgxServerUrl
 	}
 	if rc.OasisUrl == "" {

@@ -1,14 +1,16 @@
 package node
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
-	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -17,13 +19,23 @@ import (
 var _ rpc.INode = (*Handler)(nil)
 
 type Handler struct {
-	fileStore  *FileStorage
-	exitCh     chan os.Signal
-	ethReScan  chan *ReScnSignal
-	btcReScan  chan *ReScnSignal
-	chainFork  chan *ChainFork
-	manager    IManager
-	chainStore *ChainStore
+	fileStore    *FileStorage
+	exitCh       chan os.Signal
+	ethReScan    chan *ReScnSignal
+	btcReScan    chan *ReScnSignal
+	chainFork    chan *ChainFork
+	manager      IManager
+	txManager    *TxManager
+	chainStore   *ChainStore
+	btcClient    *bitcoin.Client         // todo
+	proverClient btcproverClient.IClient // todo
+	miner        string
+}
+
+func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
+	logger.Warn("set gas price: %v", gasPrice)
+	h.txManager.setMaxGasPrice(gasPrice)
+	return "ok", nil
 }
 
 func (h *Handler) Eth2Slot(height uint64) (uint64, error) {
@@ -141,39 +153,6 @@ func (h *Handler) PendingTask() ([]*rpc.ProofTaskInfo, error) {
 		proofInfos = append(proofInfos, taskInfo)
 	}
 	return proofInfos, nil
-}
-
-func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
-	if addr == "" || txType == "" {
-		return nil, fmt.Errorf("addr or txType is empty")
-	}
-	tType, err := common.ToTxType(txType)
-	if err != nil {
-		logger.Error("to tx type error: %v %v %v", addr, txType, err)
-		return nil, err
-	}
-	dbTxes, err := h.chainStore.ReadTxIdsByAddr(tType, addr)
-	if err != nil {
-		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
-		return nil, err
-	}
-	var rpcTxes []*rpc.Transaction
-	for _, txId := range dbTxes {
-		transaction, err := h.Transaction(txId)
-		if err != nil {
-			logger.Error("read transaction error: %v %v", txId, err)
-			return nil, err
-		}
-		rpcTxes = append(rpcTxes, transaction...)
-	}
-	sort.SliceStable(rpcTxes, func(i, j int) bool {
-		if rpcTxes[i].Height == rpcTxes[j].Height {
-			return rpcTxes[i].TxIndex < rpcTxes[j].TxIndex
-		}
-		return rpcTxes[i].Height < rpcTxes[j].Height
-	})
-	return rpcTxes, nil
-
 }
 
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {
@@ -304,11 +283,26 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 			logger.Error("read Proof error: %v %v", txId, err)
 			return nil, err
 		}
-
+		//todo refactor
+		params, err := getProofParams(txId, h.miner, h.chainStore, h.btcClient, h.proverClient)
+		if err != nil {
+			logger.Error("get proof params error: %v %v", txId, err)
+			continue
+		}
 		results = append(results, rpc.ProofInfo{
 			Status: int(proof.Status),
 			Proof:  proof.Proof,
 			TxId:   proof.TxHash,
+			Params: &rpc.ProofParams{
+				Checkpoint:        hex.EncodeToString(params.Checkpoint[:]),
+				CpDepth:           params.CpDepth,
+				TxDepth:           params.TxDepth,
+				TxBlockHash:       hex.EncodeToString(params.TxBlockHash[:]),
+				TxTimestamp:       params.TxTimestamp,
+				ZkpMiner:          params.ZkpMiner.String(),
+				Flag:              uint32(params.Flag.Int64()),
+				SmoothedTimestamp: params.SmoothedTimestamp,
+			},
 		})
 	}
 	return results, nil
@@ -333,13 +327,18 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 	return daemonInfo, nil
 }
 
-func NewHandler(manager IManager, ethReScan, btcReScan chan *ReScnSignal, store store.IStore, fileStore *FileStorage, exitCh chan os.Signal) *Handler {
+func NewHandler(txManager *TxManager, manager IManager, ethReScan, btcReScan chan *ReScnSignal, store store.IStore, fileStore *FileStorage, exitCh chan os.Signal,
+	btcClient *bitcoin.Client, proverClient btcproverClient.IClient, miner string) *Handler {
 	return &Handler{
-		chainStore: NewChainStore(store),
-		exitCh:     exitCh,
-		ethReScan:  ethReScan,
-		btcReScan:  btcReScan,
-		manager:    manager,
-		fileStore:  fileStore,
+		txManager:    txManager,
+		chainStore:   NewChainStore(store),
+		exitCh:       exitCh,
+		ethReScan:    ethReScan,
+		btcReScan:    btcReScan,
+		manager:      manager,
+		fileStore:    fileStore,
+		btcClient:    btcClient,
+		proverClient: proverClient,
+		miner:        miner,
 	}
 }

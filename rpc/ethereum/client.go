@@ -70,6 +70,10 @@ func NewClient(endpoint string, zkBridgeAddr, utxoManager, txVerify, zkbtc strin
 	}, nil
 }
 
+func (c *Client) EnableUnsignedProtection() (bool, error) {
+	return c.btcTxVerifyCall.EnableUnsignedProtection(nil)
+}
+
 func (c *Client) IsCandidateExist(hash string) (bool, error) {
 	return c.btcTxVerifyCall.IsCandidateExist(nil, [32]byte(ethcommon.FromHex(hash)))
 }
@@ -303,8 +307,8 @@ func (c *Client) Deposit(secret []byte, params *zkbridge.IBtcTxVerifierPublicWit
 	auth := bind.NewKeyedTransactor(privateKey, chainID)
 	auth.Context = ctx
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
+	auth.GasFeeCap = gasPrice
 	transaction, err := c.zkBridgeCall.Deposit(auth, btcRawTx, *params, proof)
 	if err != nil {
 		return "", err

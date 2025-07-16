@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var endpoint = "https://rpc.ankr.com/premium-http/eth_beacon/8c933202fbe8dbe6d63377a319b6020f4a4c35bb4424f6368f630b676b4fcc2e"
+var endpoint = ""
 
 var err error
 var client *Client
@@ -33,16 +33,8 @@ func TestClient_GetBlindedBlock(t *testing.T) {
 	t.Log(block)
 }
 
-func TestClient_Version(t *testing.T) {
-	version, err := client.Version()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(version)
-}
-
 func TestClient_GetLatestFinalizedSlot(t *testing.T) {
-	latestSlot, err := client.GetLatestFinalizedSlot()
+	latestSlot, err := client.FinalizedSlot()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,13 +42,13 @@ func TestClient_GetLatestFinalizedSlot(t *testing.T) {
 }
 
 func TestClient(t *testing.T) {
-	latestSyncPeriod, err := client.GetFinalizedSyncPeriod()
+	latestSyncPeriod, err := client.FinalizedPeriod()
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(latestSyncPeriod)
 
-	latestSlot, err := client.GetLatestFinalizedSlot()
+	latestSlot, err := client.FinalizedSlot()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +58,7 @@ func TestClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(bootstrap)
-	updates, err := client.GetLightClientUpdates(latestSyncPeriod-1, 1)
+	updates, err := client.LightClientUpdates(latestSyncPeriod-1, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +66,7 @@ func TestClient(t *testing.T) {
 }
 
 func TestCliet_GetLatestPeriod(t *testing.T) {
-	period, err := client.GetFinalizedSyncPeriod()
+	period, err := client.FinalizedPeriod()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +86,7 @@ func TestClient_Bootstrap(t *testing.T) {
 }
 
 func TestClient_GetLightClientUpdates(t *testing.T) {
-	updates, err := client.GetLightClientUpdates(938, 1)
+	updates, err := client.LightClientUpdates(938, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +120,7 @@ func TestClient_GetBeaconHeaders(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(result)
-	headers, err := client.GetBeaconHeaders(9192)
+	headers, err := client.BeaconHeaders(9192)
 	if err != nil {
 		t.Fatal(err)
 	}

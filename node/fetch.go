@@ -17,7 +17,7 @@ import (
 var _ IFetch = (*Fetch)(nil)
 
 type Fetch struct {
-	client         *beacon.Client
+	client         beacon.IMultiBeacon
 	genesisSlot    uint64
 	genesisPeriod  uint64
 	fileStore      *FileStorage
@@ -46,31 +46,6 @@ func (f *Fetch) Bootstrap() {
 	}
 }
 func (f *Fetch) bootstrap() error {
-	//exists, err := f.fileStore.CheckBootStrapBySlot(f.genesisSlot)
-	//if err != nil {
-	//	logger.Error("check bootstrap error:%v %v", f.genesisSlot, err)
-	//	return err
-	//}
-	//if exists {
-	//	return nil
-	//}
-	//logger.Debug("start get bootstrap: %v", f.genesisSlot)
-	//bootstrap, err := f.client.Bootstrap(f.genesisSlot)
-	//if err != nil {
-	//	logger.Error("get bootstrap error:%v %v", f.genesisSlot, err)
-	//	return err
-	//}
-	//dbBootstrap, err := parseBootstrapToDbBootstrap(bootstrap)
-	//if err != nil {
-	//	logger.Error("parse bootstrap error:%v %v", f.genesisSlot, err)
-	//	return err
-	//}
-	//err = f.fileStore.StoreBootStrapBySlot(f.genesisSlot, dbBootstrap)
-	//if err != nil {
-	//	logger.Error("store bootstrap error:%v %v", f.genesisSlot, err)
-	//	return err
-	//}
-	//logger.Debug("success store bootstrap Responses:%v", f.genesisSlot)
 	return nil
 }
 
@@ -87,7 +62,7 @@ func (f *Fetch) FinalityUpdate() error {
 
 func (f *Fetch) StoreLatestPeriod() error {
 	logger.Debug("store beacon finalized period")
-	period, err := f.client.GetFinalizedSyncPeriod()
+	period, err := f.client.FinalizedPeriod()
 	if err != nil {
 		logger.Error("get latest FIndex error:%v", err)
 		return err
@@ -149,7 +124,7 @@ func (f *Fetch) GetLightClientUpdate(period uint64) {
 	if exists {
 		return
 	}
-	updates, err := f.client.GetLightClientUpdates(period, 1)
+	updates, err := f.client.LightClientUpdates(period, 1)
 	if err != nil {
 		logger.Error("get light client updates error:%v %v", period, err)
 		return
@@ -267,10 +242,10 @@ func (f *Fetch) CheckFinalityUpdate(period uint64, finalityUpdate *common.LightC
 		logger.Error("get update error:%v %v", prePeriod, err)
 		return false, err
 	}
-	//todo
 	if !exists {
 		logger.Warn("no find light finality update :%v", prePeriod)
-		return true, nil
+		//todo
+		return false, nil
 	}
 	proversTypeUpdate := parseUpdateToProversUpdate(update)
 	proversTypeFinalityUpdate := parseFinalityUpdateToProversFinalityUpdate(finalityUpdate)
@@ -313,13 +288,15 @@ func (f *Fetch) CheckLightClientUpdate(period uint64, update *common.LightClient
 			}
 			if !verify {
 				logger.Error("verify sync update error:%v %v", period, err)
+				f.client.Next()
+				logger.Debug("verify update error,change beacon client")
 				return false, nil
 			}
 			return true, nil
 		} else {
 			// todo
 			logger.Warn("no find %v FIndex update Responses", prePeriod)
-			return true, nil
+			return false, nil
 		}
 	}
 	return true, nil
@@ -329,7 +306,7 @@ func (f *Fetch) Close() error {
 	return nil
 }
 
-func NewFetch(client *beacon.Client, store store.IStore, fileStore *FileStorage, genesisSlot uint64, update, finalityUpate chan *Notify) (*Fetch, error) {
+func NewFetch(client beacon.IMultiBeacon, store store.IStore, fileStore *FileStorage, genesisSlot uint64, update, finalityUpate chan *Notify) (*Fetch, error) {
 	maxReqs := atomic.Int64{}
 	maxReqs.Store(0)
 	return &Fetch{
