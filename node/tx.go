@@ -865,8 +865,8 @@ func getSuggestGasLimit(value uint64) uint64 {
 }
 func getSuggestGasPrice(value *big.Int) *big.Int {
 	gasPrice := big.NewInt(0).Div(
-		big.NewInt(0).Mul(value, big.NewInt(3)),
-		big.NewInt(2))
+		big.NewInt(0).Mul(value, big.NewInt(7)),
+		big.NewInt(10))
 	return gasPrice
 }
 
