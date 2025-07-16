@@ -1210,7 +1210,7 @@ func (s *Scheduler) BlockSignature(checks ...bool) error {
 			return nil
 		}
 	}
-	sig, err := s.icpClient.BlockSignature()
+	sig, err := s.icpClient.BlockSignatureWithCycle()
 	if err != nil {
 		logger.Error("get block sig error:%v", err)
 		return err
