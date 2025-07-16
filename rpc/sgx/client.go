@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,6 +12,63 @@ import (
 	"reflect"
 	"time"
 )
+
+type ISgx interface {
+	SgxKeyInfo() (*KeyInfo, error)
+	BtcTxSignature(currentScRoot, minerReward, txId, proof string, sigHashes []string) (*TxSignature, error)
+}
+
+type MultiClient struct {
+	clients []*Client
+}
+
+func (m *MultiClient) SgxKeyInfo() (*KeyInfo, error) {
+	result, err := m.call(func(client *Client) (interface{}, error) {
+		return client.SgxKeyInfo()
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*KeyInfo), nil
+}
+
+func (m *MultiClient) BtcTxSignature(currentScRoot, minerReward, txId, proof string, sigHashes []string) (*TxSignature, error) {
+	res, err := m.call(func(client *Client) (interface{}, error) {
+		return client.BtcTxSignature(currentScRoot, minerReward, txId, proof, sigHashes)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.(*TxSignature), nil
+}
+
+func (m *MultiClient) call(fn func(*Client) (interface{}, error)) (interface{}, error) {
+	msg := "request error "
+	for _, c := range m.clients {
+		result, err := fn(c)
+		if err != nil {
+			msg = msg + err.Error()
+			continue
+		}
+		return result, nil
+	}
+	return nil, errors.New(msg)
+}
+
+func NewMultiClient(urls ...string) (ISgx, error) {
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("url is empty")
+	}
+	var clients []*Client
+	for _, url := range urls {
+		client := NewClient(url)
+		clients = append(clients, client)
+	}
+	return &MultiClient{
+		clients: clients,
+	}, nil
+
+}
 
 type Client struct {
 	endpoint string
@@ -43,20 +101,6 @@ func (c *Client) BtcTxSignature(currentScRoot, minerReward, txId, proof string, 
 	param.Add("currentScRoot", currentScRoot)
 	param.Add("minerReward", minerReward)
 	param.Add("sigHashes", sigHashes)
-	err := c.post("/signBtc", param, &result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-func (c *Client) BtcTxSignatureV1(currentScRoot, txId, proof, minerReward string, sigHashes []string) (*TxSignature, error) {
-	var result TxSignature
-	param := Param{}
-	param.Add("proof", proof)
-	param.Add("txId", txId)
-	param.Add("sigHashes", sigHashes)
-	param.Add("currentScRoot", currentScRoot)
-	param.Add("minerReward", minerReward)
 	err := c.post("/signBtc", param, &result)
 	if err != nil {
 		return nil, err

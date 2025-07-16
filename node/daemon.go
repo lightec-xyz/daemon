@@ -116,7 +116,11 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new eth client error:%v", err)
 		return nil, err
 	}
-	sgxClient := sgx.NewClient(cfg.SgxUrl)
+	sgxClient, err := sgx.NewMultiClient(cfg.SgxUrl...)
+	if err != nil {
+		logger.Error("new sgx error")
+		return nil, err
+	}
 	oasisClient, err := oasis.NewClient(cfg.OasisUrl, cfg.OasisSignerAddress)
 	if err != nil {
 		logger.Error("new oasis client error:%v", err)

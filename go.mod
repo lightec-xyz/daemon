@@ -16,7 +16,6 @@ require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/ethereum/go-ethereum v1.15.7
 	github.com/fxamacker/cbor/v2 v2.7.0
-	github.com/go-resty/resty/v2 v2.16.3
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
@@ -29,6 +28,7 @@ require (
 	github.com/lightec-xyz/provers v0.2.1
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/prysmaticlabs/prysm/v5 v5.3.0
+	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.10.0
@@ -182,7 +182,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/ronanh/intcomp v1.1.0 // indirect
 	github.com/rs/cors v1.8.3 // indirect
-	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect

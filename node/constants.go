@@ -22,7 +22,6 @@ const (
 
 	BlockSingerId = "xdqo6-dqaaa-aaaal-qsqva-cai"
 	IcpTxSingerId = "wlkxr-hqaaa-aaaad-aaxaa-cai"
-	SgxServerUrl  = ""
 
 	InitBitcoinHeight  = 2812015
 	InitBeaconHeight   = 153
@@ -34,6 +33,8 @@ const (
 	DepositRewardTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 	RedeemRewardTopic  = "0xaaa8a5dd1203745b5ddf449a9bc6cd2b6ec919f7b839ef4326133ccf6fbe7bd0"
 )
+
+var SgxServerUrl []string = []string{""} // todo
 
 // *********************Other**************************************
 

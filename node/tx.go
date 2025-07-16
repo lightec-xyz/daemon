@@ -35,7 +35,7 @@ type TxManager struct {
 	btcClient    *bitcoin.Client
 	oasisClient  *oasis.Client
 	icpClient    *dfinity.Client
-	sgxClient    *sgx.Client
+	sgxClient    sgx.ISgx
 	proverClient btcproverClient.IClient
 	minerAddr    string
 	submitAddr   string
@@ -49,7 +49,7 @@ type TxManager struct {
 }
 
 func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client,
-	oasisClient *oasis.Client, dfinityClient *dfinity.Client, sgxClient *sgx.Client, proverClient btcproverClient.IClient, minerAddr string) (*TxManager, error) {
+	oasisClient *oasis.Client, dfinityClient *dfinity.Client, sgxClient sgx.ISgx, proverClient btcproverClient.IClient, minerAddr string) (*TxManager, error) {
 	return &TxManager{
 		ethClient:    ethClient,
 		btcClient:    btcClient,
