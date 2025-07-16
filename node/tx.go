@@ -770,9 +770,8 @@ func (t *TxManager) CheckEthBalance(addr string, gasPrice *big.Int, gasLimit uin
 		return false, nil
 	}
 	gasFee := big.NewInt(0).Mul(gasPrice, big.NewInt(int64(gasLimit)))
-	fixGasFee := big.NewInt(0).Mul(gasFee, big.NewInt(2)) // todo
-	if balance.Cmp(fixGasFee) <= 0 {
-		logger.Error("not enough gas fee to submit proof,please deposit gasFee:%v", addr)
+	if balance.Cmp(gasFee) <= 0 {
+		logger.Error("not enough gas fee to submit proof,please deposit gasFee:%v %v %v", addr, balance, gasFee)
 		return false, nil
 	}
 	return true, nil
