@@ -153,11 +153,20 @@ func (s *Scheduler) CheckBtcState() error {
 		logger.Warn("no find latest btc height")
 		return nil
 	}
-	if latestHeight < uint64(blockCount-10) {
+	icpSig, exists, err := s.chainStore.ReadLatestIcpSig()
+	if err != nil {
+		logger.Error("read latest icp sig error:%v", err)
+		return err
+	}
+	if !exists {
+		logger.Warn("no find latest icp sig")
+		return nil
+	}
+	//todo
+	if latestHeight < icpSig.Height-1 || latestHeight < uint64(blockCount-10) {
 		logger.Warn("wait btc sync complete, block count:%v latestHeight:%v,skip check btc proof now", blockCount, latestHeight)
 		return nil
 	}
-
 	cpHeight, ok, err := s.chainStore.ReadLatestCheckPoint()
 	if err != nil {
 		logger.Error("read latest checkpoint error: %v", err)
@@ -1223,18 +1232,20 @@ func (s *Scheduler) BlockSignature(checks ...bool) error {
 		logger.Warn("block signature is empty:%v", sig.Height)
 		return nil
 	}
-	hash, ok, err := s.chainStore.ReadBitcoinHash(uint64(sig.Height))
-	if err != nil {
-		logger.Error("read db bitcoin hash error: %v %v", sig.Height, err)
-		return err
-	}
-	if !ok {
-		logger.Error("no find bitcoin hash:%v", sig.Height)
-		return nil
-	}
-	if !common.StrEqual(hash, sig.Hash) {
-		logger.Warn("find icp hash %v != db hash %v,height:%v", sig.Hash, hash, sig.Height)
-		return nil
+	if check {
+		hash, ok, err := s.chainStore.ReadBitcoinHash(uint64(sig.Height))
+		if err != nil {
+			logger.Error("read db bitcoin hash error: %v %v", sig.Height, err)
+			return err
+		}
+		if !ok {
+			logger.Error("no find bitcoin hash:%v", sig.Height)
+			return nil
+		}
+		if !common.StrEqual(hash, sig.Hash) {
+			logger.Warn("find icp hash %v != db hash %v,height:%v", sig.Hash, hash, sig.Height)
+			return nil
+		}
 	}
 	dbIcpSignature := DbIcpSignature{Height: uint64(sig.Height), Hash: sig.Hash, Signature: sig.Signature}
 	err = s.chainStore.WriteLatestIcpSig(dbIcpSignature)
