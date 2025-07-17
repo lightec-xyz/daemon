@@ -157,12 +157,12 @@ func (s *Scheduler) CheckBtcState() error {
 		logger.Warn("wait btc sync complete, block count:%v latestHeight:%v,skip check btc proof now", blockCount, latestHeight)
 		return nil
 	}
-	unsignedProtection, err := s.ethClient.EnableUnsignedProtection()
+	unSigProtect, err := s.ethClient.EnableUnsignedProtection()
 	if err != nil {
 		logger.Error("enable unsigned protection error:%v", err)
 		return err
 	}
-	if unsignedProtection {
+	if unSigProtect {
 		icpSig, exists, err := s.chainStore.ReadLatestIcpSig()
 		if err != nil {
 			logger.Error("read latest icp sig error:%v", err)
@@ -225,7 +225,7 @@ func (s *Scheduler) CheckBtcState() error {
 			}
 			continue
 		}
-		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx)
+		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx, unSigProtect)
 		if err != nil {
 			logger.Error("check tx height error:%v %v", unGenTx.Hash, err)
 			return err
@@ -341,7 +341,7 @@ func (s *Scheduler) CheckPreBtcState() error {
 	return nil
 }
 
-func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, error) {
+func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx, unSigProtect bool) (bool, error) {
 	// todo need more check
 	if tx.LatestHeight != 0 && tx.SigSigned {
 		forked, err := s.checkIcpSig(tx.LatestHeight)
@@ -365,6 +365,11 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 		logger.Error("get latest height error:%v", err)
 		return false, err
 	}
+	if unSigProtect && !signed {
+		logger.Debug("no find icp block sig,update latest height now:%v %v", tx.Hash, latestHeight)
+		return false, nil
+	}
+
 	return s.updateBtcTxDepth(latestHeight, cpHeight, signed, raised, tx)
 
 }
