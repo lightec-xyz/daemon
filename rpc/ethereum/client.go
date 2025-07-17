@@ -351,9 +351,8 @@ func (c *Client) UpdateUtxoChange(secret []byte, params *zkbridge.IBtcTxVerifier
 	auth := bind.NewKeyedTransactor(privateKey, chainID)
 	auth.Context = ctx
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasTipCap = big.NewInt(0)
+	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
-	auth.GasPrice = gasPrice
 	transaction, err := c.zkBridgeCall.UpdateRedeem(auth, *params, [32]byte(txId), minerReward, proof)
 	if err != nil {
 		return "", err
@@ -395,9 +394,8 @@ func (c *Client) Redeem(secret string, gasLimit uint64, chainID, nonce, gasPrice
 	auth := bind.NewKeyedTransactor(privateKey, chainID)
 	auth.Context = ctx
 	auth.Nonce = nonce
-	auth.GasTipCap = big.NewInt(0)
+	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
-	auth.GasPrice = gasPrice
 	transaction, err := c.zkBridgeCall.Redeem(auth, amount, btcMinerFee, receiveLockScript)
 	if err != nil {
 		return "", err
