@@ -126,14 +126,20 @@ func (t *TxManager) Check() error {
 					logger.Error("update deposit error: %v %v", tx.ProofType.Name(), tx.Hash)
 					continue
 				}
-				logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
+				if hash == "" {
+					logger.Info("success update deposit txId: %v,hash: %v", tx.Hash, hash)
+					continue
+				}
 			case common.BtcChangeType:
 				hash, err := t.UpdateUtxoChange(tx)
 				if err != nil {
 					logger.Error("update utxo error: %v %v", tx.ProofType.Name(), tx.Hash)
 					continue
 				}
-				logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
+				if hash == "" {
+					logger.Info("success update utxo txId: %v,hash: %v", tx.Hash, hash)
+					continue
+				}
 			case common.RedeemTxType:
 				hash, err := t.RedeemZkbtc(tx.Hash, tx.Proof)
 				if err != nil {
