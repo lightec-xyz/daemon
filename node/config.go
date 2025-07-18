@@ -18,7 +18,7 @@ type RunConfig struct {
 	Network          string   `json:"network"`
 	BtcUser          string   `json:"btcUser"`
 	BtcPwd           string   `json:"btcPwd"`
-	BtcUrl           string   `json:"btcUrl"`
+	BtcUrl           []string `json:"btcUrl"`
 	EthUrl           string   `json:"ethUrl"`
 	BeaconUrl        []string `json:"beaconUrl"`
 	OasisUrl         string   `json:"oasisUrl"`
@@ -74,7 +74,7 @@ func (rc *RunConfig) Check() error {
 	if rc.Network == "" {
 		rc.Network = LightecNetwork // todo
 	}
-	if rc.BtcUrl == "" {
+	if len(rc.BtcUrl) == 0 {
 		return fmt.Errorf("btcUrl is empty")
 	}
 	if rc.EthUrl == "" {

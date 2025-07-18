@@ -85,7 +85,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	logger.Info("current DebugMode :%v", cfg.Debug)
-	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
+	btcClient, err := bitcoin.NewClient(cfg.BtcUser, cfg.BtcPwd, cfg.BtcUrl...)
 	if err != nil {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
@@ -99,7 +99,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	params.UseSepoliaNetworkConfig()
 	params.OverrideBeaconConfig(params.SepoliaConfig())
-	proverClient := btcproverClient.NewJsonRpcClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, &jsonrpc.RPCClientOpts{
+	proverClient := btcproverClient.NewJsonRpcClient(cfg.BtcUrl[0], cfg.BtcUser, cfg.BtcPwd, &jsonrpc.RPCClientOpts{
 		HTTPClient: &http.Client{
 			Timeout: 1 * time.Minute,
 		},
