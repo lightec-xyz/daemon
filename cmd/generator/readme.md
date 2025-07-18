@@ -34,10 +34,10 @@ generator
  config
  
     {
-        "url": "http://3.137.171.200:10811",
+        "url": "http://3.137.171.200:10711",
         "maxNums": 2,
         "cacheCap":0,
-        "network": "testnet",
+        "network": "mainnet",
         "disableVerifyZkFile":true,
         "ethSetupDir": "/opt/circuitsetup/testnet",
         "btcSetupDir": "/opt/circuitsetup/testnet",
