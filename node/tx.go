@@ -46,6 +46,7 @@ type TxManager struct {
 	lock         sync.Mutex
 	icpSigMap    map[string][][]byte
 	randCount    int
+	maxGasPrice  *big.Int
 }
 
 func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client,
@@ -64,6 +65,7 @@ func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared
 		submitAddr:   keyStore.EthAddress(),
 		icpSigMap:    make(map[string][][]byte),
 		fileStore:    fileStore,
+		maxGasPrice:  big.NewInt(3000000000), //tdoo 3Gwei
 	}, nil
 }
 
@@ -214,6 +216,11 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		return "", err
 	}
 	gasPrice = getSuggestGasPrice(gasPrice)
+	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
+		return "", nil
+	}
+
 	params, err := t.getParams(txId)
 	if err != nil {
 		logger.Error("get params error: %v %v", txId, err)
@@ -443,6 +450,7 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 		logger.Error("get gas price error:%v", err)
 		return "", err
 	}
+
 	destHash, err := t.chainStore.ReadDestHash(txId)
 	if err != nil {
 		logger.Error("read dest hash error:%v", err)
@@ -464,7 +472,10 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 	}
 	minerReward := big.NewInt(0).SetBytes(rewardBytes[:])
 	gasPrice = getSuggestGasPrice(gasPrice)
-
+	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
+		return "", nil
+	}
 	params, err := t.getParams(txId)
 	if err != nil {
 		logger.Error("get params %v error %v", txId, err)
@@ -858,15 +869,15 @@ func sgxSigToBytes(signatures []string) ([][]byte, error) {
 
 func getSuggestGasLimit(value uint64) uint64 {
 	gasLimit := big.NewInt(0).Div(
-		big.NewInt(0).Mul(big.NewInt(int64(value)), big.NewInt(3)),
-		big.NewInt(2))
+		big.NewInt(0).Mul(big.NewInt(int64(value)), big.NewInt(120)),
+		big.NewInt(100))
 	return gasLimit.Uint64()
 
 }
 func getSuggestGasPrice(value *big.Int) *big.Int {
 	gasPrice := big.NewInt(0).Div(
-		big.NewInt(0).Mul(value, big.NewInt(7)),
-		big.NewInt(10))
+		big.NewInt(0).Mul(value, big.NewInt(70)),
+		big.NewInt(100))
 	return gasPrice
 }
 

@@ -307,8 +307,9 @@ func (c *Client) Deposit(secret []byte, params *zkbridge.IBtcTxVerifierPublicWit
 	auth := bind.NewKeyedTransactor(privateKey, chainID)
 	auth.Context = ctx
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasFeeCap = gasPrice
 	auth.GasLimit = gasLimit
+	auth.GasPrice = gasPrice
+	auth.GasTipCap = big.NewInt(0)
 	transaction, err := c.zkBridgeCall.Deposit(auth, btcRawTx, *params, proof)
 	if err != nil {
 		return "", err
