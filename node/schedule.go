@@ -1237,6 +1237,15 @@ func (s *Scheduler) BlockSignature(checks ...bool) error {
 			return nil
 		}
 	}
+	balance, err := s.icpClient.IcpBalance()
+	if err != nil {
+		logger.Error("get icp balance error:%v", err)
+		//return err
+	}
+	if balance < 1_000_000_000_000 { // todo
+		logger.Error("icp balance is not enough:%v,maybe need deposit %v", balance, s.icpClient.WalletInfo())
+	}
+
 	sig, err := s.icpClient.BlockSignatureWithCycle()
 	if err != nil {
 		logger.Error("get block sig error:%v", err)

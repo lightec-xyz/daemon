@@ -19,6 +19,7 @@ type Client struct {
 	agent           *agent.Agent
 	walletAgent     *wallet.Agent
 	txCanisterId    principal.Principal
+	walletCanId     string
 	blockCanisterId principal.Principal
 	timeout         time.Duration
 }
@@ -100,8 +101,8 @@ func (c *Client) BlockSignatureWithCycle() (*BlockSignature, error) {
 	return &result, nil
 }
 
-func (c *Client) WalletInfo() {
-
+func (c *Client) WalletInfo() string {
+	return c.walletCanId
 }
 
 func (c *Client) CyclesBalance() (*big.Int, error) {
@@ -180,6 +181,7 @@ func NewClient(opt *Options) (*Client, error) {
 	}
 	return &Client{
 		agent:           agent,
+		walletCanId:     opt.WalletCanisterId,
 		walletAgent:     walletClient,
 		txCanisterId:    txCanisterId,
 		blockCanisterId: blockCanisterId,
