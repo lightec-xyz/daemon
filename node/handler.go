@@ -8,7 +8,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
-	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -141,39 +140,6 @@ func (h *Handler) PendingTask() ([]*rpc.ProofTaskInfo, error) {
 		proofInfos = append(proofInfos, taskInfo)
 	}
 	return proofInfos, nil
-}
-
-func (h *Handler) TxesByAddr(addr, txType string) ([]*rpc.Transaction, error) {
-	if addr == "" || txType == "" {
-		return nil, fmt.Errorf("addr or txType is empty")
-	}
-	tType, err := common.ToTxType(txType)
-	if err != nil {
-		logger.Error("to tx type error: %v %v %v", addr, txType, err)
-		return nil, err
-	}
-	dbTxes, err := h.chainStore.ReadTxIdsByAddr(tType, addr)
-	if err != nil {
-		logger.Error("read addr txes error: %v %v %v", addr, txType, err)
-		return nil, err
-	}
-	var rpcTxes []*rpc.Transaction
-	for _, txId := range dbTxes {
-		transaction, err := h.Transaction(txId)
-		if err != nil {
-			logger.Error("read transaction error: %v %v", txId, err)
-			return nil, err
-		}
-		rpcTxes = append(rpcTxes, transaction...)
-	}
-	sort.SliceStable(rpcTxes, func(i, j int) bool {
-		if rpcTxes[i].Height == rpcTxes[j].Height {
-			return rpcTxes[i].TxIndex < rpcTxes[j].TxIndex
-		}
-		return rpcTxes[i].Height < rpcTxes[j].Height
-	})
-	return rpcTxes, nil
-
 }
 
 func (h *Handler) GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error) {

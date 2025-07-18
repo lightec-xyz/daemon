@@ -14,7 +14,6 @@ type INode interface {
 	Transactions(txId []string) ([]*Transaction, error)
 	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
 	SubmitProof(req *common.SubmitProof) (string, error)
-	TxesByAddr(addr, txType string) ([]*Transaction, error)
 	ProofTask(id string) (*ProofTaskInfo, error)
 	PendingTask() ([]*ProofTaskInfo, error)
 	Eth2Slot(height uint64) (uint64, error)
