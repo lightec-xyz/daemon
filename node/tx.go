@@ -221,12 +221,6 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		logger.Error("get gas price error:%v", err)
 		return "", err
 	}
-	if gasPrice.Cmp(t.maxGasPrice) > 0 {
-		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
-		return "", nil
-	}
-	gasPrice = getSuggestGasPrice(gasPrice)
-
 	params, err := t.getParams(txId)
 	if err != nil {
 		logger.Error("get params error: %v %v", txId, err)
@@ -268,6 +262,10 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 			logger.Warn("never should happen: %v %v", txId, mockErr)
 			return "", mockErr
 		}
+	}
+	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
+		return "", nil
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
@@ -456,10 +454,6 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 		logger.Error("get gas price error:%v", err)
 		return "", err
 	}
-	if gasPrice.Cmp(t.maxGasPrice) > 0 {
-		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
-		return "", nil
-	}
 
 	destHash, err := t.chainStore.ReadDestHash(txId)
 	if err != nil {
@@ -481,7 +475,6 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 		return "", err
 	}
 	minerReward := big.NewInt(0).SetBytes(rewardBytes[:])
-	gasPrice = getSuggestGasPrice(gasPrice)
 	params, err := t.getParams(txId)
 	if err != nil {
 		logger.Error("get params %v error %v", txId, err)
@@ -509,6 +502,10 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 			return "", nil
 		}
 		return "", mockErr
+	}
+	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
+		return "", nil
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	balOk, err := t.CheckEthBalance(t.submitAddr, gasPrice, gasLimit)
