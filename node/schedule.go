@@ -1242,7 +1242,7 @@ func (s *Scheduler) BlockSignature(checks ...bool) error {
 		logger.Error("get icp balance error:%v", err)
 		//return err
 	}
-	if balance < 1_000_000_000_000 { // todo
+	if balance < 250_000_000_000 { // todo
 		logger.Error("icp balance is not enough:%v,maybe need deposit %v", balance, s.icpClient.WalletInfo())
 	}
 
