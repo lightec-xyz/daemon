@@ -234,8 +234,8 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
 		}
-		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v", unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount,
-			btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight)
+		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v",
+			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight, unSigProtect)
 		switch unGenTx.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType:
 			err := s.checkBtcDepositRequest(unGenTx.ProofType, btcDbTx)
