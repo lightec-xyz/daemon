@@ -255,7 +255,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(manager, ethReScan, btcReScan, storeDb, fileStore, exitSignal)
+	rpcHandler := NewHandler(manager, ethReScan, btcReScan, storeDb, fileStore, exitSignal, btcClient, btcProverClient, cfg.MinerAddr)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, keyStore, nil)
 	if err != nil {
 		logger.Error("new rpc server error: %v", err)

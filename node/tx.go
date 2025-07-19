@@ -112,6 +112,7 @@ func (t *TxManager) Check() error {
 				logger.Error("delete unsubmit tx error:%v %v", tx.Hash, err)
 			}
 			if receipt.Status != ethTypes.ReceiptStatusSuccessful {
+				logger.Debug("tx %v confirm fail:%v,add to un gen proof", tx.Hash, receipt.Status)
 				err = t.addBtcUnGenProof(tx.Hash)
 				if err != nil {
 					logger.Error("add btc un gen proof error:%v %v", tx.Hash, err)
@@ -221,6 +222,7 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		logger.Error("get gas price error:%v", err)
 		return "", err
 	}
+	gasPrice = getSuggestGasPrice(gasPrice)
 	params, err := t.getParams(txId)
 	if err != nil {
 		logger.Error("get params error: %v %v", txId, err)
@@ -265,7 +267,7 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 	}
 	if gasPrice.Cmp(t.maxGasPrice) > 0 {
 		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
-		return "", nil
+		return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
@@ -454,7 +456,7 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 		logger.Error("get gas price error:%v", err)
 		return "", err
 	}
-
+	gasPrice = getSuggestGasPrice(gasPrice)
 	destHash, err := t.chainStore.ReadDestHash(txId)
 	if err != nil {
 		logger.Error("read dest hash error:%v", err)
@@ -505,7 +507,7 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 	}
 	if gasPrice.Cmp(t.maxGasPrice) > 0 {
 		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
-		return "", nil
+		return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	balOk, err := t.CheckEthBalance(t.submitAddr, gasPrice, gasLimit)
@@ -879,7 +881,7 @@ func getSuggestGasLimit(value uint64) uint64 {
 }
 func getSuggestGasPrice(value *big.Int) *big.Int {
 	gasPrice := big.NewInt(0).Div(
-		big.NewInt(0).Mul(value, big.NewInt(100)), // todo
+		big.NewInt(0).Mul(value, big.NewInt(110)), // todo
 		big.NewInt(100))
 	return gasPrice
 }

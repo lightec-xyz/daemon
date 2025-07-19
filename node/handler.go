@@ -1,11 +1,14 @@
 package node
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/store"
 	"os"
 	"strings"
@@ -16,13 +19,16 @@ import (
 var _ rpc.INode = (*Handler)(nil)
 
 type Handler struct {
-	fileStore  *FileStorage
-	exitCh     chan os.Signal
-	ethReScan  chan *ReScnSignal
-	btcReScan  chan *ReScnSignal
-	chainFork  chan *ChainFork
-	manager    IManager
-	chainStore *ChainStore
+	fileStore    *FileStorage
+	exitCh       chan os.Signal
+	ethReScan    chan *ReScnSignal
+	btcReScan    chan *ReScnSignal
+	chainFork    chan *ChainFork
+	manager      IManager
+	chainStore   *ChainStore
+	btcClient    *bitcoin.Client         // todo
+	proverClient btcproverClient.IClient // todo
+	miner        string
 }
 
 func (h *Handler) Eth2Slot(height uint64) (uint64, error) {
@@ -270,11 +276,26 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 			logger.Error("read Proof error: %v %v", txId, err)
 			return nil, err
 		}
-
+		//todo refactor
+		params, err := getProofParams(txId, h.miner, h.chainStore, h.btcClient, h.proverClient)
+		if err != nil {
+			logger.Error("get proof params error: %v %v", txId, err)
+			continue
+		}
 		results = append(results, rpc.ProofInfo{
 			Status: int(proof.Status),
 			Proof:  proof.Proof,
 			TxId:   proof.TxHash,
+			Params: &rpc.ProofParams{
+				Checkpoint:        hex.EncodeToString(params.Checkpoint[:]),
+				CpDepth:           params.CpDepth,
+				TxDepth:           params.TxDepth,
+				TxBlockHash:       hex.EncodeToString(params.TxBlockHash[:]),
+				TxTimestamp:       params.TxTimestamp,
+				ZkpMiner:          params.ZkpMiner.String(),
+				Flag:              uint32(params.Flag.Int64()),
+				SmoothedTimestamp: params.SmoothedTimestamp,
+			},
 		})
 	}
 	return results, nil
@@ -299,13 +320,17 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 	return daemonInfo, nil
 }
 
-func NewHandler(manager IManager, ethReScan, btcReScan chan *ReScnSignal, store store.IStore, fileStore *FileStorage, exitCh chan os.Signal) *Handler {
+func NewHandler(manager IManager, ethReScan, btcReScan chan *ReScnSignal, store store.IStore, fileStore *FileStorage, exitCh chan os.Signal,
+	btcClient *bitcoin.Client, proverClient btcproverClient.IClient, miner string) *Handler {
 	return &Handler{
-		chainStore: NewChainStore(store),
-		exitCh:     exitCh,
-		ethReScan:  ethReScan,
-		btcReScan:  btcReScan,
-		manager:    manager,
-		fileStore:  fileStore,
+		chainStore:   NewChainStore(store),
+		exitCh:       exitCh,
+		ethReScan:    ethReScan,
+		btcReScan:    btcReScan,
+		manager:      manager,
+		fileStore:    fileStore,
+		btcClient:    btcClient,
+		proverClient: proverClient,
+		miner:        miner,
 	}
 }

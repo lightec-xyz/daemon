@@ -147,8 +147,8 @@ func (c BtcClient) readBlockFromDb(hash string) (*btcjson.GetBlockVerboseResult,
 
 }
 
-func NewBtcClient(client btcproverClient.IClient, store store.IStore, btClient *bitcoin.Client, initHeight int64) BtcClient {
-	return BtcClient{
+func NewBtcClient(client btcproverClient.IClient, store store.IStore, btClient *bitcoin.Client, initHeight int64) *BtcClient {
+	return &BtcClient{
 		IClient:    client,
 		chainStore: NewChainStore(store),
 		btcClient:  btClient,
