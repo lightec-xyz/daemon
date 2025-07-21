@@ -19,7 +19,6 @@ type IScheduler interface {
 	CheckPreBtcState() error
 	CheckBeaconState() error
 	UpdateBtcCp() error
-	BlockSignature() error
 }
 
 type Scheduler struct {
@@ -34,6 +33,10 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) init() error {
+	err := s.updateBtcCp()
+	if err != nil {
+		logger.Warn("update btc cp error:%v", err)
+	}
 	return nil
 }
 
@@ -94,11 +97,6 @@ func (s *Scheduler) updateBtcCp() error {
 			return err
 		}
 	}
-	err = s.BlockSignature(false)
-	if err != nil {
-		logger.Error("block signature error:%v", err)
-		return err
-	}
 	tx, ok, err := s.chainStore.ReadBtcTx(cpTx.Hash)
 	if err != nil {
 		logger.Error("read btc tx error:%v %v", cpTx.Hash, err)
@@ -149,7 +147,7 @@ func (s *Scheduler) CheckBtcState() error {
 		logger.Warn("no find latest btc height")
 		return nil
 	}
-	if latestHeight < uint64(blockCount-10) {
+	if latestHeight < uint64(blockCount-3) {
 		logger.Warn("wait btc sync complete, block count:%v latestHeight:%v,skip check btc proof now", blockCount, latestHeight)
 		return nil
 	}
@@ -167,6 +165,46 @@ func (s *Scheduler) CheckBtcState() error {
 	if err != nil {
 		logger.Error("read unGen proof error:%v", err)
 		return err
+	}
+	unSigProtect, err := s.ethClient.EnableUnsignedProtection()
+	if err != nil {
+		logger.Error("enable unsigned protection error:%v", err)
+		return err
+	}
+	icpSig, exists, err := s.chainStore.ReadLatestIcpSig()
+	if err != nil {
+		logger.Error("read latest icp sig error:%v", err)
+		return err
+	}
+	if !unSigProtect && !exists {
+		err := s.BlockSignature()
+		if err != nil {
+			logger.Error("block signature error:%v", err)
+			return err
+		}
+		return nil
+	}
+	if !unSigProtect && len(unGenTxes) > 0 && exists {
+		if latestHeight < icpSig.Height {
+			logger.Warn("unsigned protection is true,wait sync complete, latestHeight:%v,icpSig.Height:%v,skip check btc proof now", latestHeight, icpSig.Height)
+			return nil
+		}
+		hash, ok, err := s.chainStore.ReadBitcoinHash(icpSig.Height)
+		if err != nil {
+			logger.Error("read bitcoin hash error:%v", err)
+			return err
+		}
+		if !ok {
+			logger.Error("no find bitcoin hash")
+			return err
+		}
+		if icpSig.Height < latestHeight || (icpSig.Height == latestHeight && !common.StrEqual(icpSig.Hash, hash)) {
+			err := s.BlockSignature()
+			if err != nil {
+				logger.Error("block signature error:%v", err)
+				return err
+			}
+		}
 	}
 	for _, unGenTx := range unGenTxes {
 		logger.Debug("bitcoin check unGen proof: %v %v", unGenTx.ProofType.Name(), unGenTx.Hash)
@@ -203,7 +241,7 @@ func (s *Scheduler) CheckBtcState() error {
 			}
 			continue
 		}
-		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx)
+		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx, unSigProtect)
 		if err != nil {
 			logger.Error("check tx height error:%v %v", unGenTx.Hash, err)
 			return err
@@ -212,8 +250,8 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
 		}
-		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v", unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount,
-			btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight)
+		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v",
+			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight, unSigProtect)
 		switch unGenTx.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType:
 			err := s.checkBtcDepositRequest(unGenTx.ProofType, btcDbTx)
@@ -319,7 +357,7 @@ func (s *Scheduler) CheckPreBtcState() error {
 	return nil
 }
 
-func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, error) {
+func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx, unSigProtect bool) (bool, error) {
 	// todo need more check
 	if tx.LatestHeight != 0 && tx.SigSigned {
 		forked, err := s.checkIcpSig(tx.LatestHeight)
@@ -343,6 +381,11 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx) (bool, er
 		logger.Error("get latest height error:%v", err)
 		return false, err
 	}
+	if !unSigProtect && !signed {
+		logger.Debug("no find icp block sig,update latest height now:%v %v", tx.Hash, latestHeight)
+		return false, nil
+	}
+
 	return s.updateBtcTxDepth(latestHeight, cpHeight, signed, raised, tx)
 
 }
@@ -1194,22 +1237,16 @@ func (s *Scheduler) checkTxProved(proofType common.ProofType, hash string) (bool
 	}
 }
 
-func (s *Scheduler) BlockSignature(checks ...bool) error {
-	check := true
-	if len(checks) > 0 {
-		check = checks[0]
+func (s *Scheduler) BlockSignature() error {
+	balance, err := s.icpClient.IcpBalance()
+	if err != nil {
+		logger.Error("get icp balance error:%v", err)
+		//return err
 	}
-	if check {
-		unGenProofs, err := s.chainStore.ReadUnGenProofs(common.BitcoinChain)
-		if err != nil {
-			logger.Error("read un gen proofs error:%v", err)
-			return err
-		}
-		if len(unGenProofs) == 0 {
-			logger.Warn("no deposit proof,skip get icp block signature")
-			return nil
-		}
+	if balance < 250_000_000_000 { // todo
+		logger.Error("icp balance is not enough:%v,maybe need deposit %v", balance, s.icpClient.WalletInfo())
 	}
+
 	sig, err := s.icpClient.BlockSignatureWithCycle()
 	if err != nil {
 		logger.Error("get block sig error:%v", err)

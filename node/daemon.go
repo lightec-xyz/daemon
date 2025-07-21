@@ -85,7 +85,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	logger.Info("current DebugMode :%v", cfg.Debug)
-	btcClient, err := bitcoin.NewClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd)
+	btcClient, err := bitcoin.NewClient(cfg.BtcUser, cfg.BtcPwd, cfg.BtcUrl...)
 	if err != nil {
 		logger.Error("new btc btcClient error:%v", err)
 		return nil, err
@@ -99,30 +99,41 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	params.UseSepoliaNetworkConfig()
 	params.OverrideBeaconConfig(params.SepoliaConfig())
-	proverClient := btcproverClient.NewJsonRpcClient(cfg.BtcUrl, cfg.BtcUser, cfg.BtcPwd, &jsonrpc.RPCClientOpts{
+	proverClient := btcproverClient.NewJsonRpcClient(cfg.BtcUrl[0], cfg.BtcUser, cfg.BtcPwd, &jsonrpc.RPCClientOpts{
 		HTTPClient: &http.Client{
 			Timeout: 1 * time.Minute,
 		},
 	})
 	btcProverClient := NewBtcClient(proverClient, storeDb, btcClient, int64(cfg.BtcInitHeight))
 
-	beaconClient, err := beacon.NewClient(cfg.BeaconUrl)
+	beaconClient, err := beacon.NewClient(cfg.BeaconUrl...)
 	if err != nil {
 		logger.Error("new beacon client error:%v", err)
 		return nil, err
 	}
+	beaconMultiClient, err := beacon.NewMultiClient(cfg.BeaconUrl...)
+	if err != nil {
+		logger.Error("new beacon multi client error:%v", err)
+		return nil, err
+	}
+
 	ethClient, err := ethereum.NewClient(cfg.EthUrl, cfg.ZkBridgeAddr, cfg.UtxoManagerAddr, cfg.BtcTxVerifyAddr, cfg.ZkBtcAddr)
 	if err != nil {
 		logger.Error("new eth client error:%v", err)
 		return nil, err
 	}
-	sgxClient := sgx.NewClient(cfg.SgxUrl)
+	sgxClient, err := sgx.NewClient(cfg.SgxUrl...)
+	if err != nil {
+		logger.Error("new sgx error")
+		return nil, err
+	}
 	oasisClient, err := oasis.NewClient(cfg.OasisUrl, cfg.OasisSignerAddress)
 	if err != nil {
 		logger.Error("new oasis client error:%v", err)
 		return nil, err
 	}
-	beaClient, err := apiclient.NewClient(cfg.BeaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(cfg.BeaconUrl)))
+	beaconUrl := cfg.BeaconUrl[0]
+	beaClient, err := apiclient.NewClient(beaconUrl, prysmClient.WithAuthenticationToken(getUrlToken(beaconUrl)))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
 		return nil, err
@@ -179,7 +190,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Error("new proof Prepared data error: %v", err)
 		return nil, err
 	}
-	taskManager, err := NewTxManager(storeDb, fileStore, preparedData, keyStore, ethClient, btcClient, oasisClient, dfinityClient,
+	txManager, err := NewTxManager(storeDb, fileStore, preparedData, keyStore, ethClient, btcClient, oasisClient, dfinityClient,
 		sgxClient, btcProverClient, cfg.MinerAddr)
 	if err != nil {
 		logger.Error("new tx manager error: %v", err)
@@ -195,7 +206,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, nil, syncCommitResp))
 	}
 	if !cfg.DisableBtcAgent {
-		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, taskManager, chainFork, fileStore)
+		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, txManager, chainFork, fileStore)
 		if err != nil {
 			logger.Error("new bitcoin agent error:%v", err)
 			return nil, err
@@ -204,7 +215,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 
 	}
 	if !cfg.DisableEthAgent {
-		ethAgent, err := NewEthereumAgent(cfg, fileStore, storeDb, btcClient, ethClient, taskManager, chainFork)
+		ethAgent, err := NewEthereumAgent(cfg, fileStore, storeDb, btcClient, ethClient, txManager, chainFork)
 		if err != nil {
 			logger.Error("new ethereum agent error:%v", err)
 			return nil, err
@@ -244,7 +255,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(manager, ethReScan, btcReScan, storeDb, fileStore, exitSignal)
+	rpcHandler := NewHandler(txManager, manager, ethReScan, btcReScan, storeDb, fileStore, exitSignal, btcClient, btcProverClient, cfg.MinerAddr)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, keyStore, nil)
 	if err != nil {
 		logger.Error("new rpc server error: %v", err)
@@ -253,7 +264,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	logger.Debug("rpcServer: listen on %v,port  %v", cfg.Rpcbind, cfg.Rpcport)
 	var fetch IFetch
 	if !cfg.DisableFetch {
-		fetch, err = NewFetch(beaconClient, storeDb, fileStore, cfg.GenesisBeaconSlot, beaconNotify, ethNotify)
+		fetch, err = NewFetch(beaconMultiClient, storeDb, fileStore, cfg.GenesisBeaconSlot, beaconNotify, ethNotify)
 		if err != nil {
 			logger.Error("new fetch error: %v", err)
 			return nil, err
@@ -265,7 +276,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		wsServer:   nil,
 		cfg:        cfg,
 		exitSignal: exitSignal,
-		txManager:  taskManager,
+		txManager:  txManager,
 		libp2p:     libp2p,
 		fetch:      fetch,
 		debug:      common.GetEnvDebugMode(),
@@ -332,12 +343,11 @@ func (d *Daemon) Run() error {
 	go doChainForkTask("manager-chainFork", d.manager.chainFork, d.manager.ChainFork, d.exitSignal)
 	go DoTimerTask("manager-minerPower", 1*time.Minute, d.manager.MinerPower, d.exitSignal)
 	if d.cfg.EnableLocalWorker {
-		//go DoTask("manager-generateProof:", d.manager.manager.DistributeRequest, d.exitSignal)
+		// todo
 	}
 	if !d.cfg.DisableBtcAgent {
 		go DoTimerTask("manager-checkBtcState", 2*time.Minute, d.manager.CheckBtcState, d.exitSignal, d.manager.BtcNotify())
 		go DoTimerTask("manager-checkPreBtcState", 3*time.Minute, d.manager.CheckPreBtcState, d.exitSignal)
-		go DoTimerTask("manager-icpSignature", 1*time.Minute, d.manager.BlockSignature, d.exitSignal)
 		go DoTimerTask("manager-updateBtcCp", 24*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
 	}
 	if !d.cfg.DisableEthAgent {

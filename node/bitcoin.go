@@ -27,6 +27,7 @@ type bitcoinAgent struct {
 	txManager       *TxManager
 	chainStore      *ChainStore
 	fileStore       *FileStorage
+	mode            Mode
 	chainForkSignal chan<- *ChainFork
 	reScan          bool
 	check           bool
@@ -46,6 +47,7 @@ func NewBitcoinAgent(cfg Config, store store.IStore, btcClient *bitcoin.Client, 
 		reScan:          cfg.BtcReScan,
 		fileStore:       fileStore,
 		check:           true,
+		mode:            cfg.Mode,
 	}, nil
 }
 
@@ -122,6 +124,22 @@ func (b *bitcoinAgent) ScanBlock() error {
 		if err != nil {
 			logger.Error("write btc height error: %v %v", index, err)
 			return err
+		}
+	}
+	//todo
+	if b.mode == LiteMode && currentHeight-b.initHeight > BtcLiteCacheHeight {
+		eHeight := currentHeight - BtcLiteCacheHeight
+		sHeight := eHeight - BtcLiteCacheHeight
+		if sHeight < b.initHeight {
+			sHeight = b.initHeight
+		}
+		for index := eHeight; index >= sHeight; index-- {
+			err := b.chainStore.BtcDeleteData(index)
+			if err != nil {
+				logger.Warn("delete btc data error: %v %v", index, err)
+				//return err
+			}
+
 		}
 	}
 	return nil

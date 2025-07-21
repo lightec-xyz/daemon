@@ -11,7 +11,7 @@ import (
 func TestGetEth1MapToEth2(t *testing.T) {
 	//params.UseMainnetNetworkConfig()
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
-	url := "https://rpc.ankr.com/premium-http/eth_beacon/8c933202fbe8dbe6d63377a319b6020f4a4c35bb4424f6368f630b676b4fcc2e"
+	url := ""
 	beaClient, err := apiclient.NewClient(url, prysmClient.WithAuthenticationToken("8c933202fbe8dbe6d63377a319b6020f4a4c35bb4424f6368f630b676b4fcc2e"))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)

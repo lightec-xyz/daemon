@@ -14,11 +14,11 @@ import (
 var err error
 var client *Client
 
-var endpoint = "http://127.0.0.1:9002"
-var zkBridgeAddr = "0x21098979Fc10BBC754C6359E657eA28c52ea1acf"
-var utxoManager = "0xD2f892d4Ece281C91Fd5D9f28658F8d445878239"
-var btcTxVerifyAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
-var zkbtcAddr = "0xB4c6946069Ec022cE06F4C8D5b0d2fb232f8DDa5"
+var endpoint = "http://127.0.0.1:8002"
+var zkBridgeAddr = "0xB86E9A8391d3df83F53D3f39E3b5Fce4D7da405d"
+var utxoManager = "0x2635Dc72706478F4bD784A8D04B3e0af8AB053dc"
+var btcTxVerifyAddr = "0x45bc26C34f9e6BA7704cBBf8dE090f2D1fEfA097"
+var zkbtcAddr = "0x199CC8f0ac008Bdc8cF0B1CCd5187F84E168C4D2"
 
 func init() {
 	//https://sepolia.publicgoods.network
@@ -26,6 +26,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestClient_IcpSwitch(t *testing.T) {
+	icpSwitch, err := client.EnableUnsignedProtection()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(icpSwitch)
 }
 
 func TestClient_GetNonce(t *testing.T) {

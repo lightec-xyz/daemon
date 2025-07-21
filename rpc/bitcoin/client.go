@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 )
@@ -13,7 +14,7 @@ import (
 type Client struct {
 	client *http.Client
 	debug  bool
-	url    string
+	urls   []string
 	token  string // todo
 }
 
@@ -22,13 +23,13 @@ func BasicAuth(username, password string) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-func NewClient(url, user, pwd string) (*Client, error) {
+func NewClient(user, pwd string, urls ...string) (*Client, error) {
 	client := &http.Client{
 		Timeout: 5 * time.Minute,
 	}
 	return &Client{
 		client: client,
-		url:    url,
+		urls:   urls,
 		token:  BasicAuth(user, pwd),
 		debug:  false,
 	}, nil
@@ -36,7 +37,7 @@ func NewClient(url, user, pwd string) (*Client, error) {
 
 func (c *Client) Estimatesmartfee(confirms int) (EstimateSmartFee, error) {
 	var fee EstimateSmartFee
-	err := c.call("estimatesmartfee", NewParams(confirms, "CONSERVATIVE"), &fee)
+	err := c.Call("estimatesmartfee", NewParams(confirms, "CONSERVATIVE"), &fee)
 	if err != nil {
 		return fee, err
 	}
@@ -45,7 +46,7 @@ func (c *Client) Estimatesmartfee(confirms int) (EstimateSmartFee, error) {
 
 func (c *Client) GetBlockHeader(hash string) (*BlockHeader, error) {
 	var header = BlockHeader{}
-	err := c.call("getblockheader", NewParams(hash, true), &header)
+	err := c.Call("getblockheader", NewParams(hash, true), &header)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (c *Client) GetBlockHeaderByHeight(height uint64) (*BlockHeader, error) {
 
 func (c *Client) GetHexBlockHeader(hash string) (string, error) {
 	var header string
-	err := c.call("getblockheader", NewParams(hash, false), &header)
+	err := c.Call("getblockheader", NewParams(hash, false), &header)
 	if err != nil {
 		return "", err
 	}
@@ -71,7 +72,7 @@ func (c *Client) GetHexBlockHeader(hash string) (string, error) {
 
 func (c *Client) GetBlockHash(blockCount int64) (string, error) {
 	var hash string
-	err := c.call("getblockhash", NewParams(blockCount), &hash)
+	err := c.Call("getblockhash", NewParams(blockCount), &hash)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +81,7 @@ func (c *Client) GetBlockHash(blockCount int64) (string, error) {
 
 func (c *Client) GetBlockCount() (int64, error) {
 	var count int64
-	err := c.call("getblockcount", nil, &count)
+	err := c.Call("getblockcount", nil, &count)
 	if err != nil {
 		return 0, err
 	}
@@ -101,7 +102,7 @@ func (c *Client) GetBlockByNumber(height uint64) (Block, error) {
 
 func (c *Client) GetBlock(hash string) (Block, error) {
 	res := Block{}
-	err := c.call("getblock", NewParams(hash, 3), &res)
+	err := c.Call("getblock", NewParams(hash, 3), &res)
 	if err != nil {
 		return Block{}, err
 	}
@@ -109,7 +110,7 @@ func (c *Client) GetBlock(hash string) (Block, error) {
 }
 func (c *Client) GetBlockStr(hash string) (string, error) {
 	var res json.RawMessage
-	err := c.call("getblock", NewParams(hash, 3), &res)
+	err := c.Call("getblock", NewParams(hash, 3), &res)
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +119,7 @@ func (c *Client) GetBlockStr(hash string) (string, error) {
 
 func (c *Client) Scantxoutset(address string) (ScanUtxoSet, error) {
 	var result ScanUtxoSet
-	err := c.call("scantxoutset", NewParams("start", []string{fmt.Sprintf("addr(%v)", address)}), &result)
+	err := c.Call("scantxoutset", NewParams("start", []string{fmt.Sprintf("addr(%v)", address)}), &result)
 	if err != nil {
 		return result, err
 	}
@@ -127,7 +128,7 @@ func (c *Client) Scantxoutset(address string) (ScanUtxoSet, error) {
 
 func (c *Client) GetNetworkInfo() (NetworkInfo, error) {
 	var result NetworkInfo
-	err := c.call("getnetworkinfo", nil, &result)
+	err := c.Call("getnetworkinfo", nil, &result)
 	if err != nil {
 		return result, err
 	}
@@ -135,7 +136,7 @@ func (c *Client) GetNetworkInfo() (NetworkInfo, error) {
 }
 func (c *Client) Createrawtransaction(inputs []TxIn, outputs []TxOut) (string, error) {
 	var result string
-	err := c.call("createrawtransaction", NewParams(inputs, outputParseParam(outputs)), &result)
+	err := c.Call("createrawtransaction", NewParams(inputs, outputParseParam(outputs)), &result)
 	if err != nil {
 		return "", err
 	}
@@ -144,7 +145,7 @@ func (c *Client) Createrawtransaction(inputs []TxIn, outputs []TxOut) (string, e
 
 func (c *Client) Signrawtransactionwithkey(hexDaa string, privateKeys []string, inputs []TxIn) (SignTawTransaction, error) {
 	var result SignTawTransaction
-	err := c.call("signrawtransactionwithkey", NewParams(hexDaa, privateKeys, inputs), &result)
+	err := c.Call("signrawtransactionwithkey", NewParams(hexDaa, privateKeys, inputs), &result)
 	if err != nil {
 		return result, err
 	}
@@ -153,7 +154,7 @@ func (c *Client) Signrawtransactionwithkey(hexDaa string, privateKeys []string, 
 
 func (c *Client) Sendrawtransaction(hexData string) (string, error) {
 	var result string
-	err := c.call("sendrawtransaction", NewParams(hexData, 0), &result)
+	err := c.Call("sendrawtransaction", NewParams(hexData, 0), &result)
 	if err != nil {
 		return result, err
 	}
@@ -174,7 +175,7 @@ func (c *Client) CheckTxOnChain(txHash string) (bool, error) {
 
 func (c *Client) GetRawTransaction(txHash string) (RawTransaction, error) {
 	var result RawTransaction
-	err := c.call("getrawtransaction", NewParams(txHash, true), &result)
+	err := c.Call("getrawtransaction", NewParams(txHash, true), &result)
 	if err != nil {
 		return result, err
 	}
@@ -183,7 +184,7 @@ func (c *Client) GetRawTransaction(txHash string) (RawTransaction, error) {
 
 func (c *Client) GetHexRawTransaction(txHash string) (string, error) {
 	var result string
-	err := c.call("getrawtransaction", NewParams(txHash, false), &result)
+	err := c.Call("getrawtransaction", NewParams(txHash, false), &result)
 	if err != nil {
 		return result, err
 	}
@@ -194,7 +195,7 @@ func (c *Client) GetHexRawTransaction(txHash string) (string, error) {
 
 func (c *Client) Getmempoolentry(txId string) (RawTransaction, error) {
 	var result RawTransaction
-	err := c.call("getmempoolentry", NewParams(txId), &result)
+	err := c.Call("getmempoolentry", NewParams(txId), &result)
 	if err != nil {
 		return result, err
 	}
@@ -203,7 +204,7 @@ func (c *Client) Getmempoolentry(txId string) (RawTransaction, error) {
 
 func (c *Client) GetTransaction(txHash string) (RawTransaction, error) {
 	var result RawTransaction
-	err := c.call("gettransaction", NewParams(txHash, true), &result)
+	err := c.Call("gettransaction", NewParams(txHash, true), &result)
 	if err != nil {
 		return result, err
 	}
@@ -239,7 +240,7 @@ func (c *Client) Createmultisig(nRequired int, keys ...string) (CreateMultiAddre
 	if nRequired > len(keys) {
 		return result, fmt.Errorf("nRequired mustl less than keys len")
 	}
-	err := c.call("createmultisig", NewParams(nRequired, keys), &result)
+	err := c.Call("createmultisig", NewParams(nRequired, keys), &result)
 	if err != nil {
 		return result, err
 	}
@@ -248,7 +249,7 @@ func (c *Client) Createmultisig(nRequired int, keys ...string) (CreateMultiAddre
 
 func (c *Client) Getaddressinfo(address string) (AddressInfo, error) {
 	var result AddressInfo
-	err := c.call("getaddressinfo", NewParams(address), &result)
+	err := c.Call("getaddressinfo", NewParams(address), &result)
 	if err != nil {
 		return result, err
 	}
@@ -257,7 +258,7 @@ func (c *Client) Getaddressinfo(address string) (AddressInfo, error) {
 
 func (c *Client) DumpPrivkey(address string) (string, error) {
 	var result string
-	err := c.call("dumpprivkey", NewParams(address), &result)
+	err := c.Call("dumpprivkey", NewParams(address), &result)
 	if err != nil {
 		return "", err
 	}
@@ -270,14 +271,14 @@ func (c *Client) GetRawChangeAddress(param ...AddrType) (string, error) {
 	if len(param) != 0 {
 		addrType = param[0]
 	}
-	err := c.call("getrawchangeaddress", NewParams(addrType), &result)
+	err := c.Call("getrawchangeaddress", NewParams(addrType), &result)
 	if err != nil {
 		return "", err
 	}
 	return result, err
 }
 
-func (c *Client) newRequest(method string, param Params) (*http.Request, error) {
+func (c *Client) newRequest(url, method string, param Params) (*http.Request, error) {
 	jsonRpc := JsonReq{
 		Jsonrpc: "2.0",
 		Method:  method,
@@ -291,7 +292,7 @@ func (c *Client) newRequest(method string, param Params) (*http.Request, error) 
 	if c.debug {
 		fmt.Printf("%v requst: data: %v \n", method, string(reqData))
 	}
-	request, err := http.NewRequest(http.MethodPost, c.url, bytes.NewReader(reqData))
+	request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(reqData))
 	if err != nil {
 		return nil, err
 	}
@@ -299,8 +300,8 @@ func (c *Client) newRequest(method string, param Params) (*http.Request, error) 
 	return request, nil
 }
 
-func (c *Client) call(method string, param Params, result interface{}) error {
-	request, err := c.newRequest(method, param)
+func (c *Client) call(url, method string, param Params, result interface{}) error {
+	request, err := c.newRequest(url, method, param)
 	if err != nil {
 		return err
 	}
@@ -312,7 +313,7 @@ func (c *Client) call(method string, param Params, result interface{}) error {
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("status code error: %d %s", response.StatusCode, response.Status)
 	}
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}
@@ -334,6 +335,19 @@ func (c *Client) call(method string, param Params, result interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Client) Call(method string, param Params, result interface{}) error {
+	msg := "call error " + method
+	for _, url := range c.urls {
+		err := c.call(url, method, param, result)
+		if err != nil {
+			msg = msg + err.Error()
+			continue
+		}
+		return nil
+	}
+	return errors.New(msg)
 }
 
 type JsonResp struct {

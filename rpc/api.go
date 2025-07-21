@@ -14,7 +14,6 @@ type INode interface {
 	Transactions(txId []string) ([]*Transaction, error)
 	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
 	SubmitProof(req *common.SubmitProof) (string, error)
-	TxesByAddr(addr, txType string) ([]*Transaction, error)
 	ProofTask(id string) (*ProofTaskInfo, error)
 	PendingTask() ([]*ProofTaskInfo, error)
 	Eth2Slot(height uint64) (uint64, error)
@@ -63,6 +62,7 @@ type IWorker interface {
 type IAdmin interface {
 	RemoveUnSubmitTx(hash string) (string, error)
 	RemoveUnGenProof(hash string) (string, error)
+	SetGasPrice(gasPrice uint64) (string, error)
 }
 
 type IVerify interface {

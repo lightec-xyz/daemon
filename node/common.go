@@ -2,7 +2,12 @@ package node
 
 import (
 	"fmt"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
+	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/node/p2p"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	"math/big"
 	"os"
 	"strings"
@@ -14,6 +19,76 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
+
+// todo
+func getProofParams(txId, miner string, chainStore *ChainStore, btcClient *bitcoin.Client, proverClient btcproverClient.IClient) (*zkbridge.IBtcTxVerifierPublicWitnessParams, error) {
+	dbTx, ok, err := chainStore.ReadBtcTx(txId)
+	if err != nil {
+		logger.Error("read btc tx error: %v %v", txId, err)
+		return nil, err
+	}
+	if !ok {
+		logger.Warn("no find btc tx: %v", txId)
+		return nil, fmt.Errorf("no find btc tx:%v", txId)
+	}
+	cpDepth := dbTx.LatestHeight - dbTx.CheckPointHeight
+	txDepth := dbTx.LatestHeight - dbTx.Height
+	cpHash, ok, err := chainStore.ReadCheckpoint(dbTx.CheckPointHeight)
+	if err != nil {
+		logger.Error("%v", err.Error())
+		return nil, err
+	}
+	btcTx, err := btcClient.GetRawTransaction(dbTx.Hash)
+	if err != nil {
+		logger.Error("get transaction error: %v %v", dbTx.Hash, err)
+		return nil, err
+	}
+	blockHash := common.ReverseBytes(ethcommon.FromHex(btcTx.Blockhash))
+
+	icpSignature, ok, err := chainStore.ReadIcpSignature(dbTx.LatestHeight)
+	if err != nil {
+		logger.Error("read dfinity sign error: %v", err)
+		return nil, err
+	}
+	if !ok {
+		logger.Warn("no find: %v icp %v signature", dbTx.Hash, dbTx.LatestHeight)
+		// no work,just placeholder
+		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
+		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"
+	} else {
+		//logger.Debug("%v icp signature: %v %v %v", txId, icpSignature.Height, icpSignature.Hash, icpSignature.Signature)
+	}
+	smoothedTimestamp, err := blockdepthUtil.GetSmoothedTimestampProofData(proverClient, uint32(dbTx.LatestHeight))
+	if err != nil {
+		logger.Error("%v", err.Error())
+		return nil, err
+	}
+	cptimeData, err := blockdepthUtil.GetCpTimestampProofData(proverClient, uint32(dbTx.Height))
+	if err != nil {
+		logger.Error("%v", err)
+		return nil, err
+	}
+	sigVerif, err := blockdepthUtil.GetSigVerifProofData(
+		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
+		ethcommon.FromHex(icpSignature.Signature),
+		ethcommon.FromHex(IcpPublicKey))
+	if err != nil {
+		logger.Error("%v", err.Error())
+		return nil, err
+	}
+	flag := cptimeData.Flag<<1 | sigVerif.Flag
+	params := &zkbridge.IBtcTxVerifierPublicWitnessParams{
+		Checkpoint:        [32]byte(ethcommon.FromHex(cpHash)),
+		CpDepth:           uint32(cpDepth),
+		TxDepth:           uint32(txDepth),
+		TxBlockHash:       [32]byte(blockHash),
+		TxTimestamp:       uint32(btcTx.Blocktime),
+		ZkpMiner:          ethcommon.HexToAddress(miner),
+		Flag:              big.NewInt(int64(flag)),
+		SmoothedTimestamp: smoothedTimestamp.Timestamp,
+	}
+	return params, nil
+}
 
 func upperRoundStartIndex(height uint64) uint64 {
 	index := height / common.BtcUpperDistance * common.BtcUpperDistance

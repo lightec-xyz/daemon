@@ -59,7 +59,7 @@ func NewFetch(url, datadir string, genesisSlot uint64) (*Fetch, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := beacon.NewClient(url)
+	client, err := beacon.NewMultiClient(url)
 	if err != nil {
 		logger.Error("new beacon client error: %v", err)
 		return nil, err

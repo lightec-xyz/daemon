@@ -18,6 +18,15 @@ type NodeClient struct {
 	token   string
 }
 
+func (c *NodeClient) SetGasPrice(gasPrice uint64) (string, error) {
+	var result string
+	err := c.call(&result, "zkbtc_setGasPrice", gasPrice)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
 func (c *NodeClient) Eth2Slot(height uint64) (uint64, error) {
 	var result uint64
 	err := c.call(&result, "zkbtc_eth2Slot", height)
@@ -93,15 +102,6 @@ func (c *NodeClient) ProofTask(id string) (*ProofTaskInfo, error) {
 func (c *NodeClient) PendingTask() ([]*ProofTaskInfo, error) {
 	var result []*ProofTaskInfo
 	err := c.call(&result, "zkbtc_pendingTask")
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (c *NodeClient) TxesByAddr(addr, txType string) ([]*Transaction, error) {
-	var result []*Transaction
-	err := c.call(&result, "zkbtc_txesByAddr", addr, txType)
 	if err != nil {
 		return nil, err
 	}

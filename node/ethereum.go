@@ -29,6 +29,7 @@ type ethereumAgent struct {
 	ethFilter       *EthFilter
 	initHeight      uint64
 	txManager       *TxManager
+	mode            Mode
 	chainForkSignal chan<- *ChainFork
 	curHeight       uint64
 	reScan          bool
@@ -46,6 +47,7 @@ func NewEthereumAgent(cfg Config, fileStore *FileStorage, store store.IStore, bt
 		chainStore:      NewChainStore(store),
 		chainForkSignal: chainFork,
 		reScan:          cfg.EthReScan,
+		mode:            cfg.Mode,
 	}, nil
 }
 

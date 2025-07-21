@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/lightec-xyz/daemon/rpc/beacon/types"
 	"github.com/prysmaticlabs/prysm/v5/container/slice"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -19,15 +21,33 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
 
+type IBeacon interface {
+	GetBlindedBlock(slot uint64) (types.BindBlockResp, error)
+	Eth1MapToEth2(slot uint64) (*Eth1MapToEth2, error)
+	Bootstrap(slot uint64) (*types.BootstrapResp, error)
+	BootstrapByRoot(root string) (*types.BootstrapResp, error)
+	BeaconHeaders(slot uint64) (*structs.GetBlockHeaderResponse, error)
+	FinalizedSlot() (uint64, error)
+	FinalizedPeriod() (uint64, error)
+	LightClientUpdates(period, count uint64) ([]types.LightClientUpdateResp, error)
+	BeaconHeaderBySlot(slot uint64) (*structs.GetBlockHeaderResponse, error)
+	BeaconHeaderByRoot(root string) (*structs.GetBlockHeaderResponse, error)
+	GetFinalityUpdate() (types.LightClientFinalityUpdateResp, error)
+	RetrieveBeaconHeaders(start, end uint64) ([]*structs.BeaconBlockHeader, error)
+}
+
 type Client struct {
 	ctx        context.Context
-	endpoint   string
+	endpoints  []string
 	timeout    time.Duration
 	debug      bool
 	httpClient *http.Client
 }
 
-func NewClient(rawurl string) (*Client, error) {
+func NewClient(urls ...string) (*Client, error) {
+	if len(urls) == 0 {
+		return nil, errors.New("no url")
+	}
 	client := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        10,
@@ -38,7 +58,7 @@ func NewClient(rawurl string) (*Client, error) {
 	}
 	return &Client{
 		ctx:        context.Background(),
-		endpoint:   rawurl,
+		endpoints:  urls,
 		timeout:    6 * time.Hour, // todo
 		debug:      false,
 		httpClient: client,
@@ -78,28 +98,19 @@ func (c *Client) Eth1MapToEth2(slot uint64) (*Eth1MapToEth2, error) {
 	return &slotMapInfo, nil
 }
 
-func (c *Client) Version() (types.BeaconNodeVersion, error) {
-	var result types.BeaconNodeVersion
-	err := c.get("/eth/v1/node/version", nil, &result)
-	if err != nil {
-		return result, err
-	}
-	return result, nil
-}
-
 func (c *Client) Bootstrap(slot uint64) (*types.BootstrapResp, error) {
-	beaconHeaders, err := c.GetBeaconHeaders(slot)
+	beaconHeaders, err := c.BeaconHeaders(slot)
 	if err != nil {
 		return nil, err
 	}
-	bootstrap, err := c.GetLightClientBootstrap(beaconHeaders.Data.Root)
+	bootstrap, err := c.BootstrapByRoot(beaconHeaders.Data.Root)
 	if err != nil {
 		return nil, err
 	}
 	return bootstrap, nil
 }
 
-func (c *Client) GetLightClientBootstrap(root string) (*types.BootstrapResp, error) {
+func (c *Client) BootstrapByRoot(root string) (*types.BootstrapResp, error) {
 	bootstrap := &types.BootstrapResp{}
 	path := fmt.Sprintf("/eth/v1/beacon/light_client/bootstrap/%v", root)
 	err := c.get(path, nil, &bootstrap)
@@ -109,7 +120,7 @@ func (c *Client) GetLightClientBootstrap(root string) (*types.BootstrapResp, err
 	return bootstrap, nil
 }
 
-func (c *Client) GetBeaconHeaders(slot uint64) (*structs.GetBlockHeaderResponse, error) {
+func (c *Client) BeaconHeaders(slot uint64) (*structs.GetBlockHeaderResponse, error) {
 	resp := &structs.GetBlockHeaderResponse{}
 	path := fmt.Sprintf("/eth/v1/beacon/headers/%v", slot)
 	err := c.get(path, nil, &resp)
@@ -119,7 +130,7 @@ func (c *Client) GetBeaconHeaders(slot uint64) (*structs.GetBlockHeaderResponse,
 	return resp, nil
 }
 
-func (c *Client) GetLatestFinalizedSlot() (uint64, error) {
+func (c *Client) FinalizedSlot() (uint64, error) {
 	resp := &structs.GetBlockHeaderResponse{}
 	err := c.get("/eth/v1/beacon/headers/finalized", nil, &resp)
 	if err != nil {
@@ -133,8 +144,8 @@ func (c *Client) GetLatestFinalizedSlot() (uint64, error) {
 
 }
 
-func (c *Client) GetFinalizedSyncPeriod() (uint64, error) {
-	finalizedSlot, err := c.GetLatestFinalizedSlot()
+func (c *Client) FinalizedPeriod() (uint64, error) {
+	finalizedSlot, err := c.FinalizedSlot()
 	if err != nil {
 		return 0, err
 	}
@@ -142,7 +153,7 @@ func (c *Client) GetFinalizedSyncPeriod() (uint64, error) {
 	return period, nil
 }
 
-func (c *Client) GetLightClientUpdates(start uint64, count uint64) ([]types.LightClientUpdateResp, error) {
+func (c *Client) LightClientUpdates(start uint64, count uint64) ([]types.LightClientUpdateResp, error) {
 	var updates []types.LightClientUpdateResp
 	param := Param{}
 	param.Add("count", count)
@@ -232,7 +243,16 @@ func (c *Client) get(path string, param Param, value interface{}, headers ...Hea
 		path = fmt.Sprintf("%s?%s", path, reqStr)
 	}
 	path = strings.TrimSuffix(path, "&")
-	return c.httpReq(http.MethodGet, path, param, value, headers...)
+	msg := "request error "
+	for _, url := range c.endpoints {
+		err := c.httpReq(http.MethodGet, url, path, param, value, headers...)
+		if err != nil {
+			msg = msg + err.Error() + "\n"
+			continue
+		}
+		return nil
+	}
+	return errors.New(msg)
 }
 
 func (c *Client) newRequest(ctx context.Context, httpMethod, url, method string, param interface{}, headers ...Header) (*http.Request, error) {
@@ -253,14 +273,14 @@ func (c *Client) newRequest(ctx context.Context, httpMethod, url, method string,
 	return req, nil
 }
 
-func (c *Client) httpReq(httpMethod, method string, param Param, value interface{}, headers ...Header) (err error) {
+func (c *Client) httpReq(httpMethod, url, method string, param Param, value interface{}, headers ...Header) (err error) {
 	vi := reflect.ValueOf(value)
 	if vi.Kind() != reflect.Ptr {
 		return fmt.Errorf("value must be pointer")
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
-	req, err := c.newRequest(ctx, httpMethod, c.endpoint, method, param, headers...)
+	req, err := c.newRequest(ctx, httpMethod, url, method, param, headers...)
 	if err != nil {
 		return err
 	}
@@ -282,7 +302,7 @@ func (c *Client) httpReq(httpMethod, method string, param Param, value interface
 		return err
 	}
 	if resp == nil || resp.StatusCode < http.StatusOK || resp.StatusCode > 300 {
-		data, _ := ioutil.ReadAll(resp.Body)
+		data, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("response err: %v %v %v", resp.StatusCode, resp.Status, string(data))
 	}
 	if resp.Body != nil {

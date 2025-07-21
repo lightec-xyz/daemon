@@ -134,30 +134,20 @@ type NetworkInfo struct {
 }
 
 type RawTransaction struct {
-	Blockhash     string `json:"blockhash"`
-	Blocktime     int    `json:"blocktime"`
-	Confirmations int    `json:"confirmations"`
-	Hash          string `json:"hash"`
-	Hex           string `json:"hex"`
-	Locktime      int    `json:"locktime"`
-	Size          int    `json:"size"`
-	Time          int    `json:"time"`
-	Txid          string `json:"txid"`
-	Version       int    `json:"version"`
-	Vin           []struct {
-		ScriptSig   ScriptSig `json:"scriptSig"`
-		Sequence    int64     `json:"sequence"`
-		Txid        string    `json:"txid"`
-		Txinwitness []string  `json:"txinwitness"`
-		Vout        int       `json:"vout"`
-	} `json:"vin"`
-	Vout []struct {
-		N            int          `json:"n"`
-		ScriptPubKey ScriptPubKey `json:"scriptPubKey"`
-		Value        float64      `json:"value"`
-	} `json:"vout"`
-	Vsize  int `json:"vsize"`
-	Weight int `json:"weight"`
+	Blockhash     string   `json:"blockhash"`
+	Blocktime     int      `json:"blocktime"`
+	Confirmations int      `json:"confirmations"`
+	Hash          string   `json:"hash"`
+	Hex           string   `json:"hex"`
+	Locktime      int      `json:"locktime"`
+	Size          int      `json:"size"`
+	Time          int      `json:"time"`
+	Txid          string   `json:"txid"`
+	Version       int      `json:"version"`
+	Vin           []TxVin  `json:"vin"`
+	Vout          []TxVout `json:"vout"`
+	Vsize         int      `json:"vsize"`
+	Weight        int      `json:"weight"`
 }
 
 type ScriptSig struct {
