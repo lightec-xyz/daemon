@@ -12,7 +12,7 @@ func TestGetEth1MapToEth2(t *testing.T) {
 	//params.UseMainnetNetworkConfig()
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
 	url := ""
-	beaClient, err := apiclient.NewClient(url, prysmClient.WithAuthenticationToken("8c933202fbe8dbe6d63377a319b6020f4a4c35bb4424f6368f630b676b4fcc2e"))
+	beaClient, err := apiclient.NewClient(url, prysmClient.WithAuthenticationToken(""))
 	if err != nil {
 		logger.Error("new provers api client error: %v", err)
 		t.Fatal(err)
