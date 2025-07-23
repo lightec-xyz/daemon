@@ -19,6 +19,7 @@ type IScheduler interface {
 	CheckPreBtcState() error
 	CheckBeaconState() error
 	UpdateBtcCp() error
+	StoreCompact() error
 }
 
 type Scheduler struct {
@@ -131,6 +132,28 @@ func (s *Scheduler) updateBtcCp() error {
 	return nil
 }
 
+func (s *Scheduler) checkTxesDepth(latestHeight, cpHeight uint64, unGenTxes []*DbUnGenProof, signed bool) (bool, error) {
+	for _, unGenTx := range unGenTxes {
+		raised, err := s.getTxRaised(unGenTx.Height, unGenTx.Amount)
+		if err != nil {
+			logger.Error("get tx raised error:%v", err)
+			return false, err
+		}
+		cpOk := latestHeight-cpHeight >= common.BtcCpMinDepth
+		txMinDepth, err := s.ethClient.GetDepthByAmount(unGenTx.Amount, raised, signed)
+		if err != nil {
+			logger.Error("get min tx depth error:%v", err)
+			return false, err
+		}
+		txOk := latestHeight-unGenTx.Height >= uint64(txMinDepth)
+		if cpOk && txOk {
+			return true, nil
+		}
+	}
+	return false, nil
+
+}
+
 func (s *Scheduler) CheckBtcState() error {
 	logger.Debug("start check btc state ....")
 	blockCount, err := s.btcClient.GetBlockCount()
@@ -184,7 +207,12 @@ func (s *Scheduler) CheckBtcState() error {
 		}
 		return nil
 	}
-	if !unSigProtect && len(unGenTxes) > 0 && exists {
+	depthOK, err := s.checkTxesDepth(latestHeight, cpHeight, unGenTxes, !unSigProtect)
+	if err != nil {
+		logger.Error("check tx depth error:%v", err)
+		return err
+	}
+	if !unSigProtect && len(unGenTxes) > 0 && exists && depthOK {
 		if latestHeight < icpSig.Height {
 			logger.Warn("unsigned protection is true,wait sync complete, latestHeight:%v,icpSig.Height:%v,skip check btc proof now", latestHeight, icpSig.Height)
 			return nil
@@ -857,13 +885,6 @@ func (s *Scheduler) tryProofRequest(key StoreKey) (bool, error) {
 	}
 	s.queueManager.StoreId(proofId)
 	s.queueManager.PushRequest(req)
-	if req.ProofType == common.BtcDepositType {
-		err := s.chainStore.IncrDepositCount(req.FIndex)
-		if err != nil {
-			logger.Error("increment deposit count error:%v %v", proofId, err)
-			//return nil, false, err
-		}
-	}
 	logger.Info("success add request to queue :%v", proofId)
 	err = s.UpdateProofStatus(req, common.ProofQueued)
 	if err != nil {
@@ -1297,17 +1318,6 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 	if err != nil {
 		logger.Error("get raised error:%v", err)
 		return false, err
-	}
-	if raised {
-		return true, nil
-	}
-	count, ok, err := s.chainStore.ReadDepositCount(height)
-	if err != nil {
-		logger.Error("read deposit count error:%v", err)
-		return false, err
-	}
-	if ok && count >= 10 { //todo
-		return true, nil
 	}
 	return raised, nil
 }

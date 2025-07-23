@@ -385,6 +385,10 @@ func (m *manager) CheckPreBtcState() error {
 	return nil
 }
 
+func (m *manager) StoreCompact() error {
+	return m.chainStore.Compact(nil, nil)
+}
+
 func (m *manager) CheckBtcState() error {
 	err := m.scheduler.CheckBtcState()
 	if err != nil {

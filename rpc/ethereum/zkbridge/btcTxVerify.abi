@@ -519,17 +519,17 @@
           "type": "bytes"
         }
       ],
-      "name": "decodeTx",
+      "name": "decodeDepositTx",
       "outputs": [
         {
-          "internalType": "uint32",
-          "name": "index",
-          "type": "uint32"
+          "internalType": "uint32[]",
+          "name": "",
+          "type": "uint32[]"
         },
         {
-          "internalType": "uint64",
-          "name": "amount",
-          "type": "uint64"
+          "internalType": "uint64[]",
+          "name": "",
+          "type": "uint64[]"
         },
         {
           "internalType": "address",
@@ -542,9 +542,9 @@
           "type": "bytes32"
         },
         {
-          "internalType": "bytes",
-          "name": "toScript",
-          "type": "bytes"
+          "internalType": "bytes[]",
+          "name": "",
+          "type": "bytes[]"
         },
         {
           "internalType": "bytes",
@@ -555,6 +555,74 @@
           "internalType": "bool",
           "name": "chainFlag",
           "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "rawBtcTx",
+          "type": "bytes"
+        }
+      ],
+      "name": "decodeTx",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "hash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "index",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "script",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes[]",
+              "name": "witness",
+              "type": "bytes[]"
+            },
+            {
+              "internalType": "bytes4",
+              "name": "sequence",
+              "type": "bytes4"
+            }
+          ],
+          "internalType": "struct BtcTxLib.TxIn[]",
+          "name": "",
+          "type": "tuple[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint64",
+              "name": "value",
+              "type": "uint64"
+            },
+            {
+              "internalType": "bytes",
+              "name": "pkScript",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct BtcTxLib.TxOut[]",
+          "name": "",
+          "type": "tuple[]"
         }
       ],
       "stateMutability": "pure",
@@ -698,11 +766,6 @@
       ],
       "name": "getDepthByAmount",
       "outputs": [
-        {
-          "internalType": "uint32",
-          "name": "",
-          "type": "uint32"
-        },
         {
           "internalType": "uint32",
           "name": "",
@@ -1142,9 +1205,9 @@
           "type": "address"
         },
         {
-          "internalType": "uint32",
+          "internalType": "uint8",
           "name": "reserveHours",
-          "type": "uint32"
+          "type": "uint8"
         }
       ],
       "name": "updateDepositVerifier",
@@ -1173,9 +1236,9 @@
           "type": "address"
         },
         {
-          "internalType": "uint32",
+          "internalType": "uint8",
           "name": "reserveHours",
-          "type": "uint32"
+          "type": "uint8"
         }
       ],
       "name": "updateRedeemVerifier",
