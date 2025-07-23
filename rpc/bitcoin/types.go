@@ -207,3 +207,11 @@ type EstimateSmartFee struct {
 	Feerate float64 `json:"feerate"`
 	Blocks  int     `json:"blocks"`
 }
+
+type TestMempoolAccept struct {
+	Txid          string `json:"txid"`
+	Wtxid         string `json:"wtxid"`
+	Allowed       bool   `json:"allowed"`
+	RejectReason  string `json:"reject-reason"`
+	RejectDetails string `json:"reject-details"`
+}

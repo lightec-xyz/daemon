@@ -14,14 +14,13 @@ import (
 var err error
 var client *Client
 
-var endpoint = "http://127.0.0.1:8002"
+var endpoint = "http://127.0.0.1:9000"
 var zkBridgeAddr = "0xB86E9A8391d3df83F53D3f39E3b5Fce4D7da405d"
 var utxoManager = "0x2635Dc72706478F4bD784A8D04B3e0af8AB053dc"
 var btcTxVerifyAddr = "0x45bc26C34f9e6BA7704cBBf8dE090f2D1fEfA097"
 var zkbtcAddr = "0x199CC8f0ac008Bdc8cF0B1CCd5187F84E168C4D2"
 
 func init() {
-	//https://sepolia.publicgoods.network
 	client, err = NewClient(endpoint, zkBridgeAddr, utxoManager, btcTxVerifyAddr, zkbtcAddr)
 	if err != nil {
 		panic(err)

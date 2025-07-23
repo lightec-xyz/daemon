@@ -19,6 +19,7 @@ type IScheduler interface {
 	CheckPreBtcState() error
 	CheckBeaconState() error
 	UpdateBtcCp() error
+	StoreCompact() error
 }
 
 type Scheduler struct {
@@ -131,6 +132,28 @@ func (s *Scheduler) updateBtcCp() error {
 	return nil
 }
 
+func (s *Scheduler) checkTxesDepth(latestHeight, cpHeight uint64, unGenTxes []*DbUnGenProof, signed bool) (bool, error) {
+	for _, unGenTx := range unGenTxes {
+		raised, err := s.getTxRaised(unGenTx.Height, unGenTx.Amount)
+		if err != nil {
+			logger.Error("get tx raised error:%v", err)
+			return false, err
+		}
+		cpOk := latestHeight-cpHeight >= common.BtcCpMinDepth
+		txMinDepth, err := s.ethClient.GetDepthByAmount(unGenTx.Amount, raised, signed)
+		if err != nil {
+			logger.Error("get min tx depth error:%v", err)
+			return false, err
+		}
+		txOk := latestHeight-unGenTx.Height >= uint64(txMinDepth)
+		if cpOk && txOk {
+			return true, nil
+		}
+	}
+	return false, nil
+
+}
+
 func (s *Scheduler) CheckBtcState() error {
 	logger.Debug("start check btc state ....")
 	blockCount, err := s.btcClient.GetBlockCount()
@@ -184,7 +207,12 @@ func (s *Scheduler) CheckBtcState() error {
 		}
 		return nil
 	}
-	if !unSigProtect && len(unGenTxes) > 0 && exists {
+	depthOK, err := s.checkTxesDepth(latestHeight, cpHeight, unGenTxes, !unSigProtect)
+	if err != nil {
+		logger.Error("check tx depth error:%v", err)
+		return err
+	}
+	if !unSigProtect && len(unGenTxes) > 0 && exists && depthOK {
 		if latestHeight < icpSig.Height {
 			logger.Warn("unsigned protection is true,wait sync complete, latestHeight:%v,icpSig.Height:%v,skip check btc proof now", latestHeight, icpSig.Height)
 			return nil

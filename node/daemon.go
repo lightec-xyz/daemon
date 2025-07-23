@@ -206,7 +206,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, nil, syncCommitResp))
 	}
 	if !cfg.DisableBtcAgent {
-		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, txManager, chainFork, fileStore)
+		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcProverClient, btcClient, ethClient, dfinityClient, txManager, chainFork, fileStore)
 		if err != nil {
 			logger.Error("new bitcoin agent error:%v", err)
 			return nil, err
@@ -342,12 +342,13 @@ func (d *Daemon) Run() error {
 	}
 	go doChainForkTask("manager-chainFork", d.manager.chainFork, d.manager.ChainFork, d.exitSignal)
 	go DoTimerTask("manager-minerPower", 1*time.Minute, d.manager.MinerPower, d.exitSignal)
+	go DoTimerTask("manager-dbCompact", 24*time.Hour, d.manager.StoreCompact, d.exitSignal)
 	if d.cfg.EnableLocalWorker {
 		// todo
 	}
 	if !d.cfg.DisableBtcAgent {
-		go DoTimerTask("manager-checkBtcState", 2*time.Minute, d.manager.CheckBtcState, d.exitSignal, d.manager.BtcNotify())
-		go DoTimerTask("manager-checkPreBtcState", 3*time.Minute, d.manager.CheckPreBtcState, d.exitSignal)
+		go DoTimerTask("manager-checkBtcState", 3*time.Minute, d.manager.CheckBtcState, d.exitSignal, d.manager.BtcNotify())
+		go DoTimerTask("manager-checkPreBtcState", 5*time.Minute, d.manager.CheckPreBtcState, d.exitSignal)
 		go DoTimerTask("manager-updateBtcCp", 24*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
 	}
 	if !d.cfg.DisableEthAgent {

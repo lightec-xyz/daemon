@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lightec-xyz/daemon/codec"
@@ -16,10 +17,38 @@ import (
 
 type ChainStore struct {
 	store store.IStore
+	lock  sync.Mutex
 }
 
 func NewChainStore(store store.IStore) *ChainStore {
 	return &ChainStore{store: store}
+}
+
+func (cs *ChainStore) WriteMaxGasPrice(price uint64) error {
+	return cs.store.PutObj(maxGasPriceKey, price)
+}
+
+func (cs *ChainStore) ReadMaxGasPrice() (uint64, bool, error) {
+	hash, err := cs.store.HasObj(maxGasPriceKey)
+	if err != nil {
+		return 0, false, err
+	}
+	if !hash {
+		return 0, false, nil
+	}
+	var price uint64
+	err = cs.store.GetObj(maxGasPriceKey, &price)
+	if err != nil {
+		return 0, false, err
+	}
+	return price, true, nil
+
+}
+
+func (cs *ChainStore) Compact(start, limit []byte) error {
+	defer cs.lock.Unlock()
+	cs.lock.Lock()
+	return cs.store.Compact(start, limit)
 }
 
 func (cs *ChainStore) ReadRedeemTx(txId string) (*DbTx, bool, error) {
@@ -446,6 +475,29 @@ func (cs *ChainStore) ReadDbTxes(txId string) ([]*DbTx, error) {
 		return nil
 	})
 	return txes, err
+}
+
+func (cs *ChainStore) DelBtcClientCache(height uint64) error {
+	hash, ok, err := cs.ReadBitcoinHash(height)
+	if err != nil {
+		logger.Error("read btc hash error: %v %v", height, err)
+		return err
+	}
+	if !ok {
+		logger.Error("btc hash not exist: %v", height)
+		return fmt.Errorf("btc hash not exist: %v", height)
+	}
+	return cs.store.WrapBatch(func(batch store.IBatch) error {
+		err := batch.BatchDeleteObj(dbBtcHeaderKey(hash))
+		if err != nil {
+			return err
+		}
+		err = batch.BatchDeleteObj(dbBtcBlockKey(hash))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (cs *ChainStore) BtcSaveData(height uint64, depositTxs, redeemTxes []*DbTx) error {

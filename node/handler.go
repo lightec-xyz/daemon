@@ -35,6 +35,7 @@ type Handler struct {
 func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
 	logger.Warn("set gas price: %v", gasPrice)
 	h.txManager.setMaxGasPrice(gasPrice)
+	h.chainStore.WriteMaxGasPrice(gasPrice)
 	return "ok", nil
 }
 

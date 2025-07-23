@@ -46,6 +46,7 @@ const (
 	latestCheckPointHeightKey = "latestCheckPointHeight"
 	latestUpdateCpKey         = "latestUpdateCpKey"
 	latestIcpSignatureKey     = "latestIcpSignatureKey"
+	maxGasPriceKey            = "maxGasPriceKey"
 )
 
 var (

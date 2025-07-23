@@ -11,7 +11,6 @@ import (
 	baselevelUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	blockchainUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
-	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	txinchainUtil "github.com/lightec-xyz/btc_provers/utils/txinchain"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
@@ -30,7 +29,7 @@ import (
 type Prepared struct {
 	filestore        *FileStorage
 	chainStore       *ChainStore
-	proverClient     btcproverClient.IClient
+	proverClient     *BtcClient
 	btcClient        *btcrpc.Client
 	ethClient        *ethrpc.Client
 	apiClient        *apiclient.Client
@@ -1123,7 +1122,7 @@ func (p *Prepared) GetBtcTimestampRequest(fIndex uint64, sIndex uint64) (*rpc.Bt
 
 }
 
-func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, btcGenesisHeight uint64, proverClient btcproverClient.IClient, btcClient *btcrpc.Client,
+func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, btcGenesisHeight uint64, proverClient *BtcClient, btcClient *btcrpc.Client,
 	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr string, scNewRecursive bool) (*Prepared, error) {
 	return &Prepared{
 		filestore:        filestore,

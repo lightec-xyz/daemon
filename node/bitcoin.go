@@ -21,6 +21,7 @@ type bitcoinAgent struct {
 	btcClient       *bitcoin.Client
 	ethClient       *ethereum.Client
 	dfinityClient   *dfinity.Client
+	proverClient    *BtcClient
 	btcFilter       *BtcFilter
 	initHeight      uint64
 	curHeight       uint64
@@ -33,7 +34,7 @@ type bitcoinAgent struct {
 	check           bool
 }
 
-func NewBitcoinAgent(cfg Config, store store.IStore, btcClient *bitcoin.Client, ethClient *ethereum.Client,
+func NewBitcoinAgent(cfg Config, store store.IStore, btcProverClient *BtcClient, btcClient *bitcoin.Client, ethClient *ethereum.Client,
 	dfinityClient *dfinity.Client, txManager *TxManager, chainFork chan *ChainFork, fileStore *FileStorage) (IAgent, error) {
 	return &bitcoinAgent{
 		btcClient:       btcClient,
@@ -47,6 +48,7 @@ func NewBitcoinAgent(cfg Config, store store.IStore, btcClient *bitcoin.Client, 
 		reScan:          cfg.BtcReScan,
 		fileStore:       fileStore,
 		check:           true,
+		proverClient:    btcProverClient,
 		mode:            cfg.Mode,
 	}, nil
 }
@@ -75,6 +77,19 @@ func (b *bitcoinAgent) Init() error {
 			return err
 		}
 	}
+	if exists && height-BtcClientCacheHeight > b.initHeight {
+		b.proverClient.SetInitHeight(int64(height - BtcClientCacheHeight))
+	}
+
+	////todo
+	//for index := b.initHeight; index < height; index++ {
+	//	logger.Debug("set btc client cache: %v", index)
+	//	err := b.setBtcClientCache(index)
+	//	if err != nil {
+	//		logger.Error("set btc client cache error: %v %v", index, err)
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
@@ -125,24 +140,53 @@ func (b *bitcoinAgent) ScanBlock() error {
 			logger.Error("write btc height error: %v %v", index, err)
 			return err
 		}
-	}
-	//todo
-	if b.mode == LiteMode && currentHeight-b.initHeight > BtcLiteCacheHeight {
-		eHeight := currentHeight - BtcLiteCacheHeight
-		sHeight := eHeight - BtcLiteCacheHeight
-		if sHeight < b.initHeight {
-			sHeight = b.initHeight
+		err = b.setBtcClientCache(index)
+		if err != nil {
+			logger.Error("set cache btc client error: %v %v", index, err)
 		}
-		for index := eHeight; index >= sHeight; index-- {
-			err := b.chainStore.BtcDeleteData(index)
-			if err != nil {
-				logger.Warn("delete btc data error: %v %v", index, err)
-				//return err
-			}
 
+	}
+	//err = b.cropData(currentHeight)
+	//if err != nil {
+	//	logger.Error("crop data error: %v %v", currentHeight, err)
+	//	return err
+	//}
+
+	return nil
+}
+
+func (b *bitcoinAgent) setBtcClientCache(height uint64) error {
+	cStartHeight := height - BtcClientCacheHeight
+	if cStartHeight > b.initHeight {
+		b.proverClient.SetInitHeight(int64(cStartHeight))
+		err := b.chainStore.DelBtcClientCache(cStartHeight)
+		if err != nil {
+			logger.Error("delete btc client cache error: %v %v", cStartHeight, err)
+			return err
 		}
 	}
 	return nil
+}
+
+func (b *bitcoinAgent) cropData(height uint64) error {
+	// todo
+	if !(b.mode == LiteMode && height%10 == 0 && height-b.initHeight > BtcLiteCacheHeight) {
+		return nil
+	}
+	eHeight := height - BtcLiteCacheHeight
+	sHeight := eHeight - BtcLiteCacheHeight
+	if sHeight < b.initHeight {
+		sHeight = b.initHeight
+	}
+	for index := eHeight; index >= sHeight; index-- {
+		err := b.chainStore.BtcDeleteData(index)
+		if err != nil {
+			logger.Warn("delete btc data error: %v %v", index, err)
+			//return err
+		}
+	}
+	return nil
+
 }
 
 func (b *bitcoinAgent) ReScan(height uint64) error {
