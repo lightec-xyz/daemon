@@ -52,6 +52,7 @@ const (
 	EthereumAgentName  = "ethereumAgent"
 	BeaconAgentName    = "beaconAgent"
 	BtcLiteCacheHeight = 24 * 6 * 45
+	ProofExpired       = 5 * time.Hour
 )
 
 type Mode string

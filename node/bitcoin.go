@@ -126,23 +126,35 @@ func (b *bitcoinAgent) ScanBlock() error {
 			return err
 		}
 	}
-	//todo
-	if b.mode == LiteMode && currentHeight-b.initHeight > BtcLiteCacheHeight {
-		eHeight := currentHeight - BtcLiteCacheHeight
-		sHeight := eHeight - BtcLiteCacheHeight
-		if sHeight < b.initHeight {
-			sHeight = b.initHeight
-		}
-		for index := eHeight; index >= sHeight; index-- {
-			err := b.chainStore.BtcDeleteData(index)
-			if err != nil {
-				logger.Warn("delete btc data error: %v %v", index, err)
-				//return err
-			}
+	err = b.cropData(currentHeight)
+	if err != nil {
+		logger.Error("crop data error: %v %v", currentHeight, err)
+		return err
+	}
 
+	return nil
+}
+
+func (b *bitcoinAgent) cropData(height uint64) error {
+	// todo
+	if !(b.mode == LiteMode && height%10 == 0 && height-b.initHeight > BtcLiteCacheHeight) {
+		return nil
+	}
+	eHeight := height - BtcLiteCacheHeight
+	sHeight := eHeight - BtcLiteCacheHeight
+	if sHeight < b.initHeight {
+		sHeight = b.initHeight
+	}
+	for index := eHeight; index >= sHeight; index-- {
+		err := b.chainStore.BtcDeleteData(index)
+		if err != nil {
+			logger.Warn("delete btc data error: %v %v", index, err)
+			//return err
 		}
+
 	}
 	return nil
+
 }
 
 func (b *bitcoinAgent) ReScan(height uint64) error {

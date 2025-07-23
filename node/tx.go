@@ -270,6 +270,14 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		}
 	}
 	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		if time.Now().Sub(time.Unix(tx.Timestamp, 0)) > ProofExpired {
+			logger.Warn("gas too high %v deposit proof long time not submit,regen again", txId)
+			err := t.chainStore.DeleteUnSubmitTx(tx.Hash)
+			if err != nil {
+				logger.Error("delete unSubmit tx error: %v %v", tx.Hash, err)
+			}
+			t.addBtcUnGenProof(tx.Hash)
+		}
 		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 		return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 	}
@@ -848,7 +856,7 @@ func NewDbUnSubmitTx(hash, proof string, proofType common.ProofType) DbUnSubmitT
 		Hash:      hash,
 		Proof:     proof,
 		ProofType: proofType,
-		Timestamp: time.Now().UnixNano(),
+		Timestamp: time.Now().Unix(),
 	}
 }
 
