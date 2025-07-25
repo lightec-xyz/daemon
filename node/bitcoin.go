@@ -77,6 +77,10 @@ func (b *bitcoinAgent) Init() error {
 			return err
 		}
 	}
+	if exists && height-BtcClientCacheHeight > b.initHeight {
+		b.proverClient.SetInitHeight(int64(height - BtcClientCacheHeight))
+	}
+
 	////todo
 	//for index := b.initHeight; index < height; index++ {
 	//	logger.Debug("set btc client cache: %v", index)
