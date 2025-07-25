@@ -7,6 +7,7 @@ type ILevelDb interface {
 	Delete(key []byte) error
 	Iterator(prefix []byte, start []byte) Iterator // todo
 	Iter(prefix []byte, start []byte, fn func(key, value []byte) error) error
+	Compact(start, limit []byte) error
 	Batch() IBatch
 }
 

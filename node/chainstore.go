@@ -22,6 +22,10 @@ func NewChainStore(store store.IStore) *ChainStore {
 	return &ChainStore{store: store}
 }
 
+func (cs *ChainStore) Compact(start, limit []byte) error {
+	return cs.store.Compact(start, limit)
+}
+
 func (cs *ChainStore) ReadRedeemTx(txId string) (*DbTx, bool, error) {
 	dbTxes, err := cs.ReadDbTxes(txId)
 	if err != nil {

@@ -12,6 +12,11 @@ type MemoryStore struct {
 	memoryDb *MemoryDb
 }
 
+func (m *MemoryStore) Compact(start, limit []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m *MemoryStore) WrapBatch(fn func(batch IBatch) error) error {
 	b := m.Batch()
 	err := fn(b)
