@@ -6,7 +6,6 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
-	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	btctypes "github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/store"
@@ -21,7 +20,7 @@ type BtcClient struct {
 }
 
 func (c *BtcClient) SetInitHeight(height int64) {
-	logger.Debug("set init height %v", height)
+	//logger.Debug("set init height %v", height)
 	c.initHeight = height
 }
 
@@ -65,7 +64,7 @@ func (c *BtcClient) GetHeaderByHeight(height int64) (string, error) {
 	header, err := c.headerByHeight(height)
 	if err != nil {
 		if height <= c.initHeight {
-			logger.Warn("headerByHeight error: %v %v %v ", height, c.initHeight, err)
+			//logger.Warn("headerByHeight error: %v %v %v ", height, c.initHeight, err)
 			return c.IClient.GetHeaderByHeight(height)
 		}
 		return "", err

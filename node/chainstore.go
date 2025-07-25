@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lightec-xyz/daemon/codec"
@@ -16,6 +17,7 @@ import (
 
 type ChainStore struct {
 	store store.IStore
+	lock  sync.Mutex
 }
 
 func NewChainStore(store store.IStore) *ChainStore {
@@ -23,6 +25,8 @@ func NewChainStore(store store.IStore) *ChainStore {
 }
 
 func (cs *ChainStore) Compact(start, limit []byte) error {
+	defer cs.lock.Unlock()
+	cs.lock.Lock()
 	return cs.store.Compact(start, limit)
 }
 

@@ -19,6 +19,7 @@ type IScheduler interface {
 	CheckPreBtcState() error
 	CheckBeaconState() error
 	UpdateBtcCp() error
+	StoreCompact() error
 }
 
 type Scheduler struct {

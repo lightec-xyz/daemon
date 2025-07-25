@@ -77,15 +77,15 @@ func (b *bitcoinAgent) Init() error {
 			return err
 		}
 	}
-	//todo
-	for index := b.initHeight; index < height; index++ {
-		logger.Debug("set btc client cache: %v", index)
-		err := b.setBtcClientCache(index)
-		if err != nil {
-			logger.Error("set btc client cache error: %v %v", index, err)
-			return err
-		}
-	}
+	////todo
+	//for index := b.initHeight; index < height; index++ {
+	//	logger.Debug("set btc client cache: %v", index)
+	//	err := b.setBtcClientCache(index)
+	//	if err != nil {
+	//		logger.Error("set btc client cache error: %v %v", index, err)
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
