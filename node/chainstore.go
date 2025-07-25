@@ -448,6 +448,29 @@ func (cs *ChainStore) ReadDbTxes(txId string) ([]*DbTx, error) {
 	return txes, err
 }
 
+func (cs *ChainStore) DelBtcClientCache(height uint64) error {
+	hash, ok, err := cs.ReadBitcoinHash(height)
+	if err != nil {
+		logger.Error("read btc hash error: %v %v", height, err)
+		return err
+	}
+	if !ok {
+		logger.Error("btc hash not exist: %v", height)
+		return fmt.Errorf("btc hash not exist: %v", height)
+	}
+	return cs.store.WrapBatch(func(batch store.IBatch) error {
+		err := batch.BatchDeleteObj(dbBtcHeaderKey(hash))
+		if err != nil {
+			return err
+		}
+		err = batch.BatchDeleteObj(dbBtcBlockKey(hash))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func (cs *ChainStore) BtcSaveData(height uint64, depositTxs, redeemTxes []*DbTx) error {
 	var redeemDestHashes []string
 	for _, tx := range redeemTxes {

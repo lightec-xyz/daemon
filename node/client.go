@@ -19,6 +19,10 @@ type BtcClient struct {
 	initHeight int64
 }
 
+func (c BtcClient) SetInitHeight(height int64) {
+	c.initHeight = height
+}
+
 func (c BtcClient) GetHeaderByHashStr(hash string) (string, error) {
 	header, err := c.headerByHash(hash)
 	if err != nil {

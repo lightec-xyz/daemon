@@ -206,7 +206,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, nil, syncCommitResp))
 	}
 	if !cfg.DisableBtcAgent {
-		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcClient, ethClient, dfinityClient, txManager, chainFork, fileStore)
+		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcProverClient, btcClient, ethClient, dfinityClient, txManager, chainFork, fileStore)
 		if err != nil {
 			logger.Error("new bitcoin agent error:%v", err)
 			return nil, err

@@ -42,17 +42,18 @@ const (
 	// MigrateProto operator migrate address
 	MigrateProto = "6a141234560000000000000000000000000000000000"
 	// MinDepositValue deposit min value
-	MinDepositValue    = float64(0.00021000) // 21000 sats
-	GeneratorVersion   = 1
-	NodeVersion        = "1.0.0"
-	RpcRegisterName    = "zkbtc"
-	BitcoinNetwork     = "bitcoin"
-	EthereumNetwork    = "ethereum"
-	BitcoinAgentName   = "bitcoinAgent"
-	EthereumAgentName  = "ethereumAgent"
-	BeaconAgentName    = "beaconAgent"
-	BtcLiteCacheHeight = 24 * 6 * 45
-	ProofExpired       = 5 * time.Hour
+	MinDepositValue      = float64(0.00021000) // 21000 sats
+	GeneratorVersion     = 1
+	NodeVersion          = "1.0.0"
+	RpcRegisterName      = "zkbtc"
+	BitcoinNetwork       = "bitcoin"
+	EthereumNetwork      = "ethereum"
+	BitcoinAgentName     = "bitcoinAgent"
+	EthereumAgentName    = "ethereumAgent"
+	BeaconAgentName      = "beaconAgent"
+	BtcLiteCacheHeight   = 24 * 6 * 45
+	ProofExpired         = 5 * time.Hour
+	BtcClientCacheHeight = 100
 )
 
 type Mode string
