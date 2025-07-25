@@ -20,12 +20,12 @@ type BtcClient struct {
 	initHeight int64
 }
 
-func (c BtcClient) SetInitHeight(height int64) {
+func (c *BtcClient) SetInitHeight(height int64) {
 	logger.Debug("set init height %v", height)
 	c.initHeight = height
 }
 
-func (c BtcClient) GetHeaderByHashStr(hash string) (string, error) {
+func (c *BtcClient) GetHeaderByHashStr(hash string) (string, error) {
 	header, err := c.headerByHash(hash)
 	if err != nil {
 		bHeader, iErr := c.btcClient.GetBlockHeader(hash)
@@ -41,7 +41,7 @@ func (c BtcClient) GetHeaderByHashStr(hash string) (string, error) {
 	return header, nil
 }
 
-func (c BtcClient) GetHeaderByHash(hash *chainhash.Hash) (string, error) {
+func (c *BtcClient) GetHeaderByHash(hash *chainhash.Hash) (string, error) {
 	header, err := c.GetHeaderByHashStr(hash.String())
 	if err != nil {
 		return "", err
@@ -49,7 +49,7 @@ func (c BtcClient) GetHeaderByHash(hash *chainhash.Hash) (string, error) {
 	return header, nil
 }
 
-func (c BtcClient) GetBlockHash(height int64) (*chainhash.Hash, error) {
+func (c *BtcClient) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	hash, err := c.blockHash(height)
 	if err != nil {
 		if height <= c.initHeight {
@@ -61,11 +61,11 @@ func (c BtcClient) GetBlockHash(height int64) (*chainhash.Hash, error) {
 	return hash, nil
 }
 
-func (c BtcClient) GetHeaderByHeight(height int64) (string, error) {
+func (c *BtcClient) GetHeaderByHeight(height int64) (string, error) {
 	header, err := c.headerByHeight(height)
 	if err != nil {
 		if height <= c.initHeight {
-			//logger.Warn("headerByHeight error: %v %v ", height, err)
+			logger.Warn("headerByHeight error: %v %v %v ", height, c.initHeight, err)
 			return c.IClient.GetHeaderByHeight(height)
 		}
 		return "", err
@@ -73,7 +73,7 @@ func (c BtcClient) GetHeaderByHeight(height int64) (string, error) {
 	return header, nil
 }
 
-func (c BtcClient) GetBlock(hash string) (*btcjson.GetBlockVerboseResult, error) {
+func (c *BtcClient) GetBlock(hash string) (*btcjson.GetBlockVerboseResult, error) {
 	block, err := c.readBlockFromDb(hash)
 	if err != nil {
 		bHeader, bErr := c.btcClient.GetBlockHeader(hash)
@@ -89,7 +89,7 @@ func (c BtcClient) GetBlock(hash string) (*btcjson.GetBlockVerboseResult, error)
 
 }
 
-func (c BtcClient) headerByHash(hash string) (string, error) {
+func (c *BtcClient) headerByHash(hash string) (string, error) {
 	header, ok, err := c.chainStore.ReadBlockHeader(hash)
 	if err != nil {
 		return "", err
@@ -100,14 +100,14 @@ func (c BtcClient) headerByHash(hash string) (string, error) {
 	return header, nil
 }
 
-func (c BtcClient) headerByHeight(height int64) (string, error) {
+func (c *BtcClient) headerByHeight(height int64) (string, error) {
 	hash, err := c.blockHash(height)
 	if err != nil {
 		return "", err
 	}
 	return c.headerByHash(hash.String())
 }
-func (c BtcClient) blockHash(height int64) (*chainhash.Hash, error) {
+func (c *BtcClient) blockHash(height int64) (*chainhash.Hash, error) {
 	hash, ok, err := c.chainStore.ReadBitcoinHash(uint64(height))
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (c BtcClient) blockHash(height int64) (*chainhash.Hash, error) {
 	return chainhash.NewHashFromStr(hash)
 }
 
-func (c BtcClient) readBlockFromDb(hash string) (*btcjson.GetBlockVerboseResult, error) {
+func (c *BtcClient) readBlockFromDb(hash string) (*btcjson.GetBlockVerboseResult, error) {
 	blockData, exists, err := c.chainStore.ReadBtcBlock(hash)
 	if err != nil {
 		return nil, err
