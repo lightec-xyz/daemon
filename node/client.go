@@ -6,6 +6,7 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
+	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	btctypes "github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/store"
@@ -13,13 +14,14 @@ import (
 
 // BtcClient why exists this client, because btc_provers use btcproverClient.IClient to get block header,it`s maybe get forked chain data
 type BtcClient struct {
-	btcproverClient.IClient
+	IClient    btcproverClient.IClient
 	btcClient  *bitcoin.Client
 	chainStore *ChainStore
 	initHeight int64
 }
 
 func (c BtcClient) SetInitHeight(height int64) {
+	logger.Debug("set init height %v", height)
 	c.initHeight = height
 }
 
@@ -74,9 +76,9 @@ func (c BtcClient) GetHeaderByHeight(height int64) (string, error) {
 func (c BtcClient) GetBlock(hash string) (*btcjson.GetBlockVerboseResult, error) {
 	block, err := c.readBlockFromDb(hash)
 	if err != nil {
-		bHeader, err := c.btcClient.GetBlockHeader(hash)
-		if err != nil {
-			return nil, err
+		bHeader, bErr := c.btcClient.GetBlockHeader(hash)
+		if bErr != nil {
+			return nil, bErr
 		}
 		if int64(bHeader.Height) <= c.initHeight {
 			return c.IClient.GetBlock(hash)
