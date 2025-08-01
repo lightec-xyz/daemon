@@ -6,17 +6,17 @@ import (
 
 const (
 	LightecNetwork        = "mainnet"
-	BtcOperatorAddress    = "bc1ququplway2l5prvt299j900s5sm3p6zw9r7d5lx84w0qgczd4sp5scxcpls"
-	BtcLockScript         = "0020e0381fbba457e811b16a296457be1486e21d09c51f9b4f98f573c08c09b58069"
-	BtcMultiSig           = "522102e510903d107b5594a5ee854eecb2858aeed5e84838c36fb12041676f71a17eba2103ea366ed0cfa0f48ee1e40ae321dab882f017fc8e7cb6a2159ced6fc42c6746da210218e65b47da2b63543f5b40c4b98532a97c737fa39c7e18d117bd3351eabbdc6c53ae"
-	EthZkBridgeAddress    = "0xB86E9A8391d3df83F53D3f39E3b5Fce4D7da405d"
-	EthZkBtcAddress       = "0x199CC8f0ac008Bdc8cF0B1CCd5187F84E168C4D2"
-	EthUtxoManagerAddress = "0x2635Dc72706478F4bD784A8D04B3e0af8AB053dc"
-	EthBtcTxVerifyAddress = "0x45bc26C34f9e6BA7704cBBf8dE090f2D1fEfA097"
-	FeePoolAddr           = "0x7be6F1ECac63c8562Da8fF769347c45fc4590bFb"
-	OasisSignerAddr       = "0xA81Fc99DBC654D68513B8C1475aFeC3B5d76496e"
-	IcpPublicKey          = "03183007b9afcfa519871885380d4dfd1144269d8050ec2a51992065af2a87d3df"
-	GenesisRoot           = "52bbd8287d0e455ce6cd732fa8a5f003e2ad82fd0ed3a59516f9ae1642f1b182"
+	BtcOperatorAddress    = "tb1quxl2g39x50vlc4ycne2hrrq8dl3cqv84prdnvzlrshm2a4dkt24snxa5nz"
+	BtcLockScript         = "0x0020e1bea444a6a3d9fc54989e55718c076fe38030f508db360be385f6aed5b65aab"
+	BtcMultiSig           = "0x522102fdb41469ab1536cbfadd8a659b2e2667795d6a98b7cb696c1626a70e937bbe142102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
+	EthZkBridgeAddress    = "0x8a6415Ff6865f0194ef2742fFfCe1Ab861212cb1"
+	EthZkBtcAddress       = "0xeCed2a18fB48B34671eE63E9370da5A9bE7493FB"
+	EthUtxoManagerAddress = "0x579D5Bc54629E9F2C1974A8058B3399fA3B8b7e2"
+	EthBtcTxVerifyAddress = "0x4991bD7f47221513E8c8e289CE0879c0C0C8bAC0"
+	FeePoolAddr           = "0x285d14dB804c41A03C50e6e11dbBe12B8eC4AfDc"
+	OasisSignerAddr       = "0x10622d51ABF42860111DA3329156f5ac56c135aF"
+	IcpPublicKey          = "0x02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b"
+	GenesisRoot           = "0x095016b5bb894d9076ed599e2ef0c54d88048d0d8192143b5008dac531a6a43a"
 	BtcScanTime           = 3 * time.Minute
 	EthScanTime           = 30 * time.Second
 
