@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	LightecNetwork        = "mainnet"
+	LightecNetwork        = "testnet"
 	BtcOperatorAddress    = "tb1quxl2g39x50vlc4ycne2hrrq8dl3cqv84prdnvzlrshm2a4dkt24snxa5nz"
 	BtcLockScript         = "0x0020e1bea444a6a3d9fc54989e55718c076fe38030f508db360be385f6aed5b65aab"
 	BtcMultiSig           = "0x522102fdb41469ab1536cbfadd8a659b2e2667795d6a98b7cb696c1626a70e937bbe142102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
