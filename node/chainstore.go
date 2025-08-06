@@ -64,23 +64,6 @@ func (cs *ChainStore) ReadRedeemTx(txId string) (*DbTx, bool, error) {
 	return nil, false, nil
 }
 
-func (cs *ChainStore) WriteDepositCount(height, count uint64) error {
-	return cs.store.PutObj(height, count)
-}
-func (cs *ChainStore) IncrDepositCount(height uint64) error {
-	count, _, err := cs.ReadDepositCount(height)
-	if err != nil {
-		return err
-	}
-	return cs.WriteDepositCount(height, count+1)
-}
-
-func (cs *ChainStore) ReadDepositCount(height uint64) (uint64, bool, error) {
-	var count uint64
-	exists, err := cs.store.GetValue(height, &count)
-	return count, exists, err
-}
-
 func (cs *ChainStore) WriteBtcBlock(hash string, block string) error {
 	return cs.store.PutObj(dbBtcBlockKey(hash), block)
 }

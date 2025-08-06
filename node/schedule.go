@@ -885,13 +885,6 @@ func (s *Scheduler) tryProofRequest(key StoreKey) (bool, error) {
 	}
 	s.queueManager.StoreId(proofId)
 	s.queueManager.PushRequest(req)
-	if req.ProofType == common.BtcDepositType {
-		err := s.chainStore.IncrDepositCount(req.FIndex)
-		if err != nil {
-			logger.Error("increment deposit count error:%v %v", proofId, err)
-			//return nil, false, err
-		}
-	}
 	logger.Info("success add request to queue :%v", proofId)
 	err = s.UpdateProofStatus(req, common.ProofQueued)
 	if err != nil {
@@ -1325,17 +1318,6 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 	if err != nil {
 		logger.Error("get raised error:%v", err)
 		return false, err
-	}
-	if raised {
-		return true, nil
-	}
-	count, ok, err := s.chainStore.ReadDepositCount(height)
-	if err != nil {
-		logger.Error("read deposit count error:%v", err)
-		return false, err
-	}
-	if ok && count >= 10 { //todo
-		return true, nil
 	}
 	return raised, nil
 }
