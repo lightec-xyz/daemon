@@ -185,7 +185,7 @@ func (s *Scheduler) CheckBtcState() error {
 		}
 		return nil
 	}
-	if !unSigProtect && len(unGenTxes) > 0 && exists {
+	if !unSigProtect && len(unGenTxes) > 0 && exists && icpSig.Height > 0 {
 		if latestHeight < icpSig.Height {
 			logger.Warn("unsigned protection is true,wait sync complete, latestHeight:%v,icpSig.Height:%v,skip check btc proof now", latestHeight, icpSig.Height)
 			return nil
@@ -1253,7 +1253,7 @@ func (s *Scheduler) BlockSignature() error {
 		logger.Error("get block sig error:%v", err)
 		return err
 	}
-	if sig.Signature == "" {
+	if sig.Signature == "" || sig.Height == 0 {
 		logger.Warn("block signature is empty:%v", sig.Height)
 		return nil
 	}
