@@ -196,7 +196,7 @@ func (s *Scheduler) CheckBtcState() error {
 			return err
 		}
 		if !ok {
-			logger.Error("no find bitcoin hash")
+			logger.Error("no find bitcoin hash:%v", icpSig.Height)
 			return err
 		}
 		if icpSig.Height < latestHeight || (icpSig.Height == latestHeight && !common.StrEqual(icpSig.Hash, hash)) {
