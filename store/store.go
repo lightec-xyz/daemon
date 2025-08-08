@@ -27,6 +27,10 @@ func NewStore(file string, cache int, handles int, namespace string, readonly bo
 	}, nil
 }
 
+func (s *Store) Compact(start, limit []byte) error {
+	return s.levelDb.Compact(start, limit)
+}
+
 func (s *Store) Close() error {
 	return s.levelDb.Close()
 }

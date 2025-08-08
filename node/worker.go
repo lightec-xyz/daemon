@@ -1,7 +1,6 @@
 package node
 
 import (
-	"encoding/hex"
 	"fmt"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/circuits"
@@ -219,11 +218,7 @@ func (w *LocalWorker) BtcChangeProve(req *rpc.BtcChangeRequest) (*rpc.ProofRespo
 		logger.Error("btc deposit hex to proof error: %v", err)
 		return nil, err
 	}
-	minerRewardBytes, err := hex.DecodeString(req.MinerReward)
-	if err != nil {
-		logger.Error("btc change hex to proof error: %v", err)
-		return nil, err
-	}
+	minerRewardBytes := ethCommon.FromHex(req.MinerReward)
 
 	proof, err := w.circuit.BtcRedeemProve(req.ChainType, req.ChainStep, req.TxDepthStep, req.CpDepthStep, req.TxRecursive,
 		req.CpRecursive, req.Data, blockChain, txDepth, cpDepth, redeem, timestamp, [32]byte(minerRewardBytes), ethCommon.HexToAddress(req.ProverAddr),
@@ -425,34 +420,14 @@ func (w *LocalWorker) redeem(req *rpc.RedeemRequest, front bool) (*rpc.RedeemRes
 		logger.Error("gen Redeem proof error: %v", err)
 		return nil, fmt.Errorf("gen Redeem proof error: %v", err)
 	}
-	txId, err := hex.DecodeString(req.TxId)
-	if err != nil {
-		logger.Error("gen Redeem proof error: %v", err)
-		return nil, fmt.Errorf("gen Redeem proof error: %v", err)
-	}
-	genesisScRoot, err := hex.DecodeString(req.GenesisScRoot)
-	if err != nil {
-		logger.Error(" genesisScRoot hex decode error: %v", err)
-		return nil, fmt.Errorf(" genesisScRoot hex decode error: %v", err)
-	}
-	currentScRoot, err := hex.DecodeString(req.CurrentSCSSZRoot)
-	if err != nil {
-		logger.Error(" currentScRoot hex decode error: %v", err)
-		return nil, fmt.Errorf(" currentScRoot hex decode error: %v", err)
-	}
+	txId := ethCommon.FromHex(req.TxId)
+	genesisScRoot := ethCommon.FromHex(req.GenesisScRoot)
+	currentScRoot := ethCommon.FromHex(req.CurrentSCSSZRoot)
 
-	minerRewardBytes, err := hex.DecodeString(req.MinerReward)
-	if err != nil {
-		logger.Error("gen Redeem proof error: %v", err)
-		return nil, fmt.Errorf("gen Redeem proof error: %v", err)
-	}
+	minerRewardBytes := ethCommon.FromHex(req.MinerReward)
 	var sigHashFixBytes [][32]byte
 	for _, hash := range req.SigHashes {
-		hashBytes, err := hex.DecodeString(hash)
-		if err != nil {
-			logger.Error("gen Redeem proof error: %v", err)
-			return nil, fmt.Errorf("gen Redeem proof error: %v", err)
-		}
+		hashBytes := ethCommon.FromHex(hash)
 		sigHashFixBytes = append(sigHashFixBytes, [32]byte(hashBytes))
 	}
 	logger.Debug(" worker Redeem prove genesisScSszRoot: %x, currentScSszRoot: %x,txid: %x, minerReward: %x,sigHashs: %x,nbBeaconHeaders: %v,isFront: %v",
@@ -558,21 +533,9 @@ func (w *LocalWorker) SyncCommDutyProve(req rpc.SyncCommDutyRequest) (*rpc.SyncC
 		logger.Error("hex to proof error %v", err)
 		return nil, err
 	}
-	genesisId, err := hex.DecodeString(req.BeginId)
-	if err != nil {
-		logger.Error("hex to proof error %v", err)
-		return nil, err
-	}
-	relayId, err := hex.DecodeString(req.RelayId)
-	if err != nil {
-		logger.Error("hex to proof error %v", err)
-		return nil, err
-	}
-	endId, err := hex.DecodeString(req.EndId)
-	if err != nil {
-		logger.Error("hex to proof error %v", err)
-		return nil, err
-	}
+	genesisId := ethCommon.FromHex(req.BeginId)
+	relayId := ethCommon.FromHex(req.RelayId)
+	endId := ethCommon.FromHex(req.EndId)
 	proof, recursive, err := w.circuit.SyncCommitteeDutyProve(req.Choice, first, second, outer, genesisId, relayId, endId,
 		req.ScIndex, req.Update)
 	if err != nil {

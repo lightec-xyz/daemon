@@ -144,7 +144,7 @@ func (c *Client) UtxoConfirm(txId string) (bool, error) {
 }
 
 func (c *Client) GetDepthByAmount(amount uint64, raise, blockSig bool) (uint32, error) {
-	depth, _, err := c.btcTxVerifyCall.GetDepthByAmount(nil, amount, raise, blockSig)
+	depth, err := c.btcTxVerifyCall.GetDepthByAmount(nil, amount, raise, blockSig)
 	if err != nil {
 		return 0, nil
 	}

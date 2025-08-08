@@ -6,18 +6,18 @@ import (
 
 const (
 	LightecNetwork        = "mainnet"
-	BtcOperatorAddress    = "bc1ququplway2l5prvt299j900s5sm3p6zw9r7d5lx84w0qgczd4sp5scxcpls"
-	BtcLockScript         = "0020e0381fbba457e811b16a296457be1486e21d09c51f9b4f98f573c08c09b58069"
-	BtcMultiSig           = "522102e510903d107b5594a5ee854eecb2858aeed5e84838c36fb12041676f71a17eba2103ea366ed0cfa0f48ee1e40ae321dab882f017fc8e7cb6a2159ced6fc42c6746da210218e65b47da2b63543f5b40c4b98532a97c737fa39c7e18d117bd3351eabbdc6c53ae"
-	EthZkBridgeAddress    = "0xB86E9A8391d3df83F53D3f39E3b5Fce4D7da405d"
+	BtcOperatorAddress    = "bc1qcwc08898aseahq2e5920m9395py3jjtm2xnt0s90slqra7cry2dq2xv9uq"
+	BtcLockScript         = "0020c3b0f39ca7ec33db8159a154fd9625a04919497b51a6b7c0af87c03efb03229a"
+	BtcMultiSig           = "522102e510903d107b5594a5ee854eecb2858aeed5e84838c36fb12041676f71a17eba2103beeb82e07222ca3b22057028311c052c9acd9b844310463086d033dabcb8c3fb210218e65b47da2b63543f5b40c4b98532a97c737fa39c7e18d117bd3351eabbdc6c53ae"
+	EthZkBridgeAddress    = "0xF90966fd006a5B18Cb0E3A0568226010CED426FD"
 	EthZkBtcAddress       = "0x199CC8f0ac008Bdc8cF0B1CCd5187F84E168C4D2"
-	EthUtxoManagerAddress = "0x2635Dc72706478F4bD784A8D04B3e0af8AB053dc"
-	EthBtcTxVerifyAddress = "0x45bc26C34f9e6BA7704cBBf8dE090f2D1fEfA097"
+	EthUtxoManagerAddress = "0x205a1E85C7d4d0fcd4344335120181aB5e796562"
+	EthBtcTxVerifyAddress = "0x1F0f891fB88287091DFc6225038336207374ec79"
 	FeePoolAddr           = "0x7be6F1ECac63c8562Da8fF769347c45fc4590bFb"
 	OasisSignerAddr       = "0xA81Fc99DBC654D68513B8C1475aFeC3B5d76496e"
 	IcpPublicKey          = "03183007b9afcfa519871885380d4dfd1144269d8050ec2a51992065af2a87d3df"
 	GenesisRoot           = "52bbd8287d0e455ce6cd732fa8a5f003e2ad82fd0ed3a59516f9ae1642f1b182"
-	BtcScanTime           = 1 * time.Minute
+	BtcScanTime           = 3 * time.Minute
 	EthScanTime           = 30 * time.Second
 
 	BlockSingerId = "xdqo6-dqaaa-aaaal-qsqva-cai"
@@ -42,16 +42,18 @@ const (
 	// MigrateProto operator migrate address
 	MigrateProto = "6a141234560000000000000000000000000000000000"
 	// MinDepositValue deposit min value
-	MinDepositValue    = float64(0.00021000) // 21000 sats
-	GeneratorVersion   = 1
-	NodeVersion        = "1.0.0"
-	RpcRegisterName    = "zkbtc"
-	BitcoinNetwork     = "bitcoin"
-	EthereumNetwork    = "ethereum"
-	BitcoinAgentName   = "bitcoinAgent"
-	EthereumAgentName  = "ethereumAgent"
-	BeaconAgentName    = "beaconAgent"
-	BtcLiteCacheHeight = 24 * 6 * 45
+	MinDepositValue      = float64(0.00021000) // 21000 sats
+	GeneratorVersion     = 1
+	NodeVersion          = "1.0.0"
+	RpcRegisterName      = "zkbtc"
+	BitcoinNetwork       = "bitcoin"
+	EthereumNetwork      = "ethereum"
+	BitcoinAgentName     = "bitcoinAgent"
+	EthereumAgentName    = "ethereumAgent"
+	BeaconAgentName      = "beaconAgent"
+	BtcLiteCacheHeight   = 24 * 6 * 45
+	ProofExpired         = 5 * time.Hour
+	BtcClientCacheHeight = 100
 )
 
 type Mode string

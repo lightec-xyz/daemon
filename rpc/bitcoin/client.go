@@ -70,6 +70,15 @@ func (c *Client) GetHexBlockHeader(hash string) (string, error) {
 	return header, err
 }
 
+func (c *Client) Testmempoolaccept(txRaws ...string) ([]TestMempoolAccept, error) {
+	var res []TestMempoolAccept
+	err := c.Call("testmempoolaccept", NewParams(txRaws), &res)
+	if err != nil {
+		return nil, err
+	}
+	return res, err
+}
+
 func (c *Client) GetBlockHash(blockCount int64) (string, error) {
 	var hash string
 	err := c.Call("getblockhash", NewParams(blockCount), &hash)

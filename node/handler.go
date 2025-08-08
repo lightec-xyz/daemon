@@ -35,6 +35,7 @@ type Handler struct {
 func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
 	logger.Warn("set gas price: %v", gasPrice)
 	h.txManager.setMaxGasPrice(gasPrice)
+	h.chainStore.WriteMaxGasPrice(gasPrice)
 	return "ok", nil
 }
 
@@ -286,7 +287,7 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 		//todo refactor
 		params, err := getProofParams(txId, h.miner, h.chainStore, h.btcClient, h.proverClient)
 		if err != nil {
-			logger.Error("get proof params error: %v %v", txId, err)
+			logger.Warn("get proof params error: %v %v", txId, err)
 			continue
 		}
 		results = append(results, rpc.ProofInfo{

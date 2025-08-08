@@ -31,6 +31,11 @@ func getProofParams(txId, miner string, chainStore *ChainStore, btcClient *bitco
 		logger.Warn("no find btc tx: %v", txId)
 		return nil, fmt.Errorf("no find btc tx:%v", txId)
 	}
+	if dbTx.LatestHeight == 0 {
+		logger.Warn("dbTx %v latest height is 0", txId)
+		return nil, fmt.Errorf("dbTx %v latest height is 0,wait for update", txId)
+	}
+
 	cpDepth := dbTx.LatestHeight - dbTx.CheckPointHeight
 	txDepth := dbTx.LatestHeight - dbTx.Height
 	cpHash, ok, err := chainStore.ReadCheckpoint(dbTx.CheckPointHeight)

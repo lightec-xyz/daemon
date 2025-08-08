@@ -2,6 +2,7 @@ package bitcoin
 
 import (
 	"fmt"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -16,10 +17,10 @@ func TestGenerateKeyPair(t *testing.T) {
 }
 
 func TestMultiAddress(t *testing.T) {
-	pubk1, _ := hexutil.Decode("0x0363f549d250342df02ee8b51ad6c9148dabc587c6569761ab58aa68488bd2e2c5")
-	pubk2, _ := hexutil.Decode("0x031cbb294f9955d80f65d9499feaeb5cb29d44c070adddd75cd48a40791d39b971")
-	pubk3, _ := hexutil.Decode("0x035c54e8287a7f7ba31886249fc89f295a4cb74cebf0d925f1eafe87f22fba57f9")
-
+	pubk1 := ethCommon.FromHex("0x02e510903d107b5594a5ee854eecb2858aeed5e84838c36fb12041676f71a17eba")
+	pubk2 := ethCommon.FromHex("0x03ea366ed0cfa0f48ee1e40ae321dab882f017fc8e7cb6a2159ced6fc42c6746da")
+	pubk3 := ethCommon.FromHex("0218e65b47da2b63543f5b40c4b98532a97c737fa39c7e18d117bd3351eabbdc6c")
+	//0x522102e510903d107b5594a5ee854eecb2858aeed5e84838c36fb12041676f71a17eba2103ea366ed0cfa0f48ee1e40ae321dab882f017fc8e7cb6a2159ced6fc42c6746da210218e65b47da2b63543f5b40c4b98532a97c737fa39c7e18d117bd3351eabbdc6c53ae
 	var pubBytesList [][]byte
 	pubBytesList = append(pubBytesList, pubk1)
 	pubBytesList = append(pubBytesList, pubk2)

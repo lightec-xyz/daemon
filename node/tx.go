@@ -22,6 +22,7 @@ import (
 	"github.com/lightec-xyz/daemon/store"
 	redeemUtils "github.com/lightec-xyz/provers/utils/redeem-tx"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,6 +80,15 @@ func (t *TxManager) init() error {
 		if err != nil {
 			return err
 		}
+	}
+	gasPrice, ok, err := t.chainStore.ReadMaxGasPrice()
+	if err != nil {
+		logger.Error("read max gas price error:%v", err)
+		return err
+	}
+	if ok {
+		logger.Debug("set max gas price:%v", gasPrice)
+		t.maxGasPrice = big.NewInt(0).SetUint64(gasPrice)
 	}
 	logger.Debug("current miner %v chaiNonce:%v", t.submitAddr, nonce)
 	return nil
@@ -270,6 +280,14 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		}
 	}
 	if gasPrice.Cmp(t.maxGasPrice) > 0 {
+		if time.Now().Sub(time.Unix(tx.Timestamp, 0)) > ProofExpired {
+			logger.Warn("gas too high %v deposit proof long time not submit,regen again", txId)
+			err := t.chainStore.DeleteUnSubmitTx(tx.Hash)
+			if err != nil {
+				logger.Error("delete unSubmit tx error: %v %v", tx.Hash, err)
+			}
+			t.addBtcUnGenProof(tx.Hash)
+		}
 		logger.Error("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 		return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 	}
@@ -543,21 +561,33 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 }
 
 func (t *TxManager) signBtc(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int,
-	signFns ...func(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error)) ([][][]byte, error) {
-	var signatures [][][]byte
-	for _, signFn := range signFns {
-		signature, err := signFn(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward)
+	fns ...*SignFn) ([][][]byte, error) {
+	var signatures []*SigRes
+	for _, fn := range fns {
+		signature, err := fn.Sign(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward)
 		if err != nil {
 			logger.Error("sign btc tx error: %v %v", btcTxId, err)
 			continue
 		}
-		signatures = append(signatures, signature)
+		signatures = append(signatures, &SigRes{
+			Index: fn.Index,
+			Sigs:  signature,
+		})
 		if len(signatures) >= 2 {
-			return signatures, nil
+			break
 		}
 	}
-	return nil, fmt.Errorf("sign btc tx error: %v", btcTxId)
-
+	if len(signatures) < 2 {
+		return nil, fmt.Errorf("sign btc tx error: %v", btcTxId)
+	}
+	sort.SliceStable(signatures, func(i, j int) bool {
+		return signatures[i].Index < signatures[j].Index
+	})
+	var signaturesBytes [][][]byte
+	for _, signature := range signatures {
+		signaturesBytes = append(signaturesBytes, signature.Sigs)
+	}
+	return signaturesBytes, nil
 }
 
 func (t *TxManager) SignerBtc(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][][]byte, error) {
@@ -567,10 +597,10 @@ func (t *TxManager) SignerBtc(currentScRoot, ethTxHash, btcTxId, proof string, s
 	var err error
 	if t.randCount%5 == 0 {
 		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward,
-			t.sgxSign, t.icpSign, t.oasisSign)
+			newSignFn(2, t.sgxSign), newSignFn(3, t.icpSign), newSignFn(1, t.oasisSign))
 	} else {
 		signatures, err = t.signBtc(currentScRoot, ethTxHash, btcTxId, proof, sigHashes, minerReward,
-			t.sgxSign, t.oasisSign, t.icpSign)
+			newSignFn(2, t.sgxSign), newSignFn(1, t.oasisSign), newSignFn(3, t.icpSign))
 	}
 	if err != nil {
 		logger.Error("sign btc tx error: %v %v", btcTxId, err)
@@ -848,7 +878,7 @@ func NewDbUnSubmitTx(hash, proof string, proofType common.ProofType) DbUnSubmitT
 		Hash:      hash,
 		Proof:     proof,
 		ProofType: proofType,
-		Timestamp: time.Now().UnixNano(),
+		Timestamp: time.Now().Unix(),
 	}
 }
 
@@ -916,4 +946,21 @@ func proofExpired(err error) bool {
 	}
 	return false
 
+}
+
+func newSignFn(index int, fn func(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error)) *SignFn {
+	return &SignFn{
+		Index: index,
+		Sign:  fn,
+	}
+}
+
+type SigRes struct {
+	Index int
+	Sigs  [][]byte
+}
+
+type SignFn struct {
+	Index int
+	Sign  func(currentScRoot, ethTxHash, btcTxId, proof string, sigHashes []string, minerReward *big.Int) ([][]byte, error)
 }
