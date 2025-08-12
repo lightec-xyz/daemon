@@ -102,7 +102,7 @@ func TestClient_SuggestedCP(t *testing.T) {
 }
 
 func TestClient_GetMinTxDepth(t *testing.T) {
-	depth, err := client.GetDepthByAmount(908952, false, true)
+	depth, err := client.GetDepthByAmount(3300000, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}

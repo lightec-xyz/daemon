@@ -905,6 +905,10 @@ func (cs *ChainStore) ReadDestHash(key string) (string, error) {
 	return value, nil
 }
 
+func (cs *ChainStore) DelDbProof(txId string) error {
+	return cs.store.DeleteObj(dbProofId(txId))
+}
+
 func (cs *ChainStore) ReadDbProof(txId string) (DbProof, error) {
 	var proof DbProof
 	err := cs.store.GetObj(dbProofId(txId), &proof)

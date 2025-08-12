@@ -82,6 +82,13 @@ type DbTx struct {
 	SigSigned        bool // flag: if icp block hash signed
 }
 
+func (t *DbTx) GenReset() {
+	t.LatestHeight = 0
+	t.CheckPointHeight = 0
+	t.GenProofNums = t.GenProofNums + 1
+	t.SigSigned = false
+}
+
 type DbProof struct {
 	TxHash    string           `json:"txId"`
 	ProofType common.ProofType `json:"type"`

@@ -843,6 +843,11 @@ func (t *TxManager) addBtcUnGenProof(txId string) error {
 		logger.Error("del proof error: %v", err)
 		//return err
 	}
+	err = t.chainStore.DelDbProof(txId)
+	if err != nil {
+		logger.Error("del db proof error: %v %v", txId, err)
+		//return err
+	}
 	// re select latest height to gen proof
 	tx.LatestHeight = 0
 	tx.CheckPointHeight = 0
