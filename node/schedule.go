@@ -288,8 +288,9 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
 		}
-		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v",
-			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight, unSigProtect)
+		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v,retryNums:%v",
+			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
+			unSigProtect, btcDbTx.GenProofNums)
 		switch unGenTx.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType:
 			err := s.checkBtcDepositRequest(unGenTx.ProofType, btcDbTx)
@@ -512,7 +513,7 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 		logger.Error("get min tx depth error:%v", err)
 		return false, err
 	}
-	txOk := tx.LatestHeight-tx.Height >= uint64(txMinDepth)
+	txOk := tx.LatestHeight-tx.Height >= uint64(txMinDepth)+getDelayBlock(uint(tx.GenProofNums))
 	if cpOk && txOk {
 		return true, nil
 	}
@@ -1437,8 +1438,8 @@ func getDelayBlock(nums uint) uint64 {
 		return 0
 	}
 	value := uint64(1) << nums
-	if value >= 32 {
-		value = 32
+	if value >= 16 {
+		value = 16
 	}
 	return value
 }
