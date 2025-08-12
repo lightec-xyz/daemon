@@ -134,6 +134,15 @@ func (s *Scheduler) updateBtcCp() error {
 
 func (s *Scheduler) checkTxesDepth(latestHeight, cpHeight uint64, unGenTxes []*DbUnGenProof, signed bool) (bool, error) {
 	for _, unGenTx := range unGenTxes {
+		dbTx, ok, err := s.chainStore.ReadBtcTx(unGenTx.Hash)
+		if err != nil {
+			logger.Error("read btc tx error:%v %v", unGenTx.Hash, err)
+			return false, err
+		}
+		if !ok {
+			logger.Warn("never should happen,no find btc tx:%v", unGenTx.Hash)
+			continue
+		}
 		raised, err := s.getTxRaised(unGenTx.Height, unGenTx.Amount)
 		if err != nil {
 			logger.Error("get tx raised error:%v", err)
@@ -145,7 +154,8 @@ func (s *Scheduler) checkTxesDepth(latestHeight, cpHeight uint64, unGenTxes []*D
 			logger.Error("get min tx depth error:%v", err)
 			return false, err
 		}
-		txOk := latestHeight-unGenTx.Height >= uint64(txMinDepth)
+		// retry need to delay block
+		txOk := latestHeight-unGenTx.Height >= uint64(txMinDepth)+getDelayBlock(uint(dbTx.GenProofNums))
 		if cpOk && txOk {
 			return true, nil
 		}
@@ -1420,4 +1430,15 @@ func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prep
 		ethClient:    ethClient,
 		icpClient:    icpClient,
 	}, nil
+}
+
+func getDelayBlock(nums uint) uint64 {
+	if nums == 0 {
+		return 0
+	}
+	value := uint64(1) << nums
+	if value >= 16 {
+		value = 16
+	}
+	return value
 }

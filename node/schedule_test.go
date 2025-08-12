@@ -12,3 +12,10 @@ func TestDemo01(t *testing.T) {
 	t.Logf("startIndex: %v, endIndex: %v", startIndex, endIndex)
 
 }
+
+func TestDelay(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		value := getDelayBlock(uint(i))
+		t.Log(value)
+	}
+}
