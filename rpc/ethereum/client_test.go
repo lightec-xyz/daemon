@@ -15,7 +15,7 @@ var err error
 var client *Client
 
 var endpoint = "http://127.0.0.1:14000"
-var zkBridgeAddr = "0xB86E9A8391d3df83F53D3f39E3b5Fce4D7da405d"
+var zkBridgeAddr = "0xF90966fd006a5B18Cb0E3A0568226010CED426FD"
 var utxoManager = "0x2635Dc72706478F4bD784A8D04B3e0af8AB053dc"
 var btcTxVerifyAddr = "0x1F0f891fB88287091DFc6225038336207374ec79"
 var zkbtcAddr = "0x199CC8f0ac008Bdc8cF0B1CCd5187F84E168C4D2"
@@ -70,7 +70,7 @@ func TestClient_SuggestBtcMinerFee(t *testing.T) {
 }
 
 func TestClient_GetRaised(t *testing.T) {
-	raised, err := client.GetRaised("0000000000000001e7a798ae790a9df0befa97d78816d8da1ae46f17b27547ed", 100)
+	raised, err := client.GetRaised("000000000000000000002d7e53dd67e5db28b6d07e3a4b301b1fd9c8865da8c7", 29716)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestClient_SuggestedCP(t *testing.T) {
 }
 
 func TestClient_GetMinTxDepth(t *testing.T) {
-	depth, err := client.GetDepthByAmount(908952, false, true)
+	depth, err := client.GetDepthByAmount(29716, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}

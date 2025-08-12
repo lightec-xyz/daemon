@@ -30,7 +30,12 @@ var scRootCmd = &cobra.Command{
 			fmt.Printf("get period error: %v \n", err)
 			return
 		}
-		fmt.Printf("period: %v genesisSlot: %v \n", period, genesisSlot)
+		network, err := cmd.Flags().GetString("network")
+		if err != nil {
+			fmt.Printf("get network error: %v \n", err)
+			return
+		}
+		fmt.Printf("period: %v genesisSlot: %v,network: %v \n", period, genesisSlot, network)
 		cfgBytes, err := os.ReadFile(cfgFile)
 		if err != nil {
 			fmt.Printf("read config error: %v %v \n", cfgFile, err)
@@ -48,13 +53,13 @@ var scRootCmd = &cobra.Command{
 			fmt.Printf("new config error: %v \n", err)
 			return
 		}
-		fileStorage, err := node.NewFileStorage(config.Datadir, 0, 0)
+		fileStorage, err := node.NewFileStorage(config.Datadir, uint64(genesisSlot), 0)
 		if err != nil {
 			fmt.Printf("new fileStorage error: %v \n", err)
 			return
 		}
 		prepared, err := node.NewPreparedData(fileStorage, nil, uint64(genesisSlot), 0, nil, nil,
-			nil, nil, nil, "", false)
+			nil, nil, nil, "", network, false)
 		if err != nil {
 			fmt.Printf("new preparedData error: %v \n", err)
 			return
@@ -80,5 +85,6 @@ var scRootCmd = &cobra.Command{
 func init() {
 	scRootCmd.Flags().Int("period", 0, "the period of the sc root")
 	scRootCmd.Flags().Int("genesisSlot", 0, "the period of the sc root")
+	scRootCmd.Flags().String("network", "mainnet", "network(mainnet,testnet)")
 	rootCmd.AddCommand(scRootCmd)
 }

@@ -30,12 +30,42 @@ type Handler struct {
 	btcClient    *bitcoin.Client         // todo
 	proverClient btcproverClient.IClient // todo
 	miner        string
+	network      string
+}
+
+func (h *Handler) AutoSubmitMaxValue(max uint64) (string, error) {
+	logger.Debug("set auto submit max value: %v", max)
+	if max == 0 {
+		return "", fmt.Errorf("max value is 0")
+	}
+	err := h.chainStore.WriteSubmitMaxValue(max)
+	if err != nil {
+		return "", err
+	}
+	h.txManager.setSubmitMax(max)
+	return "ok", nil
+}
+
+func (h *Handler) AutoSubmitMinValue(min uint64) (string, error) {
+	logger.Debug("set auto submit min value: %v", min)
+	if min == 0 {
+		return "", fmt.Errorf("min value is 0")
+	}
+	err := h.chainStore.WriteSubmitMinValue(min)
+	if err != nil {
+		return "", err
+	}
+	h.txManager.setSubmitMin(min)
+	return "ok", nil
 }
 
 func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
 	logger.Warn("set gas price: %v", gasPrice)
+	err := h.chainStore.WriteMaxGasPrice(gasPrice)
+	if err != nil {
+		return "", err
+	}
 	h.txManager.setMaxGasPrice(gasPrice)
-	h.chainStore.WriteMaxGasPrice(gasPrice)
 	return "ok", nil
 }
 
@@ -126,32 +156,13 @@ func (h *Handler) RemoveUnSubmitTx(hash string) (string, error) {
 	return "ok", err
 }
 
-func (h *Handler) ProofTask(id string) (*rpc.ProofTaskInfo, error) {
-	taskInfo, err := h.chainStore.ReadAllTaskTime(id)
-	if err != nil {
-		logger.Error("read queue time error: %v %v", id, err)
-		return nil, err
-	}
-	logger.Info("proof task: %v, queue time: %v, generating time: %v, proof time: %v", id,
-		taskInfo.QueueTime, taskInfo.GeneratingTime, taskInfo.EndTime)
-	return &rpc.ProofTaskInfo{
-		Id:             id,
-		QueueTime:      taskInfo.QueueTime,
-		GeneratingTime: taskInfo.GeneratingTime,
-		EndTime:        taskInfo.EndTime,
-	}, nil
-}
-
-func (h *Handler) PendingTask() ([]*rpc.ProofTaskInfo, error) {
+func (h *Handler) PendingTask() ([]*rpc.ProofTask, error) {
 	proofList := h.manager.PendingProofRequest()
-	var proofInfos []*rpc.ProofTaskInfo
+	var proofInfos []*rpc.ProofTask
 	for _, proof := range proofList {
-		taskInfo, err := h.ProofTask(proof.FileKey.String())
-		if err != nil {
-			logger.Error("read proof task error: %v %v", proof.FileKey, err)
-			return nil, err
-		}
-		proofInfos = append(proofInfos, taskInfo)
+		proofInfos = append(proofInfos, &rpc.ProofTask{
+			Id: proof.ProofId(),
+		})
 	}
 	return proofInfos, nil
 }
@@ -285,9 +296,9 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 			return nil, err
 		}
 		//todo refactor
-		params, err := getProofParams(txId, h.miner, h.chainStore, h.btcClient, h.proverClient)
+		params, err := getProofParams(txId, h.miner, h.network, h.chainStore, h.btcClient, h.proverClient)
 		if err != nil {
-			logger.Warn("get proof params error: %v %v", txId, err)
+			//logger.Warn("get proof params error: %v %v", txId, err)
 			continue
 		}
 		results = append(results, rpc.ProofInfo{
@@ -329,7 +340,7 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 }
 
 func NewHandler(txManager *TxManager, manager IManager, ethReScan, btcReScan chan *ReScnSignal, store store.IStore, fileStore *FileStorage, exitCh chan os.Signal,
-	btcClient *bitcoin.Client, proverClient btcproverClient.IClient, miner string) *Handler {
+	btcClient *bitcoin.Client, proverClient btcproverClient.IClient, miner, network string) *Handler {
 	return &Handler{
 		txManager:    txManager,
 		chainStore:   NewChainStore(store),
@@ -341,5 +352,6 @@ func NewHandler(txManager *TxManager, manager IManager, ethReScan, btcReScan cha
 		btcClient:    btcClient,
 		proverClient: proverClient,
 		miner:        miner,
+		network:      network,
 	}
 }

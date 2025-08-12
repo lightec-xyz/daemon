@@ -3,6 +3,7 @@ package rpc
 import (
 	"encoding/hex"
 	"testing"
+	"time"
 )
 
 // var secretKey = []byte("your-secret-key")
@@ -13,7 +14,7 @@ func TestNewJwt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	jwt, err := CreateJWT(hexSec, JwtPermission)
+	jwt, err := CreateJWT(hexSec, JwtPermission, 100*24*time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}

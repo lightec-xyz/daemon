@@ -134,6 +134,15 @@ func (s *Scheduler) updateBtcCp() error {
 
 func (s *Scheduler) checkTxesDepth(latestHeight, cpHeight uint64, unGenTxes []*DbUnGenProof, signed bool) (bool, error) {
 	for _, unGenTx := range unGenTxes {
+		dbTx, ok, err := s.chainStore.ReadBtcTx(unGenTx.Hash)
+		if err != nil {
+			logger.Error("read btc tx error:%v %v", unGenTx.Hash, err)
+			return false, err
+		}
+		if !ok {
+			logger.Warn("never should happen,no find btc tx:%v", unGenTx.Hash)
+			continue
+		}
 		raised, err := s.getTxRaised(unGenTx.Height, unGenTx.Amount)
 		if err != nil {
 			logger.Error("get tx raised error:%v", err)
@@ -145,7 +154,8 @@ func (s *Scheduler) checkTxesDepth(latestHeight, cpHeight uint64, unGenTxes []*D
 			logger.Error("get min tx depth error:%v", err)
 			return false, err
 		}
-		txOk := latestHeight-unGenTx.Height >= uint64(txMinDepth)
+		// retry need to delay block
+		txOk := latestHeight-unGenTx.Height >= uint64(txMinDepth)+getDelayBlock(uint(dbTx.GenProofNums))
 		if cpOk && txOk {
 			return true, nil
 		}
@@ -278,8 +288,9 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
 		}
-		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v",
-			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight, unSigProtect)
+		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v,retryNums:%v",
+			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
+			unSigProtect, btcDbTx.GenProofNums)
 		switch unGenTx.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType:
 			err := s.checkBtcDepositRequest(unGenTx.ProofType, btcDbTx)
@@ -502,7 +513,7 @@ func (s *Scheduler) updateBtcTxDepth(curHeight, cpHeight uint64, signed, raised 
 		logger.Error("get min tx depth error:%v", err)
 		return false, err
 	}
-	txOk := tx.LatestHeight-tx.Height >= uint64(txMinDepth)
+	txOk := tx.LatestHeight-tx.Height >= uint64(txMinDepth)+getDelayBlock(uint(tx.GenProofNums))
 	if cpOk && txOk {
 		return true, nil
 	}
@@ -1394,6 +1405,10 @@ func (s *Scheduler) addRequestToPending(req *common.ProofRequest) {
 	s.queueManager.AddPending(req.ProofId(), req)
 }
 
+func (s *Scheduler) GetPendingRequest(proofId string) (*common.ProofRequest, bool) {
+	return s.queueManager.GetPending(proofId)
+}
+
 func (s *Scheduler) removeRequest(proofId string) {
 	s.queueManager.DeletePending(proofId)
 	s.queueManager.DeleteId(proofId)
@@ -1420,4 +1435,16 @@ func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prep
 		ethClient:    ethClient,
 		icpClient:    icpClient,
 	}, nil
+}
+
+func getDelayBlock(nums uint) uint64 {
+	if nums == 0 {
+		return 0
+	}
+	value := uint64(1) << nums
+	if value >= 16 {
+		value = 16
+		return value * uint64(nums-3)
+	}
+	return value
 }

@@ -1,43 +1,16 @@
 package node
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/lightec-xyz/daemon/common"
+	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
 	"math/big"
-	"strconv"
-	"sync"
 	"time"
 )
 
-type WorkerCount struct {
-	worker map[string]time.Time
-	sync.Mutex
-}
-
-func NewWorkerCount() *WorkerCount {
-	return &WorkerCount{
-		worker: make(map[string]time.Time),
-	}
-}
-
-func (w *WorkerCount) AddWorker(workerId string) {
-	w.Lock()
-	defer w.Unlock()
-	w.worker[workerId] = time.Now()
-}
-
-func (w *WorkerCount) Len() int {
-	w.Lock()
-	defer w.Unlock()
-	for id, t := range w.worker {
-		//todo
-		if time.Now().Sub(t) > 2*time.Hour {
-			delete(w.worker, id)
-		}
-	}
-	return len(w.worker)
+type ZkParams struct {
+	*zkbridge.IBtcTxVerifierPublicWitnessParams
+	amount *big.Int
 }
 
 type Notify struct {
@@ -46,16 +19,6 @@ type Notify struct {
 type WrapSyncCommittee struct {
 	*proverType.SyncCommittee
 	Version string
-}
-
-type UpdateCp struct {
-	Height    uint64
-	BlockTime uint64
-	TxId      string
-}
-
-type BlockHeader struct {
-	Headers []string
 }
 
 type ReScnSignal struct {
@@ -141,72 +104,12 @@ func (f *FetchResponse) Id() string {
 	return f.FetchId
 }
 
-type Utxo struct {
-	TxId  string `json:"txId"`
-	Index uint32 `json:"FIndex"`
-}
-
-type TxOut struct {
-	Value    int64
-	PkScript []byte
-}
-
-func formatUtxo(utxos []Utxo) string {
-	var buf bytes.Buffer
-	for _, vin := range utxos {
-		buf.WriteString(vin.TxId)
-		buf.WriteString(":")
-		buf.WriteString(strconv.Itoa(int(vin.Index)))
-		buf.WriteString(",")
-	}
-	return buf.String()
-}
-func formatOut(outputs []TxOut) string {
-	var buf bytes.Buffer
-	for _, out := range outputs {
-		buf.WriteString(fmt.Sprintf("%x", out.PkScript))
-		buf.WriteString(":")
-		buf.WriteString(fmt.Sprintf("%v", out.Value))
-		buf.WriteString(",")
-	}
-	return buf.String()
-}
-
-type Transaction struct {
-	Height    uint64
-	TxIndex   uint
-	Hash      string
-	BlockHash string
-	BlockTime uint64
-	TxType    common.TxType
-	ChainType common.ChainType
-	ProofType common.ProofType
-
-	Proved bool
-	Amount int64
-	// bitcoin chain
-	EthAddr string
-	BtcFrom []string
-	Utxo    []Utxo
-	// ethereum chain
-	LogIndex  uint
-	UtxoId    string
-	UtxoIndex int64
-	Sender    string
-	Receiver  string
-}
-
 type ChainIndex struct {
 	Genesis uint64
 	Start   uint64
 	End     uint64
 	Step    uint64
 	PreStep uint64
-}
-
-type RedeemReward struct {
-	TxId   string
-	Reward *big.Int
 }
 
 type UniqueList struct {

@@ -3,16 +3,13 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/lightec-xyz/daemon/codec"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
+	"sort"
+	"strings"
+	"sync"
 )
 
 type ChainStore struct {
@@ -22,6 +19,57 @@ type ChainStore struct {
 
 func NewChainStore(store store.IStore) *ChainStore {
 	return &ChainStore{store: store}
+}
+
+func (cs *ChainStore) DeleteBtcTxParam(txId string) error {
+	return cs.store.DeleteObj(dbBtcTxParamKey(txId))
+}
+
+func (cs *ChainStore) WriteBtcTxParam(txId string, param interface{}) error {
+	paramBytes, err := json.Marshal(param)
+	if err != nil {
+		return err
+	}
+	return cs.store.PutObj(dbBtcTxParamKey(txId), string(paramBytes))
+}
+
+func (cs *ChainStore) ReadBtcTxParam(txId string) (*common.ProofRequest, bool) {
+	var data string
+	err := cs.store.GetObj(dbBtcTxParamKey(txId), &data)
+	if err != nil {
+		return nil, false
+	}
+	req := &common.ProofRequest{}
+	err = json.Unmarshal([]byte(data), req)
+	if err != nil {
+		return nil, false
+	}
+	return req, true
+}
+
+func (cs *ChainStore) WriteSubmitMaxValue(value uint64) error {
+	return cs.store.PutObj(submitMaxValueKey, value)
+}
+func (cs *ChainStore) ReadSubmitMaxValue() (uint64, bool, error) {
+	var value uint64
+	err := cs.store.GetObj(submitMaxValueKey, &value)
+	if err != nil {
+		return 0, false, nil
+	}
+	return value, true, nil
+}
+
+func (cs *ChainStore) WriteSubmitMinValue(value uint64) error {
+	return cs.store.PutObj(submitMinValueKey, value)
+}
+
+func (cs *ChainStore) ReadSubmitMinValue() (uint64, bool, error) {
+	var value uint64
+	err := cs.store.GetObj(submitMinValueKey, &value)
+	if err != nil {
+		return 0, false, nil
+	}
+	return value, true, nil
 }
 
 func (cs *ChainStore) WriteMaxGasPrice(price uint64) error {
@@ -905,6 +953,10 @@ func (cs *ChainStore) ReadDestHash(key string) (string, error) {
 	return value, nil
 }
 
+func (cs *ChainStore) DelDbProof(txId string) error {
+	return cs.store.DeleteObj(dbProofId(txId))
+}
+
 func (cs *ChainStore) ReadDbProof(txId string) (DbProof, error) {
 	var proof DbProof
 	err := cs.store.GetObj(dbProofId(txId), &proof)
@@ -1088,29 +1140,6 @@ func (cs *ChainStore) ReadUnGenProofs(chainType common.ChainType) ([]*DbUnGenPro
 	return txes, nil
 }
 
-func (cs *ChainStore) WriteDepositAddrPrefix(txes []*Transaction) error {
-	batch := cs.store.Batch()
-	for _, tx := range txes {
-		if tx.TxType == common.DepositTx {
-			for _, addr := range tx.BtcFrom {
-				err := batch.BatchPutObj(dbAddrPrefixTxId(addr, common.DepositTx, tx.Hash), nil)
-				if err != nil {
-					logger.Error("put addr prefix tx error:%v", err)
-					return err
-				}
-			}
-
-		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put addr tx batch error:%v", err)
-		return err
-	}
-	return nil
-
-}
-
 func (cs *ChainStore) WriteAddrPrefixTx(txes []*DbTx) error {
 	addrPrefixTxes := txesByAddrGroup(txes)
 	for addr, addrDbTxes := range addrPrefixTxes {
@@ -1170,66 +1199,8 @@ func (cs *ChainStore) WriteTxSlot(txSlot uint64, tx *DbUnGenProof) error {
 	return cs.store.PutObj(dbTxSlotId(txSlot, tx.Hash), tx)
 }
 
-func (cs *ChainStore) DeleteTxSlot(txSlot uint64, txHash string) error {
-	return cs.store.DeleteObj(dbTxSlotId(txSlot, txHash))
-}
-
-func (cs *ChainStore) ReadAllTxBySlot(txSlot uint64) ([]*DbUnGenProof, error) {
-	var txes []*DbUnGenProof
-	iterator := cs.store.Iterator(dbTxSlotId(txSlot, ""), nil)
-	defer iterator.Release()
-	for iterator.Next() {
-		var tx DbUnGenProof
-		err := codec.Unmarshal(iterator.Value(), &tx)
-		if err != nil {
-			logger.Error("unmarshal tx error:%v", err)
-			return nil, err
-		}
-		txes = append(txes, &tx)
-	}
-	if err := iterator.Error(); err != nil {
-		return nil, err
-	}
-	sort.SliceStable(txes, func(i, j int) bool {
-		if txes[i].Height == txes[j].Height {
-			return txes[i].TxIndex < txes[j].TxIndex
-		}
-		return txes[i].Height < txes[j].Height
-	})
-	return txes, nil
-}
-
 func (cs *ChainStore) WriteTxFinalizedSlot(txSlot uint64, tx *DbUnGenProof) error {
 	return cs.store.PutObj(dbTxFinalizeSlotId(txSlot, tx.Hash), tx)
-}
-
-func (cs *ChainStore) DeleteTxFinalizedSlot(txSlot uint64, txHash string) error {
-	return cs.store.DeleteObj(dbTxFinalizeSlotId(txSlot, txHash))
-}
-
-func (cs *ChainStore) ReadAllTxByFinalizedSlot(finalizedSlot uint64) ([]*DbUnGenProof, error) {
-	var txes []*DbUnGenProof
-	iterator := cs.store.Iterator(dbTxFinalizeSlotId(finalizedSlot, ""), nil)
-	defer iterator.Release()
-	for iterator.Next() {
-		var tx DbUnGenProof
-		err := codec.Unmarshal(iterator.Value(), &tx)
-		if err != nil {
-			logger.Error("unmarshal tx error:%v", err)
-			return nil, err
-		}
-		txes = append(txes, &tx)
-	}
-	if err := iterator.Error(); err != nil {
-		return nil, err
-	}
-	sort.SliceStable(txes, func(i, j int) bool {
-		if txes[i].Height == txes[j].Height {
-			return txes[i].TxIndex < txes[j].TxIndex
-		}
-		return txes[i].Height < txes[j].Height
-	})
-	return txes, nil
 }
 
 func (cs *ChainStore) WritePendingRequest(proofId string, request *common.ProofRequest) error {
@@ -1358,59 +1329,8 @@ func (cs *ChainStore) ReadNonce(network, addr string) (uint64, bool, error) {
 	return nonce, true, nil
 }
 
-func (cs *ChainStore) WriteTaskTime(id string, status common.ProofStatus, value time.Time) error {
-	return cs.store.PutObj(dbTaskTimeId(id, status), value)
-}
-
-func (cs *ChainStore) ReadTaskTime(id string, status common.ProofStatus) (time.Time, error) {
-	var t time.Time
-	err := cs.store.GetObj(dbTaskTimeId(id, status), &t)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return t, nil
-}
-
-type TaskTime struct {
-	QueueTime      time.Time `json:"queueTime"`
-	GeneratingTime time.Time `json:"generatingTime"`
-	EndTime        time.Time `json:"endTime"`
-}
-
-func (cs *ChainStore) ReadAllTaskTime(id string) (TaskTime, error) {
-	task := TaskTime{}
-	queueTime, _ := cs.ReadTaskTime(id, common.ProofQueued)
-	task.QueueTime = queueTime
-	generatingTime, _ := cs.ReadTaskTime(id, common.ProofGenerating)
-	task.GeneratingTime = generatingTime
-	endTime, _ := cs.ReadTaskTime(id, common.ProofSuccess)
-	task.EndTime = endTime
-	return task, nil
-}
-
 func (cs *ChainStore) WriteFinalityUpdateSlot(finalizeSlot uint64) error {
 	return cs.store.PutObj(dbFinalityUpdateSlotId(finalizeSlot), finalizeSlot)
-}
-
-func (cs *ChainStore) FindFinalityUpdateNearestSlot(txSlot uint64) (uint64, bool, error) {
-	var start []byte
-	if txSlot-common.MaxDiffTxFinalitySlot > 0 {
-		start = []byte(fmt.Sprintf("%d", txSlot-common.MaxDiffTxFinalitySlot))
-	}
-	iterator := cs.store.Iterator([]byte(finalityUpdateSlotPrefix), start)
-	defer iterator.Release()
-	for iterator.Next() {
-		var slot uint64
-		err := codec.Unmarshal(iterator.Value(), &slot)
-		if err != nil {
-			return 0, false, err
-		}
-		if slot >= txSlot {
-			// todo
-			return slot, slot-txSlot <= common.MaxDiffTxFinalitySlot, nil
-		}
-	}
-	return 0, false, nil
 }
 
 func (cs *ChainStore) ReadSlotByHash(hash string) (uint64, bool, error) {
@@ -1469,12 +1389,4 @@ func TxHeightKeyToTxId(key []byte) (string, error) {
 		return "", fmt.Errorf("invalid tx height key %s", string(key))
 	}
 	return split[2], nil
-}
-
-func DbSignatureKeyToHeight(key string) (uint64, error) {
-	ids := strings.Split(key, protocolSeparator)
-	if len(ids) != 2 {
-		return 0, fmt.Errorf("invalid signature key %s", key)
-	}
-	return strconv.ParseUint(ids[1], 10, 64)
 }

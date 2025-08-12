@@ -238,6 +238,7 @@ func (m *manager) storeProof(responses []*common.ProofResponse) {
 			continue
 		}
 		logger.Debug("store zk proof: %v", proofId)
+		m.storeRequestParam(item.ProofType, item.Hash, proofId)
 		m.notify(item)
 		m.scheduler.removeRequest(proofId)
 		chanResponse := m.getChanResponse(item.ProofType)
@@ -251,6 +252,20 @@ func (m *manager) storeProof(responses []*common.ProofResponse) {
 		}
 	}
 }
+
+func (m *manager) storeRequestParam(proofType common.ProofType, hash, proofId string) {
+	//cache request data for submit tx
+	if proofType == common.BtcDepositType || proofType == common.BtcChangeType {
+		request, ok := m.scheduler.GetPendingRequest(proofId)
+		if ok {
+			err := m.chainStore.WriteBtcTxParam(hash, request)
+			if err != nil {
+				logger.Error("store request param error:%v %v", proofId, err)
+			}
+		}
+	}
+}
+
 func (m *manager) checkForkedProof(resp *common.ProofResponse) bool {
 	if common.IsBtcProofType(resp.ProofType) {
 		if m.btcForks == nil {

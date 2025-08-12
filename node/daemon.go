@@ -185,13 +185,13 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		cfg.MinerAddr = keyStore.address
 	}
 	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisBeaconSlot, cfg.BtcGenesisHeight,
-		btcProverClient, btcClient, ethClient, beaClient, beaconClient, cfg.MinerAddr, cfg.ScNewRecursive)
+		btcProverClient, btcClient, ethClient, beaClient, beaconClient, cfg.MinerAddr, cfg.Network, cfg.ScNewRecursive)
 	if err != nil {
 		logger.Error("new proof Prepared data error: %v", err)
 		return nil, err
 	}
 	txManager, err := NewTxManager(storeDb, fileStore, preparedData, keyStore, ethClient, btcClient, oasisClient, dfinityClient,
-		sgxClient, btcProverClient, cfg.MinerAddr)
+		sgxClient, btcProverClient, cfg.MinerAddr, cfg.Network)
 	if err != nil {
 		logger.Error("new tx manager error: %v", err)
 		return nil, err
@@ -255,7 +255,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 	}
 	exitSignal := make(chan os.Signal, 1)
 
-	rpcHandler := NewHandler(txManager, manager, ethReScan, btcReScan, storeDb, fileStore, exitSignal, btcClient, btcProverClient, cfg.MinerAddr)
+	rpcHandler := NewHandler(txManager, manager, ethReScan, btcReScan, storeDb, fileStore, exitSignal, btcClient, btcProverClient, cfg.MinerAddr, cfg.Network)
 	server, err := rpc.NewServer(RpcRegisterName, fmt.Sprintf("%s:%s", cfg.Rpcbind, cfg.Rpcport), rpcHandler, keyStore, nil)
 	if err != nil {
 		logger.Error("new rpc server error: %v", err)

@@ -82,8 +82,9 @@ func NewMultiClient(url ...string) (IMultiBeacon, error) {
 		return nil, fmt.Errorf("no url")
 	}
 	var clients []*Client
-	for _, u := range url {
-		client, err := NewClient(u)
+	res := shift(url)
+	for _, u := range res {
+		client, err := NewClient(u...)
 		if err != nil {
 			return nil, err
 		}
@@ -94,4 +95,15 @@ func NewMultiClient(url ...string) (IMultiBeacon, error) {
 		Client:  clients[0],
 		index:   0,
 	}, nil
+}
+
+func shift(arr []string) [][]string {
+	n := len(arr)
+	res := make([][]string, 0, n)
+	for i := 0; i < n; i++ {
+		tmp := append([]string{}, arr[i:]...)
+		tmp = append(tmp, arr[:i]...)
+		res = append(res, tmp)
+	}
+	return res
 }

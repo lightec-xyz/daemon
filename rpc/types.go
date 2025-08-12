@@ -3,8 +3,6 @@ package rpc
 import (
 	"encoding/json"
 	"github.com/consensys/gnark/std/math/uints"
-	"time"
-
 	btcproverType "github.com/lightec-xyz/btc_provers/circuits/types"
 	blockchainUtil "github.com/lightec-xyz/btc_provers/utils/blockchain"
 	btcbase "github.com/lightec-xyz/btc_provers/utils/blockchain"
@@ -30,11 +28,8 @@ type MinerInfo struct {
 	Timestamp uint64 `json:"timestamp"`
 }
 
-type ProofTaskInfo struct {
-	Id             string    `json:"id"`
-	QueueTime      time.Time `json:"queueTime"`
-	GeneratingTime time.Time `json:"generatingTime"`
-	EndTime        time.Time `json:"endTime"`
+type ProofTask struct {
+	Id string `json:"id"`
 }
 
 type Transaction struct {
@@ -153,7 +148,6 @@ type BtcChangeRequest struct {
 	ProverAddr                                      string
 	MinerReward                                     string
 	ChainType                                       string
-	MinTxDepth, MinCpDepth                          uint32
 	ChainStep                                       uint64
 	TxDepthStep                                     uint64
 	CpDepthStep                                     uint64
