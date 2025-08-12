@@ -1437,8 +1437,8 @@ func getDelayBlock(nums uint) uint64 {
 		return 0
 	}
 	value := uint64(1) << nums
-	if value >= 16 {
-		value = 16
+	if value >= 32 {
+		value = 32
 	}
 	return value
 }
