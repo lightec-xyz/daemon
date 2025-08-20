@@ -30,6 +30,7 @@ type Handler struct {
 	btcClient    *bitcoin.Client         // todo
 	proverClient btcproverClient.IClient // todo
 	miner        string
+	network      string
 }
 
 func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
@@ -285,7 +286,7 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 			return nil, err
 		}
 		//todo refactor
-		params, err := getProofParams(txId, h.miner, h.chainStore, h.btcClient, h.proverClient)
+		params, err := getProofParams(txId, h.miner, h.network, h.chainStore, h.btcClient, h.proverClient)
 		if err != nil {
 			logger.Warn("get proof params error: %v %v", txId, err)
 			continue
@@ -329,7 +330,7 @@ func (h *Handler) Version() (rpc.NodeInfo, error) {
 }
 
 func NewHandler(txManager *TxManager, manager IManager, ethReScan, btcReScan chan *ReScnSignal, store store.IStore, fileStore *FileStorage, exitCh chan os.Signal,
-	btcClient *bitcoin.Client, proverClient btcproverClient.IClient, miner string) *Handler {
+	btcClient *bitcoin.Client, proverClient btcproverClient.IClient, miner, network string) *Handler {
 	return &Handler{
 		txManager:    txManager,
 		chainStore:   NewChainStore(store),
@@ -341,5 +342,6 @@ func NewHandler(txManager *TxManager, manager IManager, ethReScan, btcReScan cha
 		btcClient:    btcClient,
 		proverClient: proverClient,
 		miner:        miner,
+		network:      network,
 	}
 }

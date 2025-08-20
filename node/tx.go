@@ -40,6 +40,7 @@ type TxManager struct {
 	proverClient btcproverClient.IClient
 	minerAddr    string
 	submitAddr   string
+	network      string
 	chainStore   *ChainStore
 	fileStore    *FileStorage
 	prepared     *Prepared
@@ -51,7 +52,7 @@ type TxManager struct {
 }
 
 func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared, keyStore *KeyStore, ethClient *ethrpc.Client, btcClient *bitcoin.Client,
-	oasisClient *oasis.Client, dfinityClient *dfinity.Client, sgxClient sgx.ISgx, proverClient btcproverClient.IClient, minerAddr string) (*TxManager, error) {
+	oasisClient *oasis.Client, dfinityClient *dfinity.Client, sgxClient sgx.ISgx, proverClient btcproverClient.IClient, minerAddr, network string) (*TxManager, error) {
 	return &TxManager{
 		ethClient:    ethClient,
 		btcClient:    btcClient,
@@ -66,6 +67,7 @@ func NewTxManager(store store.IStore, fileStore *FileStorage, prepared *Prepared
 		submitAddr:   keyStore.EthAddress(),
 		icpSigMap:    make(map[string][][]byte),
 		fileStore:    fileStore,
+		network:      network,
 		maxGasPrice:  big.NewInt(3000000000), //tdoo 3Gwei
 	}, nil
 }
@@ -394,7 +396,7 @@ func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {
 		logger.Error("sign btc tx error: %v %v", hash, err)
 		return "", err
 	}
-	multiSigScriptBytes := ethcommon.FromHex(BtcMultiSig)
+	multiSigScriptBytes := ethcommon.FromHex(getMultiSig(t.network))
 	err = transaction.AddMultiScript(multiSigScriptBytes, 2, 3)
 	if err != nil {
 		logger.Error("add multi script error: %v %v", hash, err)
@@ -795,7 +797,7 @@ func (t *TxManager) getParams(txId string) (*zkbridge.IBtcTxVerifierPublicWitnes
 	sigVerif, err := blockdepthUtil.GetSigVerifProofData(
 		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(IcpPublicKey))
+		ethcommon.FromHex(getIcpPublicKey(t.network)))
 	if err != nil {
 		logger.Error("%v", err.Error())
 		return nil, err

@@ -38,6 +38,7 @@ type Prepared struct {
 	genesisSlot      uint64
 	scNewRecursive   bool
 	minerAddr        string
+	network          string
 	btcGenesisHeight uint64 // startIndex
 }
 
@@ -403,7 +404,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 			Proof:   outerProof.Proof,
 			Witness: outerProof.Witness,
 		},
-		BeginId: GenesisRoot,
+		BeginId: getGenesisRoot(p.network),
 		RelayId: hex.EncodeToString(relayId),
 		EndId:   hex.EncodeToString(endId),
 		ScIndex: int(period), //todo
@@ -781,7 +782,7 @@ func (p *Prepared) GetRedeemRequest(txHash string) (*rpc.RedeemRequest, bool, er
 			Proof:   dutyProof.Proof,
 			Witness: dutyProof.Witness,
 		},
-		GenesisScRoot:    GenesisRoot,
+		GenesisScRoot:    getGenesisRoot(p.network),
 		CurrentSCSSZRoot: hex.EncodeToString(currentRoot),
 		SigHashes:        common.BytesArrayToHex(sigHashes),
 		NbBeaconHeaders:  len(beaconHeaders) - 1,
@@ -984,7 +985,7 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 	sigVerifyData, err := blockdepthUtil.GetSigVerifProofData(
 		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(IcpPublicKey))
+		ethcommon.FromHex(getIcpPublicKey(p.network)))
 	if err != nil {
 		logger.Error("get sig verif proof data error: %v", err)
 		return nil, false, err
@@ -1123,7 +1124,7 @@ func (p *Prepared) GetBtcTimestampRequest(fIndex uint64, sIndex uint64) (*rpc.Bt
 }
 
 func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, btcGenesisHeight uint64, proverClient *BtcClient, btcClient *btcrpc.Client,
-	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr string, scNewRecursive bool) (*Prepared, error) {
+	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr, network string, scNewRecursive bool) (*Prepared, error) {
 	return &Prepared{
 		filestore:        filestore,
 		chainStore:       NewChainStore(store),
@@ -1136,6 +1137,7 @@ func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, bt
 		genesisPeriod:    genesisSlot / common.SlotPerPeriod,
 		btcGenesisHeight: btcGenesisHeight,
 		minerAddr:        minerAddr,
+		network:          network,
 		scNewRecursive:   scNewRecursive,
 	}, nil
 }
