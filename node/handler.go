@@ -288,7 +288,7 @@ func (h *Handler) ProofInfo(txIds []string) ([]rpc.ProofInfo, error) {
 		//todo refactor
 		params, err := getProofParams(txId, h.miner, h.network, h.chainStore, h.btcClient, h.proverClient)
 		if err != nil {
-			logger.Warn("get proof params error: %v %v", txId, err)
+			//logger.Warn("get proof params error: %v %v", txId, err)
 			continue
 		}
 		results = append(results, rpc.ProofInfo{

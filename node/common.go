@@ -32,7 +32,7 @@ func getProofParams(txId, miner, network string, chainStore *ChainStore, btcClie
 		return nil, fmt.Errorf("no find btc tx:%v", txId)
 	}
 	if dbTx.LatestHeight == 0 {
-		logger.Warn("dbTx %v latest height is 0", txId)
+		//logger.Warn("dbTx %v latest height is 0", txId)
 		return nil, fmt.Errorf("dbTx %v latest height is 0,wait for update", txId)
 	}
 
