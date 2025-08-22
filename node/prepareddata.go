@@ -320,15 +320,6 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 	if period < genesisPeriod+1 {
 		return nil, false, fmt.Errorf(" recursive less than %v", genesisPeriod+1)
 	}
-	//genesisId, ok, err := p.GetSyncCommitRootId(genesisPeriod)
-	//if err != nil {
-	//	logger.Error("get genesis id error: %v", err)
-	//	return nil, false, err
-	//}
-	//if !ok {
-	//	logger.Warn("get %v FIndex genesis commitId no find", genesisPeriod)
-	//	return nil, false, nil
-	//}
 	relayId, ok, err := p.GetSyncCommitRootId(period)
 	if err != nil {
 		logger.Error("get relay id error: %v", err)
@@ -695,15 +686,6 @@ func (p *Prepared) GetRedeemRequest(txHash string) (*rpc.RedeemRequest, bool, er
 		logger.Warn("no find bhf update %v", finalizedSlot)
 		return nil, false, nil
 	}
-	//genesisRoot, ok, err := p.GetSyncCommitRootId(p.genesisPeriod)
-	//if err != nil {
-	//	logger.Error("get genesis root error: %v", err)
-	//	return nil, false, err
-	//}
-	//if !ok {
-	//	logger.Warn("no find genesis root %v", p.genesisPeriod)
-	//	return nil, false, nil
-	//}
 
 	var finalityUpdate common.LightClientFinalityUpdateEvent
 	ok, err = p.filestore.GetFinalityUpdate(finalizedSlot, &finalityUpdate)

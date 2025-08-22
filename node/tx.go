@@ -29,8 +29,6 @@ import (
 	"time"
 )
 
-//todo record tx hash to check status
-
 type TxManager struct {
 	ethClient    *ethrpc.Client
 	btcClient    *bitcoin.Client

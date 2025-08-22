@@ -33,6 +33,11 @@ type Handler struct {
 	network      string
 }
 
+func (h *Handler) AutoSubmitThreshold(max, min uint64) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
 	logger.Warn("set gas price: %v", gasPrice)
 	h.txManager.setMaxGasPrice(gasPrice)
@@ -127,32 +132,13 @@ func (h *Handler) RemoveUnSubmitTx(hash string) (string, error) {
 	return "ok", err
 }
 
-func (h *Handler) ProofTask(id string) (*rpc.ProofTaskInfo, error) {
-	taskInfo, err := h.chainStore.ReadAllTaskTime(id)
-	if err != nil {
-		logger.Error("read queue time error: %v %v", id, err)
-		return nil, err
-	}
-	logger.Info("proof task: %v, queue time: %v, generating time: %v, proof time: %v", id,
-		taskInfo.QueueTime, taskInfo.GeneratingTime, taskInfo.EndTime)
-	return &rpc.ProofTaskInfo{
-		Id:             id,
-		QueueTime:      taskInfo.QueueTime,
-		GeneratingTime: taskInfo.GeneratingTime,
-		EndTime:        taskInfo.EndTime,
-	}, nil
-}
-
-func (h *Handler) PendingTask() ([]*rpc.ProofTaskInfo, error) {
+func (h *Handler) PendingTask() ([]*rpc.ProofTask, error) {
 	proofList := h.manager.PendingProofRequest()
-	var proofInfos []*rpc.ProofTaskInfo
+	var proofInfos []*rpc.ProofTask
 	for _, proof := range proofList {
-		taskInfo, err := h.ProofTask(proof.FileKey.String())
-		if err != nil {
-			logger.Error("read proof task error: %v %v", proof.FileKey, err)
-			return nil, err
-		}
-		proofInfos = append(proofInfos, taskInfo)
+		proofInfos = append(proofInfos, &rpc.ProofTask{
+			Id: proof.ProofId(),
+		})
 	}
 	return proofInfos, nil
 }
