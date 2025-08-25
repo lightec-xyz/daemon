@@ -263,7 +263,7 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 	}
 	logger.Debug("submit deposit tx:%v cpDepth:%v,txDepth:%v,checkPoint:%x,blockHash:%x,blockTime:%v,flag:%v,smoothedTimestamp: %v,minerAddr:%v,gasPrice:%v,btcTxRaw:%x,proof:%v",
 		txId, params.CpDepth, params.TxDepth, params.Checkpoint, params.TxBlockHash, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, t.minerAddr, gasPrice, btcRawTx, proof)
-	gasLimit, mockErr := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params, gasPrice, btcRawTx, proofBytes)
+	gasLimit, mockErr := t.ethClient.EstimateDepositGasLimit(t.submitAddr, params.IBtcTxVerifierPublicWitnessParams, gasPrice, btcRawTx, proofBytes)
 	if mockErr != nil {
 		switch proofType {
 		case common.BtcUpdateCpType:
@@ -298,17 +298,24 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 			return "", mockErr
 		}
 	}
-	if gasPrice.Cmp(t.maxGasPrice) > 0 {
-		if time.Now().Sub(time.Unix(tx.Timestamp, 0)) > ProofExpired {
-			logger.Warn("deposit tx gas too high %v deposit proof long time not submit,regen again", txId)
-			err := t.chainStore.DeleteUnSubmitTx(tx.Hash)
-			if err != nil {
-				logger.Error("delete unSubmit tx error: %v %v", tx.Hash, err)
+	if params.amount.Cmp(t.submitMin) < 0 {
+		logger.Warn(" %v deposit amount too small:%v,skip it now", txId, params.amount)
+		return "", fmt.Errorf("%v deposit amount too small,:%v,skip it now", txId, params.amount)
+	} else if params.amount.Cmp(t.submitMax) > 0 {
+		// todo nothing to do,  submit deposit tx
+	} else {
+		if gasPrice.Cmp(t.maxGasPrice) > 0 {
+			if time.Now().Sub(time.Unix(tx.Timestamp, 0)) > ProofExpired {
+				logger.Warn("deposit tx gas too high %v deposit proof long time not submit,regen again", txId)
+				err := t.chainStore.DeleteUnSubmitTx(tx.Hash)
+				if err != nil {
+					logger.Error("delete unSubmit tx error: %v %v", tx.Hash, err)
+				}
+				t.addBtcUnGenProof(tx.Hash)
 			}
-			t.addBtcUnGenProof(tx.Hash)
+			logger.Error("deposit tx %v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
+			return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 		}
-		logger.Error("deposit tx %v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
-		return "", fmt.Errorf("%v gasPrice too high:%v,maxGasPrice:%v,skip it now", txId, gasPrice, t.maxGasPrice)
 	}
 	gasLimit = getSuggestGasLimit(gasLimit)
 	if err != nil {
@@ -324,7 +331,7 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		return "", fmt.Errorf("balace check error")
 	}
 
-	txHash, err := t.ethClient.Deposit(privateKey, params, nonce, gasLimit, chainId, gasPrice, btcRawTx, proofBytes)
+	txHash, err := t.ethClient.Deposit(privateKey, params.IBtcTxVerifierPublicWitnessParams, nonce, gasLimit, chainId, gasPrice, btcRawTx, proofBytes)
 	if err != nil {
 		logger.Error("deposit zkbtc error:%v %v", txId, err)
 		return "", err
@@ -525,7 +532,7 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 	}
 	logger.Debug("submit updateUtxo txId:%v, cpDepth:%v, txDepth:%v,blochHash:%x,cpHash:%x, blocktime:%v,flag:%v,smoothedTimestamp: %v,minerReward:%v,proof:%x",
 		txId, params.CpDepth, params.TxDepth, params.TxBlockHash, params.Checkpoint, params.TxTimestamp, params.Flag, params.SmoothedTimestamp, minerReward.String(), proofBytes)
-	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params, gasPrice, minerReward, txIdBytes, proofBytes)
+	gasLimit, mockErr := t.ethClient.EstimateUpdateUtxoGasLimit(t.submitAddr, params.IBtcTxVerifierPublicWitnessParams, gasPrice, minerReward, txIdBytes, proofBytes)
 	if mockErr != nil {
 		logger.Error("estimate update utxo gas limit error:%v %v", txId, mockErr)
 		if strings.Contains(mockErr.Error(), "execution reverted") {
@@ -559,7 +566,7 @@ func (t *TxManager) UpdateUtxoChange(tx DbUnSubmitTx) (string, error) {
 	if !balOk {
 		return "", fmt.Errorf("balace check error")
 	}
-	txHash, err := t.ethClient.UpdateUtxoChange(privateKey, params, nonce, gasLimit, chainId, gasPrice, minerReward, txIdBytes, proofBytes)
+	txHash, err := t.ethClient.UpdateUtxoChange(privateKey, params.IBtcTxVerifierPublicWitnessParams, nonce, gasLimit, chainId, gasPrice, minerReward, txIdBytes, proofBytes)
 	if err != nil {
 		logger.Error("update utxo change error:%v", err)
 		return "", err
@@ -764,7 +771,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 
 }
 
-func (t *TxManager) getParams(txId string) (*zkbridge.IBtcTxVerifierPublicWitnessParams, error) {
+func (t *TxManager) getParams(txId string) (*ZkParams, error) {
 	dbTx, ok, err := t.chainStore.ReadBtcTx(txId)
 	if err != nil {
 		logger.Error("read btc tx error: %v %v", txId, err)
@@ -820,17 +827,20 @@ func (t *TxManager) getParams(txId string) (*zkbridge.IBtcTxVerifierPublicWitnes
 		return nil, err
 	}
 	flag := cptimeData.Flag<<1 | sigVerif.Flag
-	params := &zkbridge.IBtcTxVerifierPublicWitnessParams{
-		Checkpoint:        [32]byte(ethcommon.FromHex(cpHash)),
-		CpDepth:           uint32(cpDepth),
-		TxDepth:           uint32(txDepth),
-		TxBlockHash:       [32]byte(blockHash),
-		TxTimestamp:       uint32(btcTx.Blocktime),
-		ZkpMiner:          ethcommon.HexToAddress(t.minerAddr),
-		Flag:              big.NewInt(int64(flag)),
-		SmoothedTimestamp: smoothedTimestamp.Timestamp,
+	zkParams := &ZkParams{
+		IBtcTxVerifierPublicWitnessParams: &zkbridge.IBtcTxVerifierPublicWitnessParams{
+			Checkpoint:        [32]byte(ethcommon.FromHex(cpHash)),
+			CpDepth:           uint32(cpDepth),
+			TxDepth:           uint32(txDepth),
+			TxBlockHash:       [32]byte(blockHash),
+			TxTimestamp:       uint32(btcTx.Blocktime),
+			ZkpMiner:          ethcommon.HexToAddress(t.minerAddr),
+			Flag:              big.NewInt(int64(flag)),
+			SmoothedTimestamp: smoothedTimestamp.Timestamp,
+		},
+		amount: big.NewInt(dbTx.Amount),
 	}
-	return params, nil
+	return zkParams, nil
 }
 
 func (t *TxManager) CheckEthBalance(addr string, gasPrice *big.Int, gasLimit uint64) (bool, error) {

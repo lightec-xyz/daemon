@@ -2,9 +2,16 @@ package node
 
 import (
 	"fmt"
+	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
+	"math/big"
 	"time"
 )
+
+type ZkParams struct {
+	*zkbridge.IBtcTxVerifierPublicWitnessParams
+	amount *big.Int
+}
 
 type Notify struct {
 }
