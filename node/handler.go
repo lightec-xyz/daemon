@@ -33,15 +33,39 @@ type Handler struct {
 	network      string
 }
 
-func (h *Handler) AutoSubmitThreshold(max, min uint64) (string, error) {
-	//TODO implement me
-	panic("implement me")
+func (h *Handler) AutoSubmitMaxValue(max uint64) (string, error) {
+	logger.Debug("set auto submit max value: %v", max)
+	if max == 0 {
+		return "", fmt.Errorf("max value is 0")
+	}
+	err := h.chainStore.WriteSubmitMaxValue(max)
+	if err != nil {
+		return "", err
+	}
+	h.txManager.setSubmitMax(max)
+	return "ok", nil
+}
+
+func (h *Handler) AutoSubmitMinValue(min uint64) (string, error) {
+	logger.Debug("set auto submit min value: %v", min)
+	if min == 0 {
+		return "", fmt.Errorf("min value is 0")
+	}
+	err := h.chainStore.WriteSubmitMinValue(min)
+	if err != nil {
+		return "", err
+	}
+	h.txManager.setSubmitMin(min)
+	return "ok", nil
 }
 
 func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
 	logger.Warn("set gas price: %v", gasPrice)
+	err := h.chainStore.WriteMaxGasPrice(gasPrice)
+	if err != nil {
+		return "", err
+	}
 	h.txManager.setMaxGasPrice(gasPrice)
-	h.chainStore.WriteMaxGasPrice(gasPrice)
 	return "ok", nil
 }
 

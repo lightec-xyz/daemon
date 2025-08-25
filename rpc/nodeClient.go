@@ -18,6 +18,24 @@ type NodeClient struct {
 	token   string
 }
 
+func (c *NodeClient) AutoSubmitMaxValue(max uint64) (string, error) {
+	var result string
+	err := c.call(&result, "zkbtc_autoSubmitMaxValue", max)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+func (c *NodeClient) AutoSubmitMinValue(min uint64) (string, error) {
+	var result string
+	err := c.call(&result, "zkbtc_autoSubmitMinValue", min)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
 func (c *NodeClient) AutoSubmitThreshold(max, min uint64) (string, error) {
 	var result string
 	err := c.call(&result, "zkbtc_autoSubmitThreshold", max, min)

@@ -47,6 +47,8 @@ const (
 	latestUpdateCpKey         = "latestUpdateCpKey"
 	latestIcpSignatureKey     = "latestIcpSignatureKey"
 	maxGasPriceKey            = "maxGasPriceKey"
+	submitMaxValueKey         = "submitMaxValue"
+	submitMinValueKey         = "submitMinValue"
 )
 
 var (

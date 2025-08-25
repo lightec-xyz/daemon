@@ -24,6 +24,31 @@ func NewChainStore(store store.IStore) *ChainStore {
 	return &ChainStore{store: store}
 }
 
+func (cs *ChainStore) WriteSubmitMaxValue(value uint64) error {
+	return cs.store.PutObj(submitMaxValueKey, value)
+}
+func (cs *ChainStore) ReadSubmitMaxValue() (uint64, bool, error) {
+	var value uint64
+	err := cs.store.GetObj(submitMaxValueKey, &value)
+	if err != nil {
+		return 0, false, nil
+	}
+	return value, true, nil
+}
+
+func (cs *ChainStore) WriteSubmitMinValue(value uint64) error {
+	return cs.store.PutObj(submitMinValueKey, value)
+}
+
+func (cs *ChainStore) ReadSubmitMinValue() (uint64, bool, error) {
+	var value uint64
+	err := cs.store.GetObj(submitMinValueKey, &value)
+	if err != nil {
+		return 0, false, nil
+	}
+	return value, true, nil
+}
+
 func (cs *ChainStore) WriteMaxGasPrice(price uint64) error {
 	return cs.store.PutObj(maxGasPriceKey, price)
 }
@@ -1090,29 +1115,6 @@ func (cs *ChainStore) ReadUnGenProofs(chainType common.ChainType) ([]*DbUnGenPro
 		return txes[i].Height < txes[j].Height
 	})
 	return txes, nil
-}
-
-func (cs *ChainStore) WriteDepositAddrPrefix(txes []*Transaction) error {
-	batch := cs.store.Batch()
-	for _, tx := range txes {
-		if tx.TxType == common.DepositTx {
-			for _, addr := range tx.BtcFrom {
-				err := batch.BatchPutObj(dbAddrPrefixTxId(addr, common.DepositTx, tx.Hash), nil)
-				if err != nil {
-					logger.Error("put addr prefix tx error:%v", err)
-					return err
-				}
-			}
-
-		}
-	}
-	err := batch.BatchWriteObj()
-	if err != nil {
-		logger.Error("put addr tx batch error:%v", err)
-		return err
-	}
-	return nil
-
 }
 
 func (cs *ChainStore) WriteAddrPrefixTx(txes []*DbTx) error {

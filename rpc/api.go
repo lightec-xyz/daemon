@@ -61,7 +61,8 @@ type IAdmin interface {
 	RemoveUnSubmitTx(hash string) (string, error)
 	RemoveUnGenProof(hash string) (string, error)
 	SetGasPrice(gasPrice uint64) (string, error)
-	AutoSubmitThreshold(max, min uint64) (string, error)
+	AutoSubmitMaxValue(max uint64) (string, error)
+	AutoSubmitMinValue(min uint64) (string, error)
 }
 
 type IVerify interface {
