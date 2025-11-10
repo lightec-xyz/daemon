@@ -38,7 +38,7 @@ machines [example](https://github.com/lightec-xyz/provers/blob/e016c3de22f37540c
 
 3.Run setup program
 
-    ./setup  --datadir <circuitDir> --srsdir <srsDir> run --group all --chainId 17000 --zkbtcBridgeAddr 0x49793ff075b696e6bef1b85e4e85fe669041b312 --icpPublickey 023f203422be55a3576f46dc6770bdc7865a126381c1963a2d82b49f4158409a2e
+    ./setup  --datadir <circuitDir> --srsdir <srsDir> run --group all --chainId 11155111 --zkbtcBridgeAddr 0x49793ff075b696e6bef1b85e4e85fe669041b312 --icpPublickey 023f203422be55a3576f46dc6770bdc7865a126381c1963a2d82b49f4158409a2e
 
 ## Build
 
