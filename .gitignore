@@ -22,8 +22,6 @@ go.work
 /proof/test/
 /store/test/
 *.log
-cmd/generator/generator
-cmd/btcsetup/btcsetup
 go.sum
 
 data/btc/headers/blocks
@@ -32,5 +30,8 @@ data/btc/headers/sorted.txt
 data/btc/headers/tmp
 data/btc/headers/headers.txt
 data/btc/headers/.git*
-cmd/ethsetup/ethsetup
+
 /testdata/
+
+cmd/generator/generator
+cmd/setup
