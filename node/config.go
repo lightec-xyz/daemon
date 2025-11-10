@@ -124,13 +124,79 @@ func NewConfig(cfg RunConfig) (Config, error) {
 	}
 	switch cfg.Network {
 	case LightecNetwork:
-		return getMainnetConfig(cfg)
+		return mainnetConfig(cfg)
+	case TestnetLightecNetwork:
+		return testnetConfig(cfg)
 	default:
 		return Config{}, fmt.Errorf("unsupport network now: %v", cfg.Network)
 	}
 }
 
-func getMainnetConfig(cfg RunConfig) (Config, error) {
+func getMultiSig(network string) string {
+	switch network {
+	case LightecNetwork:
+		return BtcMultiSig
+	case TestnetLightecNetwork:
+		return TestnetBtcMultiSig
+	default:
+		panic("unsupport network now")
+	}
+}
+func getIcpPublicKey(network string) string {
+	switch network {
+	case LightecNetwork:
+		return IcpPublicKey
+	case TestnetLightecNetwork:
+		return TestnetIcpPublicKey
+	default:
+		panic("unsupport network now")
+	}
+}
+
+func getGenesisRoot(network string) string {
+	switch network {
+	case LightecNetwork:
+		return GenesisRoot
+	case TestnetLightecNetwork:
+		return TestnetGenesisRoot
+	default:
+		panic("unsupport network now")
+	}
+}
+
+func testnetConfig(cfg RunConfig) (Config, error) {
+	if cfg.BtcInitHeight == 0 {
+		cfg.BtcInitHeight = TestnetInitBitcoinHeight
+	}
+	if cfg.EthInitHeight == 0 {
+		cfg.EthInitHeight = TestnetInitEthereumHeight
+	}
+	if cfg.BeaconInitSlot == 0 {
+		cfg.BeaconInitSlot = TestnetInitBeaconHeight
+	}
+	return Config{
+		RunConfig:             cfg,
+		IcpBlockSignerAddress: TestnetBlockSingerId,
+		IcpTxSingerAddress:    TestnetIcpTxSingerId,
+		GenesisSyncPeriod:     cfg.GenesisBeaconSlot / common.SlotPerPeriod,
+		BtcOperatorAddr:       TestnetBtcOperatorAddress,
+		BtcLockScript:         TestnetBtcLockScript,
+		ZkBridgeAddr:          TestnetEthZkBridgeAddress,
+		ZkBtcAddr:             TestnetEthZkBtcAddress,
+		UtxoManagerAddr:       TestnetEthUtxoManagerAddress,
+		BtcScanTime:           BtcScanTime,
+		EthScanTime:           EthScanTime,
+		BtcTxVerifyAddr:       TestnetEthBtcTxVerifyAddress,
+		OasisSignerAddress:    TestnetOasisSignerAddr,
+		BtcFilter:             NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, MinDepositValue, cfg.TxMode),
+		EthAddrFilter: NewEthAddrFilter(TestnetBtcLockScript, TestnetEthUtxoManagerAddress, TestnetEthZkBridgeAddress, TestnetFeePoolAddr,
+			DepositTopic, RedeemTopic, UpdateUtxoTopic, DepositRewardTopic, RedeemRewardTopic,
+			cfg.TxMode),
+		Debug: common.GetEnvDebugMode(),
+	}, nil
+}
+
+func mainnetConfig(cfg RunConfig) (Config, error) {
 	if cfg.BtcInitHeight == 0 {
 		cfg.BtcInitHeight = InitBitcoinHeight
 	}

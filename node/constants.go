@@ -17,11 +17,8 @@ const (
 	OasisSignerAddr       = "0xA81Fc99DBC654D68513B8C1475aFeC3B5d76496e"
 	IcpPublicKey          = "03183007b9afcfa519871885380d4dfd1144269d8050ec2a51992065af2a87d3df"
 	GenesisRoot           = "52bbd8287d0e455ce6cd732fa8a5f003e2ad82fd0ed3a59516f9ae1642f1b182"
-	BtcScanTime           = 3 * time.Minute
-	EthScanTime           = 30 * time.Second
-
-	BlockSingerId = "xdqo6-dqaaa-aaaal-qsqva-cai"
-	IcpTxSingerId = "wlkxr-hqaaa-aaaad-aaxaa-cai"
+	BlockSingerId         = "xdqo6-dqaaa-aaaal-qsqva-cai"
+	IcpTxSingerId         = "wlkxr-hqaaa-aaaad-aaxaa-cai"
 
 	InitBitcoinHeight  = 2812015
 	InitBeaconHeight   = 153
@@ -39,6 +36,8 @@ var SgxServerUrl []string = []string{""} // todo
 // *********************Other**************************************
 
 const (
+	BtcScanTime = 3 * time.Minute
+	EthScanTime = 30 * time.Second
 	// MigrateProto operator migrate address
 	MigrateProto = "6a141234560000000000000000000000000000000000"
 	// MinDepositValue deposit min value

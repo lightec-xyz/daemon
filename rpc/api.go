@@ -7,15 +7,13 @@ import (
 type INode interface {
 	IAdmin
 	Version() (NodeInfo, error)
-	AddWorker(endpoint string, max int) (string, error)
 	ProofInfo(txIds []string) ([]ProofInfo, error)
 	Transaction(txHash string) ([]*Transaction, error)
 	TransactionsByHeight(height uint64, network string) ([]string, error)
 	Transactions(txId []string) ([]*Transaction, error)
 	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
 	SubmitProof(req *common.SubmitProof) (string, error)
-	ProofTask(id string) (*ProofTaskInfo, error)
-	PendingTask() ([]*ProofTaskInfo, error)
+	PendingTask() ([]*ProofTask, error)
 	Eth2Slot(height uint64) (uint64, error)
 	Eth1Height(slot uint64) (uint64, error)
 	AddP2pPeer(endpoint string) (string, error)
@@ -63,6 +61,8 @@ type IAdmin interface {
 	RemoveUnSubmitTx(hash string) (string, error)
 	RemoveUnGenProof(hash string) (string, error)
 	SetGasPrice(gasPrice uint64) (string, error)
+	AutoSubmitMaxValue(max uint64) (string, error)
+	AutoSubmitMinValue(min uint64) (string, error)
 }
 
 type IVerify interface {

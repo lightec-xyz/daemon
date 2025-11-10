@@ -11,8 +11,8 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func CreateJWT(secret []byte, perm Permission) (string, error) {
-	expirationTime := time.Now().Add(100 * 24 * time.Hour) // todo
+func CreateJWT(secret []byte, perm Permission, expired time.Duration) (string, error) {
+	expirationTime := time.Now().Add(expired)
 	claims := CustomClaims{
 		Permission: perm,
 		RegisteredClaims: jwt.RegisteredClaims{

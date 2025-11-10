@@ -21,7 +21,7 @@ import (
 )
 
 // todo
-func getProofParams(txId, miner string, chainStore *ChainStore, btcClient *bitcoin.Client, proverClient btcproverClient.IClient) (*zkbridge.IBtcTxVerifierPublicWitnessParams, error) {
+func getProofParams(txId, miner, network string, chainStore *ChainStore, btcClient *bitcoin.Client, proverClient btcproverClient.IClient) (*zkbridge.IBtcTxVerifierPublicWitnessParams, error) {
 	dbTx, ok, err := chainStore.ReadBtcTx(txId)
 	if err != nil {
 		logger.Error("read btc tx error: %v %v", txId, err)
@@ -32,7 +32,7 @@ func getProofParams(txId, miner string, chainStore *ChainStore, btcClient *bitco
 		return nil, fmt.Errorf("no find btc tx:%v", txId)
 	}
 	if dbTx.LatestHeight == 0 {
-		logger.Warn("dbTx %v latest height is 0", txId)
+		//logger.Warn("dbTx %v latest height is 0", txId)
 		return nil, fmt.Errorf("dbTx %v latest height is 0,wait for update", txId)
 	}
 
@@ -76,7 +76,7 @@ func getProofParams(txId, miner string, chainStore *ChainStore, btcClient *bitco
 	sigVerif, err := blockdepthUtil.GetSigVerifProofData(
 		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
 		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(IcpPublicKey))
+		ethcommon.FromHex(getIcpPublicKey(network)))
 	if err != nil {
 		logger.Error("%v", err.Error())
 		return nil, err

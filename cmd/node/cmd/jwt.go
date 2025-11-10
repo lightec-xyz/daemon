@@ -8,6 +8,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/spf13/cobra"
 	"os"
+	"time"
 )
 
 var jwtCmd = &cobra.Command{
@@ -18,6 +19,11 @@ var jwtCmd = &cobra.Command{
 		cfgBytes, err := os.ReadFile(cfgFile)
 		if err != nil {
 			fmt.Printf("read config error: %v %v \n", cfgFile, err)
+			return
+		}
+		expired, err := cmd.Flags().GetInt("expired")
+		if err != nil {
+			fmt.Printf("get expired error: %v \n", err)
 			return
 		}
 		fmt.Printf("confg data: %v \n", string(cfgBytes))
@@ -32,7 +38,7 @@ var jwtCmd = &cobra.Command{
 			fmt.Printf("decode private key error: %v %v \n", runCfg.EthPrivateKey, err)
 			return
 		}
-		jwt, err := rpc.CreateJWT(secret, rpc.JwtPermission)
+		jwt, err := rpc.CreateJWT(secret, rpc.JwtPermission, time.Duration(expired)*time.Hour)
 		if err != nil {
 			fmt.Printf("create jwt error: %v \n", err)
 			return
@@ -42,5 +48,6 @@ var jwtCmd = &cobra.Command{
 }
 
 func init() {
+	jwtCmd.Flags().Int("expired", 24*30, "token expired time,default 30 days")
 	rootCmd.AddCommand(jwtCmd)
 }

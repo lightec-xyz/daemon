@@ -17,6 +17,7 @@ const (
 	btcBlockDepositCountPrefix = "bc"
 	btcHeaderPrefix            = "bhp"
 	btcBlockPrefix             = "btb"
+	btcTxParamPrefix           = "btp"
 	checkpointPrefix           = "cp"
 	chainForkPrefix            = "cf"
 	destChainHashPrefix        = "d" // d_ + hash
@@ -47,6 +48,8 @@ const (
 	latestUpdateCpKey         = "latestUpdateCpKey"
 	latestIcpSignatureKey     = "latestIcpSignatureKey"
 	maxGasPriceKey            = "maxGasPriceKey"
+	submitMaxValueKey         = "submitMaxValue"
+	submitMinValueKey         = "submitMinValue"
 )
 
 var (
@@ -80,6 +83,13 @@ type DbTx struct {
 	LatestHeight     uint64
 	CpMinDepth       uint64
 	SigSigned        bool // flag: if icp block hash signed
+}
+
+func (t *DbTx) GenReset() {
+	t.LatestHeight = 0
+	t.CheckPointHeight = 0
+	t.GenProofNums = t.GenProofNums + 1
+	t.SigSigned = false
 }
 
 type DbProof struct {
@@ -238,6 +248,10 @@ func dbTxProvedKey(txId string) []byte {
 
 func dbUpdateUtxoDestKey(hash string) []byte {
 	return genKey(updateUtxoDestPrefix, hash)
+}
+
+func dbBtcTxParamKey(txId string) []byte {
+	return genKey(btcTxParamPrefix, txId)
 }
 
 // careful modify this struct if you want to change

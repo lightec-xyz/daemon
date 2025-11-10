@@ -18,6 +18,33 @@ type NodeClient struct {
 	token   string
 }
 
+func (c *NodeClient) AutoSubmitMaxValue(max uint64) (string, error) {
+	var result string
+	err := c.call(&result, "zkbtc_autoSubmitMaxValue", max)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+func (c *NodeClient) AutoSubmitMinValue(min uint64) (string, error) {
+	var result string
+	err := c.call(&result, "zkbtc_autoSubmitMinValue", min)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+func (c *NodeClient) AutoSubmitThreshold(max, min uint64) (string, error) {
+	var result string
+	err := c.call(&result, "zkbtc_autoSubmitThreshold", max, min)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
 func (c *NodeClient) SetGasPrice(gasPrice uint64) (string, error) {
 	var result string
 	err := c.call(&result, "zkbtc_setGasPrice", gasPrice)
@@ -90,17 +117,8 @@ func (c *NodeClient) RemoveUnSubmitTx(hash string) (string, error) {
 	return result, err
 }
 
-func (c *NodeClient) ProofTask(id string) (*ProofTaskInfo, error) {
-	var result ProofTaskInfo
-	err := c.call(&result, "zkbtc_proofTask")
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
-func (c *NodeClient) PendingTask() ([]*ProofTaskInfo, error) {
-	var result []*ProofTaskInfo
+func (c *NodeClient) PendingTask() ([]*ProofTask, error) {
+	var result []*ProofTask
 	err := c.call(&result, "zkbtc_pendingTask")
 	if err != nil {
 		return nil, err
@@ -170,15 +188,6 @@ func (c *NodeClient) Stop() error {
 		return err
 	}
 	return err
-}
-
-func (c *NodeClient) AddWorker(endpoint string, max int) (string, error) {
-	var result string
-	err := c.call(&result, "zkbtc_addWorker", endpoint, max)
-	if err != nil {
-		return "", err
-	}
-	return result, err
 }
 
 func (c *NodeClient) Version() (NodeInfo, error) {

@@ -64,6 +64,10 @@ func (q *QueueManager) AddPending(key string, value *common.ProofRequest) {
 	q.pending.Add(key, value)
 }
 
+func (q *QueueManager) GetPending(key string) (*common.ProofRequest, bool) {
+	return q.pending.Get(key)
+}
+
 func (q *QueueManager) DeletePending(key string) {
 	q.pending.Delete(key)
 }
@@ -80,6 +84,18 @@ func NewPendingQueue() *PendingQueue {
 	return &PendingQueue{
 		list: new(sync.Map),
 	}
+}
+
+func (q *PendingQueue) Get(key string) (*common.ProofRequest, bool) {
+	value, ok := q.list.Load(key)
+	if !ok {
+		return nil, false
+	}
+	req, ok := value.(*common.ProofRequest)
+	if !ok {
+		return nil, false
+	}
+	return req, true
 }
 
 func (q *PendingQueue) Add(key string, value *common.ProofRequest) {
