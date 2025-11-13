@@ -307,12 +307,12 @@ func (c *Client) httpReq(httpMethod, url, method string, param Param, value inte
 	if err != nil {
 		return err
 	}
+	log.Printf("unmarshal value: %v", value)
 	return nil
 
 }
 
 func (c *Client) httpFetchBytes(req *http.Request) (res []byte, err error) {
-	defer log.Printf("httpfetch url:%v result:\"%v\" err:%v \n", req.URL, truncateString(string(res), 20), err)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		if resp != nil && resp.Body != nil {
@@ -327,7 +327,7 @@ func (c *Client) httpFetchBytes(req *http.Request) (res []byte, err error) {
 			if err != nil {
 				return nil, err
 			}
-			log.Printf("httpReq fetch: %v \n", truncateString(string(data), 20))
+			log.Printf("httpReq fetch: %v \n%v\n", truncateString(string(data), 20), req.URL)
 			return data, nil
 		}
 	}
