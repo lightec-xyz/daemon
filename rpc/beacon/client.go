@@ -312,7 +312,7 @@ func (c *Client) httpReq(httpMethod, url, method string, param Param, value inte
 }
 
 func (c *Client) httpFetchBytes(req *http.Request) (res []byte, err error) {
-	defer log.Printf("httpfetch url:%v result:\"%v\" err:%v \n", req.URL, string(res)[:20], err)
+	defer log.Printf("httpfetch url:%v result:\"%v\" err:%v \n", req.URL, truncateString(string(res), 20), err)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		if resp != nil && resp.Body != nil {
@@ -327,7 +327,7 @@ func (c *Client) httpFetchBytes(req *http.Request) (res []byte, err error) {
 			if err != nil {
 				return nil, err
 			}
-			log.Printf("httpReq fetch: %v \n", string(data)[:20])
+			log.Printf("httpReq fetch: %v \n", truncateString(string(data), 20))
 			return data, nil
 		}
 	}
@@ -342,6 +342,7 @@ func (c *Client) httpFetchPreflight(req *http.Request) (res []byte, err error) {
 	if data == nil {
 		return nil, nil
 	}
+	log.Printf("fetch1: \"%v\"\n", truncateString(string(data), 20))
 	if string(data) != "[]" && string(data) != "" {
 		return data, nil
 	}
@@ -349,6 +350,7 @@ func (c *Client) httpFetchPreflight(req *http.Request) (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("fetch2: \"%v\"\n", truncateString(string(data2), 20))
 	return data2, nil
 }
 
@@ -356,6 +358,14 @@ type Param map[string]interface{}
 
 func (p *Param) Add(key string, value interface{}) {
 	(*p)[key] = value
+}
+
+func truncateString(str string, maxlen int) (res string) {
+	l := len(str)
+	if l > maxlen {
+		l = maxlen
+	}
+	return str[:l]
 }
 
 type Header map[string]string
