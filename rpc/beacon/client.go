@@ -269,7 +269,7 @@ func (c *Client) newRequest(ctx context.Context, httpMethod, url, method string,
 			req.Header.Set(key, value)
 		}
 	}
-	req.Header.Set("Connection", "keep-alive")
+	//req.Header.Set("Connection", "keep-alive")
 	return req, nil
 }
 
