@@ -350,7 +350,7 @@ func (c *Client) httpFetchPreflight(req *http.Request) (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("fetch2: \"%v\"\n", truncateString(string(data2), 20))
+	log.Printf("fetch2: \"%v\"\n%v\n", truncateString(string(data2), 20), req.Header)
 	return data2, nil
 }
 
