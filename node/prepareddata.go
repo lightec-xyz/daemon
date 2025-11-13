@@ -560,7 +560,7 @@ func (p *Prepared) GetSyncCommitUpdate(period uint64) (*rpc.WrapSyncCommitteeUpd
 		return nil, false, err
 	}
 	if !exists {
-		//logger.Warn("no find %v index update Responses", period)
+		logger.Warn("no find %v index update Responses", period)
 		return nil, false, nil
 	}
 	update, err := dbUpdateToZkUpdate(&currentPeriodUpdate)
