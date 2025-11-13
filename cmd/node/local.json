@@ -10,9 +10,9 @@
     "http://127.0.0.1:8977"
   ],
   "btcPwd": "",
-  "btcUrl": "http://127.0.0.1:9935",
+  "btcUrl": ["http://127.0.0.1:9935"],
   "ethUrl": "http://127.0.0.1:9899",
-  "beaconUrl": "http://127.0.0.1:8365",
+  "beaconUrl": ["http://127.0.0.1:8365"],
   "oasisUrl": "https://testnet.sapphire.oasis.dev",
   "discordHookUrl": "",
   "ethPrivateKey": "",
