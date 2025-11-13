@@ -6,10 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lightec-xyz/daemon/rpc/beacon/types"
-	"github.com/prysmaticlabs/prysm/v5/container/slice"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"net/http"
@@ -17,6 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lightec-xyz/daemon/rpc/beacon/types"
+	"github.com/prysmaticlabs/prysm/v5/container/slice"
 
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
@@ -293,22 +293,7 @@ func (c *Client) httpReq(httpMethod, url, method string, param Param, value inte
 			log.Printf("httpReq request: %v  %v \n", method, string(requestData))
 		}
 	}
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		if resp != nil && resp.Body != nil {
-			defer resp.Body.Close()
-		}
-
-		return err
-	}
-	if resp == nil || resp.StatusCode < http.StatusOK || resp.StatusCode > 300 {
-		data, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("response err: %v %v %v", resp.StatusCode, resp.Status, string(data))
-	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := c.httpFetchPreflight(req)
 	if err != nil {
 		return err
 	}
@@ -324,6 +309,47 @@ func (c *Client) httpReq(httpMethod, url, method string, param Param, value inte
 	}
 	return nil
 
+}
+
+func (c *Client) httpFetchBytes(req *http.Request) (res []byte, err error) {
+	defer log.Printf("httpfetch url:%v result:%v %v \n", req.URL, string(res), err)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		if resp != nil && resp.Body != nil {
+			defer resp.Body.Close()
+		}
+		return nil, err
+	}
+	if resp != nil {
+		if resp != nil && resp.Body != nil {
+			defer resp.Body.Close()
+			data, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			log.Printf("httpReq fetch: %v \n", string(data))
+			return data, nil
+		}
+	}
+	return nil, nil
+}
+
+func (c *Client) httpFetchPreflight(req *http.Request) (res []byte, err error) {
+	data, err := c.httpFetchBytes(req)
+	if err != nil {
+		return nil, err
+	}
+	if data == nil {
+		return nil, nil
+	}
+	if string(data) != "[]" && string(data) != "" {
+		return data, nil
+	}
+	data2, err := c.httpFetchBytes(req)
+	if err != nil {
+		return nil, err
+	}
+	return data2, nil
 }
 
 type Param map[string]interface{}
