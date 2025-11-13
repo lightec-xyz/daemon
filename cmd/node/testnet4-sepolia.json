@@ -1,0 +1,35 @@
+{
+  "datadir": "../../../testnet4-sepolia",
+  "btcMainnetPath": "/opt/circuit/headers.txt",
+  "network": "testnet",
+  "rpcbind": "0.0.0.0",
+  "rpcport": "10977",
+  "wsPort": "8880",
+  "btcUser": "lightec",
+  "sgxUrl": [
+    "http://127.0.0.1:8977"
+  ],
+  "btcPwd": "",
+  "btcUrl": ["https://mempool.space/testnet4/api/v1"],
+  "ethUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+  "beaconUrl": ["https://ethereum-sepolia-beacon-api.publicnode.com"],
+  "oasisUrl": "https://testnet.sapphire.oasis.dev",
+  "discordHookUrl": "",
+  "ethPrivateKey": "0x8dd402753e196ab98e83148303f883d86f97ad376d447f69866859c934a263ae",
+  "btcInitHeight": 1000000,
+  "btcGenesisHeight": 105000,
+  "icpWalletAddress": "xbsjj-qaaaa-aaaai-aqamq-cai",
+  "beaconInitSlot": 4161092,
+  "genesisBeaconSlot": 4128768,
+  "ethInitHeight": 3749086,
+  "enableLocalWorker": false,
+  "btcReScan": false,
+  "disableBtcAgent": false,
+  "disableEthAgent": true,
+  "disableBeaconAgent": true,
+  "disableFetch": true,
+  "disableLipP2p": true,
+  "p2pBootstraps": [
+    ""
+  ]
+}
