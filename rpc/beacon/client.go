@@ -327,7 +327,7 @@ func (c *Client) httpFetchBytes(req *http.Request) (res []byte, err error) {
 			if err != nil {
 				return nil, err
 			}
-			log.Printf("httpReq fetch: %v \n%v\n", truncateString(string(data), 20), req.URL)
+			log.Printf("httpReq fetch: %v \n%v\n", truncateString(string(data), 200), req.URL)
 			return data, nil
 		}
 	}
