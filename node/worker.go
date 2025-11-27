@@ -2,12 +2,13 @@ package node
 
 import (
 	"fmt"
+	"sync"
+
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
-	"sync"
 )
 
 var _ rpc.IWorker = (*LocalWorker)(nil)
@@ -544,12 +545,12 @@ func (w *LocalWorker) SyncCommDutyProve(req rpc.SyncCommDutyRequest) (*rpc.SyncC
 	}
 	proofBytes, witnessBytes, err := circuits.PlonkProofToBytes(proof)
 	if err != nil {
-		logger.Error("btc genesis prove error: %v", err)
+		logger.Error("SC genesis prove error: %v", err)
 		return nil, err
 	}
 	recursiveBytes, recursiveWitnessBytes, err := circuits.PlonkProofToBytes(recursive)
 	if err != nil {
-		logger.Error("btc genesis prove error: %v", err)
+		logger.Error("SC genesis prove error: %v", err)
 		return nil, err
 	}
 	return &rpc.SyncCommDutyResponse{
