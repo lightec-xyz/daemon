@@ -2,19 +2,19 @@ package node
 
 const (
 	TestnetLightecNetwork        = "testnet"
-	TestnetBtcOperatorAddress    = "tb1quxl2g39x50vlc4ycne2hrrq8dl3cqv84prdnvzlrshm2a4dkt24snxa5nz"
-	TestnetBtcLockScript         = "0x0020e1bea444a6a3d9fc54989e55718c076fe38030f508db360be385f6aed5b65aab"
-	TestnetBtcMultiSig           = "0x522102fdb41469ab1536cbfadd8a659b2e2667795d6a98b7cb696c1626a70e937bbe142102971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b21037a0e87290a962bad95efe3edbb61d70a7ee6cf7d5d5afbbdd3490ce098cf562953ae"
-	TestnetEthZkBridgeAddress    = "0xF259b0bb540DdC7d1A007Ea94f519015DC574114"
-	TestnetEthZkBtcAddress       = "0xeCed2a18fB48B34671eE63E9370da5A9bE7493FB"
-	TestnetEthUtxoManagerAddress = "0x988cE53580Bc5Cc8B128A2d0A7D442f46B041234"
-	TestnetEthBtcTxVerifyAddress = "0x94FbBC81601aF088B5cfCd4bB75E33Ff6c21E190"
-	TestnetFeePoolAddr           = "0x51EB5Dd698148dC1E1a6Bab18050B30dd51f1766"
-	TestnetOasisSignerAddr       = "0x10622d51ABF42860111DA3329156f5ac56c135aF"
-	TestnetIcpPublicKey          = "0x02971351ad0a4e80b4d61003a152c746bde6d7ac5cba52466727c611fdc8c20f5b"
-	TestnetGenesisRoot           = "0xee110c241c6d63bb2e3b1c646b37abeec9c70f2afb99040299b8d68c4e5a4697"
+	TestnetBtcOperatorAddress    = "tb1qmfsjae6yxtt8kc3cre84rkraa5nyw35nzmx87t85z30f8auy0mnqhtuey4"
+	TestnetBtcLockScript         = "0020da612ee74432d67b62381e4f51d87ded2647469316cc7f2cf4145e93f7847ee6"
+	TestnetBtcMultiSig           = "522103602e4ff785c3da5127bf95757de7fdad16c319945d24717e9b6a0a7cef83b135210220f4da49c34492ee997f51812b9287444fd2be26787aee485296ab41fcbbb8f42102b4ca925faa4e78c292c080254121299a778e990dd52061fb6d5dd01ef9db56f253ae"
+	TestnetEthZkBridgeAddress    = "0x9C83D62f524d589da2ED538F5F59225880B680D1"
+	TestnetEthZkBtcAddress       = "0x71198dD1689eBc01A7664ce7c0d5b1f62DF2b378"
+	TestnetEthUtxoManagerAddress = "0xc5eC55Ba3764c09eD28598465D534e313A0EEe34"
+	TestnetEthBtcTxVerifyAddress = "0x6e4abEe4d5D97Ce08Da9CBb050f46677d1e23fDd"
+	TestnetFeePoolAddr           = "0xd69aec9e9a434aa6B0a9BCC9B4D01154fc907253"
+	TestnetOasisSignerAddr       = "0x78131d6524C04F986e82Cd222a6ABcBf8f9D9Dc1"
+	TestnetIcpPublicKey          = "0x02b4ca925faa4e78c292c080254121299a778e990dd52061fb6d5dd01ef9db56f2"
+	TestnetGenesisRoot           = "0x603499eb68150e861ef759463fa901add0987d1af340c925e1701a10b9c21165"
 	TestnetBlockSingerId         = "xdqo6-dqaaa-aaaal-qsqva-cai"
-	TestnetIcpTxSingerId         = "wlkxr-hqaaa-aaaad-aaxaa-cai"
+	TestnetIcpTxSingerId         = "n6pke-yqaaa-aaaah-arona-cai"
 
 	// we don't need those default values, every config file should have these three values
 	// TestnetInitBitcoinHeight     = 99067
