@@ -3,11 +3,12 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/btcsuite/btcd/wire"
 	"github.com/lightec-xyz/daemon/common"
 	btctypes "github.com/lightec-xyz/daemon/rpc/bitcoin"
-	"os"
-	"time"
 )
 
 type RunConfig struct {
@@ -165,15 +166,15 @@ func getGenesisRoot(network string) string {
 }
 
 func testnetConfig(cfg RunConfig) (Config, error) {
-	if cfg.BtcInitHeight == 0 {
-		cfg.BtcInitHeight = TestnetInitBitcoinHeight
-	}
-	if cfg.EthInitHeight == 0 {
-		cfg.EthInitHeight = TestnetInitEthereumHeight
-	}
-	if cfg.BeaconInitSlot == 0 {
-		cfg.BeaconInitSlot = TestnetInitBeaconHeight
-	}
+	// if cfg.BtcInitHeight == 0 {
+	// 	cfg.BtcInitHeight = TestnetInitBitcoinHeight
+	// }
+	// if cfg.EthInitHeight == 0 {
+	// 	cfg.EthInitHeight = TestnetInitEthereumHeight
+	// }
+	// if cfg.BeaconInitSlot == 0 {
+	// 	cfg.BeaconInitSlot = TestnetInitBeaconHeight
+	// }
 	return Config{
 		RunConfig:             cfg,
 		IcpBlockSignerAddress: TestnetBlockSingerId,
@@ -197,15 +198,15 @@ func testnetConfig(cfg RunConfig) (Config, error) {
 }
 
 func mainnetConfig(cfg RunConfig) (Config, error) {
-	if cfg.BtcInitHeight == 0 {
-		cfg.BtcInitHeight = InitBitcoinHeight
-	}
-	if cfg.EthInitHeight == 0 {
-		cfg.EthInitHeight = InitEthereumHeight
-	}
-	if cfg.BeaconInitSlot == 0 {
-		cfg.BeaconInitSlot = InitBeaconHeight
-	}
+	// if cfg.BtcInitHeight == 0 {
+	// 	cfg.BtcInitHeight = InitBitcoinHeight
+	// }
+	// if cfg.EthInitHeight == 0 {
+	// 	cfg.EthInitHeight = InitEthereumHeight
+	// }
+	// if cfg.BeaconInitSlot == 0 {
+	// 	cfg.BeaconInitSlot = InitBeaconHeight
+	// }
 	return Config{
 		RunConfig: cfg,
 

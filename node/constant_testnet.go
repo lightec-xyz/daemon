@@ -15,7 +15,9 @@ const (
 	TestnetGenesisRoot           = "0xee110c241c6d63bb2e3b1c646b37abeec9c70f2afb99040299b8d68c4e5a4697"
 	TestnetBlockSingerId         = "xdqo6-dqaaa-aaaal-qsqva-cai"
 	TestnetIcpTxSingerId         = "wlkxr-hqaaa-aaaad-aaxaa-cai"
-	TestnetInitBitcoinHeight     = 99067
-	TestnetInitBeaconHeight      = 8384240
-	TestnetInitEthereumHeight    = 9078827
+
+	// we don't need those default values, every config file should have these three values
+	// TestnetInitBitcoinHeight     = 99067
+	// TestnetInitBeaconHeight      = 8384240
+	// TestnetInitEthereumHeight    = 9078827
 )

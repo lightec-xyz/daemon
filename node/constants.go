@@ -20,9 +20,10 @@ const (
 	BlockSingerId         = "xdqo6-dqaaa-aaaal-qsqva-cai"
 	IcpTxSingerId         = "wlkxr-hqaaa-aaaad-aaxaa-cai"
 
-	InitBitcoinHeight  = 2812015
-	InitBeaconHeight   = 153
-	InitEthereumHeight = 1489369
+	// we don't need those default values, every config file should have these three values
+	// InitBitcoinHeight  = 2812015
+	// InitBeaconHeight   = 153
+	// InitEthereumHeight = 1489369
 
 	DepositTopic       = "0xd063609fea0cb9b8a1b53a4fbf0e659c270b3bc99eab08dcc7f4433b4937e074"
 	RedeemTopic        = "0x379299efe6911678ce0f23cfce13a7c61a5b2c1723f583f9217b6ee0887b3ef4"
