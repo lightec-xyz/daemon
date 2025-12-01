@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strings"
+	"time"
+
 	"github.com/btcsuite/btcd/wire"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -15,9 +19,6 @@ import (
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	redeemUtils "github.com/lightec-xyz/provers/utils/redeem-tx"
-	"math/big"
-	"strings"
-	"time"
 )
 
 type ethereumAgent struct {
@@ -92,7 +93,7 @@ func (b *ethereumAgent) GetCheckpointHeight() error {
 	littleHash := hex.EncodeToString(common.ReverseBytes(hash))
 	header, err := b.btcClient.GetBlockHeader(littleHash)
 	if err != nil {
-		logger.Error("btcClient checkpoint height  error:%v %v", err, hash)
+		logger.Error("btcClient checkpoint height  error:%v %v", err, littleHash)
 		return err
 	}
 	checkpointHeight := uint64(header.Height)
