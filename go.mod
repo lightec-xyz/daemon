@@ -9,8 +9,8 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
-	github.com/consensys/gnark v0.14.1-0.20251106131433-7ec673b46f10
-	github.com/consensys/gnark-crypto v0.19.1
+	github.com/consensys/gnark v0.12.0
+	github.com/consensys/gnark-crypto v0.17.1-0.20250326164229-5fd6610ac2a1
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/emirpasic/gods v1.18.1
