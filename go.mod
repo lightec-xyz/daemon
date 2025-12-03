@@ -112,9 +112,9 @@ require (
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
 	github.com/libp2p/go-yamux/v4 v4.0.1 // indirect
 	github.com/libp2p/zeroconf/v2 v2.2.0 // indirect
-	github.com/lightec-xyz/RLPark v0.2.5 // indirect
-	github.com/lightec-xyz/chainark v0.6.0 // indirect
-	github.com/lightec-xyz/gMPTark v0.2.9 // indirect
+	github.com/lightec-xyz/RLPark v0.2.4 // indirect
+	github.com/lightec-xyz/chainark v0.5.7 // indirect
+	github.com/lightec-xyz/gMPTark v0.2.7 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
