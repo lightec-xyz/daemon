@@ -24,7 +24,7 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.28.1
 	github.com/libp2p/go-libp2p-pubsub v0.13.0
 	github.com/lightec-xyz/btc_provers v0.0.0-00010101000000-000000000000
-	github.com/lightec-xyz/common v0.3.0
+	github.com/lightec-xyz/common v0.2.10
 	github.com/lightec-xyz/provers v0.0.0-00010101000000-000000000000
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/prysmaticlabs/prysm/v5 v5.3.3
