@@ -240,6 +240,8 @@ require (
 )
 
 replace (
+	github.com/consensys/gnark => github.com/lightec-xyz/gnark v0.0.0-20250407032304-d7a29c9b22cb
+	github.com/consensys/gnark-crypto => github.com/lightec-xyz/gnark-crypto v0.0.0-20250403072623-6d10578c6e27
 	github.com/lightec-xyz/RLPark => ../RLPark
 	github.com/lightec-xyz/btc_provers => ../btc_provers
 	github.com/lightec-xyz/gMPTark => ../gMPTark
