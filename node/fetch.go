@@ -2,16 +2,17 @@ package node
 
 import (
 	"fmt"
+	"math/big"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	beaconTypes "github.com/lightec-xyz/daemon/rpc/beacon/types"
 	"github.com/lightec-xyz/daemon/store"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
-	"math/big"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 var _ IFetch = (*Fetch)(nil)
@@ -273,7 +274,10 @@ func (f *Fetch) CheckLightClientUpdate(period uint64, update *common.LightClient
 				logger.Error("parse sync update error:%v %v", period, err)
 				return false, err
 			}
-			syncUpdate.Version = prePeriodUpdate.Version
+
+			logger.Debug("assigning syncUpdate.Version from update.Version: %v", update.Version)
+			syncUpdate.Version = update.Version
+
 			var currentSyncCommittee proverType.SyncCommittee
 			err = common.ParseObj(prePeriodUpdate.Data.NextSyncCommittee, &currentSyncCommittee)
 			if err != nil {
