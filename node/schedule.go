@@ -2,9 +2,10 @@ package node
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	"sync"
 	"time"
+
+	"github.com/lightec-xyz/daemon/rpc/dfinity"
 
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -284,13 +285,13 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Error("check tx height error:%v %v", unGenTx.Hash, err)
 			return err
 		}
+		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v,retryNums:%v",
+			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
+			unSigProtect, btcDbTx.GenProofNums)
 		if !depthOk {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
 		}
-		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v,retryNums:%v",
-			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
-			unSigProtect, btcDbTx.GenProofNums)
 		switch unGenTx.ProofType {
 		case common.BtcDepositType, common.BtcUpdateCpType:
 			err := s.checkBtcDepositRequest(unGenTx.ProofType, btcDbTx)
