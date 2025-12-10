@@ -4,6 +4,15 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/btcsuite/btcd/btcutil"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -21,12 +30,6 @@ import (
 	"github.com/lightec-xyz/daemon/rpc/sgx"
 	"github.com/lightec-xyz/daemon/store"
 	redeemUtils "github.com/lightec-xyz/provers/utils/redeem-tx"
-	"math/big"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 type TxManager struct {
@@ -336,7 +339,26 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		logger.Error("deposit zkbtc error:%v %v", txId, err)
 		return "", err
 	}
-	logger.Debug("deposit zkbtc info address: %v ethTxHash: %v, btcTxId: %v,nonce: %v", ethAddress, txHash, txId, nonce)
+	decodedTx, err := btcutil.NewTxFromBytes(btcRawTx)
+	if err != nil {
+		logger.Error("cannot decode btcRawTx: %v, %v", btcRawTx, err)
+		return "", err
+	}
+	isZenKeeper := false
+	var opReturnScript string
+	for i := 0; i < len(decodedTx.MsgTx().TxOut); i++ {
+		txOut := decodedTx.MsgTx().TxOut[i].PkScript
+		if txOut[0] == 0x6a && len(txOut) > 22 {
+			isZenKeeper = true
+			opReturnScript = hex.EncodeToString(txOut)
+			break
+		}
+	}
+	logger.Debug("deposit zkbtc info address: %v ethTxHash: %v, btcTxId: %v, nonce: %v, isZenKeeper: %v", ethAddress, txHash, txId, nonce, isZenKeeper)
+	if isZenKeeper && proofType == common.BtcDepositType {
+		logger.Info("ZenKeeper deposit with btcTxId: %v, OP_RETURN script: %v", txId, opReturnScript)
+		logZenKeeper(txId, opReturnScript)
+	}
 	err = t.chainStore.WriteNonce(common.ETH.String(), ethAddress, nonce)
 	if err != nil {
 		logger.Error("write nonce error: %v %v", ethAddress, err)
@@ -349,6 +371,20 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 		return "", err
 	}
 	return txHash, nil
+}
+
+func logZenKeeper(txId, script string) {
+	f, err := os.OpenFile("zenkeeper.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		logger.Error("error logging to zenkeeper.log: %v", err)
+	} else {
+		f.WriteString(txId)
+		f.WriteString(": ")
+		f.WriteString(script)
+		f.WriteString("\n")
+		f.Sync()
+		f.Close()
+	}
 }
 
 func (t *TxManager) RedeemZkbtc(hash, proof string) (string, error) {

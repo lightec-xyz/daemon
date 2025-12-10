@@ -280,14 +280,14 @@ func (s *Scheduler) CheckBtcState() error {
 			}
 			continue
 		}
+		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v,retryNums:%v",
+			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
+			unSigProtect, btcDbTx.GenProofNums)
 		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx, unSigProtect)
 		if err != nil {
 			logger.Error("check tx height error:%v %v", unGenTx.Hash, err)
 			return err
 		}
-		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v,retryNums:%v",
-			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
-			unSigProtect, btcDbTx.GenProofNums)
 		if !depthOk {
 			logger.Warn("check tx depth:%v %v ,not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
