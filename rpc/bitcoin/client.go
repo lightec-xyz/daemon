@@ -119,7 +119,7 @@ func (c *Client) GetBlock(hash string) (Block, error) {
 }
 func (c *Client) GetBlockStr(hash string) (string, error) {
 	var res json.RawMessage
-	err := c.Call("getblock", NewParams(hash, 3), &res)
+	err := c.Call("getblock", NewParams(hash, 0), &res)
 	if err != nil {
 		return "", err
 	}

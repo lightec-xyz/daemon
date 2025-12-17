@@ -36,3 +36,5 @@ data/btc/headers/.git*
 cmd/generator/generator
 cmd/setup
 cmd/node/node
+cmd/generator/testnet.json
+.vscode/launch.json

@@ -1,12 +1,23 @@
 package node
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"math/big"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/btcsuite/btcd/blockchain"
+	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/mempool"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 
 	"github.com/lightec-xyz/daemon/rpc/dfinity"
 
@@ -283,26 +294,90 @@ func (b *bitcoinAgent) rollback(height uint64) error {
 	return nil
 }
 
+type getblockVerbose0 struct {
+	Result string `json:"result"`
+	Error  string `json:"error"`
+	Id     string `json:"id"`
+}
+
 func (b *bitcoinAgent) parseBlock(hash string, height uint64) ([]*DbTx, []*DbTx, error) {
 	blockStr, err := b.btcClient.GetBlockStr(hash)
 	if err != nil {
 		logger.Error("btcClient get block error: %v %v", hash, err)
 		return nil, nil, err
 	}
-	var block bitcoin.Block
-	err = json.Unmarshal([]byte(blockStr), &block)
+	var blockV0Json getblockVerbose0
+	err = json.Unmarshal([]byte(blockStr), blockV0Json)
 	if err != nil {
-		logger.Error("unmarshal btc block error: %v %v", hash, err)
+		logger.Error("btcClient unmarshall v0 block error: %v %v", hash, err)
 		return nil, nil, err
 	}
-	err = b.chainStore.WriteBtcBlock(hash, blockStr)
+
+	blockBytes, err := hex.DecodeString(blockV0Json.Result)
+	if err != nil {
+		logger.Error("btcClient hex-decode block data error: %v %v", hash, err)
+		return nil, nil, err
+	}
+	rawBlock, err := btcutil.NewBlockFromBytes(blockBytes)
+	if err != nil {
+		logger.Error("btcClient deserialize block data error: %v %v", hash, err)
+		return nil, nil, err
+	}
+
+	var params chaincfg.Params
+	if height >= 500000 { // only a hack TODO FIXME
+		params = chaincfg.MainNetParams
+	} else {
+		params = chaincfg.TestNet4Params
+	}
+
+	// begin codes adapted from btcd handleGetBlock, including the getDifficultyRatio function, and createTxRawResult and its depencencies
+	blockHeader := &rawBlock.MsgBlock().Header
+	block := btcjson.GetBlockVerboseResult{
+		Hash:          hash,
+		Version:       blockHeader.Version,
+		VersionHex:    fmt.Sprintf("%08x", blockHeader.Version),
+		MerkleRoot:    blockHeader.MerkleRoot.String(),
+		PreviousHash:  blockHeader.PrevBlock.String(),
+		Nonce:         blockHeader.Nonce,
+		Time:          blockHeader.Timestamp.Unix(),
+		Confirmations: int64(1), // we don't know yet and not important, so ...
+		Height:        int64(height),
+		Size:          int32(len(blockBytes)),
+		StrippedSize:  int32(rawBlock.MsgBlock().SerializeSizeStripped()),
+		Weight:        int32(blockchain.GetBlockWeight(rawBlock)),
+		Bits:          strconv.FormatInt(int64(blockHeader.Bits), 16),
+		Difficulty:    getDifficultyRatio(blockHeader.Bits, &params),
+		NextHash:      "", // we don't care
+	}
+	txns := rawBlock.Transactions()
+	rawTxns := make([]btcjson.TxRawResult, len(txns))
+	for i, tx := range txns {
+		rawTxn, err := createTxRawResult(&params, tx.MsgTx(),
+			tx.Hash().String(), blockHeader, hash,
+			int32(height), int32(height)+1) // we don't care the chain height for now
+		if err != nil {
+			return nil, nil, err
+		}
+		rawTxns[i] = *rawTxn
+	}
+	block.RawTx = rawTxns
+	// end codes adapted from btcd handleGetBlock
+
+	blockVerboseStr, err := json.Marshal(&block)
+	if err != nil {
+		logger.Error("marshal btc block error: %v %v", hash, err)
+		return nil, nil, err
+	}
+	err = b.chainStore.WriteBtcBlock(hash, string(blockVerboseStr))
 	if err != nil {
 		logger.Error("write btc block error: %v %v", hash, err)
 		return nil, nil, err
 	}
+
 	var depositTxes []*DbTx
 	var redeemTxes []*DbTx
-	for txIndex, tx := range block.Tx {
+	for txIndex, tx := range block.RawTx {
 
 		migrateTx, isMigrate, err := b.migrateTx(tx, height, uint64(txIndex), uint64(block.Time))
 		if err != nil {
@@ -332,6 +407,181 @@ func (b *bitcoinAgent) parseBlock(hash string, height uint64) ([]*DbTx, []*DbTx,
 		}
 	}
 	return depositTxes, redeemTxes, nil
+}
+
+// function getDifficultyRatio is adapted from btcd
+// getDifficultyRatio returns the proof-of-work difficulty as a multiple of the
+// minimum difficulty using the passed bits field from the header of a block.
+func getDifficultyRatio(bits uint32, params *chaincfg.Params) float64 {
+	// The minimum difficulty is the max possible proof-of-work limit bits
+	// converted back to a number.  Note this is not the same as the proof of
+	// work limit directly because the block difficulty is encoded in a block
+	// with the compact form which loses precision.
+	max := blockchain.CompactToBig(params.PowLimitBits)
+	target := blockchain.CompactToBig(bits)
+
+	difficulty := new(big.Rat).SetFrac(max, target)
+	outString := difficulty.FloatString(8)
+	diff, err := strconv.ParseFloat(outString, 64)
+	if err != nil {
+		logger.Error("Cannot get difficulty: %v", err)
+		return 0
+	}
+	return diff
+}
+
+// function createTxRawResult is adapted from btcd
+// createTxRawResult converts the passed transaction and associated parameters
+// to a raw transaction JSON object.
+func createTxRawResult(chainParams *chaincfg.Params, mtx *wire.MsgTx,
+	txHash string, blkHeader *wire.BlockHeader, blkHash string,
+	blkHeight int32, chainHeight int32) (*btcjson.TxRawResult, error) {
+
+	mtxHex, err := messageToHex(mtx)
+	if err != nil {
+		return nil, err
+	}
+
+	txReply := &btcjson.TxRawResult{
+		Hex:      mtxHex,
+		Txid:     txHash,
+		Hash:     mtx.WitnessHash().String(),
+		Size:     int32(mtx.SerializeSize()),
+		Vsize:    int32(mempool.GetTxVirtualSize(btcutil.NewTx(mtx))),
+		Weight:   int32(blockchain.GetTransactionWeight(btcutil.NewTx(mtx))),
+		Vin:      createVinList(mtx),
+		Vout:     createVoutList(mtx, chainParams, nil),
+		Version:  uint32(mtx.Version),
+		LockTime: mtx.LockTime,
+	}
+
+	if blkHeader != nil {
+		// This is not a typo, they are identical in bitcoind as well.
+		txReply.Time = blkHeader.Timestamp.Unix()
+		txReply.Blocktime = blkHeader.Timestamp.Unix()
+		txReply.BlockHash = blkHash
+		txReply.Confirmations = uint64(1 + chainHeight - blkHeight)
+	}
+
+	return txReply, nil
+}
+
+// from btcd
+func messageToHex(msg wire.Message) (string, error) {
+	var buf bytes.Buffer
+	if err := msg.BtcEncode(&buf, 70002, wire.WitnessEncoding); err != nil {
+		context := fmt.Sprintf("Failed to encode msg of type %T", msg)
+		return "", internalRPCError(err.Error(), context)
+	}
+
+	return hex.EncodeToString(buf.Bytes()), nil
+}
+
+// from btcd
+func internalRPCError(errStr, context string) *btcjson.RPCError {
+	logStr := errStr
+	if context != "" {
+		logStr = context + ": " + errStr
+	}
+	logger.Error(logStr)
+	return btcjson.NewRPCError(btcjson.ErrRPCInternal.Code, errStr)
+}
+
+// from btcd
+// createVinList returns a slice of JSON objects for the inputs of the passed
+// transaction.
+func createVinList(mtx *wire.MsgTx) []btcjson.Vin {
+	// Coinbase transactions only have a single txin by definition.
+	vinList := make([]btcjson.Vin, len(mtx.TxIn))
+	if blockchain.IsCoinBaseTx(mtx) {
+		txIn := mtx.TxIn[0]
+		vinList[0].Coinbase = hex.EncodeToString(txIn.SignatureScript)
+		vinList[0].Sequence = txIn.Sequence
+		vinList[0].Witness = txIn.Witness.ToHexStrings()
+		return vinList
+	}
+
+	for i, txIn := range mtx.TxIn {
+		// The disassembled string will contain [error] inline
+		// if the script doesn't fully parse, so ignore the
+		// error here.
+		disbuf, _ := txscript.DisasmString(txIn.SignatureScript)
+
+		vinEntry := &vinList[i]
+		vinEntry.Txid = txIn.PreviousOutPoint.Hash.String()
+		vinEntry.Vout = txIn.PreviousOutPoint.Index
+		vinEntry.Sequence = txIn.Sequence
+		vinEntry.ScriptSig = &btcjson.ScriptSig{
+			Asm: disbuf,
+			Hex: hex.EncodeToString(txIn.SignatureScript),
+		}
+
+		if mtx.HasWitness() {
+			vinEntry.Witness = txIn.Witness.ToHexStrings()
+		}
+	}
+
+	return vinList
+}
+
+// from btcd
+// createVoutList returns a slice of JSON objects for the outputs of the passed
+// transaction.
+func createVoutList(mtx *wire.MsgTx, chainParams *chaincfg.Params, filterAddrMap map[string]struct{}) []btcjson.Vout {
+	voutList := make([]btcjson.Vout, 0, len(mtx.TxOut))
+	for i, v := range mtx.TxOut {
+		// The disassembled string will contain [error] inline if the
+		// script doesn't fully parse, so ignore the error here.
+		disbuf, _ := txscript.DisasmString(v.PkScript)
+
+		// Ignore the error here since an error means the script
+		// couldn't parse and there is no additional information about
+		// it anyways.
+		scriptClass, addrs, reqSigs, _ := txscript.ExtractPkScriptAddrs(
+			v.PkScript, chainParams)
+
+		// Encode the addresses while checking if the address passes the
+		// filter when needed.
+		passesFilter := len(filterAddrMap) == 0
+		encodedAddrs := make([]string, len(addrs))
+		for j, addr := range addrs {
+			encodedAddr := addr.EncodeAddress()
+			encodedAddrs[j] = encodedAddr
+
+			// No need to check the map again if the filter already
+			// passes.
+			if passesFilter {
+				continue
+			}
+			if _, exists := filterAddrMap[encodedAddr]; exists {
+				passesFilter = true
+			}
+		}
+
+		if !passesFilter {
+			continue
+		}
+
+		var vout btcjson.Vout
+		vout.N = uint32(i)
+		vout.Value = btcutil.Amount(v.Value).ToBTC()
+		vout.ScriptPubKey.Addresses = encodedAddrs
+		vout.ScriptPubKey.Asm = disbuf
+		vout.ScriptPubKey.Hex = hex.EncodeToString(v.PkScript)
+		vout.ScriptPubKey.Type = scriptClass.String()
+		vout.ScriptPubKey.ReqSigs = int32(reqSigs)
+
+		// Address is defined when there's a single well-defined
+		// receiver address. To spend the output a signature for this,
+		// and only this, address is required.
+		if len(encodedAddrs) == 1 && reqSigs <= 1 {
+			vout.ScriptPubKey.Address = encodedAddrs[0]
+		}
+
+		voutList = append(voutList, vout)
+	}
+
+	return voutList
 }
 
 func (b *bitcoinAgent) checkChainFork(height uint64) (bool, error) {
@@ -467,7 +717,7 @@ func (b *bitcoinAgent) ProofResponse(resp *common.ProofResponse) error {
 	return nil
 }
 
-func (b *bitcoinAgent) redeemTx(tx bitcoin.Tx, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
+func (b *bitcoinAgent) redeemTx(tx btcjson.TxRawResult, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
 	isRedeem := b.btcFilter.Redeem(tx.Vin)
 	if !isRedeem {
 		return nil, false, nil
@@ -483,7 +733,7 @@ func (b *bitcoinAgent) redeemTx(tx bitcoin.Tx, height, txIndex, blockTime uint64
 	return redeemBtcTx, true, nil
 }
 
-func (b *bitcoinAgent) migrateTx(tx bitcoin.Tx, height, txIndex, blockTime uint64, skipCheck ...bool) (*DbTx, bool, error) {
+func (b *bitcoinAgent) migrateTx(tx btcjson.TxRawResult, height, txIndex, blockTime uint64, skipCheck ...bool) (*DbTx, bool, error) {
 	txOuts := tx.Vout
 	if len(txOuts) < 2 {
 		return nil, false, nil
@@ -511,7 +761,7 @@ func (b *bitcoinAgent) migrateTx(tx bitcoin.Tx, height, txIndex, blockTime uint6
 
 }
 
-func (b *bitcoinAgent) depositTx(tx bitcoin.Tx, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
+func (b *bitcoinAgent) depositTx(tx btcjson.TxRawResult, height, txIndex, blockTime uint64) (*DbTx, bool, error) {
 	txOuts := tx.Vout
 	if len(txOuts) < 2 {
 		return nil, false, nil
@@ -610,7 +860,7 @@ func NewRedeemBtcTx(height, txIndex, blockTime uint64, txId string, amount int64
 	}
 }
 
-func isOpZkpProto(outputs []bitcoin.TxVout) (string, error) {
+func isOpZkpProto(outputs []btcjson.Vout) (string, error) {
 	//https://mempool.space/zh/testnet4/tx/923d9f0fcb3654a343fd3e23d53f729c227f3ae77619e795e20c8b11a34bd358
 	//op_return + length + ethAddr （20 byte） + extra （0+byte）
 	//6a14e96af29bb5bb124c705c69034262fbc9fbb2d5f3
@@ -626,7 +876,7 @@ func isOpZkpProto(outputs []bitcoin.TxVout) (string, error) {
 	return "", fmt.Errorf("no find zkbtc opreturn")
 }
 
-func getDepositAmount(txOuts []bitcoin.TxVout, addr string) float64 {
+func getDepositAmount(txOuts []btcjson.Vout, addr string) float64 {
 	var total float64
 	for _, out := range txOuts {
 		if out.ScriptPubKey.Address == addr {
@@ -636,7 +886,7 @@ func getDepositAmount(txOuts []bitcoin.TxVout, addr string) float64 {
 	return total
 }
 
-func getRedeemAmount(txOuts []bitcoin.TxVout, addr string) float64 {
+func getRedeemAmount(txOuts []btcjson.Vout, addr string) float64 {
 	var total float64
 	for _, out := range txOuts {
 		if out.ScriptPubKey.Address != addr {
