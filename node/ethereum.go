@@ -90,6 +90,20 @@ func (b *ethereumAgent) GetCheckpointHeight() error {
 		logger.Error("ethClient get checkpoint hash error:%v", err)
 		return err
 	}
+	// is this latest?
+	latest, exists, err := b.chainStore.ReadLatestCheckPoint()
+	if err != nil {
+		logger.Error("ethClient read latest checkpoint error: %v", err)
+		return err
+	}
+	if exists {
+		lHash, exists2, err := b.chainStore.ReadCheckpoint(latest)
+		if err == nil && exists2 && lHash == hex.EncodeToString(hash) {
+			logger.Info("checkpoint not updated")
+			return nil
+		}
+	}
+
 	littleHash := hex.EncodeToString(common.ReverseBytes(hash))
 	header, err := b.btcClient.GetBlockHeader(littleHash)
 	if err != nil {
