@@ -294,26 +294,13 @@ func (b *bitcoinAgent) rollback(height uint64) error {
 	return nil
 }
 
-type getblockVerbose0 struct {
-	Result string `json:"result"`
-	Error  string `json:"error"`
-	Id     string `json:"id"`
-}
-
 func (b *bitcoinAgent) parseBlock(hash string, height uint64) ([]*DbTx, []*DbTx, error) {
-	blockStr, err := b.btcClient.GetBlockStr(hash)
+	blockV0Hex, err := b.btcClient.GetBlockStr(hash)
 	if err != nil {
 		logger.Error("btcClient get block error: %v %v", hash, err)
 		return nil, nil, err
 	}
-	var blockV0Json getblockVerbose0
-	err = json.Unmarshal([]byte(blockStr), blockV0Json)
-	if err != nil {
-		logger.Error("btcClient unmarshall v0 block error: %v %v", hash, err)
-		return nil, nil, err
-	}
-
-	blockBytes, err := hex.DecodeString(blockV0Json.Result)
+	blockBytes, err := hex.DecodeString(string(blockV0Hex))
 	if err != nil {
 		logger.Error("btcClient hex-decode block data error: %v %v", hash, err)
 		return nil, nil, err
@@ -479,11 +466,6 @@ func messageToHex(msg wire.Message) (string, error) {
 
 // from btcd
 func internalRPCError(errStr, context string) *btcjson.RPCError {
-	logStr := errStr
-	if context != "" {
-		logStr = context + ": " + errStr
-	}
-	logger.Error(logStr)
 	return btcjson.NewRPCError(btcjson.ErrRPCInternal.Code, errStr)
 }
 

@@ -123,7 +123,7 @@ func (c *Client) GetBlockStr(hash string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(res), err
+	return string(res[1 : len(res)-1]), err // remove the surrounding double quote
 }
 
 func (c *Client) Scantxoutset(address string) (ScanUtxoSet, error) {
