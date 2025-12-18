@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/lightec-xyz/daemon/common"
@@ -23,8 +22,6 @@ type Fetch struct {
 	genesisPeriod  uint64
 	fileStore      *FileStorage
 	lock           sync.Mutex
-	maxReqs        *atomic.Int64
-	state          *cache
 	chainStore     *ChainStore
 	updateNotify   chan *Notify
 	finalityNotify chan *Notify
@@ -51,7 +48,7 @@ func (f *Fetch) bootstrap() error {
 }
 
 func (f *Fetch) FinalityUpdate() error {
-	//logger.Debug("start finality update")
+	logger.Debug("start finality update")
 	err := f.GetFinalityUpdate()
 	if err != nil {
 		logger.Error("get finality update error:%v", err)
@@ -77,10 +74,6 @@ func (f *Fetch) StoreLatestPeriod() error {
 	return nil
 }
 
-func (f *Fetch) canUpdateReq() bool {
-	return f.maxReqs.Load() < 3 // todo
-}
-
 func (f *Fetch) LightClientUpdate() error {
 	logger.Debug("start light client update")
 	err := f.StoreLatestPeriod()
@@ -88,43 +81,19 @@ func (f *Fetch) LightClientUpdate() error {
 		logger.Error("store latest FIndex error:%v", err)
 		return err
 	}
-	if !f.canUpdateReq() {
-		return nil
-	}
 	updateIndexes, err := f.fileStore.NeedUpdateIndexes()
 	if err != nil {
 		logger.Error("get update indexes error:%v", err)
 		return nil
 	}
 	for _, index := range updateIndexes {
-		if !f.canUpdateReq() {
-			return nil
-		}
-		if f.state.Check(index) {
-			continue
-		}
-		f.maxReqs.Add(1)
-		f.state.Store(index, true)
 		go f.GetLightClientUpdate(index)
-
 	}
 	return nil
 }
 
 func (f *Fetch) GetLightClientUpdate(period uint64) {
-	defer func() {
-		f.state.Delete(period)
-		f.maxReqs.Add(-1)
-	}()
 	logger.Debug("start get light client update: %v", period)
-	exists, err := f.fileStore.CheckUpdate(period)
-	if err != nil {
-		logger.Error("check update error:%v %v", period, err)
-		return
-	}
-	if exists {
-		return
-	}
 	updates, err := f.client.LightClientUpdates(period, 1)
 	if err != nil {
 		logger.Error("get light client updates error:%v %v", period, err)
@@ -311,17 +280,13 @@ func (f *Fetch) Close() error {
 }
 
 func NewFetch(client beacon.IMultiBeacon, store store.IStore, fileStore *FileStorage, genesisSlot uint64, update, finalityUpate chan *Notify) (*Fetch, error) {
-	maxReqs := atomic.Int64{}
-	maxReqs.Store(0)
 	return &Fetch{
 		client:         client,
 		fileStore:      fileStore,
 		genesisSlot:    genesisSlot,
 		genesisPeriod:  genesisSlot / common.SlotPerPeriod,
-		maxReqs:        &maxReqs,
 		updateNotify:   update,
 		finalityNotify: finalityUpate,
-		state:          NewCacheState(),
 		chainStore:     NewChainStore(store),
 	}, nil
 }
