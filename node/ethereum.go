@@ -357,6 +357,7 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, []
 	var depositRewards []*DbTx
 	var redeemRewards []*DbTx
 	for _, log := range logs {
+		logger.Debug("parsing block for log, height: %v, addr: %v, topic: %v", height, log.Address.Hex(), log.Topics[0].Hex())
 		depositTx, isDeposit, err := e.depositTx(log, blockTime)
 		if err != nil {
 			logger.Error("check is deposit tx error:%v", err)
