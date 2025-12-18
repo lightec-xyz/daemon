@@ -2,6 +2,12 @@ package node
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/aviate-labs/agent-go/identity"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/node/p2p"
@@ -10,11 +16,6 @@ import (
 	prysmClient "github.com/prysmaticlabs/prysm/v5/api/client"
 	"github.com/prysmaticlabs/prysm/v5/config/params"
 	"github.com/ybbus/jsonrpc/v3"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -328,7 +329,7 @@ func (d *Daemon) Run() error {
 	}
 	// fetch
 	if !d.cfg.DisableFetch {
-		go DoTimerTask("fetch-finality-update", 30*time.Second, d.fetch.FinalityUpdate, d.exitSignal)
+		go DoTimerTask("fetch-finality-update", 3*time.Minute, d.fetch.FinalityUpdate, d.exitSignal)
 		go DoTimerTask("fetch-update", 2*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 
 	}
