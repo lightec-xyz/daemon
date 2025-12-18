@@ -151,9 +151,9 @@ func (e *ethereumAgent) ScanBlock() error {
 		return err
 	}
 
-	for index := uint64(currentHeight) + 1; index <= blockNumber; index++ {
-		logger.Debug("ethereum parse block:%d", index)
-		preHeight := index - 1
+	for height := uint64(currentHeight) + 1; height <= blockNumber; height++ {
+		logger.Debug("ethereum parse block:%d", height)
+		preHeight := height - 1
 		chainForked, err := e.chainFork(preHeight)
 		if err != nil {
 			logger.Error("check chain fork error: %v %v", preHeight, err)
@@ -168,14 +168,14 @@ func (e *ethereumAgent) ScanBlock() error {
 			}
 			return nil
 		}
-		err = e.scan(index)
+		err = e.scan(height)
 		if err != nil {
-			logger.Error("scan error: %v %v", index, err)
+			logger.Error("scan error: %v %v", height, err)
 			return err
 		}
-		err = e.chainStore.WriteEthereumHeight(index)
+		err = e.chainStore.WriteEthereumHeight(height)
 		if err != nil {
-			logger.Error("batch write error: %v %v", index, err)
+			logger.Error("batch write error: %v %v", height, err)
 			return err
 		}
 
@@ -183,28 +183,28 @@ func (e *ethereumAgent) ScanBlock() error {
 	return nil
 }
 
-func (e *ethereumAgent) ReScan(index uint64) error {
-	logger.Debug("reScan eth block:%d", index)
-	err := e.scan(index, true)
+func (e *ethereumAgent) ReScan(height uint64) error {
+	logger.Debug("reScan eth block:%d", height)
+	err := e.scan(height, true)
 	if err != nil {
-		logger.Error("scan error: %v %v", index, err)
+		logger.Error("scan error: %v %v", height, err)
 		return err
 	}
 	return nil
 }
 
-func (e *ethereumAgent) scan(index uint64, skipCheck ...bool) error {
-	depositTxes, redeemTxes, updateUtxoTxes, depositRewards, redeemRewards, err := e.parseBlock(index)
+func (e *ethereumAgent) scan(height uint64, skipCheck ...bool) error {
+	depositTxes, redeemTxes, updateUtxoTxes, depositRewards, redeemRewards, err := e.parseBlock(height)
 	if err != nil {
-		logger.Error("eth parse block error: %v %v", index, err)
+		logger.Error("eth parse block error: %v %v", height, err)
 		return err
 	}
 	if len(skipCheck) > 0 && skipCheck[0] {
 		redeemTxes = txSkipCheck(redeemTxes)
 	}
-	err = e.chainStore.EthSaveData(index, depositTxes, redeemTxes, updateUtxoTxes, depositRewards, redeemRewards)
+	err = e.chainStore.EthSaveData(height, depositTxes, redeemTxes, updateUtxoTxes, depositRewards, redeemRewards)
 	if err != nil {
-		logger.Error("ethereum save data error: %v %v", index, err)
+		logger.Error("ethereum save data error: %v %v", height, err)
 		return err
 	}
 	return nil
