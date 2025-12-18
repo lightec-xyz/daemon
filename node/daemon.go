@@ -330,7 +330,7 @@ func (d *Daemon) Run() error {
 	// fetch
 	if !d.cfg.DisableFetch {
 		go DoTimerTask("fetch-finality-update", 3*time.Minute, d.fetch.FinalityUpdate, d.exitSignal)
-		go DoTimerTask("fetch-update", 2*time.Hour, d.fetch.LightClientUpdate, d.exitSignal)
+		go DoTimerTask("fetch-update", 10*time.Minute, d.fetch.LightClientUpdate, d.exitSignal)
 
 	}
 	if !d.cfg.DisableLipP2p {
