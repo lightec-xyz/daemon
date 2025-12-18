@@ -3,6 +3,7 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
@@ -125,31 +126,17 @@ func (c *BtcClient) readBlockFromDb(hash string) (*btcjson.GetBlockVerboseResult
 	if !exists {
 		return nil, fmt.Errorf("db no find block %v", hash)
 	}
-	var block btctypes.Block
+	var block btcjson.GetBlockVerboseResult
 	err = json.Unmarshal([]byte(blockData), &block)
 	if err != nil {
 		return nil, err
 	}
-	return &btcjson.GetBlockVerboseResult{
-		Hash:          block.Hash,
-		Confirmations: int64(block.Confirmations),
-		StrippedSize:  int32(block.Strippedsize),
-		Size:          int32(block.Size),
-		Weight:        int32(block.Weight),
-		Height:        int64(block.Height),
-		Version:       int32(block.Version),
-		VersionHex:    block.VersionHex,
-		MerkleRoot:    block.Merkleroot,
-		Tx:            toTxIds(block.Tx),
-		RawTx:         nil,
-		Time:          int64(block.Time),
-		Nonce:         uint32(block.Nonce),
-		Bits:          block.Bits,
-		Difficulty:    block.Difficulty,
-		PreviousHash:  block.Previousblockhash,
-		NextHash:      block.Nextblockhash,
-	}, nil
-
+	txes := make([]string, len(block.RawTx))
+	for i := 0; i < len(txes); i++ {
+		txes[i] = block.RawTx[i].Txid
+	}
+	block.Tx = txes
+	return &block, nil
 }
 
 func NewBtcClient(client btcproverClient.IClient, store store.IStore, btClient *bitcoin.Client, initHeight int64) *BtcClient {
