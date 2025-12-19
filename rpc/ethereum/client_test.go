@@ -4,24 +4,27 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/big"
+	"strconv"
+	"testing"
+
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	btctx "github.com/lightec-xyz/daemon/rpc/bitcoin/common"
 	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
-	"math/big"
-	"testing"
 )
 
 var err error
 var client *Client
 
-var endpoint = "http://127.0.0.1:14000"
-var zkBridgeAddr = "0xF90966fd006a5B18Cb0E3A0568226010CED426FD"
-var utxoManager = "0x2635Dc72706478F4bD784A8D04B3e0af8AB053dc"
+var endpoint = "https://rpc.ankr.com/eth_sepolia/CONFIDENTIAL"
+
+var zkBridgeAddr = "0x9C83D62f524d589da2ED538F5F59225880B680D1"
+var zkBtcAddr = "0x71198dD1689eBc01A7664ce7c0d5b1f62DF2b378"
+var utxoManager = "0xc5eC55Ba3764c09eD28598465D534e313A0EEe34"
 var btcTxVerifyAddr = "0x1F0f891fB88287091DFc6225038336207374ec79"
-var zkbtcAddr = "0x199CC8f0ac008Bdc8cF0B1CCd5187F84E168C4D2"
 
 func init() {
-	client, err = NewClient(endpoint, zkBridgeAddr, utxoManager, btcTxVerifyAddr, zkbtcAddr)
+	client, err = NewClient(endpoint, zkBridgeAddr, utxoManager, btcTxVerifyAddr, zkBtcAddr)
 	if err != nil {
 		panic(err)
 	}
@@ -166,35 +169,61 @@ func TestClient_Number(t *testing.T) {
 	t.Log(number)
 }
 
+func TestClient_GetLogs3(t *testing.T) {
+	logs, err := client.GetLogs(9868070, 9868075,
+		[]string{"0xc5ec55ba3764c09ed28598465d534e313a0eee34"},
+		[]string{"0xd063609fea0cb9b8a1b53a4fbf0e659c270b3bc99eab08dcc7f4433b4937e074"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, log := range logs {
+		if log.TxHash.String() == "0xfc2e3ed32f435cc2f0973f92b5cf3f63f7882f8dbb11347346fce71cc7185bbc" {
+			t.Log(log)
+			found = true
+		}
+	}
+	if !found {
+		t.Fail()
+	}
+}
+
 func TestClient_GetLogs2(t *testing.T) {
-	//0x0c7fee5ab535f4842d895aae6de266e0b51b3540327fe03eedb77ad798637e00
-	logs, err := client.GetLogs("0xd936a94eabfe6a9cb84382515a99684170271e06c676c1b89c2eed4baf953d08", nil, nil)
+	logAddr := []string{
+		zkBridgeAddr, utxoManager,
+	}
+	topicList := []string{
+		"0xd063609fea0cb9b8a1b53a4fbf0e659c270b3bc99eab08dcc7f4433b4937e074",
+		"0x379299efe6911678ce0f23cfce13a7c61a5b2c1723f583f9217b6ee0887b3ef4",
+		"0x5d6cc5c33e60ae274f09159956ae8fd20271c63c95b9004445271437b335ed6e",
+	}
+
+	logs, err := client.GetLogs(9870520, 9871522, logAddr, topicList)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, log := range logs {
-		if log.TxHash.String() == "0xff1ddc991b66997739b70e846d562cc11dd5012487ce9b12b40c555a71bd6f2d" {
-			t.Log(log)
-		}
+		t.Log(log.Topics[0].Hex())
+		t.Log(log.Topics[1].Hex())
+		t.Log(log.Topics[2].Hex())
+		i, _ := strconv.ParseInt(string(log.Data), 10, 64)
+		t.Log(i)
+		t.Log(big.NewInt(0).SetBytes(log.Data).String())
+
 	}
 }
 
 func TestClient_GetLogs(t *testing.T) {
-	block, err := client.GetBlock(1545882)
-	if err != nil {
-		t.Fatal(err)
-	}
-	//t.Log(block)
-	address := []string{"0x9d2aaea60dee441981edf44300c26f1946411548", "0x8e4f5a8f3e24a279d8ed39e868f698130777fded"}
-	topic := []string{"0xbfb6a0aa850eff6109c854ffb48321dcf37f02d6c7a44c46987a5ddf3419fc07", "0x1e5e2baa6d11cc5bcae8c0d1187d7b9ebf13d6d9b932f7dbbf4e396438845fb8"}
-	logs, err := client.GetLogs(block.Hash().Hex(),
+	address := []string{zkBridgeAddr}
+	topic := []string{"0x379299efe6911678ce0f23cfce13a7c61a5b2c1723f583f9217b6ee0887b3ef4"}
+	logs, err := client.GetLogs(9871522, 9871523,
 		address, topic)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//t.Log(logs)
 	for _, log := range logs {
-		if log.TxHash.String() == "0xea7a29093b228e8d45ba54161689e1ae7c4caa1ce33fd618112eace20e2acf1a" {
+		if log.TxHash.String() == "0x5bee74fc162b6c4664406840c1fb6b25217cfa6083fab41a99a2b4e255f8a3f3" {
 			txData, _, err := DecodeRedeemLog(log.Data)
 			if err != nil {
 				t.Fatal(err)

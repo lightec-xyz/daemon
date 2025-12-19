@@ -412,26 +412,6 @@ func (cs *ChainStore) ReadBitcoinHash(height uint64) (string, bool, error) {
 	return hash, true, nil
 }
 
-func (cs *ChainStore) WriteEthHash(height uint64, hash string) error {
-	return cs.store.PutObj(dbEthBlockHashKey(height), hash)
-}
-
-func (cs *ChainStore) ReadEthHash(height uint64) (string, bool, error) {
-	exists, err := cs.store.HasObj(dbEthBlockHashKey(height))
-	if err != nil {
-		return "", false, err
-	}
-	if !exists {
-		return "", false, nil
-	}
-	var hash string
-	err = cs.store.GetObj(dbEthBlockHashKey(height), &hash)
-	if err != nil {
-		return "", false, err
-	}
-	return hash, true, nil
-}
-
 func (cs *ChainStore) WriteBtcHeight(height uint64) error {
 	return cs.store.PutObj(btcCurHeightKey, height)
 }
@@ -661,7 +641,7 @@ func (cs *ChainStore) BtcDeleteData(height uint64) error {
 	})
 }
 
-func (cs *ChainStore) EthSaveData(height uint64, depositTxes, redeemTxes, updateUtxoTxes []*DbTx) error {
+func (cs *ChainStore) EthSaveData(beginHeight, endHeight uint64, depositTxes, redeemTxes, updateUtxoTxes []*DbTx) error {
 	return cs.store.WrapBatch(func(batch store.IBatch) error {
 		//linked dest hash
 		linkedIdTxes := mergeDbTxes(depositTxes, redeemTxes, updateUtxoTxes)
@@ -675,7 +655,7 @@ func (cs *ChainStore) EthSaveData(height uint64, depositTxes, redeemTxes, update
 			// ethTxHash -> btcTxId
 			err = batch.BatchPutObj(dbDestId(tx.Hash), tx.UtxoId)
 			if err != nil {
-				logger.Error("update deposit final status error: %v %v", height, err)
+				logger.Error("update deposit final status error: %v %v %v", beginHeight, endHeight, err)
 				return err
 			}
 		}
@@ -683,12 +663,12 @@ func (cs *ChainStore) EthSaveData(height uint64, depositTxes, redeemTxes, update
 		for _, tx := range updateUtxoTxes {
 			err := batch.BatchPutObj(dbUpdateUtxoDestKey(tx.Hash), tx.UtxoId)
 			if err != nil {
-				logger.Error("update deposit final status error: %v %v", height, err)
+				logger.Error("update deposit final status error: %v %v %v", beginHeight, endHeight, err)
 				return err
 			}
 			err = batch.BatchPutObj(dbUpdateUtxoDestKey(tx.UtxoId), tx.Hash)
 			if err != nil {
-				logger.Error("update deposit final status error: %v %v", height, err)
+				logger.Error("update deposit final status error: %v %v %v", beginHeight, endHeight, err)
 				return err
 			}
 		}
@@ -728,12 +708,15 @@ func (cs *ChainStore) EthSaveData(height uint64, depositTxes, redeemTxes, update
 		}
 
 		allTxes := mergeDbTxes(depositTxes, redeemTxes, updateUtxoTxes)
-		// height ->[]TxHash
-		dbTxIds := txesToDbTxIds(allTxes)
-		for _, txId := range dbTxIds {
-			err := batch.BatchPutObj(ethTxHeightKey(height, txId), nil)
-			if err != nil {
-				return err
+		m := make(map[string]*DbTx)
+		for _, tx := range allTxes {
+			_, ok := m[tx.Hash]
+			if !ok {
+				err := batch.BatchPutObj(ethTxHeightKey(tx.Height, tx.Hash), nil)
+				if err != nil {
+					return err
+				}
+				m[tx.Hash] = tx
 			}
 		}
 

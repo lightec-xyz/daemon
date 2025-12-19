@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/btcsuite/btcd/wire"
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -151,41 +150,39 @@ func (e *ethereumAgent) ScanBlock() error {
 		return err
 	}
 
-	for height := uint64(currentHeight) + 1; height <= blockNumber; height++ {
-		logger.Debug("ethereum parse block:%d", height)
-		preHeight := height - 1
-		chainForked, err := e.chainFork(preHeight)
-		if err != nil {
-			logger.Error("check chain fork error: %v %v", preHeight, err)
-			return err
-		}
-		if chainForked {
-			logger.Warn("ethereum chain forked: %v", preHeight)
-			err = e.rollback(preHeight)
-			if err != nil {
-				logger.Error("ethereum rollback error: %v %v", preHeight, err)
-				return err
-			}
-			return nil
-		}
-		err = e.scan(height)
-		if err != nil {
-			logger.Error("scan error: %v %v", height, err)
-			return err
-		}
-		err = e.chainStore.WriteEthereumHeight(height)
-		if err != nil {
-			logger.Error("batch write error: %v %v", height, err)
-			return err
-		}
-
+	beginHeight := uint64(currentHeight) + 1
+	// Ethereum chain fork is very rare for depth 3+. So we could simply hold 10 blocks (2 minutes) to
+	// ensure practically no forking happen for our scanning's concern
+	// note that it usually requires an Ethereum blocks 2 epoches to be finalized, that is 12.8 minutes,
+	// which is much longer than 2 mins
+	// Moreover, we could rescan a block
+	endHeight := blockNumber - 10 // this should suffice to avoid fork
+	if beginHeight > endHeight {
+		logger.Warn("ethereum scan block: no new blocks to be scanned")
+		return nil
 	}
+	if endHeight-beginHeight > 5000 { // the premium limit is actually 10000
+		endHeight = beginHeight + 5000
+	}
+
+	logger.Debug("ethereum scan block from %v to %v block count is %v", beginHeight, endHeight, blockNumber)
+	err = e.scan(beginHeight, endHeight)
+	if err != nil {
+		logger.Error("scan error: %v %v %v", beginHeight, endHeight, err)
+		return err
+	}
+	err = e.chainStore.WriteEthereumHeight(endHeight)
+	if err != nil {
+		logger.Error("batch write error: %v %v %v", beginHeight, endHeight, err)
+		return err
+	}
+
 	return nil
 }
 
 func (e *ethereumAgent) ReScan(height uint64) error {
 	logger.Debug("reScan eth block:%d", height)
-	err := e.scan(height, true)
+	err := e.scan(height, height, true)
 	if err != nil {
 		logger.Error("scan error: %v %v", height, err)
 		return err
@@ -193,100 +190,21 @@ func (e *ethereumAgent) ReScan(height uint64) error {
 	return nil
 }
 
-func (e *ethereumAgent) scan(height uint64, skipCheck ...bool) error {
-	depositTxes, redeemTxes, updateUtxoTxes, err := e.parseBlock(height)
+func (e *ethereumAgent) scan(beginHeight, endHeight uint64, skipCheck ...bool) error {
+	depositTxes, redeemTxes, updateUtxoTxes, err := e.parseBlock(beginHeight, endHeight)
 	if err != nil {
-		logger.Error("eth parse block error: %v %v", height, err)
+		logger.Error("eth parse block error: %v %v %v", beginHeight, endHeight, err)
 		return err
 	}
 	if len(skipCheck) > 0 && skipCheck[0] {
 		redeemTxes = txSkipCheck(redeemTxes)
 	}
-	err = e.chainStore.EthSaveData(height, depositTxes, redeemTxes, updateUtxoTxes)
+	err = e.chainStore.EthSaveData(beginHeight, endHeight, depositTxes, redeemTxes, updateUtxoTxes)
 	if err != nil {
-		logger.Error("ethereum save data error: %v %v", height, err)
+		logger.Error("ethereum save data error: %v %v %v", beginHeight, endHeight, err)
 		return err
 	}
 	return nil
-}
-
-func (e *ethereumAgent) rollback(height uint64) error {
-	startForkHeight, err := e.findChainForkHeight(height)
-	if err != nil {
-		logger.Error("find eth chain startForkHeight error: %v %v", height, err)
-		return err
-	}
-	logger.Debug("find eth chain startForkHeight: %v", startForkHeight)
-	for index := height; index >= startForkHeight; index-- {
-		logger.Debug("eth rollback data height: %v", index)
-		err := e.chainStore.EthDeleteData(index)
-		if err != nil {
-			logger.Error("eth rollback data error: %v %v", index, err)
-			return err
-		}
-		err = e.chainStore.WriteEthereumHeight(index - 1)
-		if err != nil {
-			logger.Error("write eth height error: %v %v", index-1, err)
-			return err
-		}
-	}
-	chainFork := ChainFork{
-		ForkHeight: startForkHeight,
-		Chain:      common.EthereumChain,
-		Timestamp:  time.Now().UnixNano(),
-	}
-	e.chainForkSignal <- &chainFork
-	return nil
-}
-
-func (e *ethereumAgent) findChainForkHeight(height uint64) (uint64, error) {
-	for index := height; index >= e.initHeight; index = index - 1 {
-		localBlockHash, exists, err := e.chainStore.ReadEthHash(index)
-		if err != nil {
-			logger.Error("get eth localHash error: %v %v", index, err)
-			return 0, err
-		}
-		if !exists {
-			logger.Error("no find eth localHash %v", index)
-			return 0, fmt.Errorf("no find eth localHash %v", index)
-		}
-		chainBlockHash, err := e.ethClient.GetBlock(int64(index))
-		if err != nil {
-			logger.Error("get eth get chainHash error: %v %v", index, err)
-			return 0, err
-		}
-		if common.StrEqual(localBlockHash, chainBlockHash.Hash().String()) {
-			logger.Info("find eth startForkHeight: %v", index)
-			return index + 1, nil
-		}
-	}
-	return e.initHeight, nil
-}
-
-func (e *ethereumAgent) chainFork(height uint64) (bool, error) {
-	if height <= e.initHeight {
-		return false, nil
-	}
-	localHash, ok, err := e.chainStore.ReadEthHash(height)
-	if err != nil {
-		logger.Error("get eth localHash error: %v %v", height, err)
-		return false, err
-	}
-	if !ok {
-		logger.Warn("get eth %v localHash error", height)
-		return false, nil
-	}
-	block, err := e.ethClient.GetBlock(int64(height))
-	if err != nil {
-		logger.Error("get eth block error: %v %v", height, err)
-		return false, err
-	}
-	if !common.StrEqual(localHash, block.Hash().String()) {
-		logger.Error("find eth chainForked height:%v,localHash:%v,chainHash:%v", height, localHash, block.Hash().String())
-		return true, nil
-	}
-	return false, nil
-
 }
 
 func (e *ethereumAgent) ProofResponse(resp *common.ProofResponse) error {
@@ -332,21 +250,15 @@ func (e *ethereumAgent) deleteRedeemTxCache(resp *common.ProofResponse) error {
 	return nil
 }
 
-func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, error) {
-	block, err := e.ethClient.GetBlock(int64(height))
+func (e *ethereumAgent) parseBlock(beginHeight, endHeight uint64) ([]*DbTx, []*DbTx, []*DbTx, error) {
+	block, err := e.ethClient.GetBlock(int64(beginHeight))
 	if err != nil {
 		logger.Error("ethereum rpc get block error:%v", err)
 		return nil, nil, nil, err
 	}
-	blockTime := block.Time()
-	blockHash := block.Hash().String()
-	err = e.chainStore.WriteEthHash(height, blockHash)
-	if err != nil {
-		logger.Error("write eth hash error:%v", err)
-		return nil, nil, nil, err
-	}
+	beginBlockTime := block.Time()
 	logFilters, topicFilters := e.ethFilter.FilterLogs()
-	logs, err := e.ethClient.GetLogs(blockHash, logFilters, topicFilters)
+	logs, err := e.ethClient.GetLogs(beginHeight, endHeight, logFilters, topicFilters)
 	if err != nil {
 		logger.Error("ethereum rpc get logs error:%v", err)
 		return nil, nil, nil, err
@@ -355,7 +267,8 @@ func (e *ethereumAgent) parseBlock(height uint64) ([]*DbTx, []*DbTx, []*DbTx, er
 	var redeemTxes []*DbTx
 	var updateUtxoTxes []*DbTx
 	for _, log := range logs {
-		logger.Debug("parsing block for log, height: %v, addr: %v, topic: %v", height, log.Address.Hex(), log.Topics[0].Hex())
+		logger.Debug("parsing block for log, beginHeight: %v, endHeight: %v, addr: %v, topic: %v", beginHeight, endHeight, log.Address.Hex(), log.Topics[0].Hex())
+		blockTime := beginBlockTime + 12*(log.BlockNumber-uint64(beginHeight)) // block time has to be estimated as we don't want to query too many times for blocks
 		depositTx, isDeposit, err := e.depositTx(log, blockTime)
 		if err != nil {
 			logger.Error("check is deposit tx error:%v", err)

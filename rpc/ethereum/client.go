@@ -204,10 +204,9 @@ func (c *Client) GetTxSender(txHash, blockHash string, index uint) (string, erro
 
 }
 
-func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]types.Log, error) {
+func (c *Client) GetLogs(beginHeight, endHeight uint64, addrList []string, topicList []string) ([]types.Log, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
 	defer cancelFunc()
-	blockHash := ethcommon.HexToHash(hash)
 	var addresses []ethcommon.Address
 	for _, addr := range addrList {
 		address := ethcommon.HexToAddress(addr)
@@ -222,7 +221,8 @@ func (c *Client) GetLogs(hash string, addrList []string, topicList []string) ([]
 	topics = append(topics, matchTopic)
 
 	filterQuery := ethereum.FilterQuery{
-		BlockHash: &blockHash,
+		FromBlock: big.NewInt(int64(beginHeight)),
+		ToBlock:   big.NewInt(int64(endHeight)),
 		Addresses: addresses,
 		Topics:    topics,
 	}
