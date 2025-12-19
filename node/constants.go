@@ -41,8 +41,8 @@ var SgxServerUrl []string = []string{""} // todo
 // *********************Other**************************************
 
 const (
-	BtcScanTime = 3 * time.Minute
-	EthScanTime = 2 * time.Minute
+	BtcScanTime = 5 * time.Minute
+	EthScanTime = 3 * time.Minute
 	// MigrateProto operator migrate address
 	MigrateProto = "6a141234560000000000000000000000000000000000"
 	// MinDepositValue deposit min value

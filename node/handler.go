@@ -4,16 +4,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"syscall"
+	"time"
+
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/store"
-	"os"
-	"strings"
-	"syscall"
-	"time"
 )
 
 var _ rpc.INode = (*Handler)(nil)
@@ -226,7 +227,7 @@ func (h *Handler) TransactionsByHeight(height uint64, network string) ([]string,
 	} else if network == EthereumNetwork {
 		txIds, err := h.chainStore.ReadEthTxHeight(height)
 		if err != nil {
-			logger.Error("read bitcoin tx ids error: %v %v", height, err)
+			logger.Error("read ethereum tx ids error: %v %v", height, err)
 			return nil, err
 		}
 		return txIds, nil
