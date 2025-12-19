@@ -9,8 +9,8 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.5
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
-	github.com/consensys/gnark v0.14.1-0.20251106131433-7ec673b46f10
-	github.com/consensys/gnark-crypto v0.19.1
+	github.com/consensys/gnark v0.12.0
+	github.com/consensys/gnark-crypto v0.17.1-0.20250326164229-5fd6610ac2a1
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/emirpasic/gods v1.18.1
@@ -24,7 +24,7 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.28.1
 	github.com/libp2p/go-libp2p-pubsub v0.13.0
 	github.com/lightec-xyz/btc_provers v0.0.0-00010101000000-000000000000
-	github.com/lightec-xyz/common v0.3.0
+	github.com/lightec-xyz/common v0.2.10
 	github.com/lightec-xyz/provers v0.0.0-00010101000000-000000000000
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/prysmaticlabs/prysm/v5 v5.3.3
@@ -114,9 +114,9 @@ require (
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
 	github.com/libp2p/go-yamux/v4 v4.0.1 // indirect
 	github.com/libp2p/zeroconf/v2 v2.2.0 // indirect
-	github.com/lightec-xyz/RLPark v0.2.5 // indirect
-	github.com/lightec-xyz/chainark v0.6.0 // indirect
-	github.com/lightec-xyz/gMPTark v0.2.9 // indirect
+	github.com/lightec-xyz/RLPark v0.2.4 // indirect
+	github.com/lightec-xyz/chainark v0.5.7 // indirect
+	github.com/lightec-xyz/gMPTark v0.2.7 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -243,6 +243,8 @@ require (
 )
 
 replace (
+	github.com/consensys/gnark => github.com/lightec-xyz/gnark v0.0.0-20250407032304-d7a29c9b22cb
+	github.com/consensys/gnark-crypto => github.com/lightec-xyz/gnark-crypto v0.0.0-20250403072623-6d10578c6e27
 	github.com/lightec-xyz/RLPark => ../RLPark
 	github.com/lightec-xyz/btc_provers => ../btc_provers
 	github.com/lightec-xyz/gMPTark => ../gMPTark
