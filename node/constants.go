@@ -28,8 +28,12 @@ const (
 	DepositTopic    = "0xd063609fea0cb9b8a1b53a4fbf0e659c270b3bc99eab08dcc7f4433b4937e074" // the UTXOAdded event from the UTXO Manager contract
 	RedeemTopic     = "0x379299efe6911678ce0f23cfce13a7c61a5b2c1723f583f9217b6ee0887b3ef4" // the CreateRedeemUnsignedTx event from the zkBTC bridge contract
 	UpdateUtxoTopic = "0x5d6cc5c33e60ae274f09159956ae8fd20271c63c95b9004445271437b335ed6e" // the ChangeUTXOUpdated event from the UTXO Manager contract
+
 	// DepositRewardTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" // the transfer call of minted zkBTC, the zkBTC bridge contract
-	// RedeemRewardTopic  = "0xaaa8a5dd1203745b5ddf449a9bc6cd2b6ec919f7b839ef4326133ccf6fbe7bd0" // the MinerRedeemReward call to the Fee Pool contract
+	// should have used "0x9d186086b05c87611fc259bfefbd7b1261b646a6715ce64039050613604e9b41", // the MinerDepositReward event from the Fee Pool Contract
+	// see zkBtc Explorer common.Constants
+
+	// RedeemRewardTopic  = "0xaaa8a5dd1203745b5ddf449a9bc6cd2b6ec919f7b839ef4326133ccf6fbe7bd0" // the MinerRedeemReward event to the Fee Pool contract
 )
 
 var SgxServerUrl []string = []string{""} // todo
