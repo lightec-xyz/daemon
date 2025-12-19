@@ -3,13 +3,14 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
+	"sync"
+
 	"github.com/lightec-xyz/daemon/codec"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/store"
-	"sort"
-	"strings"
-	"sync"
 )
 
 type ChainStore struct {
@@ -660,7 +661,7 @@ func (cs *ChainStore) BtcDeleteData(height uint64) error {
 	})
 }
 
-func (cs *ChainStore) EthSaveData(height uint64, depositTxes, redeemTxes, updateUtxoTxes, depositRewards, redeemRewards []*DbTx) error {
+func (cs *ChainStore) EthSaveData(height uint64, depositTxes, redeemTxes, updateUtxoTxes []*DbTx) error {
 	return cs.store.WrapBatch(func(batch store.IBatch) error {
 		//linked dest hash
 		linkedIdTxes := mergeDbTxes(depositTxes, redeemTxes, updateUtxoTxes)
@@ -726,7 +727,7 @@ func (cs *ChainStore) EthSaveData(height uint64, depositTxes, redeemTxes, update
 			}
 		}
 
-		allTxes := mergeDbTxes(depositTxes, redeemTxes, updateUtxoTxes, depositRewards, redeemRewards)
+		allTxes := mergeDbTxes(depositTxes, redeemTxes, updateUtxoTxes)
 		// height ->[]TxHash
 		dbTxIds := txesToDbTxIds(allTxes)
 		for _, txId := range dbTxIds {

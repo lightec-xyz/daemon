@@ -190,8 +190,8 @@ func testnetConfig(cfg RunConfig) (Config, error) {
 		BtcTxVerifyAddr:       TestnetEthBtcTxVerifyAddress,
 		OasisSignerAddress:    TestnetOasisSignerAddr,
 		BtcFilter:             NewBtcAddrFilter(TestnetBtcOperatorAddress, TestnetBtcLockScript, TestnetBtcMultiSig, MinDepositValue, cfg.TxMode),
-		EthAddrFilter: NewEthAddrFilter(TestnetBtcLockScript, TestnetEthUtxoManagerAddress, TestnetEthZkBridgeAddress, TestnetFeePoolAddr,
-			DepositTopic, RedeemTopic, UpdateUtxoTopic, DepositRewardTopic, RedeemRewardTopic,
+		EthAddrFilter: NewEthAddrFilter(TestnetBtcLockScript, TestnetEthUtxoManagerAddress, TestnetEthZkBridgeAddress,
+			DepositTopic, RedeemTopic, UpdateUtxoTopic,
 			cfg.TxMode),
 		Debug: common.GetEnvDebugMode(),
 	}, nil
@@ -223,8 +223,8 @@ func mainnetConfig(cfg RunConfig) (Config, error) {
 		BtcTxVerifyAddr:       EthBtcTxVerifyAddress,
 		OasisSignerAddress:    OasisSignerAddr,
 		BtcFilter:             NewBtcAddrFilter(BtcOperatorAddress, BtcLockScript, BtcMultiSig, MinDepositValue, cfg.TxMode),
-		EthAddrFilter: NewEthAddrFilter(BtcLockScript, EthUtxoManagerAddress, EthZkBridgeAddress, FeePoolAddr,
-			DepositTopic, RedeemTopic, UpdateUtxoTopic, DepositRewardTopic, RedeemRewardTopic,
+		EthAddrFilter: NewEthAddrFilter(BtcLockScript, EthUtxoManagerAddress, EthZkBridgeAddress,
+			DepositTopic, RedeemTopic, UpdateUtxoTopic,
 			cfg.TxMode),
 		Debug: common.GetEnvDebugMode(),
 	}, nil
@@ -287,15 +287,13 @@ func (b *BtcFilter) Deposit(outputs []btcjson.Vout) bool {
 type EthFilter struct {
 	UtxoManagerAddr string `json:"depositAddr"`
 	ZkbtcBridgeAddr string `json:"redeemAddr"`
-	FeePoolAddr     string `json:"feePoolAddr"`
 
-	DepositTxTopic     string `json:"depositTxTopic"`
-	RedeemTxTopic      string `json:"redeemTxTopic"`
-	UpdateUtxoTopic    string `json:"updateUtxoTopic"`
-	DepositRewardTopic string `json:"depositRewardTopic"`
-	RedeemRewardTopic  string `json:"redeemRewardTopic"`
-	BtcLockScript      string `json:"btcLockScript"`
-	txMode             common.TxMode
+	DepositTxTopic  string `json:"depositTxTopic"`
+	RedeemTxTopic   string `json:"redeemTxTopic"`
+	UpdateUtxoTopic string `json:"updateUtxoTopic"`
+
+	BtcLockScript string `json:"btcLockScript"`
+	txMode        common.TxMode
 }
 
 func (e *EthFilter) DepositTx(addr, topic string) bool {
@@ -303,13 +301,6 @@ func (e *EthFilter) DepositTx(addr, topic string) bool {
 }
 func (e *EthFilter) RedeemTx(addr, topic string) bool {
 	return common.StrEqual(e.ZkbtcBridgeAddr, addr) && common.StrEqual(e.RedeemTxTopic, topic)
-}
-func (e *EthFilter) DepositReward(addr, topic string) bool {
-	return common.StrEqual(e.FeePoolAddr, addr) && common.StrEqual(e.DepositRewardTopic, topic)
-}
-
-func (e *EthFilter) RedeemReward(addr, topic string) bool {
-	return common.StrEqual(e.FeePoolAddr, addr) && common.StrEqual(e.RedeemRewardTopic, topic)
 }
 func (e *EthFilter) UpdateUtxo(addr, topic string) bool {
 	return common.StrEqual(e.UtxoManagerAddr, addr) && common.StrEqual(e.UpdateUtxoTopic, topic)
@@ -330,24 +321,22 @@ func (e *EthFilter) MigrateTx(outs []*wire.TxOut) bool {
 	return false
 }
 
-func NewEthAddrFilter(btcLockScript, utxoManagerAddr, zkbtcBridgeAddr, feePoolAddr string, depositTxTopic, redeemTxTopic, updateUtxoTopic,
-	depositRewardTopic, redeemRewardTopic string, txMode common.TxMode) *EthFilter {
+func NewEthAddrFilter(btcLockScript, utxoManagerAddr, zkbtcBridgeAddr string,
+	depositTxTopic, redeemTxTopic, updateUtxoTopic string,
+	txMode common.TxMode) *EthFilter {
 	return &EthFilter{
-		BtcLockScript:      btcLockScript,
-		UtxoManagerAddr:    utxoManagerAddr,
-		ZkbtcBridgeAddr:    zkbtcBridgeAddr,
-		FeePoolAddr:        feePoolAddr,
-		DepositTxTopic:     depositTxTopic,
-		RedeemTxTopic:      redeemTxTopic,
-		UpdateUtxoTopic:    updateUtxoTopic,
-		DepositRewardTopic: depositRewardTopic,
-		RedeemRewardTopic:  redeemRewardTopic,
-		txMode:             txMode,
+		BtcLockScript:   btcLockScript,
+		UtxoManagerAddr: utxoManagerAddr,
+		ZkbtcBridgeAddr: zkbtcBridgeAddr,
+		DepositTxTopic:  depositTxTopic,
+		RedeemTxTopic:   redeemTxTopic,
+		UpdateUtxoTopic: updateUtxoTopic,
+		txMode:          txMode,
 	}
 }
 
 func (e *EthFilter) FilterLogs() (logFilters []string, topicFilters []string) {
-	logFilters = []string{e.UtxoManagerAddr, e.ZkbtcBridgeAddr, e.FeePoolAddr}
-	topicFilters = []string{e.DepositTxTopic, e.RedeemTxTopic, e.UpdateUtxoTopic, e.DepositRewardTopic, e.RedeemRewardTopic}
+	logFilters = []string{e.UtxoManagerAddr, e.ZkbtcBridgeAddr}
+	topicFilters = []string{e.DepositTxTopic, e.RedeemTxTopic, e.UpdateUtxoTopic}
 	return logFilters, topicFilters
 }
