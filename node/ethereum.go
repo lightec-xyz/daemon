@@ -486,6 +486,9 @@ func NewDepositEthTx(height uint64, txIndex, logIndex uint, txHash, sender, utxo
 		Amount:    amount,
 		Sender:    sender,
 		BlockTime: blockTime,
+
+		FinalizedSlot: 0,
+		TxSlot:        0,
 	}
 }
 
@@ -502,6 +505,9 @@ func NewRedeemEthTx(height uint64, txIndex, logIndex uint, txHash, sender, btcTx
 		Sender:    DbValue(sender),
 		Amount:    amount,
 		BlockTime: blockTime,
+
+		FinalizedSlot: 0,
+		TxSlot:        0,
 	}
 }
 func NewUpdateUtxoTx(height uint64, txIndex, logIndex uint, txHash, utxoId string, utxoIndex, amount int64, blockTime uint64) *DbTx {
@@ -516,36 +522,9 @@ func NewUpdateUtxoTx(height uint64, txIndex, logIndex uint, txHash, utxoId strin
 		UtxoIndex: utxoIndex,
 		Amount:    amount,
 		BlockTime: blockTime,
-	}
-}
 
-func NewDepositRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, minerAddr string, amount int64, blockTime uint64) *DbTx {
-	return &DbTx{
-		Height:    height,
-		TxIndex:   txIndex,
-		LogIndex:  logIndex,
-		Hash:      DbValue(txHash),
-		ChainType: common.EthereumChain,
-		TxType:    common.DepositRewardTx,
-		Sender:    DbValue(sender),
-		Receiver:  DbValue(minerAddr),
-		Amount:    amount,
-		BlockTime: blockTime,
-	}
-}
-
-func NewRedeemRewardTx(height uint64, txIndex, logIndex uint, txHash, sender, minerAddr string, amount int64, blockTime uint64) *DbTx {
-	return &DbTx{
-		Height:    height,
-		TxIndex:   txIndex,
-		LogIndex:  logIndex,
-		Hash:      DbValue(txHash),
-		ChainType: common.EthereumChain,
-		TxType:    common.RedeemRewardTx,
-		Sender:    DbValue(sender),
-		Receiver:  DbValue(minerAddr),
-		Amount:    amount,
-		BlockTime: blockTime,
+		FinalizedSlot: 0,
+		TxSlot:        0,
 	}
 }
 

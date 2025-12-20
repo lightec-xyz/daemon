@@ -754,15 +754,7 @@ func (t *TxManager) getTxScRoot(hash string) (string, error) {
 		logger.Warn("read db tx error:%v", err)
 		return "", fmt.Errorf("read db tx error:%v", err)
 	}
-	slot, ok, err := t.chainStore.ReadSlotByHeight(txes[0].Height)
-	if err != nil {
-		logger.Error("read beacon slot error:%v", err)
-		return "", err
-	}
-	if !ok {
-		logger.Warn("read beacon slot error:%v", err)
-		return "", fmt.Errorf("read beacon slot error:%v", err)
-	}
+	slot := txes[0].TxSlot // since we have proof, the txSlot infomation is already there
 	finalizedSlot, ok, err := t.fileStore.GetTxFinalizedSlot(slot)
 	if err != nil {
 		logger.Error("get tx finalized slot error: %v %v", slot, err)

@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lightec-xyz/daemon/rpc/beacon/types"
-	"github.com/prysmaticlabs/prysm/v5/container/slice"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +15,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lightec-xyz/daemon/rpc/beacon/types"
+	"github.com/prysmaticlabs/prysm/v5/container/slice"
 
 	"github.com/prysmaticlabs/prysm/v5/api/server/structs"
 )
@@ -138,10 +139,9 @@ func (c *Client) FinalizedSlot() (uint64, error) {
 	}
 	slot, ok := big.NewInt(0).SetString(resp.Data.Header.Message.Slot, 10)
 	if !ok {
-		return 0, fmt.Errorf("fail to get latest sync committee period")
+		return 0, fmt.Errorf("fail to get latest finalized slot")
 	}
 	return slot.Uint64(), nil
-
 }
 
 func (c *Client) FinalizedPeriod() (uint64, error) {

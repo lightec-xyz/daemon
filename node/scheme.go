@@ -69,14 +69,20 @@ type DbTx struct {
 	Proved       bool
 	Amount       int64
 	GenProofNums int
+
 	// bitcoin chain
 	EthAddr string
+
 	// ethereum chain
 	LogIndex  uint
 	UtxoId    string
 	UtxoIndex int64
 	Sender    string
 	Receiver  string
+
+	TxSlot        uint64 `cbor:"omitzero"`
+	FinalizedSlot uint64 `cbor:"omitzero"`
+
 	// for btc
 	CheckPointHeight uint64
 	LatestHeight     uint64
@@ -85,6 +91,8 @@ type DbTx struct {
 }
 
 func (t *DbTx) GenReset() {
+	t.FinalizedSlot = 0
+	t.TxSlot = 0
 	t.LatestHeight = 0
 	t.CheckPointHeight = 0
 	t.GenProofNums = t.GenProofNums + 1
