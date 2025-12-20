@@ -2,15 +2,14 @@ package node
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/daemon/common"
 	"strings"
+
+	"github.com/lightec-xyz/daemon/common"
 )
 
 const protocolSeparator = "_"
 
 const (
-	beaconSlotPrefix           = "bs"
-	beaconEthNumberPrefix      = "bh"
 	btcTxHeightPrefix          = "bth"
 	btcBlockHashPrefix         = "bb"
 	btcTxPrefix                = "bt"
@@ -167,14 +166,6 @@ func dbUnSubmitTxId(txId string) []byte {
 
 func dbAddrPrefixTxId(addr string, txType common.TxType, txId string) []byte {
 	return genKey(addr, txType, txId)
-}
-
-func dbBeaconSlotId(slot uint64) []byte {
-	return genKey(beaconSlotPrefix, slot)
-
-}
-func dbBeaconEthNumberId(number uint64) []byte {
-	return genKey(beaconEthNumberPrefix, number)
 }
 
 func dbTxSlotId(slot uint64, hash string) []byte {

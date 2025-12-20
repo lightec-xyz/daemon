@@ -14,8 +14,6 @@ type INode interface {
 	GetZkProofTask(request common.TaskRequest) (*common.TaskResponse, error)
 	SubmitProof(req *common.SubmitProof) (string, error)
 	PendingTask() ([]*ProofTask, error)
-	Eth2Slot(height uint64) (uint64, error)
-	Eth1Height(slot uint64) (uint64, error)
 	AddP2pPeer(endpoint string) (string, error)
 	ReScan(height uint64, chain string) error
 	MinerInfo() ([]*MinerInfo, error)

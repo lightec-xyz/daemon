@@ -2,13 +2,14 @@ package node
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/store"
 	apiclient "github.com/lightec-xyz/provers/utils/api-client"
-	"strings"
-	"time"
 )
 
 var _ IAgent = (*beaconAgent)(nil)
@@ -150,21 +151,6 @@ func (b *beaconAgent) ScanBlock() error {
 		}
 	}
 	return nil
-}
-
-func (b *beaconAgent) saveSlotInfo(slotInfo *beacon.Eth1MapToEth2) error {
-	logger.Debug("beacon slot: %v <-> eth number: %v", slotInfo.BlockSlot, slotInfo.BlockNumber)
-	err := b.chainStore.WriteBeaconSlot(slotInfo.BlockNumber, slotInfo.BlockSlot)
-	if err != nil {
-		logger.Error("write beacon map height %v <-> slot %v,error %v ", slotInfo.BlockNumber, slotInfo.BlockSlot, err)
-		return err
-	}
-	err = b.chainStore.WriteBeaconEthNumber(slotInfo.BlockSlot, slotInfo.BlockNumber)
-	if err != nil {
-		logger.Error("write eth slot %v <-> height %v, error %v", slotInfo.BlockSlot, slotInfo.BlockNumber, err)
-		return err
-	}
-	return err
 }
 
 func (b *beaconAgent) ProofResponse(resp *common.ProofResponse) error {

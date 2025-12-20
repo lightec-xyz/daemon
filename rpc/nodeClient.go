@@ -3,11 +3,12 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/lightec-xyz/daemon/common"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/lightec-xyz/daemon/common"
 )
 
 var _ INode = (*NodeClient)(nil)
@@ -50,24 +51,6 @@ func (c *NodeClient) SetGasPrice(gasPrice uint64) (string, error) {
 	err := c.call(&result, "zkbtc_setGasPrice", gasPrice)
 	if err != nil {
 		return "", err
-	}
-	return result, nil
-}
-
-func (c *NodeClient) Eth2Slot(height uint64) (uint64, error) {
-	var result uint64
-	err := c.call(&result, "zkbtc_eth2Slot", height)
-	if err != nil {
-		return 0, err
-	}
-	return result, nil
-}
-
-func (c *NodeClient) Eth1Height(slot uint64) (uint64, error) {
-	var result uint64
-	err := c.call(&result, "zkbtc_eth1Height", slot)
-	if err != nil {
-		return 0, err
 	}
 	return result, nil
 }
