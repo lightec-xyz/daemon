@@ -981,6 +981,8 @@ func (s *Scheduler) CheckEthState() error {
 				logger.Error("cannot update slot numbers for tx: %v %v", txHash, err)
 				return err
 			}
+
+			logger.Info("retrived tx slot %v and finalized slot %v for redemption tx %v", txSlot, finalizedSlot, txHash)
 		}
 
 		if proved {

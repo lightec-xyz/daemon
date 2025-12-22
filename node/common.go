@@ -255,7 +255,8 @@ func GenRequestData(p *Prepared, reqType common.ProofType, fIndex, sIndex uint64
 		}
 		return data, ok, nil
 	case common.BeaconHeaderType:
-		data, ok, err := p.GetBlockHeaderRequest(fIndex)
+		txSlot, finalizedSlot := fIndex, sIndex
+		data, ok, err := p.GetBlockHeaderRequest(txSlot, finalizedSlot)
 		if err != nil {
 			logger.Error("get block header request data error:%v %v", fIndex, err)
 			return nil, false, err

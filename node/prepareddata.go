@@ -274,23 +274,15 @@ func (p *Prepared) GetTxInEth2Request(txHash string, txSlot uint64) (*rpc.TxInEt
 	}, true, nil
 }
 
-func (p *Prepared) GetBlockHeaderRequest(index uint64) (*rpc.BlockHeaderRequest, bool, error) {
-	finalizedSlot, ok, err := p.filestore.GetTxFinalizedSlot(index)
-	if err != nil {
-		logger.Error("get finalized slot error: %v", err)
-		return nil, false, err
-	}
-	if !ok {
-		return nil, false, nil
-	}
-	logger.Debug("get beaconHeader %v ~ %v", index, finalizedSlot)
-	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
+func (p *Prepared) GetBlockHeaderRequest(txSlot, finalizedSlot uint64) (*rpc.BlockHeaderRequest, bool, error) {
+	logger.Debug("get beaconHeader %v ~ %v", txSlot, finalizedSlot)
+	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(txSlot, finalizedSlot)
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
 	}
 	if len(beaconBlockHeaders) == 0 {
-		return nil, false, fmt.Errorf("never should happen %v", index)
+		return nil, false, fmt.Errorf("never should happen %v", txSlot)
 	}
 	beginSlot, beginRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[0])
 	if err != nil {
@@ -316,7 +308,7 @@ func (p *Prepared) GetBlockHeaderRequest(index uint64) (*rpc.BlockHeaderRequest,
 			EndRoot:             hex.EncodeToString(endRoot),
 			MiddleBeaconHeaders: middleHeader,
 		},
-		Index: index,
+		Index: txSlot,
 	}, true, nil
 }
 
