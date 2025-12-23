@@ -250,7 +250,7 @@ func GenRequestData(p *Prepared, reqType common.ProofType, fIndex, sIndex uint64
 		txSlot := fIndex
 		data, ok, err := p.GetTxInEth2Request(hash, txSlot)
 		if err != nil {
-			logger.Error("get tx in eth2 data error: %v %v", fIndex, err)
+			logger.Error("get tx in eth2 data error: %v %v", txSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
@@ -258,14 +258,15 @@ func GenRequestData(p *Prepared, reqType common.ProofType, fIndex, sIndex uint64
 		txSlot, finalizedSlot := fIndex, sIndex
 		data, ok, err := p.GetBlockHeaderRequest(txSlot, finalizedSlot)
 		if err != nil {
-			logger.Error("get block header request data error:%v %v", fIndex, err)
+			logger.Error("get block header request data error:%v %v %v", txSlot, finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BeaconHeaderFinalityType:
-		data, ok, err := p.GetBhfUpdateRequest(fIndex)
+		finalizedSlot := fIndex
+		data, ok, err := p.GetBhfUpdateRequest(finalizedSlot)
 		if err != nil {
-			logger.Error("get bhf update data error: %v %v", fIndex, err)
+			logger.Error("get bhf update data error: %v %v", finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
@@ -273,7 +274,7 @@ func GenRequestData(p *Prepared, reqType common.ProofType, fIndex, sIndex uint64
 		txSlot, finalizedSlot := fIndex, sIndex
 		data, ok, err := p.GetRedeemRequest(hash, txSlot, finalizedSlot)
 		if err != nil {
-			logger.Error("get Redeem request data error:%v %v", fIndex, err)
+			logger.Error("get Redeem request data error:%v %v %v", txSlot, finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
@@ -281,7 +282,7 @@ func GenRequestData(p *Prepared, reqType common.ProofType, fIndex, sIndex uint64
 		txSlot, finalizedSlot := fIndex, sIndex
 		data, ok, err := p.GetRedeemRequest(hash, txSlot, finalizedSlot)
 		if err != nil {
-			logger.Error("get Redeem request data error:%v %v", fIndex, err)
+			logger.Error("get Redeem request data error:%v %v %v", txSlot, finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
