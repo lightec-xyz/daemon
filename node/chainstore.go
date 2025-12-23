@@ -873,6 +873,27 @@ func (cs *ChainStore) ReadLatestBeaconSlot() (uint64, bool, error) {
 	return slot, true, nil
 }
 
+func (cs *ChainStore) WriteBeaconSlot(number, slot uint64) error {
+	return cs.store.PutObj(dbBeaconEthNumberId(number), slot)
+}
+
+func (cs *ChainStore) ReadSlotByHeight(number uint64) (uint64, bool, error) {
+	id := dbBeaconEthNumberId(number)
+	exists, err := cs.store.HasObj(id)
+	if err != nil {
+		return 0, false, err
+	}
+	if !exists {
+		return 0, false, nil
+	}
+	var slot uint64
+	err = cs.store.GetObj(id, &slot)
+	if err != nil {
+		return 0, false, err
+	}
+	return slot, true, nil
+}
+
 func (cs *ChainStore) WriteDestHash(key, value string) error {
 	return cs.store.PutObj(dbDestId(key), value)
 }

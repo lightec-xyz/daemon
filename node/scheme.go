@@ -10,6 +10,7 @@ import (
 const protocolSeparator = "_"
 
 const (
+	beaconEthNumberPrefix      = "bh"
 	btcTxHeightPrefix          = "bth"
 	btcBlockHashPrefix         = "bb"
 	btcTxPrefix                = "bt"
@@ -174,6 +175,10 @@ func dbUnSubmitTxId(txId string) []byte {
 
 func dbAddrPrefixTxId(addr string, txType common.TxType, txId string) []byte {
 	return genKey(addr, txType, txId)
+}
+
+func dbBeaconEthNumberId(number uint64) []byte {
+	return genKey(beaconEthNumberPrefix, number)
 }
 
 func dbTxSlotId(slot uint64, hash string) []byte {

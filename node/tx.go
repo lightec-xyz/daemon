@@ -745,16 +745,23 @@ func (t *TxManager) sgxSign(currentScRoot, ethTxHash, btcTxId, proof string, sig
 }
 
 func (t *TxManager) getTxScRoot(hash string) (string, error) {
-	txes, err := t.chainStore.ReadDbTxes(hash)
+
+	dbTx, ok, err := t.chainStore.ReadRedeemTx(hash)
+	if err != nil || !ok {
+		logger.Error("read redeem tx error: %v %v", hash, err)
+		return "", fmt.Errorf("read redeem tx error: %v %v", hash, err)
+	}
+
+	slot, ok, err := t.chainStore.ReadSlotByHeight(dbTx.Height) // unfortunately the .TxSlot is not there FIXME
 	if err != nil {
-		logger.Error("read db tx error:%v", err)
+		logger.Error("read beacon slot error:%v", err)
 		return "", err
 	}
-	if len(txes) != 1 {
-		logger.Warn("read db tx error:%v", err)
-		return "", fmt.Errorf("read db tx error:%v", err)
+	if !ok {
+		logger.Warn("read beacon slot error:%v", err)
+		return "", fmt.Errorf("read beacon slot error:%v", err)
 	}
-	slot := txes[0].TxSlot // since we have proof, the txSlot infomation is already there
+
 	finalizedSlot, ok, err := t.fileStore.GetTxFinalizedSlot(slot)
 	if err != nil {
 		logger.Error("get tx finalized slot error: %v %v", slot, err)
