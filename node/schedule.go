@@ -982,7 +982,7 @@ func (s *Scheduler) CheckEthState() error {
 				return err
 			}
 
-			logger.Info("retrived tx slot %v and finalized slot %v for redemption tx %v", txSlot, finalizedSlot, txHash)
+			logger.Info("retrieved tx slot %v and finalized slot %v for redemption tx %v", txSlot, finalizedSlot, txHash)
 		}
 
 		if proved {
