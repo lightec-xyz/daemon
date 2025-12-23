@@ -947,8 +947,8 @@ func (s *Scheduler) CheckEthState() error {
 
 		finalizedSlot := dbTx.FinalizedSlot
 		txSlot := dbTx.TxSlot
-		if finalizedSlot == 0 {
-			// This is the first time that we pinpoint and save the tx slot and finalized slot for this task.
+
+		if txSlot == 0 {
 			block, err := s.ethClient.GetBlock(int64(dbTx.Height))
 			if err != nil {
 				logger.Error("cannot get block details: %v", dbTx.Height)
@@ -966,8 +966,38 @@ func (s *Scheduler) CheckEthState() error {
 				logger.Error("fail to parse tx slot: %v", txSlotStr)
 				return err
 			}
-			txSlot = txSlotBig.Uint64()
 
+			slot := txSlotBig.Uint64()
+			// this is the slot number at the time of proposing the block,
+			// the actual corresponding slot might be one more more slots later
+			for slt := slot; ; slt++ {
+				bblock, err := s.beaconClient.GetBlindedBlock(slt)
+				if err != nil {
+					logger.Error("cannot find the blinded block for slot %v", slt)
+					return err
+				}
+				if bblock.Data.Message.Body.ExecutionPayloadHeader.BlockHash == dbTx.Hash {
+					logger.Info("found slot %v for tx %v", slt, txHash)
+					txSlot = slot
+					break
+				}
+				if slt == slot+20 {
+					logger.Error("cannot find proper slot for tx %v, starting %v", txHash, slot)
+					return fmt.Errorf("cannot find proper slot for tx %v, starting %v", txHash, slot)
+				}
+			}
+
+			dbTx.TxSlot = txSlot
+			err = s.chainStore.WriteDbTxes(dbTx)
+			if err != nil {
+				logger.Error("cannot update tx slot number for tx: %v %v", txHash, err)
+				return err
+			}
+
+			logger.Info("retrieved tx slot %v for redemption tx %v", txSlot, txHash)
+		}
+
+		if finalizedSlot == 0 {
 			finalizedSlot, ok, err = s.fileStore.GetTxFinalizedSlot(txSlot)
 			if err != nil || !ok {
 				logger.Warn("it seems %v has not been finalized yet", txHash)
@@ -975,14 +1005,13 @@ func (s *Scheduler) CheckEthState() error {
 			}
 
 			dbTx.FinalizedSlot = finalizedSlot
-			dbTx.TxSlot = txSlot
 			err = s.chainStore.WriteDbTxes(dbTx)
 			if err != nil {
-				logger.Error("cannot update slot numbers for tx: %v %v", txHash, err)
+				logger.Error("cannot update finalized slot number for tx: %v %v", txHash, err)
 				return err
 			}
 
-			logger.Info("retrieved tx slot %v and finalized slot %v for redemption tx %v", txSlot, finalizedSlot, txHash)
+			logger.Info("retrieved finalized slot %v for redemption tx %v", finalizedSlot, txHash)
 		}
 
 		if proved {
