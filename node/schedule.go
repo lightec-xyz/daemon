@@ -972,12 +972,12 @@ func (s *Scheduler) CheckEthState() error {
 		for slot := slotAtProposal; ; slot++ {
 			bblock, err := s.beaconClient.GetBlindedBlock(slot)
 			if err != nil {
-				logger.Error("cannot find the blinded block for slot %v", slot)
-				return err
+				logger.Warn("cannot find the blinded block for slot %v", slot)
+				continue
 			}
 			if bblock.Data.Message.Body.ExecutionPayloadHeader.BlockNumber == txHeight {
-				logger.Info("found tx slot %v for redemption tx %v", txSlot, txHash)
 				txSlot = slot
+				logger.Info("found tx slot %v for redemption tx %v", txSlot, txHash)
 				break
 			}
 			if slot == slotAtProposal+20 {
