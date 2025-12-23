@@ -945,82 +945,52 @@ func (s *Scheduler) CheckEthState() error {
 		blockTime := dbTx.BlockTime
 		txIndex := uint32(dbTx.TxIndex)
 
-		finalizedSlot := dbTx.FinalizedSlot
-		txSlot := dbTx.TxSlot
+		txSlot := uint64(0)
+		finalizedSlot := uint64(0)
 
-		if txSlot == 0 {
-			block, err := s.ethClient.GetBlock(int64(dbTx.Height))
-			if err != nil {
-				logger.Error("cannot get block details: %v", dbTx.Height)
-				return err
-			}
-			beaconRoot := block.Header().ParentBeaconRoot.Hex()
-			beaconHeader, err := s.beaconClient.BeaconHeaderByRoot(beaconRoot)
-			if err != nil {
-				logger.Error("cannot get the beacon header with root: %v", beaconRoot)
-				return err
-			}
-			slotAtProposalStr := beaconHeader.Data.Header.Message.Slot
-			slotAtProposalBig, ok := big.NewInt(0).SetString(slotAtProposalStr, 10)
-			if !ok {
-				logger.Error("fail to parse tx slot: %v", slotAtProposalStr)
-				return err
-			}
-
-			slotAtProposal := slotAtProposalBig.Uint64()
-			// the actual corresponding slot might be one more more slots later
-			txHeight := fmt.Sprintf("%v", dbTx.Height)
-			for slot := slotAtProposal; ; slot++ {
-				bblock, err := s.beaconClient.GetBlindedBlock(slot)
-				if err != nil {
-					logger.Error("cannot find the blinded block for slot %v", slot)
-					return err
-				}
-				if bblock.Data.Message.Body.ExecutionPayloadHeader.BlockNumber == txHeight {
-					logger.Info("found slot %v for tx %v", slot, txHash)
-					txSlot = slot
-					break
-				}
-				if slot == slotAtProposal+20 {
-					return fmt.Errorf("cannot find proper slot for tx %v, starting %v", txHash, slotAtProposal)
-				}
-			}
-
-			dbTx.TxSlot = txSlot
-			// simply putting dbTx does not result in dbTx being updated, it creates a new record, so we have to remove the existing one
-			err = s.chainStore.DeleteDbTxes([]string{txHash})
-			if err != nil {
-				logger.Warn("cannot remove exising dbTx for immediately insertion of a new value: %v", txHash)
-			}
-			err = s.chainStore.WriteDbTxes(dbTx)
-			if err != nil {
-				logger.Error("cannot update tx slot number for tx: %v %v", txHash, err)
-				return err
-			}
-
-			logger.Info("retrieved tx slot %v for redemption tx %v", txSlot, txHash)
+		block, err := s.ethClient.GetBlock(int64(dbTx.Height))
+		if err != nil {
+			logger.Error("cannot get block details: %v", dbTx.Height)
+			return err
+		}
+		beaconRoot := block.Header().ParentBeaconRoot.Hex()
+		beaconHeader, err := s.beaconClient.BeaconHeaderByRoot(beaconRoot)
+		if err != nil {
+			logger.Error("cannot get the beacon header with root: %v", beaconRoot)
+			return err
+		}
+		slotAtProposalStr := beaconHeader.Data.Header.Message.Slot
+		slotAtProposalBig, ok := big.NewInt(0).SetString(slotAtProposalStr, 10)
+		if !ok {
+			logger.Error("fail to parse tx slot: %v", slotAtProposalStr)
+			return err
 		}
 
-		if finalizedSlot == 0 {
-			finalizedSlot, ok, err = s.fileStore.GetTxFinalizedSlot(txSlot)
-			if err != nil || !ok {
-				logger.Warn("it seems %v has not been finalized yet", txHash)
-				continue
-			}
-
-			dbTx.FinalizedSlot = finalizedSlot
-			err = s.chainStore.DeleteDbTxes([]string{txHash})
+		slotAtProposal := slotAtProposalBig.Uint64()
+		// the actual corresponding slot might be one more more slots later
+		txHeight := fmt.Sprintf("%v", dbTx.Height)
+		for slot := slotAtProposal; ; slot++ {
+			bblock, err := s.beaconClient.GetBlindedBlock(slot)
 			if err != nil {
-				logger.Warn("cannot remove exising dbTx for immediately insertion of a new value: %v", txHash)
-			}
-			err = s.chainStore.WriteDbTxes(dbTx)
-			if err != nil {
-				logger.Error("cannot update finalized slot number for tx: %v %v", txHash, err)
+				logger.Error("cannot find the blinded block for slot %v", slot)
 				return err
 			}
-
-			logger.Info("retrieved finalized slot %v for redemption tx %v", finalizedSlot, txHash)
+			if bblock.Data.Message.Body.ExecutionPayloadHeader.BlockNumber == txHeight {
+				logger.Info("found tx slot %v for redemption tx %v", txSlot, txHash)
+				txSlot = slot
+				break
+			}
+			if slot == slotAtProposal+20 {
+				return fmt.Errorf("cannot find proper slot for tx %v, starting %v", txHash, slotAtProposal)
+			}
 		}
+
+		finalizedSlot, ok, err = s.fileStore.GetTxFinalizedSlot(txSlot)
+		if err != nil || !ok {
+			logger.Warn("it seems %v has not been finalized yet", txHash)
+			continue
+		}
+		logger.Info("found finalized slot %v for redemption tx %v", finalizedSlot, txHash)
 
 		if proved {
 			backendRedeemStoreKey := StoreKey{
