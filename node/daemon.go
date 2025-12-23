@@ -345,7 +345,8 @@ func (d *Daemon) Run() error {
 		go DoTimerTask("manager-updateBtcCp", 24*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
 	}
 	if !d.cfg.DisableEthAgent {
-		go DoTimerTask("manager-checkEthState", 1*time.Minute, d.manager.CheckEthState, d.exitSignal, d.manager.EthNotify())
+		// checking every epoch should suffice
+		go DoTimerTask("manager-checkEthState", 12*32*time.Second, d.manager.CheckEthState, d.exitSignal, d.manager.EthNotify())
 	}
 	if !d.cfg.DisableBeaconAgent {
 		go DoTimerTask("manager-checkBeaconState", 1*time.Minute, d.manager.CheckBeaconState, d.exitSignal, d.manager.BeaconNotify())
