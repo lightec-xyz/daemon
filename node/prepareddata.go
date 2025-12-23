@@ -257,8 +257,13 @@ func (p *Prepared) GetBtcDuperRecursiveRequest(start, end uint64) (*rpc.BtcDuper
 	return &request, true, nil
 }
 
-func (p *Prepared) GetTxInEth2Request(txHash string, getSlotByNumber func(uint64) (uint64, error)) (*rpc.TxInEth2ProveRequest, bool, error) {
-	txData, err := txineth2Utils.GetTxInEth2ProofData(p.ethClient.Client, p.apiClient, getSlotByNumber, ethcommon.HexToHash(txHash))
+func (p *Prepared) GetTxInEth2Request(txHash string, txSlot uint64) (*rpc.TxInEth2ProveRequest, bool, error) {
+	txData, err := txineth2Utils.GetTxInEth2ProofData(p.ethClient.Client, p.apiClient,
+		// getSlotByNumber, below function avoids code changes upstream
+		func(uint64) (uint64, error) {
+			return txSlot, nil
+		},
+		ethcommon.HexToHash(txHash))
 	if err != nil {
 		logger.Error("get tx data error: %v", err)
 		return nil, false, err
@@ -269,23 +274,15 @@ func (p *Prepared) GetTxInEth2Request(txHash string, getSlotByNumber func(uint64
 	}, true, nil
 }
 
-func (p *Prepared) GetBlockHeaderRequest(index uint64) (*rpc.BlockHeaderRequest, bool, error) {
-	finalizedSlot, ok, err := p.filestore.GetTxFinalizedSlot(index)
-	if err != nil {
-		logger.Error("get finalized slot error: %v", err)
-		return nil, false, err
-	}
-	if !ok {
-		return nil, false, nil
-	}
-	logger.Debug("get beaconHeader %v ~ %v", index, finalizedSlot)
-	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(index, finalizedSlot)
+func (p *Prepared) GetBlockHeaderRequest(txSlot, finalizedSlot uint64) (*rpc.BlockHeaderRequest, bool, error) {
+	logger.Debug("get beaconHeader %v ~ %v", txSlot, finalizedSlot)
+	beaconBlockHeaders, err := p.beaconClient.RetrieveBeaconHeaders(txSlot, finalizedSlot)
 	if err != nil {
 		logger.Error("get beacon block headers error: %v", err)
 		return nil, false, err
 	}
 	if len(beaconBlockHeaders) == 0 {
-		return nil, false, fmt.Errorf("never should happen %v", index)
+		return nil, false, fmt.Errorf("never should happen %v", txSlot)
 	}
 	beginSlot, beginRoot, err := BeaconBlockHeaderToSlotAndRoot(beaconBlockHeaders[0])
 	if err != nil {
@@ -311,7 +308,7 @@ func (p *Prepared) GetBlockHeaderRequest(index uint64) (*rpc.BlockHeaderRequest,
 			EndRoot:             hex.EncodeToString(endRoot),
 			MiddleBeaconHeaders: middleHeader,
 		},
-		Index: index,
+		Index: txSlot,
 	}, true, nil
 }
 
@@ -401,18 +398,6 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 		ScIndex: int(period), //todo
 		Update:  update.SyncCommitteeUpdate,
 	}, true, nil
-}
-
-func (p *Prepared) getSlotByNumber(number uint64) (uint64, error) {
-	slot, ok, err := p.chainStore.ReadSlotByHeight(number)
-	if err != nil {
-		logger.Error("get slot error: %v %v", number, err)
-		return 0, err
-	}
-	if !ok {
-		return 0, fmt.Errorf("no find %v slot", number)
-	}
-	return slot, nil
 }
 
 func (p *Prepared) GetSyncCommitRootId(period uint64) ([]byte, bool, error) {
@@ -636,17 +621,7 @@ func (p *Prepared) GetBhfUpdateRequest(finalizedSlot uint64) (*rpc.BlockHeaderFi
 	return &request, true, nil
 }
 
-func (p *Prepared) GetRedeemRequest(txHash string) (*rpc.RedeemRequest, bool, error) {
-
-	txSlot, ok, err := p.chainStore.ReadSlotByHash(txHash)
-	if err != nil {
-		logger.Error("get txSlot error: %v %v", err, txHash)
-		return nil, false, err
-	}
-	if !ok {
-		logger.Warn("no find  tx %v beacon slot", txHash)
-		return nil, false, nil
-	}
+func (p *Prepared) GetRedeemRequest(txHash string, txSlot, finalizedSlot uint64) (*rpc.RedeemRequest, bool, error) {
 
 	txProof, ok, err := p.filestore.GetTxProof(txHash)
 	if err != nil {
@@ -655,16 +630,6 @@ func (p *Prepared) GetRedeemRequest(txHash string) (*rpc.RedeemRequest, bool, er
 	}
 	if !ok {
 		logger.Debug("proof request data not prepared: %v", txHash)
-		return nil, false, nil
-	}
-	// todo
-	finalizedSlot, ok, err := p.filestore.GetTxFinalizedSlot(txSlot)
-	if err != nil {
-		logger.Error("get bhf update proof error: %v", err)
-		return nil, false, err
-	}
-	if !ok {
-		logger.Debug("proof request data not prepared: %v", txSlot)
 		return nil, false, nil
 	}
 

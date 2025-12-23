@@ -70,22 +70,6 @@ func (h *Handler) SetGasPrice(gasPrice uint64) (string, error) {
 	return "ok", nil
 }
 
-func (h *Handler) Eth2Slot(height uint64) (uint64, error) {
-	slot, _, err := h.chainStore.ReadSlotByHeight(height)
-	if err != nil {
-		return 0, err
-	}
-	return slot, nil
-}
-
-func (h *Handler) Eth1Height(slot uint64) (uint64, error) {
-	height, err := h.chainStore.ReadEthNumberBySlot(slot)
-	if err != nil {
-		return 0, err
-	}
-	return height, nil
-}
-
 func (h *Handler) ReScan(height uint64, chain string) error {
 	logger.Debug("re scan height: %v, chain: %v", height, chain)
 	if chain == common.EthereumChain.String() {

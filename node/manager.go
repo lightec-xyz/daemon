@@ -2,14 +2,16 @@ package node
 
 import (
 	"encoding/hex"
+	"time"
+
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node/p2p"
+	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	"github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
-	"time"
 )
 
 type manager struct {
@@ -28,10 +30,10 @@ type manager struct {
 	appStartTime   time.Time
 }
 
-func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client, prep *Prepared,
+func NewManager(minerAddr string, libP2p *p2p.LibP2p, icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client, prep *Prepared,
 	btcProofResp, ethProofResp, syncCommitteeProofResp chan *common.ProofResponse, store store.IStore, fileStore *FileStorage,
 	btcNotify, ethNotify, beaconNotify chan *Notify) (IManager, error) {
-	scheduler, err := NewScheduler(fileStore, store, prep, icpClient, btcClient, ethClient)
+	scheduler, err := NewScheduler(fileStore, store, prep, icpClient, btcClient, ethClient, beaconClient)
 	if err != nil {
 		logger.Error("new scheduler error:%v", err)
 		return nil, err

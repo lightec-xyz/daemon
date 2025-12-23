@@ -2,9 +2,11 @@ package node
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
+	"github.com/lightec-xyz/daemon/rpc/beacon"
 	"github.com/lightec-xyz/daemon/rpc/dfinity"
 
 	"github.com/lightec-xyz/daemon/common"
@@ -28,6 +30,7 @@ type Scheduler struct {
 	fileStore    *FileStorage
 	btcClient    *bitcoin.Client
 	ethClient    *ethereum.Client
+	beaconClient *beacon.Client
 	icpClient    *dfinity.Client
 	chainStore   *ChainStore
 	preparedData *Prepared
@@ -941,10 +944,69 @@ func (s *Scheduler) CheckEthState() error {
 
 		blockTime := dbTx.BlockTime
 		txIndex := uint32(dbTx.TxIndex)
+
+		txSlot, ok, err := s.chainStore.ReadSlotByHeight(dbTx.Height)
+		if err != nil {
+			logger.Error("get tx slot by height error, height: %v, error: %v", dbTx.Height, err)
+			return err
+		}
+		if !ok {
+			block, err := s.ethClient.GetBlock(int64(dbTx.Height))
+			if err != nil {
+				logger.Error("cannot get block details: %v", dbTx.Height)
+				return err
+			}
+			beaconRoot := block.Header().ParentBeaconRoot.Hex()
+			beaconHeader, err := s.beaconClient.BeaconHeaderByRoot(beaconRoot)
+			if err != nil {
+				logger.Error("cannot get the beacon header with root: %v", beaconRoot)
+				return err
+			}
+			slotAtProposalStr := beaconHeader.Data.Header.Message.Slot
+			slotAtProposalBig, ok := big.NewInt(0).SetString(slotAtProposalStr, 10)
+			if !ok {
+				logger.Error("fail to parse tx slot: %v", slotAtProposalStr)
+				return err
+			}
+
+			slotAtProposal := slotAtProposalBig.Uint64()
+			// the actual corresponding slot might be one more more slots later
+			txHeight := fmt.Sprintf("%v", dbTx.Height)
+			for slot := slotAtProposal; ; slot++ {
+				bblock, err := s.beaconClient.GetBlindedBlock(slot)
+				if err != nil {
+					logger.Warn("cannot find the blinded block for slot %v", slot)
+					continue
+				}
+				if bblock.Data.Message.Body.ExecutionPayloadHeader.BlockNumber == txHeight {
+					txSlot = slot
+					err = s.chainStore.WriteBeaconSlot(dbTx.Height, txSlot)
+					if err != nil {
+						logger.Error("write beacon slot error for tx %v, slot %v, %v", txHash, txSlot, err)
+						return fmt.Errorf("write beacon slot error for tx %v, slot %v, %v", txHash, txSlot, err)
+					}
+					logger.Info("found tx slot %v for redemption tx %v", txSlot, txHash)
+					break
+				}
+				if slot == slotAtProposal+20 {
+					return fmt.Errorf("cannot find proper slot for tx %v, starting %v", txHash, slotAtProposal)
+				}
+			}
+		}
+
+		finalizedSlot, ok, err := s.fileStore.GetTxFinalizedSlot(txSlot)
+		if err != nil || !ok {
+			logger.Warn("it seems %v has not been finalized yet", txHash)
+			continue
+		}
+		logger.Info("found finalized slot %v for redemption tx %v", finalizedSlot, txHash)
+
 		if proved {
 			backendRedeemStoreKey := StoreKey{
 				PType:     common.BackendRedeemTxType,
 				Hash:      txHash,
+				FIndex:    txSlot,
+				SIndex:    finalizedSlot,
 				BlockTime: blockTime,
 				TxIndex:   txIndex,
 			}
@@ -969,27 +1031,10 @@ func (s *Scheduler) CheckEthState() error {
 			}
 			continue
 		}
-		txSlot, ok, err := s.chainStore.ReadSlotByHash(txHash)
-		if err != nil {
-			logger.Error("get txSlot error: %v %v", err, txHash)
-			return err
-		}
-		if !ok {
-			logger.Warn("no find  tx %v beacon slot", txHash)
-			continue
-		}
-		finalizedSlot, ok, err := s.fileStore.GetTxFinalizedSlot(txSlot)
-		if err != nil {
-			logger.Error("get near tx slot finalized slot error: %v", err)
-			return err
-		}
-		if !ok {
-			logger.Warn("no find near %v tx slot finalized slot", txSlot)
-			continue
-		}
 		txInEth2Key := StoreKey{
 			PType:     common.TxInEth2Type,
 			Hash:      txHash,
+			FIndex:    txSlot,
 			BlockTime: blockTime,
 			TxIndex:   txIndex,
 		}
@@ -1057,6 +1102,8 @@ func (s *Scheduler) CheckEthState() error {
 		redeemStoreKey := StoreKey{
 			PType:     common.RedeemTxType,
 			Hash:      txHash,
+			FIndex:    txSlot,
+			SIndex:    finalizedSlot,
 			BlockTime: blockTime,
 			TxIndex:   txIndex,
 		}
@@ -1426,7 +1473,7 @@ func (s *Scheduler) PendingRequest() []*common.ProofRequest {
 }
 
 func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prepared,
-	icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client) (*Scheduler, error) {
+	icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client) (*Scheduler, error) {
 	return &Scheduler{
 		queueManager: NewQueueManager(),
 		fileStore:    filestore,
@@ -1434,6 +1481,7 @@ func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prep
 		preparedData: preparedData,
 		btcClient:    btcClient,
 		ethClient:    ethClient,
+		beaconClient: beaconClient,
 		icpClient:    icpClient,
 	}, nil
 }

@@ -198,14 +198,6 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		return nil, err
 	}
 	var agents []*WrapperAgent
-	if !cfg.DisableBeaconAgent {
-		beaconAgent, err := NewBeaconAgent(cfg.BeaconReScan, storeDb, beaconClient, beaClient, fileStore, cfg.BeaconInitSlot)
-		if err != nil {
-			logger.Error("new beacon agent error:%v", err)
-			return nil, err
-		}
-		agents = append(agents, NewWrapperAgent(beaconAgent, 15*time.Second, nil, syncCommitResp))
-	}
 	if !cfg.DisableBtcAgent {
 		btcAgent, err := NewBitcoinAgent(cfg, storeDb, btcProverClient, btcClient, ethClient, dfinityClient, txManager, chainFork, fileStore)
 		if err != nil {
@@ -248,7 +240,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Warn("no local worker to generate proof")
 	}
 
-	manager, err := NewManager(cfg.MinerAddr, libp2p, dfinityClient, btcClient, ethClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
+	manager, err := NewManager(cfg.MinerAddr, libp2p, dfinityClient, btcClient, ethClient, beaconClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
 		storeDb, fileStore, btcNotify, ethNotify, beaconNotify)
 	if err != nil {
 		logger.Error("new manager error: %v", err)
@@ -353,7 +345,8 @@ func (d *Daemon) Run() error {
 		go DoTimerTask("manager-updateBtcCp", 24*time.Hour, d.manager.UpdateBtcCp, d.exitSignal)
 	}
 	if !d.cfg.DisableEthAgent {
-		go DoTimerTask("manager-checkEthState", 1*time.Minute, d.manager.CheckEthState, d.exitSignal, d.manager.EthNotify())
+		// checking every epoch should suffice
+		go DoTimerTask("manager-checkEthState", 12*32*time.Second, d.manager.CheckEthState, d.exitSignal, d.manager.EthNotify())
 	}
 	if !d.cfg.DisableBeaconAgent {
 		go DoTimerTask("manager-checkBeaconState", 1*time.Minute, d.manager.CheckBeaconState, d.exitSignal, d.manager.BeaconNotify())

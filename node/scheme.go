@@ -2,14 +2,14 @@ package node
 
 import (
 	"fmt"
-	"github.com/lightec-xyz/daemon/common"
 	"strings"
+
+	"github.com/lightec-xyz/daemon/common"
 )
 
 const protocolSeparator = "_"
 
 const (
-	beaconSlotPrefix           = "bs"
 	beaconEthNumberPrefix      = "bh"
 	btcTxHeightPrefix          = "bth"
 	btcBlockHashPrefix         = "bb"
@@ -70,14 +70,20 @@ type DbTx struct {
 	Proved       bool
 	Amount       int64
 	GenProofNums int
+
 	// bitcoin chain
 	EthAddr string
+
 	// ethereum chain
 	LogIndex  uint
 	UtxoId    string
 	UtxoIndex int64
 	Sender    string
 	Receiver  string
+
+	TxSlot        uint64 `cbor:"omitzero"`
+	FinalizedSlot uint64 `cbor:"omitzero"`
+
 	// for btc
 	CheckPointHeight uint64
 	LatestHeight     uint64
@@ -86,6 +92,8 @@ type DbTx struct {
 }
 
 func (t *DbTx) GenReset() {
+	t.FinalizedSlot = 0
+	t.TxSlot = 0
 	t.LatestHeight = 0
 	t.CheckPointHeight = 0
 	t.GenProofNums = t.GenProofNums + 1
@@ -169,10 +177,6 @@ func dbAddrPrefixTxId(addr string, txType common.TxType, txId string) []byte {
 	return genKey(addr, txType, txId)
 }
 
-func dbBeaconSlotId(slot uint64) []byte {
-	return genKey(beaconSlotPrefix, slot)
-
-}
 func dbBeaconEthNumberId(number uint64) []byte {
 	return genKey(beaconEthNumberPrefix, number)
 }
