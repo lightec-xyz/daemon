@@ -50,7 +50,7 @@ const (
 
 	// 1: the first production version （2025.7） @gnark v0.12;
 	// 2: Ethereum Fusaka + gnark 0.14
-	GeneratorVersion = 2
+	GeneratorVersion = 1
 
 	NodeVersion          = "1.0.0"
 	RpcRegisterName      = "zkbtc"
