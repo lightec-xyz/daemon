@@ -323,7 +323,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("get %v FIndex relay commitId no find", period)
+		logger.Warn("get %v FIndex relay commitId not found", period)
 		return nil, false, nil
 	}
 	var firstProof *StoreProof
@@ -359,7 +359,7 @@ func (p *Prepared) GetDutyRequest(period uint64) (*rpc.SyncCommDutyRequest, bool
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find %v unit proof Responses, send new proof request", period)
+		logger.Warn("not found %v unit proof Responses, send new proof request", period)
 		return nil, false, nil
 	}
 	outerProof, exists, err := p.filestore.GetOuterProof(endPeriod)
@@ -545,7 +545,7 @@ func (p *Prepared) GetSyncCommitUpdate(period uint64) (*rpc.WrapSyncCommitteeUpd
 		return nil, false, err
 	}
 	if !exists {
-		//logger.Warn("no find %v index update Responses", period)
+		//logger.Warn("not found %v index update Responses", period)
 		return nil, false, nil
 	}
 	update, err := dbUpdateToZkUpdate(&currentPeriodUpdate)
@@ -565,7 +565,7 @@ func (p *Prepared) GetSyncCommitUpdate(period uint64) (*rpc.WrapSyncCommitteeUpd
 		return nil, false, err
 	}
 	if !preUpdateExists {
-		logger.Warn("get unit Responses,no find %v FIndex update Responses", prePeriod)
+		logger.Warn("get unit Responses,not found %v FIndex update Responses", prePeriod)
 		return nil, false, nil
 	}
 	update.CurrentSyncCommittee = &proverType.SyncCommittee{
@@ -595,7 +595,7 @@ func (p *Prepared) GetBhfUpdateRequest(finalizedSlot uint64) (*rpc.BlockHeaderFi
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find finality update: %v", finalizedSlot)
+		logger.Warn("not found finality update: %v", finalizedSlot)
 		return nil, false, nil
 	}
 	attestedSlot, err := strconv.ParseUint(currentFinalityUpdate.Data.AttestedHeader.Slot, 10, 64)
@@ -648,7 +648,7 @@ func (p *Prepared) GetRedeemRequest(txHash string, txSlot, finalizedSlot uint64)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("no find bhf update %v", finalizedSlot)
+		logger.Warn("not found bhf update %v", finalizedSlot)
 		return nil, false, nil
 	}
 
@@ -659,7 +659,7 @@ func (p *Prepared) GetRedeemRequest(txHash string, txSlot, finalizedSlot uint64)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("no find finality update %v", finalizedSlot)
+		logger.Warn("not found finality update %v", finalizedSlot)
 		return nil, false, nil
 	}
 
@@ -675,7 +675,7 @@ func (p *Prepared) GetRedeemRequest(txHash string, txSlot, finalizedSlot uint64)
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("no find current root %v", period)
+		logger.Warn("not found current root %v", period)
 		return nil, false, nil
 	}
 
@@ -685,7 +685,7 @@ func (p *Prepared) GetRedeemRequest(txHash string, txSlot, finalizedSlot uint64)
 		return nil, false, err
 	}
 	if !exists {
-		logger.Warn("no find recursive proof %v", period)
+		logger.Warn("not found recursive proof %v", period)
 		return nil, false, nil
 	}
 
@@ -896,7 +896,7 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 		return nil, false, err
 	}
 	if !ok {
-		logger.Warn("no find: %v icp %v signature", hash, dbTx.LatestHeight)
+		logger.Warn("not found: %v icp %v signature", hash, dbTx.LatestHeight)
 		// no work,just placeholder
 		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
 		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"

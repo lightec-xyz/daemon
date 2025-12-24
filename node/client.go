@@ -95,7 +95,7 @@ func (c *BtcClient) headerByHash(hash string) (string, error) {
 		return "", err
 	}
 	if !ok {
-		return "", fmt.Errorf("db no find header %v", hash)
+		return "", fmt.Errorf("db not found header %v", hash)
 	}
 	return header, nil
 }
@@ -113,7 +113,7 @@ func (c *BtcClient) blockHash(height int64) (*chainhash.Hash, error) {
 		return nil, err
 	}
 	if !ok {
-		return nil, fmt.Errorf("db no find hash %v", height)
+		return nil, fmt.Errorf("db not found hash %v", height)
 	}
 	return chainhash.NewHashFromStr(hash)
 }
@@ -124,7 +124,7 @@ func (c *BtcClient) readBlockFromDb(hash string) (*btcjson.GetBlockVerboseResult
 		return nil, err
 	}
 	if !exists {
-		return nil, fmt.Errorf("db no find block %v", hash)
+		return nil, fmt.Errorf("db not found block %v", hash)
 	}
 	var block btcjson.GetBlockVerboseResult
 	err = json.Unmarshal([]byte(blockData), &block)

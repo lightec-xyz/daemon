@@ -143,7 +143,7 @@ func (m *manager) GetProofRequest(proofTypes []common.ProofType) (*common.ProofR
 		})
 	}
 	if !ok {
-		logger.Warn("no find match proof task")
+		logger.Warn("not found match proof task")
 		return nil, false, nil
 	}
 	storeKey := NewStoreKey(request.ProofType, request.Hash, request.Prefix, request.FIndex, request.SIndex)

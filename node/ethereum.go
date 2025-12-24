@@ -132,8 +132,8 @@ func (e *ethereumAgent) ScanBlock() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find eth current height")
-		return fmt.Errorf("no find eth current height")
+		logger.Warn("not found eth current height")
+		return fmt.Errorf("not found eth current height")
 	}
 	blockNumber, err := e.ethClient.BlockNumber(context.Background())
 	if err != nil {
@@ -239,7 +239,7 @@ func (e *ethereumAgent) deleteRedeemTxCache(resp *common.ProofResponse) error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find latest slot: %v", resp.FIndex)
+		logger.Warn("not found latest slot: %v", resp.FIndex)
 		return nil
 	}
 	err = e.chainStore.DeleteRedeemSotCache(resp.FIndex, finalizedSlot, resp.Hash)

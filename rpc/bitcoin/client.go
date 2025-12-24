@@ -234,7 +234,7 @@ func (c *Client) GetUtxoByTxId(txId string, vout int) (Unspents, error) {
 			return result, nil
 		}
 	}
-	return result, fmt.Errorf("no find %v %v", txId, vout)
+	return result, fmt.Errorf("not found %v %v", txId, vout)
 }
 
 func outputParseParam(outputs []TxOut) Param {
