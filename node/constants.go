@@ -46,8 +46,12 @@ const (
 	// MigrateProto operator migrate address
 	MigrateProto = "6a141234560000000000000000000000000000000000"
 	// MinDepositValue deposit min value
-	MinDepositValue      = float64(0.00021000) // 21000 sats
-	GeneratorVersion     = 1
+	MinDepositValue = float64(0.00021000) // 21000 sats
+
+	// 1: the first production version （2025.7） @gnark v0.12;
+	// 2: Ethereum Fusaka + gnark 0.14
+	GeneratorVersion = 2
+
 	NodeVersion          = "1.0.0"
 	RpcRegisterName      = "zkbtc"
 	BitcoinNetwork       = "bitcoin"

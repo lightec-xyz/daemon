@@ -873,19 +873,6 @@ func (cs *ChainStore) ReadLatestBeaconSlot() (uint64, bool, error) {
 	return slot, true, nil
 }
 
-func (cs *ChainStore) ReadEthNumberBySlot(slot uint64) (uint64, error) {
-	var number uint64
-	err := cs.store.GetObj(dbBeaconSlotId(slot), &number)
-	if err != nil {
-		return 0, err
-	}
-	return number, nil
-}
-
-func (cs *ChainStore) WriteBeaconEthNumber(slot, number uint64) error {
-	return cs.store.PutObj(dbBeaconSlotId(slot), number)
-}
-
 func (cs *ChainStore) WriteBeaconSlot(number, slot uint64) error {
 	return cs.store.PutObj(dbBeaconEthNumberId(number), slot)
 }
@@ -1315,24 +1302,6 @@ func (cs *ChainStore) ReadNonce(network, addr string) (uint64, bool, error) {
 
 func (cs *ChainStore) WriteFinalityUpdateSlot(finalizeSlot uint64) error {
 	return cs.store.PutObj(dbFinalityUpdateSlotId(finalizeSlot), finalizeSlot)
-}
-
-func (cs *ChainStore) ReadSlotByHash(hash string) (uint64, bool, error) {
-	dbTx, err := cs.ReadDbTxes(hash)
-	if err != nil {
-		return 0, false, err
-	}
-	if len(dbTx) == 0 {
-		return 0, false, nil
-	}
-	slot, ok, err := cs.ReadSlotByHeight(dbTx[0].Height)
-	if err != nil {
-		return 0, false, err
-	}
-	if !ok {
-		return 0, false, nil
-	}
-	return slot, true, nil
 }
 
 func (cs *ChainStore) ReadBtcTx(hash string) (*DbTx, bool, error) {

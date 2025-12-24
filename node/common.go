@@ -2,17 +2,18 @@ package node
 
 import (
 	"fmt"
+	"math/big"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	blockdepthUtil "github.com/lightec-xyz/btc_provers/utils/blockdepth"
 	btcproverClient "github.com/lightec-xyz/btc_provers/utils/client"
 	"github.com/lightec-xyz/daemon/node/p2p"
 	"github.com/lightec-xyz/daemon/rpc/bitcoin"
 	"github.com/lightec-xyz/daemon/rpc/ethereum/zkbridge"
-	"math/big"
-	"os"
-	"strings"
-	"sync"
-	"time"
 
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -246,37 +247,42 @@ func GenRequestData(p *Prepared, reqType common.ProofType, fIndex, sIndex uint64
 		return data, ok, nil
 
 	case common.TxInEth2Type:
-		data, ok, err := p.GetTxInEth2Request(hash, p.getSlotByNumber)
+		txSlot := fIndex
+		data, ok, err := p.GetTxInEth2Request(hash, txSlot)
 		if err != nil {
-			logger.Error("get tx in eth2 data error: %v %v", fIndex, err)
+			logger.Error("get tx in eth2 data error: %v %v", txSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BeaconHeaderType:
-		data, ok, err := p.GetBlockHeaderRequest(fIndex)
+		txSlot, finalizedSlot := fIndex, sIndex
+		data, ok, err := p.GetBlockHeaderRequest(txSlot, finalizedSlot)
 		if err != nil {
-			logger.Error("get block header request data error:%v %v", fIndex, err)
+			logger.Error("get block header request data error:%v %v %v", txSlot, finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BeaconHeaderFinalityType:
-		data, ok, err := p.GetBhfUpdateRequest(fIndex)
+		finalizedSlot := fIndex
+		data, ok, err := p.GetBhfUpdateRequest(finalizedSlot)
 		if err != nil {
-			logger.Error("get bhf update data error: %v %v", fIndex, err)
+			logger.Error("get bhf update data error: %v %v", finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.RedeemTxType:
-		data, ok, err := p.GetRedeemRequest(hash)
+		txSlot, finalizedSlot := fIndex, sIndex
+		data, ok, err := p.GetRedeemRequest(hash, txSlot, finalizedSlot)
 		if err != nil {
-			logger.Error("get Redeem request data error:%v %v", fIndex, err)
+			logger.Error("get Redeem request data error:%v %v %v", txSlot, finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
 	case common.BackendRedeemTxType:
-		data, ok, err := p.GetRedeemRequest(hash)
+		txSlot, finalizedSlot := fIndex, sIndex
+		data, ok, err := p.GetRedeemRequest(hash, txSlot, finalizedSlot)
 		if err != nil {
-			logger.Error("get Redeem request data error:%v %v", fIndex, err)
+			logger.Error("get Redeem request data error:%v %v %v", txSlot, finalizedSlot, err)
 			return nil, false, err
 		}
 		return data, ok, nil
