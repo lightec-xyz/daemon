@@ -112,7 +112,7 @@ func (b *bitcoinAgent) ScanBlock() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find btc current height")
+		logger.Warn("not found btc current height")
 		return fmt.Errorf("no btc current height")
 	}
 	latestHeight, err := b.btcClient.GetBlockCount()
@@ -855,7 +855,7 @@ func isOpZkpProto(outputs []btcjson.Vout) (string, error) {
 			return ethAddr, nil
 		}
 	}
-	return "", fmt.Errorf("no find zkbtc opreturn")
+	return "", fmt.Errorf("not found zkbtc opreturn")
 }
 
 func getDepositAmount(txOuts []btcjson.Vout, addr string) float64 {

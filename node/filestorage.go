@@ -861,7 +861,7 @@ func (fs *FileStorage) RemoveBtcProof(height uint64) error {
 	for _, table := range tables {
 		fileStore, ok := fs.GetFileStore(table)
 		if !ok {
-			logger.Error("no find table %v", fileStore.RootPath())
+			logger.Error("not found table %v", fileStore.RootPath())
 			return fmt.Errorf("get file store error %v", table)
 		}
 		err := fs.removeFiles(fileStore, height)
@@ -872,8 +872,8 @@ func (fs *FileStorage) RemoveBtcProof(height uint64) error {
 	}
 	depthStore, ok := fs.GetFileStore(common.BtcDepthRecursiveTable)
 	if !ok {
-		logger.Error("no find depth table")
-		return fmt.Errorf("no find table")
+		logger.Error("not found depth table")
+		return fmt.Errorf("not found table")
 	}
 	subFileStores, err := depthStore.SubFileStores()
 	if err != nil {

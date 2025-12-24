@@ -29,8 +29,8 @@ func getProofParams(txId, miner, network string, chainStore *ChainStore, btcClie
 		return nil, err
 	}
 	if !ok {
-		logger.Warn("no find btc tx: %v", txId)
-		return nil, fmt.Errorf("no find btc tx:%v", txId)
+		logger.Warn("not found btc tx: %v", txId)
+		return nil, fmt.Errorf("not found btc tx:%v", txId)
 	}
 	if dbTx.LatestHeight == 0 {
 		//logger.Warn("dbTx %v latest height is 0", txId)
@@ -57,7 +57,7 @@ func getProofParams(txId, miner, network string, chainStore *ChainStore, btcClie
 		return nil, err
 	}
 	if !ok {
-		logger.Warn("no find: %v icp %v signature", dbTx.Hash, dbTx.LatestHeight)
+		logger.Warn("not found: %v icp %v signature", dbTx.Hash, dbTx.LatestHeight)
 		// no work,just placeholder
 		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
 		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"

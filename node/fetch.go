@@ -213,7 +213,7 @@ func (f *Fetch) CheckFinalityUpdate(period uint64, finalityUpdate *common.LightC
 		return false, err
 	}
 	if !exists {
-		logger.Warn("no find light finality update :%v", prePeriod)
+		logger.Warn("not found light finality update :%v", prePeriod)
 		//todo
 		return false, nil
 	}
@@ -268,7 +268,7 @@ func (f *Fetch) CheckLightClientUpdate(period uint64, update *common.LightClient
 			return true, nil
 		} else {
 			// todo
-			logger.Warn("no find %v FIndex update Responses", prePeriod)
+			logger.Warn("not found %v FIndex update Responses", prePeriod)
 			return false, nil
 		}
 	}

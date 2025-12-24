@@ -48,7 +48,7 @@ func (s *Scheduler) init() error {
 func (s *Scheduler) updateBtcCp() error {
 	cpTx, ok := s.chainStore.ReadUpdateCpTx()
 	if !ok {
-		logger.Warn("no find cpTx")
+		logger.Warn("not found cpTx")
 		return nil
 	}
 	hash, exists, err := s.chainStore.ReadBitcoinHash(cpTx.Height)
@@ -108,8 +108,8 @@ func (s *Scheduler) updateBtcCp() error {
 		return err
 	}
 	if !ok {
-		logger.Error("no find btc tx:%v", cpTx.Hash)
-		return fmt.Errorf("no find btc tx:%v", cpTx.Hash)
+		logger.Error("not found btc tx:%v", cpTx.Hash)
+		return fmt.Errorf("not found btc tx:%v", cpTx.Hash)
 	}
 	tx.LatestHeight = 0
 	tx.CheckPointHeight = 0
@@ -144,7 +144,7 @@ func (s *Scheduler) checkTxesDepth(latestHeight, cpHeight uint64, unGenTxes []*D
 			return false, err
 		}
 		if !ok {
-			logger.Warn("never should happen,no find btc tx:%v", unGenTx.Hash)
+			logger.Warn("never should happen,not found btc tx:%v", unGenTx.Hash)
 			continue
 		}
 		raised, err := s.getTxRaised(unGenTx.Height, unGenTx.Amount)
@@ -181,7 +181,7 @@ func (s *Scheduler) CheckBtcState() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find latest btc height")
+		logger.Warn("not found latest btc height")
 		return nil
 	}
 	if latestHeight < uint64(blockCount-3) {
@@ -195,7 +195,7 @@ func (s *Scheduler) CheckBtcState() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find latest check point")
+		logger.Warn("not found latest check point")
 		return nil
 	}
 	unGenTxes, err := s.chainStore.ReadUnGenProofs(common.BitcoinChain)
@@ -237,7 +237,7 @@ func (s *Scheduler) CheckBtcState() error {
 			return err
 		}
 		if !ok {
-			logger.Error("no find bitcoin hash")
+			logger.Error("not found bitcoin hash")
 			return err
 		}
 		if icpSig.Height < latestHeight || (icpSig.Height == latestHeight && !common.StrEqual(icpSig.Hash, hash)) {
@@ -270,7 +270,7 @@ func (s *Scheduler) CheckBtcState() error {
 			return err
 		}
 		if !ok {
-			logger.Warn("no find btc tx:%v", unGenTx.Hash)
+			logger.Warn("not found btc tx:%v", unGenTx.Hash)
 			continue
 		}
 		//todo
@@ -321,7 +321,7 @@ func (s *Scheduler) CheckPreBtcState() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find latest btc height")
+		logger.Warn("not found latest btc height")
 		return nil
 	}
 	chainIndex, ok, err := s.fileStore.CurrentBtcChainIndex()
@@ -330,7 +330,7 @@ func (s *Scheduler) CheckPreBtcState() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find current btc chainIndex")
+		logger.Warn("not found current btc chainIndex")
 		return nil
 	}
 	//currentIndex := s.upperRoundStartIndex(chainIndex.End)
@@ -362,7 +362,7 @@ func (s *Scheduler) CheckPreBtcState() error {
 		return err
 	}
 	if !ok {
-		logger.Warn("no find latest check point")
+		logger.Warn("not found latest check point")
 		return nil
 	}
 	logger.Debug("latestBlockHeight: %v,latestCheckPoint: %v", latestHeight, cpHeight)
@@ -425,7 +425,7 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx, unSigProt
 		return false, err
 	}
 	if !unSigProtect && !signed {
-		logger.Debug("no find icp block sig,update latest height now:%v %v", tx.Hash, latestHeight)
+		logger.Debug("not found icp block sig,update latest height now:%v %v", tx.Hash, latestHeight)
 		return false, nil
 	}
 
@@ -474,7 +474,7 @@ func (s *Scheduler) fixLatestHeight(curHeight uint64) (uint64, bool, error) {
 		return 0, false, err
 	}
 	if !ok {
-		logger.Error("no find bitcoin hash:%v", icpBlockSig.Height)
+		logger.Error("not found bitcoin hash:%v", icpBlockSig.Height)
 		return curHeight, false, nil
 	}
 	if !common.StrEqual(hash, icpBlockSig.Hash) {
@@ -619,7 +619,7 @@ func (s *Scheduler) checkBtcChainRequest(latestHeight, blockTime, txIndex uint64
 		return false, err
 	}
 	if !ok {
-		logger.Warn("no find current btc chainIndex")
+		logger.Warn("not found current btc chainIndex")
 		return false, nil
 	}
 	if chainIndex == latestHeight {
@@ -1342,7 +1342,7 @@ func (s *Scheduler) BlockSignature() error {
 		return err
 	}
 	if !ok {
-		logger.Error("no find bitcoin hash:%v", sig.Height)
+		logger.Error("not found bitcoin hash:%v", sig.Height)
 		return nil
 	}
 	if !common.StrEqual(hash, sig.Hash) {
@@ -1370,7 +1370,7 @@ func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 		return false, err
 	}
 	if !ok {
-		fmt.Errorf("no find bitcoin hash")
+		fmt.Errorf("not found bitcoin hash")
 		return false, nil
 	}
 	raised, err := s.ethClient.GetRaised(hash, amount)
