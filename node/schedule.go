@@ -19,6 +19,7 @@ import (
 type IScheduler interface {
 	CheckBtcState() error
 	CheckEthState() error
+	CheckCpUpdate() error
 	CheckPreBtcState() error
 	CheckBeaconState() error
 	UpdateBtcCp() error

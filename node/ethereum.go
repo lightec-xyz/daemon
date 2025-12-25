@@ -75,52 +75,11 @@ func (e *ethereumAgent) Init() error {
 		logger.Error("ethClient json rpc error:%v", err)
 		return err
 	}
-	err = e.GetCheckpointHeight()
+	err = getCheckpointHeight(e.ethClient, e.chainStore, e.btcClient)
 	if err != nil {
 		logger.Error("get checkpoint height error:%v", err)
 		return err
 	}
-	return nil
-}
-
-func (b *ethereumAgent) GetCheckpointHeight() error {
-	hash, err := b.ethClient.SuggestedCP()
-	if err != nil {
-		logger.Error("ethClient get checkpoint hash error:%v", err)
-		return err
-	}
-	// is this latest?
-	latest, exists, err := b.chainStore.ReadLatestCheckPoint()
-	if err != nil {
-		logger.Error("ethClient read latest checkpoint error: %v", err)
-		return err
-	}
-	if exists {
-		lHash, exists2, err := b.chainStore.ReadCheckpoint(latest)
-		if err == nil && exists2 && lHash == hex.EncodeToString(hash) {
-			logger.Info("checkpoint not updated")
-			return nil
-		}
-	}
-
-	littleHash := hex.EncodeToString(common.ReverseBytes(hash))
-	header, err := b.btcClient.GetBlockHeader(littleHash)
-	if err != nil {
-		logger.Error("btcClient checkpoint height  error:%v %v", err, littleHash)
-		return err
-	}
-	checkpointHeight := uint64(header.Height)
-	err = b.chainStore.WriteCheckpoint(checkpointHeight, hex.EncodeToString(hash))
-	if err != nil {
-		logger.Error("write checkpoint error:%v", err)
-		return err
-	}
-	err = b.chainStore.WriteLatestCheckpoint(checkpointHeight)
-	if err != nil {
-		logger.Error("write latest checkpoint error:%v", err)
-		return err
-	}
-	logger.Debug("checkpointHeight: %v, checkpointHash: %v", checkpointHeight, littleHash)
 	return nil
 }
 
@@ -143,11 +102,6 @@ func (e *ethereumAgent) ScanBlock() error {
 	if currentHeight >= blockNumber {
 		logger.Debug("eth currentHeight:%d >= blockNumber:%d", currentHeight, blockNumber)
 		return nil
-	}
-	err = e.GetCheckpointHeight()
-	if err != nil {
-		logger.Error("get checkpoint height error:%v", err)
-		return err
 	}
 
 	beginHeight := uint64(currentHeight) + 1
