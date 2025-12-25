@@ -423,6 +423,16 @@ func (m *manager) CheckEthState() error {
 	}
 	return nil
 }
+
+func (m *manager) CheckCpUpdate() error {
+	err := getCheckpointHeight(m.scheduler.ethClient, m.chainStore, m.scheduler.btcClient)
+	if err != nil {
+		logger.Error("get checkpoint height error:%v", err)
+		return err
+	}
+	return nil
+}
+
 func (m *manager) CheckBeaconState() error {
 	err := m.scheduler.CheckBeaconState()
 	if err != nil {

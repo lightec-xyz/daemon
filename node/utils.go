@@ -4,6 +4,11 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"regexp"
+	"runtime"
+	"strings"
+
 	btccdEcdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
@@ -11,10 +16,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
-	"math/big"
-	"regexp"
-	"runtime"
-	"strings"
+	"github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"github.com/lightec-xyz/daemon/rpc/ethereum"
 )
 
 func txSkipCheck(txes []*DbTx) []*DbTx {
@@ -209,4 +212,45 @@ func getUrlToken(url string) string {
 		return match[1]
 	}
 	return ""
+}
+
+func getCheckpointHeight(ethClient *ethereum.Client, chainStore *ChainStore, btcClient *bitcoin.Client) error {
+	hash, err := ethClient.SuggestedCP()
+	if err != nil {
+		logger.Error("ethClient get checkpoint hash error:%v", err)
+		return err
+	}
+	// is this latest?
+	latest, exists, err := chainStore.ReadLatestCheckPoint()
+	if err != nil {
+		logger.Error("ethClient read latest checkpoint error: %v", err)
+		return err
+	}
+	if exists {
+		lHash, exists2, err := chainStore.ReadCheckpoint(latest)
+		if err == nil && exists2 && lHash == hex.EncodeToString(hash) {
+			logger.Info("checkpoint not updated")
+			return nil
+		}
+	}
+
+	littleHash := hex.EncodeToString(common.ReverseBytes(hash))
+	header, err := btcClient.GetBlockHeader(littleHash)
+	if err != nil {
+		logger.Error("btcClient checkpoint height  error:%v %v", err, littleHash)
+		return err
+	}
+	checkpointHeight := uint64(header.Height)
+	err = chainStore.WriteCheckpoint(checkpointHeight, hex.EncodeToString(hash))
+	if err != nil {
+		logger.Error("write checkpoint error:%v", err)
+		return err
+	}
+	err = chainStore.WriteLatestCheckpoint(checkpointHeight)
+	if err != nil {
+		logger.Error("write latest checkpoint error:%v", err)
+		return err
+	}
+	logger.Debug("checkpointHeight: %v, checkpointHash: %v", checkpointHeight, littleHash)
+	return nil
 }
