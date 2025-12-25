@@ -347,7 +347,9 @@ func (d *Daemon) Run() error {
 	if !d.cfg.DisableEthAgent {
 		// checking every epoch should suffice
 		go DoTimerTask("manager-checkEthState", 12*32*time.Second, d.manager.CheckEthState, d.exitSignal, d.manager.EthNotify())
-		go DoTimerTask("manager-checkCpUpdate", 24*time.Hour, d.manager.CheckCpUpdate, d.exitSignal, d.manager.EthNotify())
+		// checkpoint is updated once per 2 weeks. However we should adopt a new CP asap as deposits might be stuck due to
+		// "cp check fail" when the network is generating blocks much slower than one per 10 minutes.
+		go DoTimerTask("manager-checkCpUpdate", 3*time.Hour, d.manager.CheckCpUpdate, d.exitSignal, d.manager.EthNotify())
 	}
 	if !d.cfg.DisableBeaconAgent {
 		go DoTimerTask("manager-checkBeaconState", 1*time.Minute, d.manager.CheckBeaconState, d.exitSignal, d.manager.BeaconNotify())
