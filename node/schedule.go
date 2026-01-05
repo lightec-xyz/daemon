@@ -186,7 +186,7 @@ func (s *Scheduler) CheckBtcState() error {
 		return nil
 	}
 	if latestHeight < uint64(blockCount-3) {
-		logger.Warn("wait btc sync complete, block count:%v latestHeight:%v,skip check btc proof now", blockCount, latestHeight)
+		logger.Warn("wait btc sync complete, block count: %v latestHeight: %v, skip check btc proof now", blockCount, latestHeight)
 		return nil
 	}
 
@@ -201,17 +201,17 @@ func (s *Scheduler) CheckBtcState() error {
 	}
 	unGenTxes, err := s.chainStore.ReadUnGenProofs(common.BitcoinChain)
 	if err != nil {
-		logger.Error("read unGen proof error:%v", err)
+		logger.Error("read unGen proof error: %v", err)
 		return err
 	}
 	unSigProtect, err := s.ethClient.EnableUnsignedProtection()
 	if err != nil {
-		logger.Error("enable unsigned protection error:%v", err)
+		logger.Error("enable unsigned protection error: %v", err)
 		return err
 	}
 	icpSig, exists, err := s.chainStore.ReadLatestIcpSig()
 	if err != nil {
-		logger.Error("read latest icp sig error:%v", err)
+		logger.Error("read latest icp sig error: %v", err)
 		return err
 	}
 	if !unSigProtect && !exists {
@@ -284,7 +284,7 @@ func (s *Scheduler) CheckBtcState() error {
 			}
 			continue
 		}
-		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v,unsignedProtect:%v,retryNums:%v",
+		logger.Debug("btcTx %v hash:%v amount: %v,cpHeight:%v, txHeight:%v,latestHeight: %v, unsignedProtect:%v, retryNums:%v",
 			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
 			unSigProtect, btcDbTx.GenProofNums)
 		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx, unSigProtect)
