@@ -215,7 +215,7 @@ func (s *Scheduler) CheckBtcState() error {
 		logger.Debug("btcTx %v hash: %v amount: %v, cpHeight: %v, txHeight: %v, latestHeight: %v, unsignedProtect: %v, retryNums: %v",
 			unGenTx.ProofType.Name(), unGenTx.Hash, unGenTx.Amount, btcDbTx.CheckPointHeight, btcDbTx.Height, btcDbTx.LatestHeight,
 			unSigProtect, btcDbTx.GenProofNums)
-		depthOk, err := s.checkTxDepth(uint64(latestHeight), cpHeight, btcDbTx, unSigProtect)
+		depthOk, err := s.checkTxDepth(latestHeight, cpHeight, btcDbTx, unSigProtect)
 		if err != nil {
 			logger.Error("check tx height error:%v %v", unGenTx.Hash, err)
 			return err
