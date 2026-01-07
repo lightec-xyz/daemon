@@ -432,22 +432,6 @@ func (cs *ChainStore) ReadBtcHeight() (uint64, bool, error) {
 	return height, true, nil
 }
 
-func (cs *ChainStore) WriteLatestIcpSig(sig DbIcpSignature) error {
-	return cs.store.PutObj(latestIcpSignatureKey, sig)
-}
-
-func (cs *ChainStore) ReadLatestIcpSig() (*DbIcpSignature, bool, error) {
-	var sig DbIcpSignature
-	exists, err := cs.store.GetValue(latestIcpSignatureKey, &sig)
-	if err != nil {
-		return nil, false, err
-	}
-	if !exists {
-		return nil, false, nil
-	}
-	return &sig, true, nil
-}
-
 func (cs *ChainStore) WriteIcpSignature(height uint64, value DbIcpSignature) error {
 	return cs.store.PutObj(dbDfinityBlockSigId(height), value)
 }
