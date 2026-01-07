@@ -139,10 +139,23 @@ func (s *Scheduler) updateBtcCp() error {
 
 func (s *Scheduler) CheckBtcState() error {
 	logger.Debug("start check btc state ....")
-	latestHeight, err := s.btcClient.GetBlockCount()
+	blockCount, err := s.btcClient.GetBlockCount()
 	if err != nil {
 		logger.Error("get block count error:%v", err)
 		return err
+	}
+	latestHeight, ok, err := s.chainStore.ReadBtcHeight()
+	if err != nil {
+		logger.Error("read latest btc height error: %v", err)
+		return err
+	}
+	if !ok {
+		logger.Warn("not found latest btc height")
+		return nil
+	}
+	if latestHeight < uint64(blockCount-3) {
+		logger.Warn("wait btc sync complete, block count: %v latestHeight: %v, skip check btc proof now", blockCount, latestHeight)
+		return nil
 	}
 
 	cpHeight, ok, err := s.chainStore.ReadLatestCheckPoint()
