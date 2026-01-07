@@ -46,7 +46,6 @@ const (
 	zkVerifyKey               = "zkVerifyKey"
 	latestCheckPointHeightKey = "latestCheckPointHeight"
 	latestUpdateCpKey         = "latestUpdateCpKey"
-	latestIcpSignatureKey     = "latestIcpSignatureKey"
 	maxGasPriceKey            = "maxGasPriceKey"
 	submitMaxValueKey         = "submitMaxValue"
 	submitMinValueKey         = "submitMinValue"

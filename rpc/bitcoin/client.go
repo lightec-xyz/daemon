@@ -88,6 +88,7 @@ func (c *Client) GetBlockHash(blockCount int64) (string, error) {
 	return hash, err
 }
 
+// note that the genesis block has height 0
 func (c *Client) GetBlockCount() (int64, error) {
 	var count int64
 	err := c.Call("getblockcount", nil, &count)
