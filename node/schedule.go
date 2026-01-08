@@ -359,7 +359,7 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx, unSigProt
 		return false, err
 	}
 
-	txMinDepth, err := s.ethClient.GetDepthByAmount(uint64(tx.Amount), raised, unSigProtect)
+	txMinDepth, err := s.ethClient.GetDepthByAmount(uint64(tx.Amount), raised, !unSigProtect)
 	if err != nil {
 		logger.Error("get tx min depth error:%v", err)
 		return false, err
