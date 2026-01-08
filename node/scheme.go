@@ -87,7 +87,7 @@ type DbTx struct {
 	CheckPointHeight uint64
 	LatestHeight     uint64
 	CpMinDepth       uint64
-	SigSigned        bool // flag: if icp block hash signed
+	SigSigned        bool // this flag is NOT read any where for now, turn its semantic to "SigNeeded"
 }
 
 func (t *DbTx) GenReset() {
