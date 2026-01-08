@@ -331,7 +331,8 @@ func (d *Daemon) Run() error {
 		go doLibP2pMsgTask("manager-libp2p", d.libp2p.MsgChan(), d.manager.LibP2pMessage, d.exitSignal)
 	}
 	if !d.debug {
-		go DoTimerTask("txManager-check", 10*time.Minute, d.txManager.Check, d.exitSignal)
+		// TODO should get notified once a proof is ready instead of keep checking
+		go DoTimerTask("txManager-check", 30*time.Second, d.txManager.Check, d.exitSignal)
 	}
 	go doChainForkTask("manager-chainFork", d.manager.chainFork, d.manager.ChainFork, d.exitSignal)
 	go DoTimerTask("manager-minerPower", 1*time.Minute, d.manager.MinerPower, d.exitSignal)
