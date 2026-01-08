@@ -224,9 +224,17 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("check tx depth:%v %v, not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
 		}
+		if !unSigProtect {
+			// now let's obtain ICP signature for the tip block
+			signed, err := s.checkIcpSig(uint64(latestHeight))
+			if err != nil || !signed {
+				logger.Warn("check ICP sig error: %v", err)
+				continue
+			}
+		}
 
 		btcDbTx.LatestHeight = uint64(latestHeight)
-		btcDbTx.SigSigned = !unSigProtect // flag semantic is whether signature is needed or not
+		btcDbTx.SigSigned = !unSigProtect
 		btcDbTx.CheckPointHeight = cpHeight
 		err = s.chainStore.WriteDbTxes(btcDbTx)
 		if err != nil {
@@ -405,13 +413,6 @@ func (s *Scheduler) checkBtcDepositRequest(proofType common.ProofType, dbTx *DbT
 	if !exists {
 		return nil
 	}
-	if dbTx.SigSigned { // we need the sig
-		signed, err := s.checkIcpSig(uint64(dbTx.LatestHeight))
-		if err != nil || !signed {
-			logger.Warn("check ICP sig error: %v", err)
-			return err
-		}
-	}
 	storeKey := StoreKey{
 		PType:     proofType,
 		Hash:      dbTx.Hash,
@@ -453,13 +454,6 @@ func (s *Scheduler) checkBtcChangeRequest(tx *DbTx) interface{} {
 		return nil
 	}
 	if chainOK {
-		if tx.SigSigned { // we need the sig
-			signed, err := s.checkIcpSig(uint64(tx.LatestHeight))
-			if err != nil || !signed {
-				logger.Warn("check ICP sig error: %v", err)
-				return err
-			}
-		}
 		changeKey := StoreKey{
 			PType:     common.BtcChangeType,
 			Hash:      tx.Hash,
