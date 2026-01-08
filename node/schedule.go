@@ -235,6 +235,7 @@ func (s *Scheduler) CheckBtcState() error {
 
 		btcDbTx.LatestHeight = uint64(latestHeight)
 		btcDbTx.SigSigned = true
+		btcDbTx.CheckPointHeight = cpHeight
 		err = s.chainStore.WriteDbTxes(btcDbTx)
 		if err != nil {
 			logger.Error("write db tx error:%v", err)
@@ -366,7 +367,7 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx, unSigProt
 
 	txDepthOk := curHeight-tx.Height >= uint64(txMinDepth)+getDelayBlock(uint(tx.GenProofNums))
 	if !txDepthOk {
-		logger.Warn("tx depth requirement not reached yet")
+		logger.Warn("tx depth requirement not reached yet curHeight %v, tx.Height %v, txMinDepth %v, dealy %v", curHeight, tx.Height, txMinDepth, getDelayBlock(uint(tx.GenProofNums)))
 		return false, nil
 	}
 
@@ -386,6 +387,7 @@ func (s *Scheduler) checkIcpSig(height uint64) (bool, error) {
 			logger.Error("write icp sig error:%v", err)
 			return false, err
 		}
+		logger.Info("obtained tip block signature for %v", sig.Height)
 	}
 	hash, existing, err := s.chainStore.ReadBitcoinHash(height)
 	if err != nil {
