@@ -357,7 +357,7 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 	logger.Debug("deposit zkbtc info address: %v ethTxHash: %v, btcTxId: %v, nonce: %v, isZenKeeper: %v", ethAddress, txHash, txId, nonce, isZenKeeper)
 	if isZenKeeper && proofType == common.BtcDepositType {
 		logger.Info("ZenKeeper deposit with btcTxId: %v, OP_RETURN script: %v", txId, opReturnScript)
-		logZenKeeper(txId, opReturnScript)
+		logZenKeeper(txId, opReturnScript, params.amount.String())
 	}
 	err = t.chainStore.WriteNonce(common.ETH.String(), ethAddress, nonce)
 	if err != nil {
@@ -373,7 +373,7 @@ func (t *TxManager) DepositBtc(tx DbUnSubmitTx) (string, error) {
 	return txHash, nil
 }
 
-func logZenKeeper(txId, script string) {
+func logZenKeeper(txId, script, amount string) {
 	f, err := os.OpenFile("zenkeeper.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		logger.Error("error logging to zenkeeper.log: %v", err)
@@ -381,6 +381,8 @@ func logZenKeeper(txId, script string) {
 		f.WriteString(txId)
 		f.WriteString(": ")
 		f.WriteString(script)
+		f.WriteString(", ")
+		f.WriteString(amount)
 		f.WriteString("\n")
 		f.Sync()
 		f.Close()
