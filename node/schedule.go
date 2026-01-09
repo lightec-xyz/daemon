@@ -202,9 +202,17 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("not found btc tx:%v", unGenTx.Hash)
 			continue
 		}
-		//todo
+
+		// proving might still be ongoing at this time, intercept here to save ICP signing
+		proofId := common.GenKey(unGenTx.ProofType, 0, btcDbTx.Height, btcDbTx.LatestHeight, btcDbTx.Hash).String()
+		if s.queueManager.CheckId(proofId) {
+			logger.Debug("proof request exists: %v", proofId)
+			continue
+		}
+
+		// TODO need ops involvement
 		if btcDbTx.GenProofNums >= common.GenMaxRetryNums {
-			logger.Warn("btc retry nums %v tx:%v num%v >= max %v,skip it now", unGenTx.ProofType.Name(), unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
+			logger.Warn("OPS! btc retry nums %v tx:%v num%v >= max %v, skip it now", unGenTx.ProofType.Name(), unGenTx.Hash, btcDbTx.GenProofNums, common.GenMaxRetryNums)
 			err := s.delUnGenProof(common.BitcoinChain, unGenTx.Hash)
 			if err != nil {
 				logger.Error("delete ungen proof error:%v %v", unGenTx.Hash, err)
