@@ -572,7 +572,16 @@ func (s *Scheduler) checkBtcRequest(tx *DbTx) (bool, error) {
 			logger.Error("try proof request error:%v %v", timestampKey.ProofId(), err)
 			return false, err
 		}
-
+		// also remove earlier requests with a smaller "end"
+		s.queueManager.RemoveRequest(func(request *common.ProofRequest) bool {
+			if common.IsBtcProofType(common.BtcTimestampType) && request.FIndex == height && request.SIndex < latestHeight {
+				proofId := common.GenKey(common.BtcTimestampType, 0, height, latestHeight, "").String()
+				s.queueManager.DeletePending(proofId)
+				s.queueManager.DeleteId(proofId)
+				return true
+			}
+			return false
+		})
 	}
 	return exists && chainExists && txDepthExists && txCpDepthExists, nil
 }
