@@ -575,6 +575,7 @@ func (s *Scheduler) checkBtcRequest(tx *DbTx) (bool, error) {
 		// also remove earlier requests with a smaller "end"
 		s.queueManager.RemoveRequest(func(request *common.ProofRequest) bool {
 			if common.IsBtcProofType(common.BtcTimestampType) && request.FIndex == height && request.SIndex < latestHeight {
+				logger.Info("removing earlier timestamp requests for %v with SIndex %v replaced by %v", height, request.SIndex, latestHeight)
 				proofId := common.GenKey(common.BtcTimestampType, 0, height, latestHeight, "").String()
 				s.queueManager.DeletePending(proofId)
 				s.queueManager.DeleteId(proofId)
