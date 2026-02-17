@@ -1301,9 +1301,11 @@ func getDelayBlock(nums uint) uint64 {
 		return 0
 	}
 	value := uint64(1) << nums
-	if value >= 16 {
-		value = 16
-		return value * uint64(nums-3)
+	// Jan - Feb 2026: the mainnet is generating blocks very slowly at >12 mins. This caused lots of cpDepth check failure.
+	// Retrying every 16 blocks is not going to help. Change from 16 to 256 (and nums-3 to nums-7).
+	if value >= 256 {
+		value = 256
+		return value * uint64(nums-7)
 	}
 	return value
 }
