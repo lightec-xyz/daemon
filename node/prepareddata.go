@@ -18,6 +18,7 @@ import (
 	"github.com/lightec-xyz/daemon/rpc"
 	"github.com/lightec-xyz/daemon/rpc/beacon"
 	btcrpc "github.com/lightec-xyz/daemon/rpc/bitcoin"
+	"github.com/lightec-xyz/daemon/rpc/dfinity"
 	ethrpc "github.com/lightec-xyz/daemon/rpc/ethereum"
 	"github.com/lightec-xyz/daemon/store"
 	proverType "github.com/lightec-xyz/provers/circuits/types"
@@ -34,6 +35,7 @@ type Prepared struct {
 	ethClient        *ethrpc.Client
 	apiClient        *apiclient.Client
 	beaconClient     *beacon.Client
+	icpClient        *dfinity.Client
 	genesisPeriod    uint64
 	genesisSlot      uint64
 	scNewRecursive   bool
@@ -890,17 +892,31 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 		return nil, false, nil
 	}
 
-	icpSignature, ok, err := p.chainStore.ReadIcpSignature(dbTx.LatestHeight)
+	unSigProtect, err := p.ethClient.EnableUnsignedProtection()
 	if err != nil {
-		logger.Error("read dfinity sign error: %v", err)
-		return nil, false, err
+		logger.Error("Read unsigned protection enablement error: %v", err)
+		return nil, false, nil
 	}
-	if !ok {
+
+	var sig *DbIcpSignature = nil
+	var signed bool = false
+	if !unSigProtect {
+		// now let's obtain ICP signature for the tip block
+		sig, signed, err = p.checkIcpSig(uint64(dbTx.LatestHeight))
+		if err != nil || !signed {
+			logger.Warn("check ICP sig error: %v", err)
+			return nil, false, nil
+		}
+	}
+
+	var icpSignature DbIcpSignature
+	if !signed {
 		logger.Warn("not found: %v icp %v signature", hash, dbTx.LatestHeight)
 		// no work,just placeholder
 		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
 		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"
 	} else {
+		icpSignature = *sig
 		logger.Debug("%v icp signature: %v %v %v", dbTx.Hash, icpSignature.Height, icpSignature.Hash, icpSignature.Signature)
 	}
 	blockHash, err := p.btcClient.GetBlockHash(int64(dbTx.Height))
@@ -967,6 +983,59 @@ func (p *Prepared) GetBtcDepositRequest(hash string) (*rpc.BtcDepositRequest, bo
 		SigVerifyData:     sigVerifyData,
 	}
 	return &request, true, nil
+}
+
+func (p *Prepared) checkIcpSig(height uint64) (*DbIcpSignature, bool, error) {
+	signature, existing, err := p.chainStore.ReadIcpSignature(height)
+	if err != nil {
+		return nil, false, err
+	}
+	if !existing {
+		sig, err := p.signTipBlock()
+		signature = DbIcpSignature{Height: uint64(sig.Height), Hash: sig.Hash, Signature: sig.Signature}
+		err = p.chainStore.WriteIcpSignature(uint64(sig.Height), signature)
+		if err != nil {
+			logger.Error("write icp sig error:%v", err)
+			return nil, false, err
+		}
+		logger.Info("obtained tip block signature for %v", sig.Height)
+	}
+	hash, existing, err := p.chainStore.ReadBitcoinHash(height)
+	if err != nil {
+		return nil, false, err
+	}
+	if !existing {
+		return nil, false, nil
+	}
+	if common.StrEqual(hash, signature.Hash) {
+		return &signature, true, nil
+	}
+
+	logger.Warn("Signed Tip block %v does not match saved block %v @%v", signature.Hash, hash, height)
+	return nil, false, nil
+}
+
+func (p *Prepared) signTipBlock() (*dfinity.BlockSignature, error) {
+	balance, err := p.icpClient.IcpBalance()
+	if err != nil {
+		logger.Error("get icp balance error:%v", err)
+		//return err
+	}
+	if balance < 250_000_000_000 { // todo
+		logger.Error("icp balance is not enough:%v, maybe need deposit %v", balance, p.icpClient.WalletInfo())
+	}
+
+	sig, err := p.icpClient.BlockSignatureWithCycle()
+	if err != nil {
+		logger.Error("get block sig error:%v", err)
+		return nil, err
+	}
+	if sig.Signature == "" {
+		logger.Warn("block signature is empty:%v", sig.Height)
+		return nil, nil
+	}
+	logger.Info("success get icp block signature:%v %v %v", sig.Height, sig.Hash, sig.Signature)
+	return sig, nil
 }
 
 func (p *Prepared) getDepthProof(genesisCount, depthHeight, latestHeight uint64) (*StoreProof, uint64, bool, error) {
@@ -1071,7 +1140,8 @@ func (p *Prepared) GetBtcTimestampRequest(fIndex uint64, sIndex uint64) (*rpc.Bt
 }
 
 func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, btcGenesisHeight uint64, proverClient *BtcClient, btcClient *btcrpc.Client,
-	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, minerAddr, network string, scNewRecursive bool) (*Prepared, error) {
+	ethClient *ethrpc.Client, apiClient *apiclient.Client, beaconClient *beacon.Client, icpClient *dfinity.Client,
+	minerAddr, network string, scNewRecursive bool) (*Prepared, error) {
 	return &Prepared{
 		filestore:        filestore,
 		chainStore:       NewChainStore(store),
@@ -1080,6 +1150,7 @@ func NewPreparedData(filestore *FileStorage, store store.IStore, genesisSlot, bt
 		ethClient:        ethClient,
 		apiClient:        apiClient,
 		beaconClient:     beaconClient,
+		icpClient:        icpClient,
 		genesisSlot:      genesisSlot,
 		genesisPeriod:    genesisSlot / common.SlotPerPeriod,
 		btcGenesisHeight: btcGenesisHeight,

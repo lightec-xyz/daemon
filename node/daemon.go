@@ -186,7 +186,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		cfg.MinerAddr = keyStore.address
 	}
 	preparedData, err := NewPreparedData(fileStore, storeDb, cfg.GenesisBeaconSlot, cfg.BtcGenesisHeight,
-		btcProverClient, btcClient, ethClient, beaClient, beaconClient, cfg.MinerAddr, cfg.Network, cfg.ScNewRecursive)
+		btcProverClient, btcClient, ethClient, beaClient, beaconClient, dfinityClient, cfg.MinerAddr, cfg.Network, cfg.ScNewRecursive)
 	if err != nil {
 		logger.Error("new proof Prepared data error: %v", err)
 		return nil, err
@@ -240,7 +240,7 @@ func NewDaemon(cfg Config) (*Daemon, error) {
 		logger.Warn("no local worker to generate proof")
 	}
 
-	manager, err := NewManager(cfg.MinerAddr, libp2p, dfinityClient, btcClient, ethClient, beaconClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
+	manager, err := NewManager(cfg.MinerAddr, libp2p, btcClient, ethClient, beaconClient, preparedData, btcProofResp, ethProofResp, syncCommitResp,
 		storeDb, fileStore, btcNotify, ethNotify, beaconNotify)
 	if err != nil {
 		logger.Error("new manager error: %v", err)

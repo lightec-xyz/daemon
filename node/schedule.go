@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/lightec-xyz/daemon/rpc/beacon"
-	"github.com/lightec-xyz/daemon/rpc/dfinity"
 
 	"github.com/lightec-xyz/daemon/common"
 	"github.com/lightec-xyz/daemon/logger"
@@ -32,7 +31,6 @@ type Scheduler struct {
 	btcClient    *bitcoin.Client
 	ethClient    *ethereum.Client
 	beaconClient *beacon.Client
-	icpClient    *dfinity.Client
 	chainStore   *ChainStore
 	preparedData *Prepared
 	lock         sync.Mutex
@@ -232,14 +230,15 @@ func (s *Scheduler) CheckBtcState() error {
 			logger.Warn("check tx depth:%v %v, not ok", unGenTx.Hash, unGenTx.ProofType.Name())
 			continue
 		}
-		if !unSigProtect {
-			// now let's obtain ICP signature for the tip block
-			signed, err := s.checkIcpSig(uint64(latestHeight))
-			if err != nil || !signed {
-				logger.Warn("check ICP sig error: %v", err)
-				continue
-			}
-		}
+		// optimization: defer ICP signature to right before generating proving request
+		// if !unSigProtect {
+		// 	// now let's obtain ICP signature for the tip block
+		// 	signed, err := s.checkIcpSig(uint64(latestHeight))
+		// 	if err != nil || !signed {
+		// 		logger.Warn("check ICP sig error: %v", err)
+		// 		continue
+		// 	}
+		// }
 
 		btcDbTx.LatestHeight = uint64(latestHeight)
 		btcDbTx.SigSigned = !unSigProtect
@@ -380,36 +379,6 @@ func (s *Scheduler) checkTxDepth(curHeight, cpHeight uint64, tx *DbTx, unSigProt
 	}
 
 	return true, nil
-}
-
-func (s *Scheduler) checkIcpSig(height uint64) (bool, error) {
-	signature, existing, err := s.chainStore.ReadIcpSignature(height)
-	if err != nil {
-		return false, err
-	}
-	if !existing {
-		sig, err := s.signTipBlock()
-		signature = DbIcpSignature{Height: uint64(sig.Height), Hash: sig.Hash, Signature: sig.Signature}
-		err = s.chainStore.WriteIcpSignature(uint64(sig.Height), signature)
-		if err != nil {
-			logger.Error("write icp sig error:%v", err)
-			return false, err
-		}
-		logger.Info("obtained tip block signature for %v", sig.Height)
-	}
-	hash, existing, err := s.chainStore.ReadBitcoinHash(height)
-	if err != nil {
-		return false, err
-	}
-	if !existing {
-		return false, nil
-	}
-	if common.StrEqual(hash, signature.Hash) {
-		return true, nil
-	}
-
-	logger.Warn("Signed Tip block %v does not match saved block %v @%v", signature.Hash, hash, height)
-	return false, nil
 }
 
 func (s *Scheduler) checkBtcDepositRequest(proofType common.ProofType, dbTx *DbTx) error {
@@ -1202,28 +1171,6 @@ func (s *Scheduler) checkTxProved(proofType common.ProofType, hash string) (bool
 	}
 }
 
-func (s *Scheduler) signTipBlock() (*dfinity.BlockSignature, error) {
-	balance, err := s.icpClient.IcpBalance()
-	if err != nil {
-		logger.Error("get icp balance error:%v", err)
-		//return err
-	}
-	if balance < 250_000_000_000 { // todo
-		logger.Error("icp balance is not enough:%v, maybe need deposit %v", balance, s.icpClient.WalletInfo())
-	}
-
-	sig, err := s.icpClient.BlockSignatureWithCycle()
-	if err != nil {
-		logger.Error("get block sig error:%v", err)
-		return nil, err
-	}
-	if sig.Signature == "" {
-		logger.Warn("block signature is empty:%v", sig.Height)
-		return nil, nil
-	}
-	logger.Info("success get icp block signature:%v %v %v", sig.Height, sig.Hash, sig.Signature)
-	return sig, nil
-}
 func (s *Scheduler) getTxRaised(height, amount uint64) (bool, error) {
 	hash, ok, err := s.chainStore.ReadBitcoinHash(height)
 	if err != nil {
@@ -1334,7 +1281,7 @@ func (s *Scheduler) PendingRequest() []*common.ProofRequest {
 }
 
 func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prepared,
-	icpClient *dfinity.Client, btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client) (*Scheduler, error) {
+	btcClient *bitcoin.Client, ethClient *ethereum.Client, beaconClient *beacon.Client) (*Scheduler, error) {
 	return &Scheduler{
 		queueManager: NewQueueManager(),
 		fileStore:    filestore,
@@ -1343,7 +1290,6 @@ func NewScheduler(filestore *FileStorage, store store.IStore, preparedData *Prep
 		btcClient:    btcClient,
 		ethClient:    ethClient,
 		beaconClient: beaconClient,
-		icpClient:    icpClient,
 	}, nil
 }
 
