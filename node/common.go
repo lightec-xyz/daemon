@@ -51,46 +51,46 @@ func getProofParams(txId, miner, network string, chainStore *ChainStore, btcClie
 	}
 	blockHash := common.ReverseBytes(ethcommon.FromHex(btcTx.Blockhash))
 
-	icpSignature, ok, err := chainStore.ReadIcpSignature(dbTx.LatestHeight)
-	if err != nil {
-		logger.Error("read dfinity sign error: %v", err)
-		return nil, err
-	}
-	if !ok {
-		logger.Warn("not found: %v icp %v signature", dbTx.Hash, dbTx.LatestHeight)
-		// no work,just placeholder
-		icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
-		icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"
-	} else {
-		//logger.Debug("%v icp signature: %v %v %v", txId, icpSignature.Height, icpSignature.Hash, icpSignature.Signature)
-	}
+	// icpSignature, ok, err := chainStore.ReadIcpSignature(dbTx.LatestHeight)
+	// if err != nil {
+	// 	logger.Error("read dfinity sign error: %v", err)
+	// 	return nil, err
+	// }
+	// if !ok {
+	// 	logger.Warn("not found: %v icp %v signature", dbTx.Hash, dbTx.LatestHeight)
+	// 	// no work,just placeholder
+	// 	icpSignature.Hash = "6aeb6ec6f0fbc707b91a3bec690ae6536fe0abaa1994ef24c3463eb20494785d"
+	// 	icpSignature.Signature = "3f8e02c743e76a4bd655873a428db4fa2c46ac658854ba38f8be0fbbf9af9b2b6b377aaaaf231b6b890a5ee3c15a558f1ccc18dae0c844b6f06343b88a8d12e3"
+	// } else {
+	// 	//logger.Debug("%v icp signature: %v %v %v", txId, icpSignature.Height, icpSignature.Hash, icpSignature.Signature)
+	// }
 	smoothedTimestamp, err := blockdepthUtil.GetSmoothedTimestampProofData(proverClient, uint32(dbTx.LatestHeight))
 	if err != nil {
 		logger.Error("%v", err.Error())
 		return nil, err
 	}
-	cptimeData, err := blockdepthUtil.GetCpTimestampProofData(proverClient, uint32(dbTx.Height))
-	if err != nil {
-		logger.Error("%v", err)
-		return nil, err
-	}
-	sigVerif, err := blockdepthUtil.GetSigVerifProofData(
-		common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
-		ethcommon.FromHex(icpSignature.Signature),
-		ethcommon.FromHex(getIcpPublicKey(network)))
-	if err != nil {
-		logger.Error("%v", err.Error())
-		return nil, err
-	}
-	flag := cptimeData.Flag<<1 | sigVerif.Flag
+	// cptimeData, err := blockdepthUtil.GetCpTimestampProofData(proverClient, uint32(dbTx.Height))
+	// if err != nil {
+	// 	logger.Error("%v", err)
+	// 	return nil, err
+	// }
+	// sigVerif, err := blockdepthUtil.GetSigVerifProofData(
+	// 	common.ReverseBytes(ethcommon.FromHex(icpSignature.Hash)),
+	// 	ethcommon.FromHex(icpSignature.Signature),
+	// 	ethcommon.FromHex(getIcpPublicKey(network)))
+	// if err != nil {
+	// 	logger.Error("%v", err.Error())
+	// 	return nil, err
+	// }
+	// flag := cptimeData.Flag<<1 | sigVerif.Flag
 	params := &zkbridge.IBtcTxVerifierPublicWitnessParams{
-		Checkpoint:        [32]byte(ethcommon.FromHex(cpHash)),
-		CpDepth:           uint32(cpDepth),
-		TxDepth:           uint32(txDepth),
-		TxBlockHash:       [32]byte(blockHash),
-		TxTimestamp:       uint32(btcTx.Blocktime),
-		ZkpMiner:          ethcommon.HexToAddress(miner),
-		Flag:              big.NewInt(int64(flag)),
+		Checkpoint:  [32]byte(ethcommon.FromHex(cpHash)),
+		CpDepth:     uint32(cpDepth),
+		TxDepth:     uint32(txDepth),
+		TxBlockHash: [32]byte(blockHash),
+		TxTimestamp: uint32(btcTx.Blocktime),
+		ZkpMiner:    ethcommon.HexToAddress(miner),
+		// Flag:              big.NewInt(int64(flag)),
 		SmoothedTimestamp: smoothedTimestamp.Timestamp,
 	}
 	return params, nil
