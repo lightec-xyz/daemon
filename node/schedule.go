@@ -535,7 +535,10 @@ func (s *Scheduler) checkBtcRequest(tx *DbTx) (bool, error) {
 		logger.Error("check proof error:%v", timestampKey.ProofId())
 		return false, err
 	}
-	if !exists {
+	if !exists && txDepthExists {
+		// optimization condition txDepthExists: we need to wait for tx depth proof almost ready
+		// before we compute timestamp proof to prevent too many expired timestamp proofs
+
 		_, err := s.tryProofRequest(timestampKey)
 		if err != nil {
 			logger.Error("try proof request error:%v %v", timestampKey.ProofId(), err)
