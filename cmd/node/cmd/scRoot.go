@@ -3,11 +3,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/lightec-xyz/daemon/circuits"
 	"github.com/lightec-xyz/daemon/logger"
 	"github.com/lightec-xyz/daemon/node"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var scRootCmd = &cobra.Command{
@@ -59,7 +60,7 @@ var scRootCmd = &cobra.Command{
 			return
 		}
 		prepared, err := node.NewPreparedData(fileStorage, nil, uint64(genesisSlot), 0, nil, nil,
-			nil, nil, nil, "", network, false)
+			nil, nil, nil, nil, "", network, false)
 		if err != nil {
 			fmt.Printf("new preparedData error: %v \n", err)
 			return
